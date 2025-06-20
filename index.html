@@ -10,10 +10,10 @@
   
   <div id="header"></div>
   
-  <div class="container">
+  <div class="container py-5">
 
     <div class="row"> 
-      <div class="col text-center pt-5">
+      <div class="col text-center">
         <img src="" alt="Logo del Evento" class="img-fluid mb-3" style="max-width: 250px;" id="event-logo">
       </div>
     </div>
@@ -22,7 +22,7 @@
     <div class="row g-4 justify-content-center pt-4">
 
       <div class="col-12 col-sm-12 col-md-12 col-lg-3">
-        <a href="" class="card h-100 text-center text-decoration-none shadow-sm hover-shadow" id="configUrl">
+        <a href="configevent.html" class="card h-100 text-center text-decoration-none shadow-sm hover-shadow" id="configUrl">
           <div class="card-body">
             <div class="fs-1 text-primary">⚙️</div>
             <h5 class="card-title mt-3">Organization Access</h5>
@@ -32,7 +32,7 @@
       </div>
 
       <div class="col-12 col-sm-12 col-md-12 col-lg-3">
-        <a href="" class="card h-100 text-center text-decoration-none shadow-sm" id="judgesUrl">
+        <a href="judges.html" class="card h-100 text-center text-decoration-none shadow-sm" id="judgesUrl">
           <div class="card-body">
             <div class="fs-1 text-primary">⚖️</div>
             <h5 class="card-title mt-3">Judges Access</h5>
@@ -42,7 +42,7 @@
       </div>
 
       <div class="col-12 col-sm-12 col-md-12 col-lg-3">
-        <a href="" class="card h-100 text-center text-decoration-none shadow-sm" id="participantsUrl">
+        <a href="participants.html" class="card h-100 text-center text-decoration-none shadow-sm" id="participantsUrl">
           <div class="card-body">
             <div class="fs-1 text-primary">💃</div>
             <h5 class="card-title mt-3">Participants</h5>
@@ -52,7 +52,7 @@
       </div>
 
       <div class="col-12 col-sm-12 col-md-12 col-lg-3">
-        <a href="" class="card h-100 text-center text-decoration-none shadow-sm" id="resultsUrl">
+        <a href="results.html" class="card h-100 text-center text-decoration-none shadow-sm" id="resultsUrl">
           <div class="card-body">
             <div class="fs-1 text-primary">🏆</div>
             <h5 class="card-title mt-3">Results</h5>
@@ -79,10 +79,11 @@
 
       // Actualizar propiedades de los elementos
       updateElementProperty('event-logo', 'src', getEvent().eventLogo);
-      updateElementProperty('configUrl', 'href', `configevent.html?eventId=${getEvent().id}`);
-      updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${getEvent().id}`);
-      updateElementProperty('participantsUrl', 'href', `participants.html?eventId=${getEvent().id}`);
-      updateElementProperty('resultsUrl', 'href', `results.html?eventId=${getEvent().id}`);
+
+      updateElementProperty('configUrl', 'href', `?eventId=${eventId}`, false);
+      updateElementProperty('judgesUrl', 'href', `?eventId=${getEvent().id}`, false);
+      updateElementProperty('participantsUrl', 'href', `?eventId=${getEvent().id}`, false);
+      updateElementProperty('resultsUrl', 'href', `?eventId=${getEvent().id}`, false);
 
     });
 

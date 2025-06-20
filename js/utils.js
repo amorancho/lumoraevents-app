@@ -1,6 +1,10 @@
-function updateElementProperty(elementId, property, value) {
+function updateElementProperty(elementId, property, value, replace = true) {
     const element = document.getElementById(elementId);
     if (element) {
-      element[property] = value;
+      if (replace) {
+        element[property] = value;
+      } else {
+        element[property] += value;
+      }        
     }
   }
