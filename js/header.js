@@ -1,4 +1,4 @@
-function generateHeader() {
+function generateHeader(callback) {
 
   fetch('header.html')
     .then(res => res.text())
@@ -13,6 +13,7 @@ function generateHeader() {
 
       if (titulo) {
         titulo.textContent = getEvent().name;
+        titulo.href = getEvent().homeUrl;
       }
 
       if (homeUrl) {
@@ -24,5 +25,7 @@ function generateHeader() {
       if (headerContainer) {
         headerContainer.outerHTML = doc.body.innerHTML;
       }
+
+      if (callback) callback();
     });
 }

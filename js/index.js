@@ -1,6 +1,7 @@
-document.addEventListener('DOMContentLoaded', () => {
+var title = 'Welcome to the Event Portal';
 
-    updateElementProperty('screen-title', 'textContent', 'WelcomeA');
+document.addEventListener('DOMContentLoaded', () => {
+    
     updateElementProperty('event-logo', 'src', getEvent().eventLogo);
 
     updateElementProperty('configUrl', 'href', `?eventId=${eventId}`, false);

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -55,19 +55,7 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js"></script>
-  <script>
+  <script src="js/configevent.js"></script>
 
-    document.addEventListener('DOMContentLoaded', () => {
-
-      // Actualizar propiedades de los elementos
-      updateElementProperty('event-logo', 'src', getEvent().eventLogo);
-
-      updateElementProperty('masterdataUrl', 'href', `?eventId=${eventId}`, false);
-      updateElementProperty('dancersUrl', 'href', `?eventId=${getEvent().id}`, false);
-      updateElementProperty('competitionsUrl', 'href', `?eventId=${getEvent().id}`, false);
-
-    });
-
-  </script>
 </body>
 </html>

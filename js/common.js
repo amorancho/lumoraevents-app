@@ -1,8 +1,3 @@
-function getEventIdFromUrl() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('eventId');
-}
-
 const eventId = getEventIdFromUrl();
 
 const eventObj = {
@@ -13,12 +8,21 @@ const eventObj = {
   homeUrl: `index.html?eventId=${eventId}`
 };
 
+function getEventIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('eventId');
+}
+
 function getEvent() {
   return eventObj;
 }
 
+function setPageTitle(title) {
+  updateElementProperty('screen-title', 'textContent', title);
+}
+
 // Ejecutar al cargar el DOM
 document.addEventListener('DOMContentLoaded', () => {
-  generateHeader();
+  generateHeader(() => {setPageTitle(title);});
   generateFooter();
 });
