@@ -1,4 +1,4 @@
-var title = 'Welcome to the Event Portal';
+var title = 'Welcome';
 
 document.addEventListener('DOMContentLoaded', () => {
     
