@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
+    updateElementProperty('screen-title', 'textContent', 'WelcomeA');
     updateElementProperty('event-logo', 'src', getEvent().eventLogo);
 
     updateElementProperty('configUrl', 'href', `?eventId=${eventId}`, false);
