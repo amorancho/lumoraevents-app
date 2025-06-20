@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Configuration</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    .list-group-item .delete-btn {
+      visibility: hidden;
+    }
+    .list-group-item:hover .delete-btn {
+      visibility: visible;
+    }
+    .breadcrumb-item + .breadcrumb-item::before {
+      color: white !important;
+    }
+  </style>
+  
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <div id="header"></div>
+  <div class="container py-4">
+        
+    <div class="d-flex justify-content-center gap-3 mb-4">
+      <a href="<?!= dancersUrl ?>" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">
+        💃 Dancers
+      </a>
+      <a href="<?!= compUrl ?>" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">
+        🚀​ Competitions
+      </a>
+    </div>
+
+    <div class="row g-4">
+      <!-- Category -->
+      <div class="col-12 col-lg-4">
+        <div class="card shadow-sm bg-light" id="category-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Category</h5>
+              <div class="spinner-border text-primary d-none" id="category-spinner" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <div class="input-group mb-3 mt-4">
+              <input type="text" id="input-category" class="form-control" placeholder="New Category" />
+              <button class="btn btn-primary" onclick="addEntry('category')">Add</button>
+            </div>
+            <ul class="list-group" id="list-category"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Style -->
+      <div class="col-12 col-lg-4">
+        <div class="card shadow-sm bg-light" id="style-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Style</h5>
+              <div class="spinner-border text-primary d-none" id="style-spinner" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <div class="input-group mb-3 mt-4">
+              <input type="text" id="input-style" class="form-control" placeholder="New Style" />
+              <button class="btn btn-primary" onclick="addEntry('style')">Add</button>
+            </div>
+            <ul class="list-group" id="list-style"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Criteria -->
+      <div class="col-12 col-lg-4">
+        <div class="card shadow-sm bg-light" id="criteria-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title">Criteria</h5>
+              <div class="spinner-border text-primary d-none" id="criteria-spinner" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            <div class="input-group mb-3 mt-4">
+              <input type="text" id="input-criteria" class="form-control" placeholder="New Criteria" />
+              <button class="btn btn-primary" onclick="addEntry('criteria')">Add</button>
+            </div>
+            <ul class="list-group" id="list-criteria"></ul>
+          </div>
+        </div>
+      </div>
+    </div>      
+
+    
+  </div>
+
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Delete Confirm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteModalMessage">Are you sure you want to remove this item?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/footer.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/masterdata.js"></script>
+</body>
+</html>

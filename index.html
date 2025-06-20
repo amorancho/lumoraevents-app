@@ -72,21 +72,6 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js"></script>
-
-  <script>
-
-    document.addEventListener('DOMContentLoaded', () => {
-
-      // Actualizar propiedades de los elementos
-      updateElementProperty('event-logo', 'src', getEvent().eventLogo);
-
-      updateElementProperty('configUrl', 'href', `?eventId=${eventId}`, false);
-      updateElementProperty('judgesUrl', 'href', `?eventId=${getEvent().id}`, false);
-      updateElementProperty('participantsUrl', 'href', `?eventId=${getEvent().id}`, false);
-      updateElementProperty('resultsUrl', 'href', `?eventId=${getEvent().id}`, false);
-
-    });
-
-  </script>
+  <script src="js/index.js"></script>
 
 </body></html>

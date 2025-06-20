@@ -1,5 +1,5 @@
 function generateHeader() {
-  console.log('Generating header...');
+
   fetch('header.html')
     .then(res => res.text())
     .then(html => {

@@ -1,5 +1,5 @@
 function generateFooter() {
-  console.log('Generating footer...');
+
   fetch('footer.html')
     .then(res => res.text())
     .then(html => {
