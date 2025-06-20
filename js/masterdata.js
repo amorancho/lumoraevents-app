@@ -37,6 +37,12 @@ var criteriaList = [
     'Costume & Makeup'
 ];
 
+document.addEventListener('DOMContentLoaded', () => {
+
+    loadAll();
+
+});
+
 function loadAll() {
 
     loadTable("category");
@@ -160,8 +166,4 @@ function showModal(message) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', () => {
 
-    loadAll();
-
-});
