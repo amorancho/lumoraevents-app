@@ -72,12 +72,9 @@ var title = 'Dancers';
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // Actualizar propiedades de los elementos
-  updateElementProperty('event-logo', 'src', getEvent().eventLogo);
-
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${getEvent().id}`);
-  updateElementProperty('participantsUrl', 'href', `participants.html?eventId=${getEvent().id}`);
+  updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${getEvent().id}`);
 
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.forEach(function (tooltipTriggerEl) {
@@ -111,30 +108,57 @@ document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('click', (event) => {
     const button = event.target.closest('.btn-edit-dancer');
 
-    if (!button) return;
+    if (button) {
 
-    document.getElementById('editForm').dataset.action = 'edit';
+      const editForm = document.getElementById('editForm');
+      editForm.dataset.id = button.closest('tr').dataset.id;
+      editForm.dataset.action = 'edit';
 
-    const tr = button.closest('tr');
-    const id = tr.dataset.id;
-    const dancer = dancers.find(d => d.id == id);
+      const tr = button.closest('tr');
+      const id = tr.dataset.id;
+      const dancer = dancers.find(d => d.id == id);
 
-    document.getElementById('dancerName').value = dancer.name;
-    document.getElementById('editCategory').value = dancer.category;
-    document.getElementById('editMaster').value = dancer.master;
-    document.getElementById('nationality').value = dancer.nationality;
+      document.getElementById('dancerName').value = dancer.name;
+      document.getElementById('editCategory').value = dancer.category;
+      document.getElementById('editMaster').value = dancer.master;
+      document.getElementById('nationality').value = dancer.nationality;
 
-    const stylesOptions = document.getElementById('editStyles').options;
-  
-    Array.from(stylesOptions).forEach(opt => {
-      opt.selected = dancer.styles.includes(opt.value);
-    });
+      const stylesOptions = document.getElementById('editStyles').options;
+    
+      Array.from(stylesOptions).forEach(opt => {
+        opt.selected = dancer.styles.includes(opt.value);
+      });
 
-    document.querySelector('#editModal .modal-title span').textContent = 'Edit Dancer';
+      document.querySelector('#editModal .modal-title span').textContent = 'Edit Dancer';
 
-    editModal.show();
+      editModal.show();
+
+    } else if (event.target.closest('.btn-delete-dancer')) {
+
+      const button = event.target.closest('.btn-delete-dancer');
+
+      const tr = button.closest('tr');
+      const id = tr.dataset.id;
+      const dancer = dancers.find(d => d.id == id);
+
+      dancerIdToDelete = id;
+
+      const message = `Are you sure you want to delete dancer <strong>${dancer.name}</strong>?`;
+      document.getElementById('deleteModalMessage').innerHTML = message;
+
+      const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+      deleteModal.show();
+
+      document.getElementById('confirmDeleteBtn').onclick = () => {
+        dancers = dancers.filter(d => d.id != dancerIdToDelete);
+        loadDancers();
+        deleteModal.hide();
+      };
+
+    }
 
   });
+
 
   document.getElementById('saveEditBtn').addEventListener('click', () => {
 
@@ -191,8 +215,17 @@ function loadDancers() {
   const dancersTable = document.getElementById('dancersTable');
   dancersTable.innerHTML = ''; // Clear existing rows
   dancers.forEach(dancer => {
+
     const row = document.createElement('tr');
     row.dataset.id = dancer.id;
+
+    let stylesSpans = '';
+    if (dancer.styles && dancer.styles.length > 0) {
+      stylesSpans = dancer.styles.map(style => `<span class="badge bg-warning text-dark me-1">${style}</span>`).join('');
+    } else {
+      stylesSpans = '<span class="badge bg-secondary">No styles</span>';
+    }
+
     row.innerHTML = `
       <td class="align-middle">
         <div class="d-flex align-items-center">
@@ -201,7 +234,7 @@ function loadDancers() {
         </div>
       </td>
       <td class="align-middle">${dancer.category}</td>
-      <td class="align-middle">${dancer.styles}</td>
+      <td class="align-middle">${stylesSpans}</td>
       <td class="align-middle">
         <i class="bi bi-people me-1 text-muted"></i>
         ${dancer.master}
