@@ -146,7 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
           let medal = '';
           let fontWeight = '';
           if (item.position === 1) {
-            bgClass = 'bg-warning-subtle'; // oro
+            bgClass = 'bg-warning'; // oro
             medal = '🥇';
             fontWeight = 'fw-bold';
           } else if (item.position === 2) {
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             medal = '🥈';
             fontWeight = 'fw-bold';
           } else if (item.position === 3) {
-            bgClass = 'bg-light-subtle'; // bronce (neutro claro, pero 100% Bootstrap)
+            bgClass = 'bg-warning-subtle'; // bronce (neutro claro, pero 100% Bootstrap)
             medal = '🥉';
             fontWeight = 'fw-bold';
           }
