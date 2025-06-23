@@ -1,5 +1,11 @@
 var title = 'Participants';
 
+var totals = {
+    categories: 3,  
+    styles: 8,
+    participants: 11
+};
+
 document.addEventListener('DOMContentLoaded', () => {
 
   loadParticipants();  
@@ -8,72 +14,159 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadParticipants() {
     const participantsContainer = document.getElementById('participantsContainer');
-    const mockData = getMockParticipantsData(); // Simula la obtención de datos
-    
+    const mockData = getMockParticipantsData(); 
+
+    const numCategories = document.getElementById('numCat');
+    const numStyles = document.getElementById('numSty');
+    const numParticipants = document.getElementById('numPar');
+
+    numCategories.textContent = totals.categories;
+    numStyles.textContent = totals.styles;
+    numParticipants.textContent = totals.participants;
+
     // Limpiar el contenedor
     participantsContainer.innerHTML = '';
+
+    var i = 0;
     
     // Iterar sobre las categorías y sus participantes
     Object.keys(mockData).forEach(category => {
         const categoryData = mockData[category];
-        const categoryItem = createCategoryItem(category, categoryData);
+        const categoryItem = createCategoryItem(category, categoryData, ++i);
         participantsContainer.appendChild(categoryItem);
     });
 }
 
+
 function getMockParticipantsData() {
     return {
-        'Category A': [
-            { name: 'Alice', id: 1, age: 25 },
-            { name: 'Bob', id: 2, age: 30 }
-        ],
-        'Category B': [
-            { name: 'Charlie', id: 3, age: 22 },
-            { name: 'David', id: 4, age: 28 }
-        ]
+        'Baby Amateur': {
+            styles: ['Raqs sharki', 'Baladi', 'Shaabi', 'Folklore', 'Fusion', 'Pop song', 'Drum CD', 'Live Drum'],
+            participants: [
+                { name: 'Alice', id: 1, nationality: 'ES', styles: ['Raqs sharki', 'Baladi', 'Fusion'] },
+                { name: 'Bob', id: 2, nationality: 'FR', styles: ['Shaabi', 'Folklore', 'Pop song'] },
+                { name: 'Grace', id: 7, nationality: 'DE', styles: ['Raqs sharki', 'Baladi', 'Fusion'] },
+                { name: 'Hannah', id: 8, nationality: 'IT', styles: ['Raqs sharki', 'Baladi', 'Fusion'] }
+            ]
+        },
+        'Baby Advenced': {
+            styles: ['Raqs sharki', 'Baladi', 'Fusion', 'Pop song', 'Drum CD', 'Live Drum', 'Shaabi'],
+            participants: [
+                { name: 'Charlie', id: 3, nationality: 'US', styles: ['Raqs sharki', 'Fusion', 'Pop song'] },
+                { name: 'David', id: 4, nationality: 'UK', styles: ['Baladi', 'Pop song', 'Drum CD'] },
+                { name: 'Ivy', id: 9, nationality: 'CA', styles: ['Raqs sharki', 'Baladi', 'Fusion'] }
+            ]
+        },
+        'Kid Amateur': {
+            styles: ['Raqs sharki', 'Baladi', 'Shaabi', 'Folklore', 'Fusion', 'Pop song', 'Drum CD', 'Live Drum'],
+            participants: [
+                { name: 'Eve', id: 5, nationality: 'ES', styles: ['Raqs sharki', 'Shaabi', 'Fusion'] },
+                { name: 'Frank', id: 6, nationality: 'FR', styles: ['Baladi', 'Folklore', 'Fusion'] },
+                { name: 'Liam', id: 10, nationality: 'IT', styles: ['Raqs sharki', 'Baladi', 'Fusion'] },
+                { name: 'Mia', id: 11, nationality: 'ES', styles: ['Raqs sharki', 'Baladi', 'Fusion'] }
+            ]
+        }
     };
 }
 
-function createCategoryItem(category, participants) {
-    const item = document.createElement('div');
-    item.className = 'accordion-item';
-    item.dataset.nombres = category.toLowerCase();
+function createCategoryItem(category, categoryData, index) {
 
-    const header = document.createElement('h2');
-    header.className = 'accordion-header';
-    header.id = `heading-${category}`;
+    const accordion = document.createElement('div');
+    accordion.className = 'accordion mb-4';
+    accordion.id = 'accordion-' + index;
 
-    const button = document.createElement('button');
-    button.className = 'accordion-button collapsed';
-    button.type = 'button';
-    button.setAttribute('data-bs-toggle', 'collapse');
-    button.setAttribute('data-bs-target', `#collapse-${category}`);
-    button.setAttribute('aria-expanded', 'false');
-    button.setAttribute('aria-controls', `collapse-${category}`);
-    button.textContent = category;
+        const item = document.createElement('div');
+        item.className = 'accordion-item';
+        item.dataset.nombres = categoryData.participants.map(p => p.name).join(', ');
 
-    header.appendChild(button);
-    item.appendChild(header);
+            const header = document.createElement('h2');
+            header.className = 'accordion-header';
+            header.id = `heading-${index}`;
 
-    const collapse = document.createElement('div');
-    collapse.id = `collapse-${category}`;
-    collapse.className = 'accordion-collapse collapse';
-    collapse.setAttribute('aria-labelledby', `heading-${category}`);
-    collapse.setAttribute('data-bs-parent', '#participantsContainer');
+                const button = document.createElement('button');
+                button.className = 'accordion-button collapsed';
+                button.type = 'button';
+                button.setAttribute('data-bs-toggle', 'collapse');
+                button.setAttribute('data-bs-target', `#collapse-${index}`);
+                button.setAttribute('aria-expanded', 'false');
+                button.setAttribute('aria-controls', `collapse-${index}`);
+                button.textContent = category;
 
-    const body = document.createElement('div');
-    body.className = 'accordion-body';
+            header.appendChild(button);
+                
 
-    participants.forEach(participant => {
-        const p = document.createElement('p');
-        p.textContent = `${participant.name} (ID: ${participant.id}, Age: ${participant.age})`;
-        body.appendChild(p);
-    });
+            const collapse = document.createElement('div');
+            collapse.id = `collapse-${index}`;
+            collapse.className = 'accordion-collapse collapse';
+            collapse.setAttribute('aria-labelledby', `heading-${index}`);
+            //collapse.setAttribute('data-bs-parent', '#participantsContainer');
 
-    collapse.appendChild(body);
-    item.appendChild(collapse);
+                const body = document.createElement('div');
+                body.className = 'accordion-body';
+            
+                    const title = document.createElement('h3');
+                        const titleText = document.createElement('span');
+                        titleText.className = 'badge bg-warning';
+                        titleText.textContent = `Total Participants: ${categoryData.participants.length}`;
+                    title.appendChild(titleText);
 
-    return item;
+                
+                    const tableDiv = document.createElement('table');
+                    tableDiv.className = 'table-responsive';
+
+                    const table = document.createElement('table');
+                    table.className = 'table table-bordered table-hover';
+                        const thead = document.createElement('thead');
+                        thead.className = 'table-light text-primary';
+                        const headerRow = document.createElement('tr');
+                        const thParticipant = document.createElement('th');
+                        thParticipant.textContent = 'Participant';
+                        headerRow.appendChild(thParticipant);
+
+                        categoryData.styles.forEach(style => {
+                            const th = document.createElement('th');
+                            th.textContent = style;
+                            headerRow.appendChild(th);
+                        });
+
+                        thead.appendChild(headerRow);
+                        table.appendChild(thead);
+
+                        const tbody = document.createElement('tbody');
+                        tbody.className = 'text-center text-success fw-bold';
+                        
+
+                        categoryData.participants.forEach(participant => {
+                            const row = document.createElement('tr');
+                            const tdParticipant = document.createElement('td');
+                            tdParticipant.textContent = participant.name;
+                            row.appendChild(tdParticipant);
+
+                            categoryData.styles.forEach(style => {
+                                const td = document.createElement('td');
+                                const spanTd = document.createElement('span');
+                                spanTd.className = 'text-success';
+                                spanTd.textContent = participant.styles.includes(style) ? '✓' : '';
+                                td.appendChild(spanTd);
+                                row.appendChild(td);
+                            });
+
+                            tbody.appendChild(row);
+                        });
+                    table.appendChild(tbody);
+
+                body.appendChild(title);
+                body.appendChild(table);
+
+            collapse.appendChild(body);
+
+        item.appendChild(header);
+        item.appendChild(collapse);
+        
+
+    accordion.appendChild(item);
+
+    return accordion;
 }
 
 function filtrarCategorias() {
