@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dancers</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  
+</head>
+<body class="d-flex flex-column min-vh-100">
+  <div id="header"></div>
+  <div class="container-fluid container-lg py-4">
+
+    <div class="d-flex justify-content-center mb-3">
+      <a href="" class="btn btn-secondary rounded-pill px-4 fw-semibold" id="eventconfigUrl">
+        ⚙️ Event Configuration
+      </a>
+    </div>        
+    <div class="d-flex justify-content-center gap-3 mb-4">
+      <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="masterdataUrl">
+        🌐 Master Data
+      </a>
+      <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="dancersUrl">
+        💃 Dancers
+      </a>
+      <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="competitionsUrl">
+        🚀​ Competitions
+      </a>
+    </div>
+
+    <div class="row justify-content-center my-3">
+      <div class="col-12 col-md-4 text-center">
+        <button id="createNewJudgeBtn" class="btn btn-primary btn-lg w-100">
+          Create New Judge
+        </button>
+      </div>
+    </div>
+
+
+    <!-- Tabla bailarinas -->
+    <div class="row justify-content-center">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header d-flex align-items-center">
+            <h5 class="mb-0 me-auto">
+              <i class="bi bi-list-ul me-2"></i>
+              Judges
+            </h5>
+            <div class="spinner-border text-primary d-none" id="spinner-table" role="status" style="width: 1.5rem; height: 1.5rem;">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div class="card-body p-2">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead class="table">
+                  <tr>
+
+                      <th scope="col" style="width: 20%;">Name</th>
+                      <th scope="col" style="width: 15%;">Category</th>
+                      <th scope="col" style="width: 35%;">Styles</th>
+                      <th scope="col" style="width: 15%;">Master</th>
+                      <th scope="col" style="width: 5%;">Nationality</th>
+                      <th scope="col" style="width: 5%;" class="text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="judgesTable">                                        
+                </tbody>
+              </table>
+            </div>
+              
+              <!-- Mensaje cuando no hay competiciones -->
+              <div id="emptyState" class="text-center py-5 d-none">
+                  <i class="bi bi-trophy text-muted" style="font-size: 3rem;"></i>
+                  <h5 class="text-muted mt-3">No judges created yet</h5>
+                  <p class="text-muted">Create your first judges using the form above.</p>
+              </div>
+          </div>
+              
+        </div>
+      </div>
+    </div>
+
+    
+  </div>
+
+  <!-- Modal de edición -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fw-bold text-primary">Edit Judge</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <form id="editForm" data-action="create">
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <label class="form-label">Judge</label>
+                <input type="text" class="form-control" id="judgeName">
+              </div>              
+            </div>
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="editCategory">
+                  <option selected disabled value="">Choose a Category</option>
+                </select>
+              </div>              
+            </div>
+            <div class="row">
+              <div class="col-md-8 mb-3">
+                <label class="form-label">Master</label>
+                <select class="form-select" id="editMaster">
+                  <option selected disabled value="">Choose a Master</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">
+                  Nationality
+                  <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" title="Use the 2-letter country code (e.g.: FR, ES, RU)"></i>
+                </label>
+                <input type="text" class="form-control" id="nationality">
+              </div> 
+            </div>   
+            <div class="row">
+              <div class="mb-3">
+                <label class="form-label">Styles</label>
+                <select multiple class="form-select" size="8" id="editStyles">
+                </select>
+                <div class="form-text">Usa Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</div>
+              </div>
+            </div>         
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveEditBtn">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Delete Confirm</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteModalMessage">Are you sure you want to remove this item?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer"></div>
+ 
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/footer.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/judges.js"></script>
+
+</body>
+</html>

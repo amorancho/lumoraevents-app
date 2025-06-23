@@ -111,52 +111,54 @@ function createCategoryItem(category, categoryData, index) {
                     title.appendChild(titleText);
 
                 
-                    const tableDiv = document.createElement('table');
+                    const tableDiv = document.createElement('div');
                     tableDiv.className = 'table-responsive';
 
-                    const table = document.createElement('table');
-                    table.className = 'table table-bordered table-hover';
-                        const thead = document.createElement('thead');
-                        thead.className = 'table-light text-primary';
-                        const headerRow = document.createElement('tr');
-                        const thParticipant = document.createElement('th');
-                        thParticipant.textContent = 'Participant';
-                        headerRow.appendChild(thParticipant);
-
-                        categoryData.styles.forEach(style => {
-                            const th = document.createElement('th');
-                            th.textContent = style;
-                            headerRow.appendChild(th);
-                        });
-
-                        thead.appendChild(headerRow);
-                        table.appendChild(thead);
-
-                        const tbody = document.createElement('tbody');
-                        tbody.className = 'text-center text-success fw-bold';
-                        
-
-                        categoryData.participants.forEach(participant => {
-                            const row = document.createElement('tr');
-                            const tdParticipant = document.createElement('td');
-                            tdParticipant.textContent = participant.name;
-                            row.appendChild(tdParticipant);
+                        const table = document.createElement('table');
+                        table.className = 'table table-bordered table-hover';
+                            const thead = document.createElement('thead');
+                            thead.className = 'table-light text-primary';
+                            const headerRow = document.createElement('tr');
+                            const thParticipant = document.createElement('th');
+                            thParticipant.textContent = 'Participant';
+                            headerRow.appendChild(thParticipant);
 
                             categoryData.styles.forEach(style => {
-                                const td = document.createElement('td');
-                                const spanTd = document.createElement('span');
-                                spanTd.className = 'text-success';
-                                spanTd.textContent = participant.styles.includes(style) ? '✓' : '';
-                                td.appendChild(spanTd);
-                                row.appendChild(td);
+                                const th = document.createElement('th');
+                                th.textContent = style;
+                                headerRow.appendChild(th);
                             });
 
-                            tbody.appendChild(row);
-                        });
-                    table.appendChild(tbody);
+                            thead.appendChild(headerRow);
+                            table.appendChild(thead);
+
+                            const tbody = document.createElement('tbody');
+                            tbody.className = 'text-center text-success fw-bold';
+                            
+
+                            categoryData.participants.forEach(participant => {
+                                const row = document.createElement('tr');
+                                const tdParticipant = document.createElement('td');
+                                tdParticipant.textContent = participant.name;
+                                row.appendChild(tdParticipant);
+
+                                categoryData.styles.forEach(style => {
+                                    const td = document.createElement('td');
+                                    const spanTd = document.createElement('span');
+                                    spanTd.className = 'text-success';
+                                    spanTd.textContent = participant.styles.includes(style) ? '✓' : '';
+                                    td.appendChild(spanTd);
+                                    row.appendChild(td);
+                                });
+
+                                tbody.appendChild(row);
+                            });
+                        table.appendChild(tbody);
+
+                tableDiv.appendChild(table);
 
                 body.appendChild(title);
-                body.appendChild(table);
+                body.appendChild(tableDiv);
 
             collapse.appendChild(body);
 

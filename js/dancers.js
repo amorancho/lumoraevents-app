@@ -74,6 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${getEvent().id}`);
+  updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${getEvent().id}`);
   updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${getEvent().id}`);
 
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

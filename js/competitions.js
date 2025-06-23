@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${getEvent().id}`);
+  updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${getEvent().id}`);
   updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${getEvent().id}`);
 
   loadCategories();
