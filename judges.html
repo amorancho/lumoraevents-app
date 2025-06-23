@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dancers</title>
+  <title>Judges</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   
@@ -38,9 +38,9 @@
     </div>
 
 
-    <!-- Tabla bailarinas -->
+    <!-- Tabla jueces -->
     <div class="row justify-content-center">
-      <div class="col-12">
+      <div class="col-10">
         <div class="card shadow-sm">
           <div class="card-header d-flex align-items-center">
             <h5 class="mb-0 me-auto">
@@ -56,13 +56,11 @@
               <table class="table table-hover mb-0">
                 <thead class="table">
                   <tr>
-
-                      <th scope="col" style="width: 20%;">Name</th>
-                      <th scope="col" style="width: 15%;">Category</th>
-                      <th scope="col" style="width: 35%;">Styles</th>
-                      <th scope="col" style="width: 15%;">Master</th>
-                      <th scope="col" style="width: 5%;">Nationality</th>
-                      <th scope="col" style="width: 5%;" class="text-center">Actions</th>
+                      <th scope="col" style="width: 25%;">Name</th>
+                      <th scope="col" style="width: 35%;">Email</th>
+                      <th scope="col" style="width: 15%;">Username</th>
+                      <th scope="col" style="width: 15%;">Password</th>
+                      <th scope="col" style="width: 10%;" class="text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="judgesTable">                                        
@@ -99,41 +97,45 @@
           <form id="editForm" data-action="create">
             <div class="row">
               <div class="col-md-12 mb-3">
-                <label class="form-label">Judge</label>
+                <label class="form-label">Name</label>
                 <input type="text" class="form-control" id="judgeName">
               </div>              
             </div>
-            <div class="row">
+             <div class="row">
               <div class="col-md-12 mb-3">
-                <label class="form-label">Category</label>
-                <select class="form-select" id="editCategory">
-                  <option selected disabled value="">Choose a Category</option>
-                </select>
+                <label class="form-label">Email</label>
+                <input type="text" class="form-control" id="judgeEmail">
               </div>              
             </div>
             <div class="row">
-              <div class="col-md-8 mb-3">
-                <label class="form-label">Master</label>
-                <select class="form-select" id="editMaster">
-                  <option selected disabled value="">Choose a Master</option>
-                </select>
-              </div>
-              <div class="col-md-4 mb-3">
-                <label class="form-label">
-                  Nationality
-                  <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" title="Use the 2-letter country code (e.g.: FR, ES, RU)"></i>
-                </label>
-                <input type="text" class="form-control" id="nationality">
-              </div> 
-            </div>   
+              <div class="col-12 col-md-6 mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-control" id="judgeUsername">
+              </div>              
+              <div class="col-12 col-md-6 mb-3">
+                <label class="form-label">Password</label>
+                <input type="text" class="form-control" id="judgePassword">
+              </div>              
+            </div>
             <div class="row">
-              <div class="mb-3">
-                <label class="form-label">Styles</label>
-                <select multiple class="form-select" size="8" id="editStyles">
-                </select>
-                <div class="form-text">Usa Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</div>
+              <div class="col-md-12 my-4">
+                <div class="card">
+                  <div class="card-header">
+                    Actions
+                  </div>                  
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-12 col-lg-6">
+                        <input type="button" class="btn btn-warning text-white w-100" id="sendEmail" value="Send Welcome Email">
+                      </div>
+                      <div class="col-12 col-lg-6">
+                        <input type="button" class="btn btn-warning text-white w-100" id="resendPassword" value="Resend Password">
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>         
+            </div>
           </form>
         </div>
         <div class="modal-footer">

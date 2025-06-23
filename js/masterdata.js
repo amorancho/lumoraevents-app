@@ -42,6 +42,7 @@ var title = 'Event Master Data';
 document.addEventListener('DOMContentLoaded', () => {
 
     updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
+    updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${getEvent().id}`);
     updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${getEvent().id}`);
     updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${getEvent().id}`);
 
