@@ -1,8 +1,8 @@
 judges = [
-  { id: 1, name: 'Judge Amina', email: 'amina@example.com', username: 'amina123', password: 'password123' },
-  { id: 2, name: 'Judge Layla', email: 'layla@example.com', username: 'layla123', password: 'password123' },
-  { id: 3, name: 'Judge Zara', email: 'zara@example.com', username: 'zara123', password: 'password123' },
-  { id: 4, name: 'Judge Alberto', email: 'alberto@example.com', username: 'alberto123', password: 'password123' }
+  { id: 1, name: 'Judge Amina', email: 'amina@example.com', master: true, username: 'amina123', password: 'password123' },
+  { id: 2, name: 'Judge Layla', email: 'layla@example.com', master: false, username: 'layla123', password: 'password123' },
+  { id: 3, name: 'Judge Zara', email: 'zara@example.com', master: false, username: 'zara123', password: 'password123' },
+  { id: 4, name: 'Judge Alberto', email: 'alberto@example.com', master: false, username: 'alberto123', password: 'password123' }
 ];
 
 var title = 'Judges';
@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Vaciar los campos del modal
     document.getElementById('judgeName').value = '';
     document.getElementById('judgeEmail').value = '';
+    document.getElementById('judgeMaster').checked = false;
     document.getElementById('judgeUsername').value = '';
     document.getElementById('judgePassword').value = '';
 
@@ -49,10 +50,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const tr = button.closest('tr');
       const id = tr.dataset.id;
+      const master = tr.dataset.master === 'true'; // Convertir a booleano
       const judge = judges.find(d => d.id == id);
 
       document.getElementById('judgeName').value = judge.name;
       document.getElementById('judgeEmail').value = judge.email;
+      document.getElementById('judgeMaster').checked = master;
       document.getElementById('judgeUsername').value = judge.username;
       document.getElementById('judgePassword').value = judge.password;
 
@@ -94,6 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     inputName = document.getElementById('judgeName');
     inputEmail = document.getElementById('judgeEmail');
+    inputMaster = document.getElementById('judgeMaster');
     inputUsername = document.getElementById('judgeUsername');
     inputPassword = document.getElementById('judgePassword');
 
@@ -103,6 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const newJudge = {
         id: judges.length + 1,
         name: inputName.value.trim(),
+        master: inputMaster.checked,
         email: inputEmail.value.trim(),
         username: inputUsername.value.trim(),
         password: inputPassword.value.trim()
@@ -116,6 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (judgeIndex !== -1) {
         judges[judgeIndex].name = inputName.value.trim();
         judges[judgeIndex].email = inputEmail.value.trim();
+        judges[judgeIndex].master = inputMaster.checked;
         judges[judgeIndex].username = inputUsername.value.trim();
         judges[judgeIndex].password = inputPassword.value.trim();
       }
@@ -139,10 +145,14 @@ function loadJudges() {
 
     const row = document.createElement('tr');
     row.dataset.id = judge.id;
+    row.dataset.master = judge.master; // Store master status in data attribute
 
     row.innerHTML = `
       <td>${judge.name}</td>
       <td>${judge.email}</td>
+      <td class="align-middle text-center text-success">
+        ${judge.master ? '✓' : ''}
+      </td>
       <td>${judge.username}</td>
       <td>${judge.password}</td>
       <td class="text-center align-middle">
