@@ -5,7 +5,18 @@ var competitions = [
     style: 'Raqs sharki', 
     startTime: '10/06/2025 17:00', 
     status: 'OPEN', 
-    judges: ['Leandro', 'Aliah'] 
+    judges: ['Leandro', 'Aliah'],
+    dancers: [{ name: 'Alice', code: 'ES' }, 
+              { name: 'Bob', code: 'FR' }, 
+              { name: 'Charlie', code: 'IT' }, 
+              { name: 'David', code: 'DE' }, 
+              { name: 'Eve', code: 'ES' }, 
+              { name: 'Frank', code: 'FR' }, 
+              { name: 'Grace', code: 'IT' }, 
+              { name: 'Hannah', code: 'DE' }, 
+              { name: 'Ivy', code: 'ES' }, 
+              { name: 'Liam', code: 'FR' }, 
+              { name: 'Mia', code: 'IT' }]
   },
   { 
     id: 2, 
@@ -13,7 +24,15 @@ var competitions = [
     style: 'Fusion', 
     startTime: '11/06/2025 18:30', 
     status: 'CLOSED', 
-    judges: ['Zara', 'Alberto'] 
+    judges: ['Zara', 'Alberto'],
+    dancers: [{ name: 'John', code: 'US' }, 
+              { name: 'Emma', code: 'CA' }, 
+              { name: 'Olivia', code: 'UK' }, 
+              { name: 'Liam', code: 'AU' }, 
+              { name: 'Noah', code: 'NZ' }, 
+              { name: 'Ava', code: 'IE' }, 
+              { name: 'Sophia', code: 'ZA' }, 
+              { name: 'Isabella', code: 'IN' }]
   }
 ];
 
@@ -94,8 +113,14 @@ function loadCompetitions() {
         <i class="bi bi-people me-1 text-muted"></i>
         ${comp.judges.join(', ')}
       </td>
+      <td>
+        <span class="badge bg-secondary">${comp.judges.length}</span>
+      </td>
       <td class="text-center">
         <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary btn-sm btn-dancers-order" title="Dancers Order" data-bs-toggle="modal" data-bs-target="#dancersOrderModal">
+                <i class="bi bi-list-ol"></i>
+            </button>
             <button type="button" class="btn btn-outline-primary btn-sm btn-edit-competition" title="Edit">
                 <i class="bi bi-pencil"></i>
             </button>
@@ -138,6 +163,7 @@ function addCompt() {
 
 document.addEventListener('DOMContentLoaded', () => {
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    const dancersOrderModal = new bootstrap.Modal(document.getElementById('dancersOrderModal'));
 
     document.addEventListener('click', (event) => {
 
@@ -227,6 +253,67 @@ document.addEventListener('DOMContentLoaded', () => {
       loadCompetitions();
 
       editModal.hide();
+    });
+
+    const sortable = new Sortable(document.getElementById('sortableDancers'), {
+      animation: 150,
+      onEnd: () => {
+        document.querySelectorAll('#sortableDancers .order-number').forEach((el, i) => {
+          el.textContent = `${i + 1}.`;
+        });
+      }
+    });
+
+    document.querySelectorAll('.btn-dancers-order').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const category = btn.dataset.category;
+        const style = btn.dataset.style;
+        const id = btn.closest('tr').dataset.id;
+    
+        const comp = competitions.find(c => c.id == id);
+        const list = document.getElementById('sortableDancers');
+        list.innerHTML = '';
+    
+        comp.dancers.forEach((dancer, index) => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item d-flex align-items-center draggable-item';
+          li.dataset.name = dancer.name;
+    
+          li.innerHTML = `
+            <span class="me-3 text-muted drag-icon"><i class="bi bi-grip-vertical"></i></span>
+            <span class="me-2 order-number">${index + 1}.</span>
+            <img src="https://flagsapi.com/${dancer.code}/shiny/24.png" class="me-2" style="width: 24px;" />
+            <span class="dancer-name">${dancer.name}</span>
+          `;
+    
+          list.appendChild(li);
+        });
+    
+        list.dataset.competitionId = comp.id;
+        dancersOrderModal.show();
+      });
+    });
+  
+    document.getElementById('saveDancerOrder').addEventListener('click', () => {
+      const items = document.querySelectorAll('#sortableDancers li');
+      const newOrderNames = Array.from(items).map(item => item.dataset.name);
+      const compId = document.getElementById('sortableDancers').dataset.competitionId;
+    
+      const competition = competitions.find(c => c.id == compId);
+      if (!competition) return;
+    
+      // Crear nuevo array de bailarinas según el orden actual
+      const newDancers = newOrderNames.map(name => 
+        competition.dancers.find(d => d.name === name)
+      );
+    
+      // Guardar el nuevo orden
+      competition.dancers = newDancers;
+    
+      console.log('Nuevo orden guardado para competición:', compId, competition.dancers);
+    
+      // Cerrar modal
+      dancersOrderModal.hide();
     });
   });
 
