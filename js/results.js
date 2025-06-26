@@ -201,30 +201,14 @@ document.addEventListener('DOMContentLoaded', () => {
       list.forEach(item => {
 
         if (item.position <= 3) return; // Solo mostrar los primeros 3 en la lista general
-        let bgClass = '';
-        let medal = '';
-        let fontWeight = '';
-        if (item.position === 1) {
-          bgClass = 'bg-warning'; // oro
-          medal = '🥇';
-          fontWeight = 'fw-bold';
-        } else if (item.position === 2) {
-          bgClass = 'bg-secondary-subtle'; // plata
-          medal = '🥈';
-          fontWeight = 'fw-bold';
-        } else if (item.position === 3) {
-          bgClass = 'bg-warning-subtle'; // bronce (neutro claro, pero 100% Bootstrap)
-          medal = '🥉';
-          fontWeight = 'fw-bold';
-        }
-    
+        
         const li = document.createElement('div');
-        li.className = `list-group-item d-flex justify-content-between align-items-center ${bgClass} fs-6 ${fontWeight}`;
+        li.className = `list-group-item d-flex justify-content-between align-items-center fs-6`;
     
         li.innerHTML = `
           <span class="me-2">${item.position}</span>
           <img src="https://flagsapi.com/${item.country}/shiny/24.png" class="me-2" alt="${item.country}">
-          <span class="me-auto">${item.name} ${medal}</span>
+          <span class="me-auto">${item.name}</span>
           <span class="badge bg-light text-dark rounded-pill">${item.score.toFixed(1)}</span>
         `;
     

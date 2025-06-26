@@ -53,7 +53,7 @@ function getMockParticipantsData() {
             styles: ['Raqs sharki', 'Baladi', 'Fusion', 'Pop song', 'Drum CD', 'Live Drum', 'Shaabi'],
             participants: [
                 { name: 'Charlie', id: 3, nationality: 'US', styles: ['Raqs sharki', 'Fusion', 'Pop song'] },
-                { name: 'David', id: 4, nationality: 'UK', styles: ['Baladi', 'Pop song', 'Drum CD'] },
+                { name: 'David', id: 4, nationality: 'GB', styles: ['Baladi', 'Pop song', 'Drum CD'] },
                 { name: 'Ivy', id: 9, nationality: 'CA', styles: ['Raqs sharki', 'Baladi', 'Fusion'] }
             ]
         },
@@ -120,11 +120,13 @@ function createCategoryItem(category, categoryData, index) {
                             thead.className = 'table-light text-primary';
                             const headerRow = document.createElement('tr');
                             const thParticipant = document.createElement('th');
+                            thParticipant.className = 'text-center';
                             thParticipant.textContent = 'Participant';
                             headerRow.appendChild(thParticipant);
 
                             categoryData.styles.forEach(style => {
                                 const th = document.createElement('th');
+                                th.className = 'text-center';
                                 th.textContent = style;
                                 headerRow.appendChild(th);
                             });
@@ -133,17 +135,30 @@ function createCategoryItem(category, categoryData, index) {
                             table.appendChild(thead);
 
                             const tbody = document.createElement('tbody');
-                            tbody.className = 'text-center text-success fw-bold';
+                            tbody.className = 'text-success fw-bold';
                             
 
                             categoryData.participants.forEach(participant => {
                                 const row = document.createElement('tr');
                                 const tdParticipant = document.createElement('td');
-                                tdParticipant.textContent = participant.name;
+                                tdParticipant.className = 'd-flex align-items-center ps-3';
+
+                                imgCountry = document.createElement('img');
+                                imgCountry.className = 'me-2';
+                                imgCountry.src = `https://flagsapi.com/${participant.nationality}/shiny/24.png`;
+
+
+                                spanDancer = document.createElement('span');
+                                //spanDancer.className = 'me-2';
+                                spanDancer.textContent = participant.name;
+
+                                tdParticipant.appendChild(imgCountry);
+                                tdParticipant.appendChild(spanDancer);
                                 row.appendChild(tdParticipant);
 
                                 categoryData.styles.forEach(style => {
                                     const td = document.createElement('td');
+                                    td.className = 'text-center';
                                     const spanTd = document.createElement('span');
                                     spanTd.className = 'text-success';
                                     spanTd.textContent = participant.styles.includes(style) ? '✓' : '';
