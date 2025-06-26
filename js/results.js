@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
       columns.appendChild(createListGroupGeneral(`${selected} - General Classification`, data.general));
 
       const divCol = document.createElement('div');
-      divCol.className = 'col-12 col-lg-9';
+      divCol.className = 'col-12 col-lg-8';
       
       divRow = document.createElement('div');
       divRow.className = 'row g-4';
@@ -130,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
   
       // Clasificaciones por estilo
       for (const [style, dancers] of Object.entries(data.styles)) {
-        //columns.appendChild(createListGroup(`${selected} - ${style}`, dancers));
         divRow.appendChild(createListGroup(`${selected} - ${style}`, dancers));
       }
 
@@ -142,17 +141,66 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createListGroupGeneral(title, list) {
       const col = document.createElement('div');
-      col.className = 'col-12 col-lg-3';
+      col.className = 'col-12 col-lg-4';
     
       const listGroup = document.createElement('div');
       listGroup.className = `list-group shadow-sm border-primary border-2 h-100`;
     
       const header = document.createElement('div');
-      header.className = `list-group-item active bg-primary fs-6`;
+      header.className = `list-group-item active bg-primary fs-5 text-center`;
       header.textContent = title;
       listGroup.appendChild(header);
+
+      rowFirst = document.createElement('div');
+      rowFirst.className = 'row my-2';
+
+      const colFirst = document.createElement('div');
+      colFirst.className = 'col-12 text-center';
+
+      colFirst.innerHTML = `
+        <div class="card border-warning shadow-lg text-center">
+          <div class="card-header bg-warning text-white fs-5">🥇 1º Place</div>
+          <div class="card-body">
+            <h3 class="card-title">${list[0].name}</h3>
+            <p class="card-text fs-5">Score: ${list[0].score}</p>
+          </div>
+        </div>
+      `;
+
+      rowFirst.appendChild(colFirst);
+      listGroup.appendChild(rowFirst);
+
+      rowSecondAndThird = document.createElement('div');
+      rowSecondAndThird.className = 'row my-2';
+
+      rowSecondAndThird.innerHTML = `
+        <div class="col-6">
+          <div class="card border-secondary shadow text-center">
+            <div class="card-header bg-secondary text-white fs-5">🥈 2º Place</div>
+            <div class="card-body">
+              <h3 class="card-title">${list[1].name}</h3>
+              <p class="card-text fs-5">Score: ${list[1].score}</p>
+            </div>
+          </div>
+        </div>
+
+        
+        <div class="col-6">
+          <div class="card border-warning-subtle shadow text-center">
+            <div class="card-header bg-warning-subtle text-dark fs-5">🥉 3º Place</div>
+            <div class="card-body">
+              <h3 class="card-title">${list[2].name}</h3>
+              <p class="card-text fs-5">Score: ${list[2].score}</p>
+            </div>
+          </div>
+        </div>
+      `;
+
+      listGroup.appendChild(rowSecondAndThird);
     
       list.forEach(item => {
+
+        if (item.position <= 3) return; // Solo mostrar los primeros 3 en la lista general
         let bgClass = '';
         let medal = '';
         let fontWeight = '';
@@ -195,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         listGroup.className = `list-group shadow-sm`;
       
         const header = document.createElement('div');
-        header.className = `list-group-item active bg-secondary fs-6`;
+        header.className = `list-group-item active bg-secondary fs-5  text-center`;
         header.textContent = title;
         listGroup.appendChild(header);
       
