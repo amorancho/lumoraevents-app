@@ -87,6 +87,26 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', function () {
 
   const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+  const filter = document.getElementById('categoryFilter');
+  const table = document.getElementById('dancersTable');
+
+  filter.addEventListener('change', () => {
+    const selected = filter.value.toLowerCase();
+    const rows = table.querySelectorAll('tr');
+
+    rows.forEach(row => {
+      const category = row.children[1]?.textContent.trim().toLowerCase();
+      if (!selected || category === selected) {
+        row.classList.remove('d-none');
+      } else {
+        row.classList.add('d-none');
+      }
+    });
+
+    // Mostrar o no el empty state
+    const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
+    document.getElementById('emptyState').classList.toggle('d-none', visibleRows.length > 0);
+  });
 
   document.getElementById('createNewDancerBtn').addEventListener('click', function () {
 

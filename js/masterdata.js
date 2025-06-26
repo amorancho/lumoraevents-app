@@ -111,9 +111,7 @@ function renderTable(table, data) {
                 // Opcional: Mostrar mensaje de error al usuario
                 alert(`Error deleting item: ${error.message}`);
             } finally {
-                // Ocultar spinner (aunque loadTable ya lo maneja)
-                const spinner = document.getElementById(`${table}-spinner`);
-                spinner.classList.add('d-none');
+
             }
             }
         };
@@ -128,7 +126,7 @@ async function addEntry(table) {
     const input = document.getElementById(`input-${table}`);
     const value = input.value.trim();
     const button = input.nextElementSibling;
-    const spinner = document.getElementById(`${table}-spinner`);
+
     
     if (value !== "") {
     try {
@@ -152,7 +150,7 @@ async function addEntry(table) {
         // Aquí puedes mostrar un mensaje de error al usuario si lo deseas
         console.error("Error en addEntry:", error);
     } finally {
-        // Siempre ocultar spinner y habilitar controles
+
         input.focus(); // Opcional: volver a poner foco en el input
     }
     }

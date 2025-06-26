@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
       const data = mockData[selected];
       const columns = document.createElement('div');
-      columns.className = 'row g-4';
+      columns.className = 'row g-4 pt-4';
   
       // Clasificación general
       columns.appendChild(createListGroupGeneral(`${selected} - General Classification`, data.general));
@@ -161,7 +161,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="card border-warning shadow-lg text-center">
           <div class="card-header bg-warning text-white fs-5">🥇 1º Place</div>
           <div class="card-body">
-            <h3 class="card-title">${list[0].name}</h3>
+            <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+              <img src="https://flagsapi.com/${list[0].country}/shiny/24.png" class="img-fluid" alt="${list[0].country}" width="24" height="24">
+              <h3 class="mb-0">${list[0].name}</h3>
+            </div>
             <p class="card-text fs-5">Score: ${list[0].score}</p>
           </div>
         </div>
@@ -178,7 +181,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="card border-secondary shadow text-center">
             <div class="card-header bg-secondary text-white fs-5">🥈 2º Place</div>
             <div class="card-body">
-              <h3 class="card-title">${list[1].name}</h3>
+              <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+                <img src="https://flagsapi.com/${list[1].country}/shiny/24.png" class="img-fluid" alt="${list[1].country}" width="24" height="24">
+                <h3 class="mb-0">${list[1].name}</h3>
+              </div>
               <p class="card-text fs-5">Score: ${list[1].score}</p>
             </div>
           </div>
@@ -189,7 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="card border-warning-subtle shadow text-center">
             <div class="card-header bg-warning-subtle text-dark fs-5">🥉 3º Place</div>
             <div class="card-body">
-              <h3 class="card-title">${list[2].name}</h3>
+              <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+                <img src="https://flagsapi.com/${list[2].country}/shiny/24.png" class="img-fluid" alt="${list[2].country}" width="24" height="24">
+                <h3 class="mb-0">${list[2].name}</h3>
+              </div>
               <p class="card-text fs-5">Score: ${list[2].score}</p>
             </div>
           </div>

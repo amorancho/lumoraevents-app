@@ -62,8 +62,7 @@
               <!-- Botón -->
               <div class="col-md-4 text-center">
                 <button id="createBtn" class="btn btn-primary" onclick="addCompt()">
-                  Create Competition
-                  <span id="btnSpinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status" aria-hidden="true"></span>
+                  Create Competition                  
                 </button>
               </div>
             </div>
@@ -74,15 +73,20 @@
 
     <!-- Tabla competiciones -->
     <div class="card shadow-sm">
-      <div class="card-header d-flex align-items-center">
-        <h5 class="mb-0 me-auto">
-          <i class="bi bi-list-ul me-2"></i>
-          Competitions
-        </h5>
-        <div class="spinner-border text-primary d-none" id="spinner-table" role="status" style="width: 1.5rem; height: 1.5rem;">
-          <span class="visually-hidden">Loading...</span>
-        </div>
-      </div>
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0 d-flex align-items-center">
+              <i class="bi bi-list-ul me-2"></i>Competitions</h5>
+            <div class="d-flex align-items-center gap-2">
+              <select class="form-select form-select-sm w-auto" id="categoryFilter">
+                <option value="">All Categories</option>
+                <option value="Amateur">Amateur</option>
+                <option value="Professional">Professional</option>
+                <option value="Master">Master</option>
+                <option value="Master">Master Master Master Master</option>
+                <!-- ... -->
+              </select>
+            </div>
+          </div>
       <div class="card-body p-2">
         <div class="table-responsive">
           <table class="table table-hover mb-0">

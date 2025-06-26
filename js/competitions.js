@@ -88,6 +88,27 @@ document.addEventListener('DOMContentLoaded', () => {
   updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${getEvent().id}`);
   updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${getEvent().id}`);
 
+  const filter = document.getElementById('categoryFilter');
+  const table = document.getElementById('competitionsTable');
+
+  filter.addEventListener('change', () => {
+    const selected = filter.value.toLowerCase();
+    const rows = table.querySelectorAll('tr');
+
+    rows.forEach(row => {
+      const category = row.children[0]?.textContent.trim().toLowerCase();
+      if (!selected || category === selected) {
+        row.classList.remove('d-none');
+      } else {
+        row.classList.add('d-none');
+      }
+    });
+
+    // Mostrar o no el empty state
+    const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
+    document.getElementById('emptyState').classList.toggle('d-none', visibleRows.length > 0);
+  });
+
   loadCategories();
   loadStyles();
   loadMasters();
@@ -96,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function loadCompetitions() {
   const competitionsTable = document.getElementById('competitionsTable');
+  
   competitionsTable.innerHTML = ''; // Limpiar tabla
 
   competitions.forEach(comp => {
