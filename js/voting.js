@@ -27,10 +27,7 @@ const mockCategories = [
     { key: 'costume', label: 'Costume & Makeup' }
   ];
 
-  const categorySelect = document.getElementById('categorySelect');
-  const styleSelect = document.getElementById('styleSelect');
-  const getDancersBtn = document.getElementById('getDancersBtn');
-  const dancersContainer = document.getElementById('dancersContainer');
+  
 
   mockCategories.forEach(cat => {
     categorySelect.add(new Option(cat.name, cat.id));
@@ -60,12 +57,12 @@ const mockCategories = [
     document.getElementById('dancersTitle').innerHTML = 
 
     `<div class="card mt-2 mb-2 border-start border-2 border-warning">
-    <div class="card-body py-2">
-      <h4 class="card-title mb-0 text-center">
-        <span class="text-secondary">${categorySelect.options[categorySelect.selectedIndex].text} - ${styleSelect.options[styleSelect.selectedIndex].text}</span>
-      </h4>
-    </div>
-  </div>`;
+      <div class="card-body py-2">
+        <h4 class="card-title mb-0 text-center">
+          <span class="text-secondary">${categorySelect.options[categorySelect.selectedIndex].text} - ${styleSelect.options[styleSelect.selectedIndex].text}</span>
+        </h4>
+      </div>
+    </div>`;
 
     mockDancers.forEach(dancer => {
       const col = document.createElement('div');
@@ -145,6 +142,9 @@ const mockCategories = [
 
 document.addEventListener('DOMContentLoaded', () => {
 
-
+  const categorySelect = document.getElementById('categorySelect');
+  const styleSelect = document.getElementById('styleSelect');
+  const getDancersBtn = document.getElementById('getDancersBtn');
+  const dancersContainer = document.getElementById('dancersContainer');
 
 });
