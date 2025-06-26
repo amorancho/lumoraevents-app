@@ -119,25 +119,83 @@ document.addEventListener('DOMContentLoaded', () => {
       columns.className = 'row g-4';
   
       // Clasificación general
-      columns.appendChild(createListGroup(`${selected} - General Classification`, data.general, true));
+      columns.appendChild(createListGroupGeneral(`${selected} - General Classification`, data.general));
+
+      const divCol = document.createElement('div');
+      divCol.className = 'col-12 col-lg-9';
+      
+      divRow = document.createElement('div');
+      divRow.className = 'row g-4';
+      
   
       // Clasificaciones por estilo
       for (const [style, dancers] of Object.entries(data.styles)) {
-        columns.appendChild(createListGroup(`${selected} - ${style}`, dancers));
+        //columns.appendChild(createListGroup(`${selected} - ${style}`, dancers));
+        divRow.appendChild(createListGroup(`${selected} - ${style}`, dancers));
       }
+
+      divCol.appendChild(divRow);
+      columns.appendChild(divCol);
   
       resultsContainer.appendChild(columns);
     });
+
+    function createListGroupGeneral(title, list) {
+      const col = document.createElement('div');
+      col.className = 'col-12 col-lg-3';
+    
+      const listGroup = document.createElement('div');
+      listGroup.className = `list-group shadow-sm border-primary border-2 h-100`;
+    
+      const header = document.createElement('div');
+      header.className = `list-group-item active bg-primary fs-6`;
+      header.textContent = title;
+      listGroup.appendChild(header);
+    
+      list.forEach(item => {
+        let bgClass = '';
+        let medal = '';
+        let fontWeight = '';
+        if (item.position === 1) {
+          bgClass = 'bg-warning'; // oro
+          medal = '🥇';
+          fontWeight = 'fw-bold';
+        } else if (item.position === 2) {
+          bgClass = 'bg-secondary-subtle'; // plata
+          medal = '🥈';
+          fontWeight = 'fw-bold';
+        } else if (item.position === 3) {
+          bgClass = 'bg-warning-subtle'; // bronce (neutro claro, pero 100% Bootstrap)
+          medal = '🥉';
+          fontWeight = 'fw-bold';
+        }
+    
+        const li = document.createElement('div');
+        li.className = `list-group-item d-flex justify-content-between align-items-center ${bgClass} fs-6 ${fontWeight}`;
+    
+        li.innerHTML = `
+          <span class="me-2">${item.position}</span>
+          <img src="https://flagsapi.com/${item.country}/shiny/24.png" class="me-2" alt="${item.country}">
+          <span class="me-auto">${item.name} ${medal}</span>
+          <span class="badge bg-light text-dark rounded-pill">${item.score.toFixed(1)}</span>
+        `;
+    
+        listGroup.appendChild(li);
+      });
+    
+      col.appendChild(listGroup);
+      return col;
+  }
   
-    function createListGroup(title, list, isGeneral = false) {
+    function createListGroup(title, list) {
         const col = document.createElement('div');
-        col.className = 'col-12 col-md-6 col-lg-3';
+        col.className = 'col-12 col-md-6 col-lg-4';
       
         const listGroup = document.createElement('div');
-        listGroup.className = `list-group shadow-sm ${isGeneral ? 'border-primary border-2' : ''}`;
+        listGroup.className = `list-group shadow-sm`;
       
         const header = document.createElement('div');
-        header.className = `list-group-item active ${isGeneral ? 'bg-primary' : 'bg-secondary'} fs-6`;
+        header.className = `list-group-item active bg-secondary fs-6`;
         header.textContent = title;
         listGroup.appendChild(header);
       
@@ -174,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
         col.appendChild(listGroup);
         return col;
-      }
+    }
       
       
   });
