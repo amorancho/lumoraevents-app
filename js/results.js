@@ -109,6 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   
     categorySelect.addEventListener('change', () => {
+      const infoText = document.getElementById('infoText');
+      infoText.classList.remove('d-none');
       const selected = categorySelect.value;
       if (!selected || !mockData[selected]) return;
   
@@ -116,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
   
       const data = mockData[selected];
       const columns = document.createElement('div');
-      columns.className = 'row g-4 pt-4';
+      columns.className = 'row g-4 pt-2';
   
       // Clasificación general
       columns.appendChild(createListGroupGeneral(`${selected} - General Classification`, data.general));
