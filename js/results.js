@@ -173,23 +173,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const votingDetails = mockvotingDetails[category] || [];
 
         votingDetails.forEach(detail => {
+          const judgeCard = document.createElement('div');
+          judgeCard.className = 'card mb-3';
 
-          const judgeDiv = document.createElement('div');
-          judgeDiv.className = 'mb-3';
-          judgeDiv.innerHTML = `
-            <h5 class="text-primary">${detail.judge}</h5>
-            <p class="text-secondary">Total Score: <strong>${detail.totalScore.toFixed(1)}</strong></p>
-            <ul class="list-group">
-              ${detail.criteria.map(c => `
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                  ${c.name}
-                  <span class="badge bg-light text-dark rounded-pill">${c.score.toFixed(1)}</span>
-                </li>
-              `).join('')}
-            </ul>
+          judgeCard.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <h6 class="mb-0 text-primary">${detail.judge}</h6>
+              <span class="badge bg-primary fs-6">Total Score: ${detail.totalScore.toFixed(1)}</span>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                ${detail.criteria.map(c => `
+                  <div class="col-md-3 mb-3">
+                    <label class="form-label">${c.name}</label>
+                    <input type="number" class="form-control" value="${c.score.toFixed(1)}" readonly>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
           `;
-          detailsContainer.appendChild(judgeDiv);
+
+          detailsContainer.appendChild(judgeCard);
         });
+
 
         document.querySelector('#votingDetailsModal .modal-title span').textContent = dancerName;
         editModal.show();
