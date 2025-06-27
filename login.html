@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>LumoraEvents Login</title>  
+  <title>LumoraEvents Login</title>
+  <link rel="icon" href="favicon32.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Raleway', sans-serif;
+    }
+
+    body {
+      height: 100vh;
+      background: linear-gradient(120deg, #0f2027, #203a43, #2c5364);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+    }
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 40px;
+      border-radius: 20px;
+      width: 350px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.3);
+      backdrop-filter: blur(12px);
+      text-align: center;
+    }
+
+    .login-container img {
+      width: 280px;
+      margin-bottom: 20px;
+    }
+
+    .login-container h2 {
+      margin-bottom: 30px;
+      font-weight: 600;
+      font-size: 1.6rem;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    .form-group input::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .login-btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      background: #ffcc70;
+      color: #2c2c2c;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s ease;
+    }
+
+    .login-btn:hover {
+      background: #fcb045;
+    }
+
+    .footer-text {
+      margin-top: 20px;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <img src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1749828864/logo_svg_lqefiq.svg" alt="LumoraEvents Logo">
+    <h2>User Login</h2>
+    <form>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="">
+      </div>
+      <button type="submit" class="login-btn">Login</button>
+    </form>
+    <div class="footer-text" id="regName">© 2025 LumoraEvents</div>
+  </div>
+  <script src="js/login.js"></script>
+</body>
+</html>

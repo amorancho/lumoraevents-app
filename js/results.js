@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="card-body">
               <div class="row">
                 ${detail.criteria.map(c => `
-                  <div class="col-md-3 mb-3">
+                  <div class="col-4 col-md-2 mb-2">
                     <label class="form-label">${c.name}</label>
                     <input type="number" class="form-control" value="${c.score.toFixed(1)}" readonly>
                   </div>

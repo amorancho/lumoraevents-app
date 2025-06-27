@@ -13,6 +13,12 @@ function generateFooter() {
         eventOficialPage.href = getEvent().eventUrl;
       }
 
+      const today = new Date();
+      const year = today.getFullYear();
+
+      const regNameSpan = doc.getElementById('regName');
+      regNameSpan.textContent = `© ${year}  LumoraEvents`;
+
       // Modificar campos dentro del fragmento
       const footerContainer = document.getElementById('footer');
       if (footerContainer) {
