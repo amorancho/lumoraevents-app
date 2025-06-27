@@ -29,6 +29,28 @@
     <div id="resultsContainer"></div>
   </div>
 
+  <!-- Modal de visualización de detalles de puntuaciones de las votaciones -->
+  <div class="modal fade" id="votingDetailsModal" tabindex="-1" aria-labelledby="votingDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fw-bold text-primary">Voting Details</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="votingDetailsContainer"></div>
+          
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <!--button type="button" class="btn btn-primary" id="saveEditBtn">Save changes</button-->
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
