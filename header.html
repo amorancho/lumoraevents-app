@@ -31,7 +31,29 @@
       <div class="col-6 d-flex justify-content-center">
         <span id="screen-title" class="fw-semibold fs-5 fs-lg-1"></span>
       </div>
-      <div class="col-3"></div>
+      <div class="col-3 d-flex justify-content-end align-items-center pe-3">
+        <!-- Language selector -->
+        <div class="dropdown">
+          <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-2" type="button" id="languageDropdown" 
+            data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
+            <img src="https://flagcdn.com/24x18/es.png" alt="Español" width="24" height="18" id="current-flag">
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+            <li>
+              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('es')">
+                <img src="https://flagcdn.com/24x18/es.png" alt="Español" width="24" height="18">
+                Español
+              </button>
+            </li>
+            <li>
+              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('en')">
+                <img src="https://flagcdn.com/24x18/gb.png" alt="English" width="24" height="18">
+                English
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
   </header>
