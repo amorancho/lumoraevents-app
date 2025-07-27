@@ -1,6 +1,6 @@
 
 
-var categoryList = [
+/*var categoryList = [
     'Baby Amateur',
     'Baby Advenced',
     'Kid Amateur',
@@ -17,7 +17,7 @@ var categoryList = [
     'Group Oriental',
     'Group Folklore and Fusions',
     'Talento Nacional'
-];
+];*/
 var styleList = [
     'Raqs sharki',
     'Baladi',
@@ -57,26 +57,28 @@ function loadAll() {
     loadTable("criteria");
 }
 
-function loadTable(table) {
-    // Fetch para cargar los datos de la tabla desde el servidor
+async function loadTable(table) {
+    try {
+        const eventId = getEventIdFromUrl();
+        const response = await fetch(`${API_BASE_URL}/api/${table}?event_id=${eventId}`);
+        if (!response.ok) throw new Error(`Error loading ${table}`);
+        const data = await response.json();
 
-    // Cambiar esto por una sola línea pq el fetch ya devolverá el objeto a renderizar
-    if (table === "category") {
-        renderTable(table, categoryList)
-    } else if (table === "style") {
-        renderTable(table, styleList)
-    } else if (table === "criteria") {
-        renderTable(table, criteriaList)
+        // Si el backend devuelve objetos con "name", extrae los nombres
+        const names = data.map(item => item.name);
+        renderTable(table, names, data);
+    } catch (error) {
+        console.error(`Failed to load ${table}:`, error);
     }
 }
 
 
-function renderTable(table, data) {
 
+function renderTable(table, names, fullData) {
     const list = document.getElementById(`list-${table}`);
     list.innerHTML = "";
 
-    data.forEach((item, i) => {
+    names.forEach((item, i) => {
         const li = document.createElement("li");
         li.className = "list-group-item d-flex justify-content-between align-items-center";
 
@@ -88,31 +90,16 @@ function renderTable(table, data) {
         btn.innerHTML = '<i class="bi bi-trash"></i>';
 
         btn.onclick = async () => {
-
             const confirmed = await showModal(`Delete "${item}" from ${table}?`);
             if (confirmed) {
-            try {
-
-                
-                //Fetch para eliminar el elemento del servidor
-
-                if (table === "category") {
-                    categoryList.splice(i, 1); // Eliminar del array
-                } else if (table === "style") {
-                    styleList.splice(i, 1); // Eliminar del array
-                } else if (table === "criteria") {
-                    criteriaList.splice(i, 1); // Eliminar del array
+                try {
+                    const id = fullData[i].id;
+                    const res = await fetch(`${API_BASE_URL}/api/${table}/${id}`, { method: "DELETE" });
+                    if (!res.ok) throw new Error(`Failed to delete ${table} id=${id}`);
+                    loadTable(table);
+                } catch (error) {
+                    alert(`Error deleting item: ${error.message}`);
                 }
-                
-                // Recargar datos
-                loadTable(table);
-                
-            } catch (error) {
-                // Opcional: Mostrar mensaje de error al usuario
-                alert(`Error deleting item: ${error.message}`);
-            } finally {
-
-            }
             }
         };
 
@@ -122,39 +109,29 @@ function renderTable(table, data) {
     });
 }
 
+
 async function addEntry(table) {
     const input = document.getElementById(`input-${table}`);
     const value = input.value.trim();
-    const button = input.nextElementSibling;
 
-    
     if (value !== "") {
-    try {
-
-        // Fetch haciendo un post al servidor para agregar la entrada
-
-        // cambiar esto por una sola línea pq el fetch ya devolverá el objeto a renderizar
-        if (table === "category") {
-            categoryList.push(value);
-        } else if (table === "style") {
-            styleList.push(value);
-        } else if (table === "criteria") {
-            criteriaList.push(value);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/${table}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ event_id: getEventIdFromUrl(), name: value })
+            });
+            if (!res.ok) throw new Error(`Failed to create ${table}`);
+            input.value = "";
+            loadTable(table);
+        } catch (error) {
+            console.error("Error en addEntry:", error);
+        } finally {
+            input.focus();
         }
-
-        input.value = "";
-
-        loadTable(table);
-        
-    } catch (error) {
-        // Aquí puedes mostrar un mensaje de error al usuario si lo deseas
-        console.error("Error en addEntry:", error);
-    } finally {
-
-        input.focus(); // Opcional: volver a poner foco en el input
-    }
     }
 }
+
 
 function showModal(message) {
     return new Promise((resolve) => {

@@ -1,4 +1,5 @@
 const eventId = getEventIdFromUrl();
+const API_BASE_URL = 'http://localhost:3000';
 
 const eventObj = {
   id: eventId,
@@ -27,9 +28,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const savedLang = localStorage.getItem('lang') || 'es';
   const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
 
-  console.log('savedLang: ', savedLang);
-  console.log('pageName: ', pageName);
-  console.log('navLang: ', navigator.language);
+  //console.log('savedLang: ', savedLang);
+  //console.log('pageName: ', pageName);
+  //console.log('navLang: ', navigator.language);
 
   loadTranslations(savedLang, pageName);
   document.documentElement.setAttribute('lang', savedLang);
