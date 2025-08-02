@@ -60,7 +60,7 @@ function initJudgeManagement() {
       deleteModal.show();
 
       document.getElementById('confirmDeleteBtn').onclick = () => {
-        fetch(`http://localhost:3000/api/judge/${id}`, {
+        fetch(`${API_BASE_URL}/api/judge/${id}`, {
           method: 'DELETE'
         })
         .then(response => {
@@ -96,7 +96,7 @@ function initJudgeManagement() {
     if (action === 'create') {
       judgeData.event_id = eventId;
 
-      fetch(`http://localhost:3000/api/judge`, {
+      fetch(`${API_BASE_URL}/api/judge`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(judgeData)
@@ -112,7 +112,7 @@ function initJudgeManagement() {
       .catch(err => console.error(err));
 
     } else if (action === 'edit') {
-      fetch(`http://localhost:3000/api/judge/${id}`, {
+      fetch(`${API_BASE_URL}/api/judge/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(judgeData)
@@ -133,7 +133,7 @@ function initJudgeManagement() {
 }
 
 function loadJudges() {
-  fetch(`http://localhost:3000/api/judge?event_id=${eventId}`)
+  fetch(`${API_BASE_URL}/api/judge?event_id=${eventId}`)
     .then(response => {
       if (!response.ok) throw new Error(`Error fetching judges: ${response.status}`);
       return response.json();
