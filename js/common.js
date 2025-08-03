@@ -26,21 +26,20 @@ function setPageTitleAndLang(title, lang) {
 // Creamos la promesa que se resolverá cuando los datos del evento estén listos
 eventReadyPromise = new Promise(async (resolve, reject) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/event/code/${eventId}`);
-    if (!res.ok) throw new Error(`Error ${res.status} al recuperar el evento`);
-    const data = await res.json();
 
-    console.log('Evento recuperado:', data);
+    if (eventId) {
+      const res = await fetch(`${API_BASE_URL}/api/event/code/${eventId}`);
+      if (!res.ok) throw new Error(`Error ${res.status} al recuperar el evento`);
+      const data = await res.json();
 
-    eventObj = {
-      id: data.id,
-      name: data.name,
-      eventLogo: data.eventlogo,
-      eventUrl: data.eventurl,
-      homeUrl: `home.html?eventId=${eventId}`
-    };
-
-    console.log('Objeto de evento:', eventObj);
+      eventObj = {
+        id: data.id,
+        name: data.name,
+        eventLogo: data.eventlogo,
+        eventUrl: data.eventurl,
+        homeUrl: `home.html?eventId=${eventId}`
+      };
+    }
     resolve(eventObj);
   } catch (err) {
     console.error('Error cargando datos del evento:', err);
@@ -61,12 +60,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await eventReadyPromise;
     if (pageName !== 'index') {
       generateHeader(() => { setPageTitleAndLang(title, savedLang); });
+      generateFooter();
     }
   } catch (err) {
     console.warn("No se pudieron cargar datos del evento, cabecera no generada");
   }
 
-  generateFooter();
+  
 });
 
 async function loadTranslations(lang, page) {

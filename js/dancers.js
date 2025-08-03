@@ -70,12 +70,14 @@ var masters = [
 
 var title = 'Dancers';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+  await eventReadyPromise;
 
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
-  updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${getEvent().id}`);
-  updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${getEvent().id}`);
-  updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${getEvent().id}`);
+  updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${eventId}`);
+  updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
+  updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.forEach(function (tooltipTriggerEl) {

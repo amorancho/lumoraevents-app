@@ -3,7 +3,9 @@ let judges = [];
 //const eventId = 'etoilesdorientfest25';
 var title = 'Judges';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+  await eventReadyPromise;
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${eventId}`);
   updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);

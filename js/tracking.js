@@ -141,7 +141,9 @@ getCompetitionsBtn.addEventListener('click', () => {
     
 });
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+  await eventReadyPromise;
 
   const categorySelect = document.getElementById('categorySelect');
   const styleSelect = document.getElementById('styleSelect');

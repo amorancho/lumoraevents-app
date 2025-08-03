@@ -1,13 +1,13 @@
 var title = 'Event Configuration';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
 
-  // Actualizar propiedades de los elementos
-  updateElementProperty('event-logo', 'src', getEvent().eventLogo);
+  await eventReadyPromise;
 
   updateElementProperty('masterdataUrl', 'href', `?eventId=${eventId}`, false);
-  updateElementProperty('judgesUrl', 'href', `?eventId=${getEvent().id}`, false);
-  updateElementProperty('dancersUrl', 'href', `?eventId=${getEvent().id}`, false);
-  updateElementProperty('competitionsUrl', 'href', `?eventId=${getEvent().id}`, false);
+  updateElementProperty('judgesUrl', 'href', `?eventId=${eventId}`, false);
+  updateElementProperty('dancersUrl', 'href', `?eventId=${eventId}`, false);
+  updateElementProperty('competitionsUrl', 'href', `?eventId=${eventId}`, false);
+  updateElementProperty('trackingUrl', 'href', `?eventId=${eventId}`, false);
 
 });

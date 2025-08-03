@@ -1,6 +1,8 @@
 var title = 'Event Master Data';
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+
+    await eventReadyPromise;
 
     updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
     updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${getEvent().id}`);
