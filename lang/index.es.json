@@ -1,11 +1,4 @@
 {
-  "title": "Bienvenido",
-  "org_access": "Acceso Organizadores",
-  "jud_access": "Acceso Jueces",
-  "par_access": "Participantes",
-  "res_access": "Resultados",
-  "org_access_sub": "Panel exclusivo para la configuración del evento.",
-  "jud_access_sub": "Panel Exclusivo para el jurado del evento.",
-  "par_access_sub": "Explora las participantes del evento.",
-  "res_access_sub": "Visualiza las clasificaciones y las votaciones."
+  "home_title": "Bienvenido",
+  "card_title": "Eventos"
 }

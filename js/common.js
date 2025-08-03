@@ -1,17 +1,17 @@
 const eventId = getEventIdFromUrl();
 const API_BASE_URL = 'http://localhost:3000';
 
-const eventObj = {
-  id: eventId,
-  name: "ETOILES D'ORIENT FESTIVAL 25",
-  eventLogo: "https://www.forotic.es/wp-content/uploads/2025/05/logo-etoiles.png",
-  eventUrl: "https://etoilesdorientfest.com",
-  homeUrl: `index.html?eventId=${eventId}`
-};
+let eventObj = null;
+let eventReadyPromise = null;
 
 function getEventIdFromUrl() {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('eventId');
+  const urlParams = new URLSearchParams(window.location.search);
+  for (const [key, value] of urlParams.entries()) {
+    if (key.toLowerCase() === 'eventid') {
+      return value;
+    }
+  }
+  return null;
 }
 
 function getEvent() {
@@ -23,20 +23,50 @@ function setPageTitleAndLang(title, lang) {
   updateFlag(lang);
 }
 
+// Creamos la promesa que se resolverá cuando los datos del evento estén listos
+eventReadyPromise = new Promise(async (resolve, reject) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/event/code/${eventId}`);
+    if (!res.ok) throw new Error(`Error ${res.status} al recuperar el evento`);
+    const data = await res.json();
+
+    console.log('Evento recuperado:', data);
+
+    eventObj = {
+      id: data.id,
+      name: data.name,
+      eventLogo: data.eventlogo,
+      eventUrl: data.eventurl,
+      homeUrl: `home.html?eventId=${eventId}`
+    };
+
+    console.log('Objeto de evento:', eventObj);
+    resolve(eventObj);
+  } catch (err) {
+    console.error('Error cargando datos del evento:', err);
+    reject(err);
+  }
+});
+
 // Ejecutar al cargar el DOM
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const savedLang = localStorage.getItem('lang') || 'es';
   const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
 
-  //console.log('savedLang: ', savedLang);
-  //console.log('pageName: ', pageName);
-  //console.log('navLang: ', navigator.language);
-
-  loadTranslations(savedLang, pageName);
+  await loadTranslations(savedLang, pageName);
   document.documentElement.setAttribute('lang', savedLang);
 
-  generateHeader(() => {setPageTitleAndLang(title, savedLang);});
-  generateFooter();  
+  // Esperamos a que los datos del evento estén listos
+  try {
+    await eventReadyPromise;
+    if (pageName !== 'index') {
+      generateHeader(() => { setPageTitleAndLang(title, savedLang); });
+    }
+  } catch (err) {
+    console.warn("No se pudieron cargar datos del evento, cabecera no generada");
+  }
+
+  generateFooter();
 });
 
 async function loadTranslations(lang, page) {

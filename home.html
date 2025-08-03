@@ -1,0 +1,102 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon32.png" type="image/png">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body class="d-flex flex-column min-vh-100">
+  
+  <div id="header"></div>
+
+  <div id="eventTableContainer" class="d-none container  py-5">
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card shadow-sm">
+          <div class="card-header text-center">
+            <h5 class="mb-0 me-auto">
+              Events
+            </h5>
+          </div>
+          <div class="card-body p-2">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <tbody id="eventsTable">                    
+                </tbody>
+              </table>
+            </div>
+              
+              
+          </div>
+              
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="principalContainer" class="container py-5">
+
+    <div class="row"> 
+      <div class="col text-center">
+        <img src="" alt="Logo del Evento" class="img-fluid mb-3" style="max-width: 250px;" id="event-logo">
+      </div>
+    </div>
+
+    
+    <div class="row g-4 justify-content-center pt-4">
+
+      <div class="col-12 col-sm-12 col-md-12 col-lg-3">
+        <a href="configevent.html" class="card h-100 text-center text-decoration-none shadow-sm hover-shadow" id="configUrl">
+          <div class="card-body">
+            <div class="fs-1 text-primary">⚙️</div>
+            <h5 class="card-title mt-3" data-i18n="org_access">Organization Access</h5>
+            <p class="card-text text-muted" data-i18n="org_access_sub">Exclusive panel to configure the event.</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-12 col-sm-12 col-md-12 col-lg-3">
+        <a href="voting.html" class="card h-100 text-center text-decoration-none shadow-sm" id="votingUrl">
+          <div class="card-body">
+            <div class="fs-1 text-primary">⚖️</div>
+            <h5 class="card-title mt-3" data-i18n="jud_access">Judges Access</h5>
+            <p class="card-text text-muted" data-i18n="jud_access_sub">Exclusive panel for the event's jury.</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-12 col-sm-12 col-md-12 col-lg-3">
+        <a href="participants.html" class="card h-100 text-center text-decoration-none shadow-sm" id="participantsUrl">
+          <div class="card-body">
+            <div class="fs-1 text-primary">💃</div>
+            <h5 class="card-title mt-3" data-i18n="par_access">Participants</h5>
+            <p class="card-text text-muted" data-i18n="par_access_sub">Explore the participants of the event.</p>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-12 col-sm-12 col-md-12 col-lg-3">
+        <a href="results.html" class="card h-100 text-center text-decoration-none shadow-sm" id="resultsUrl">
+          <div class="card-body">
+            <div class="fs-1 text-primary">🏆</div>
+            <h5 class="card-title mt-3" data-i18n="res_access">Results</h5>
+            <p class="card-text text-muted" data-i18n="res_access_sub">Display of classifications and scores</p>
+          </div>
+        </a>
+      </div>
+
+    </div>
+    
+  </div>
+
+  <div id="footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/footer.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/home.js"></script>
+
+</body></html>
