@@ -66,7 +66,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.warn("No se pudieron cargar datos del evento, cabecera no generada");
   }
 
-  
 });
 
 async function loadTranslations(lang, page) {

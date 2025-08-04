@@ -8,28 +8,40 @@ const formatFecha = (isoString) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-
   fetch(`${API_BASE_URL}/api/event`)
-      .then(response => {
+    .then(response => {
       if (!response.ok) throw new Error(`Error fetching events: ${response.status}`);
       return response.json();
-      })
-      .then(data => {
-          ecvents = data;
-          const tableEvents = document.getElementById('eventsTable');
-          tableEvents.innerHTML = '';   
-          data.forEach(event => {
-              const row = document.createElement('tr');
-              row.innerHTML = `
-                  <td>${event.name}</td>
-                  <td>${formatFecha(event.start)} / ${formatFecha(event.end)}</td>
-                  <td class="text-end"><a href="home.html?eventId=${event.code}">Go to Event</a></td>
-              `;
-              tableEvents.appendChild(row);
-          });        
-      })
-      .catch(error => {
-      console.error('Failed to load events:', error);
+    })
+    .then(data => {
+      const container = document.getElementById('eventsContainer');
+      container.innerHTML = '';
+      data.forEach(event => {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-md-6 col-lg-4';
+
+        col.innerHTML = `
+          <div class="card h-100">
+            <div class="card-header fw-bold text-center">
+              ${event.name}
+            </div>
+            <div class="card-body d-flex flex-column">
+              <img src="${event.eventlogo || 'https://via.placeholder.com/300x180?text=Event'}"
+                   class="img-fluid mb-3"
+                   style="height: 180px; width: 100%; object-fit: contain;"
+                   alt="${event.name}">
+              <p class="text-muted text-center">${formatFecha(event.start)} / ${formatFecha(event.end)}</p>
+              <div class="mt-auto text-center">
+                <a href="home.html?eventId=${event.code}" class="btn btn-primary">Go to Event</a>
+              </div>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(col);
       });
- 
+    })
+    .catch(error => {
+      console.error('Failed to load events:', error);
+    });
 });

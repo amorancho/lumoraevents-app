@@ -1,37 +1,4 @@
-var dancers = [
-  { 
-    id: 1, 
-    name: 'Amina', 
-    category: 'Professional', 
-    styles: ['Raqs sharki', 'Fusion'],
-    master: 'Master Amina',
-    nationality: 'ES'
-  },
-  { 
-    id: 2, 
-    name: 'Layla', 
-    category: 'Amateur', 
-    styles: ['Baladi', 'Shaabi'],
-    master: 'Master Layla',
-    nationality: 'FR'
-  },
-  { 
-    id: 3, 
-    name: 'Zara', 
-    category: 'Professional', 
-    styles: ['Fusion', 'Pop song'],
-    master: 'Master Zara',
-    nationality: 'IT'
-  },
-  { 
-    id: 4, 
-    name: 'Alberto', 
-    category: 'Professional', 
-    styles: ['Fusion', 'Pop song'],
-    master: 'Master Zara',
-    nationality: 'IQ'
-  }
-];
+var dancers = [];
 
 var categoryList = [
     'Baby Amateur',
@@ -174,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       document.getElementById('confirmDeleteBtn').onclick = () => {
         dancers = dancers.filter(d => d.id != dancerIdToDelete);
-        loadDancers();
+        fetchDancersFromAPI();
         deleteModal.hide();
       };
 
@@ -221,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
       
     }
 
-    loadDancers();
+    fetchDancersFromAPI();
 
 
     editModal.hide();
@@ -230,9 +197,20 @@ document.addEventListener('DOMContentLoaded', function () {
   loadCategories();
   loadStyles();
   loadMasters();
-  loadDancers();  
+  fetchDancersFromAPI();  
 
 });
+
+async function fetchDancersFromAPI() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/dancer?event_id=${eventId}`);
+    if (!response.ok) throw new Error('Error fetching dancers');
+    dancers = await response.json();
+    loadDancers();
+  } catch (error) {
+    console.error('Failed to fetch dancers:', error);
+  }
+}
 
 function loadDancers() {
   const dancersTable = document.getElementById('dancersTable');
@@ -242,12 +220,9 @@ function loadDancers() {
     const row = document.createElement('tr');
     row.dataset.id = dancer.id;
 
-    let stylesSpans = '';
-    if (dancer.styles && dancer.styles.length > 0) {
-      stylesSpans = dancer.styles.map(style => `<span class="badge bg-warning text-dark me-1">${style}</span>`).join('');
-    } else {
-      stylesSpans = '<span class="badge bg-secondary">No styles</span>';
-    }
+    let stylesSpans = dancer.styles
+        ? dancer.styles.split(',').map(style => `<span class="badge bg-warning text-dark me-1">${style.trim()}</span>`).join('')
+        : '<span class="badge bg-secondary">No styles</span>';
 
     row.innerHTML = `
       <td class="align-middle">
@@ -256,11 +231,11 @@ function loadDancers() {
           <span>${dancer.name}</span>
         </div>
       </td>
-      <td class="align-middle">${dancer.category}</td>
+      <td class="align-middle">${dancer.category_name}</td>
       <td class="align-middle">${stylesSpans}</td>
       <td class="align-middle">
         <i class="bi bi-people me-1 text-muted"></i>
-        ${dancer.master}
+        ${dancer.master_name || ''}
       </td>
       <td class="align-middle">${dancer.nationality}</td>
       <td class="text-center align-middle">
@@ -278,33 +253,69 @@ function loadDancers() {
   });
 }
 
-function loadCategories() {
+async function loadCategories() {
   const categorySelect = document.getElementById('editCategory');
-  categoryList.forEach(category => {
-    const option = document.createElement('option');
-    option.value = category;
-    option.textContent = category;
-    categorySelect.appendChild(option);
-  });
+  categorySelect.innerHTML = ''; // Limpiar opciones anteriores
+
+  const categoryFilter = document.getElementById('categoryFilter');
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/category?event_id=${eventId}`);
+    if (!response.ok) throw new Error('Error fetching categories');
+    const categories = await response.json();
+
+    categories.forEach(category => {
+      const option1 = document.createElement('option');
+      option1.value = category.name || category; // por si es string directo
+      option1.textContent = category.name || category;
+      categorySelect.appendChild(option1);
+
+      const option2 = document.createElement('option');
+      option2.value = category.name || category; // por si es string directo
+      option2.textContent = category.name || category;
+      categoryFilter.appendChild(option2);
+    });
+  } catch (err) {
+    console.error('Failed to load categories:', err);
+  }
 }
 
-function loadStyles() {
+async function loadStyles() {
   const styleSelect = document.getElementById('editStyles');
-  styleList.forEach(style => {
-    const option = document.createElement('option');
-    option.value = style;
-    option.textContent = style;
-    styleSelect.appendChild(option);
-  });
+  styleSelect.innerHTML = ''; // Limpiar opciones anteriores
 
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/style?event_id=${eventId}`);
+    if (!response.ok) throw new Error('Error fetching styles');
+    const styles = await response.json();
+
+    styles.forEach(style => {
+      const option = document.createElement('option');
+      option.value = style.name || style;
+      option.textContent = style.name || style;
+      styleSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error('Failed to load styles:', err);
+  }
 }
 
-function loadMasters() {
-  const masterSelect = document.getElementById('editMaster');   
-  masters.forEach(master => {
-    const option = document.createElement('option');
-    option.value = master.name;
-    option.textContent = master.name;
-    masterSelect.appendChild(option);
-  });
+async function loadMasters() {
+  const masterSelect = document.getElementById('editMaster');
+  masterSelect.innerHTML = ''; // Limpiar opciones anteriores
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/judge?event_id=${eventId}`);
+    if (!response.ok) throw new Error('Error fetching masters');
+    const masters = await response.json();
+
+    masters.forEach(master => {
+      const option = document.createElement('option');
+      option.value = master.name;
+      option.textContent = master.name;
+      masterSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error('Failed to load masters:', err);
+  }
 }
