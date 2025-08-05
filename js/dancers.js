@@ -1,40 +1,3 @@
-var dancers = [];
-
-var categoryList = [
-    'Baby Amateur',
-    'Baby Advenced',
-    'Kid Amateur',
-    'Kid Advenced',
-    'Junior Amateur',
-    'Junior Advenced',
-    'Senior Amateur',
-    'Senior Advenced',
-    'Golden',
-    'Amateur',
-    'Semiprofessional',
-    'Professional',
-    'Master',
-    'Group Oriental',
-    'Group Folklore and Fusions',
-    'Talento Nacional'
-];
-var styleList = [
-    'Raqs sharki',
-    'Baladi',
-    'Shaabi',
-    'Folklore',
-    'Fusion',
-    'Pop song',
-    'Drum CD',
-    'Live Drum'
-];
-
-var masters = [
-  { id: 1, name: 'Master Amina' },
-  { id: 2, name: 'Master Layla' },
-  { id: 3, name: 'Master Zara' }
-];
-
 var title = 'Dancers';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -95,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
     editModal.show();
   });
 
-  document.addEventListener('click', (event) => {
+  document.addEventListener('click', async (event) => {
     const button = event.target.closest('.btn-edit-dancer');
 
     if (button) {
@@ -106,17 +69,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
       const tr = button.closest('tr');
       const id = tr.dataset.id;
+
       const dancer = dancers.find(d => d.id == id);
 
       document.getElementById('dancerName').value = dancer.name;
-      document.getElementById('editCategory').value = dancer.category;
-      document.getElementById('editMaster').value = dancer.master;
+      document.getElementById('editCategory').value = dancer.category_id;
+      document.getElementById('editMaster').value = dancer.master_id;
       document.getElementById('nationality').value = dancer.nationality;
 
       const stylesOptions = document.getElementById('editStyles').options;
     
       Array.from(stylesOptions).forEach(opt => {
-        opt.selected = dancer.styles.includes(opt.value);
+        opt.selected = dancer.styles.some(style => style.id == opt.value);
       });
 
       document.querySelector('#editModal .modal-title span').textContent = 'Edit Dancer';
@@ -139,8 +103,8 @@ document.addEventListener('DOMContentLoaded', function () {
       const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
       deleteModal.show();
 
-      document.getElementById('confirmDeleteBtn').onclick = () => {
-        dancers = dancers.filter(d => d.id != dancerIdToDelete);
+      document.getElementById('confirmDeleteBtn').onclick = async () => {
+        await deleteDancer(dancerIdToDelete);
         fetchDancersFromAPI();
         deleteModal.hide();
       };
@@ -149,10 +113,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   });
 
-
   document.getElementById('saveEditBtn').addEventListener('click', () => {
 
     const action = document.getElementById('editForm').dataset.action;
+    const id = document.getElementById('editForm').dataset.id;
 
     inputName = document.getElementById('dancerName');
     inputCategory = document.getElementById('editCategory');
@@ -160,38 +124,59 @@ document.addEventListener('DOMContentLoaded', function () {
     inputNationality = document.getElementById('nationality');
     inputStyles = document.getElementById('editStyles');
 
-    const selectedValues = Array.from(inputStyles.selectedOptions).map(option => option.value);
+    if (!inputCategory.value) {
+      alert('Please choose a category before saving.');
+      inputCategory.focus();
+      return; // No continúa si está vacío
+    }
+
+    const selectedValues = Array.from(inputStyles.selectedOptions).map(option => option.value); 
+    
+    const dancerData = {
+      name: inputName.value.trim().toUpperCase(),
+      category_id: parseInt(inputCategory.value, 10),
+      styles: selectedValues,
+      master_id: inputMaster.value ? parseInt(inputMaster.value, 10) : null,
+      nationality: inputNationality.value.trim().toUpperCase(),
+      event_id: eventId
+    }
 
     // actualizar los valores del array dancers
     if (action === 'create') {
-      const newDancer = {
-        id: dancers.length + 1,
-        name: inputName.value.trim().toUpperCase(),
-        category: inputCategory.value.trim(),
-        styles: selectedValues,
-        master: inputMaster.value.trim(), 
-        nationality: inputNationality.value.trim().toUpperCase()
-      }
-      dancers.push(newDancer);
+      
+      fetch(`${API_BASE_URL}/api/dancer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dancerData)
+      })
+      .then(response => {        
+        if (!response.ok) throw new Error('Failed to create dancer');
+        return response.json();
+      })
+      .then(() => {
+        fetchDancersFromAPI();
+        editModal.hide();
+      })
+      .catch(err => console.error(err));
 
     } else if (action === 'edit') { 
-      const id = document.getElementById('editForm').dataset.id;
-      const dancerIndex = dancers.findIndex(d => d.id == id);
-      
-      if (dancerIndex !== -1) {
-        dancers[dancerIndex].name = inputName.value.trim().toUpperCase();
-        dancers[dancerIndex].category = inputCategory.value.trim();
-        dancers[dancerIndex].styles = selectedValues;
-        dancers[dancerIndex].master = inputMaster.value.trim();
-        dancers[dancerIndex].nationality = inputNationality.value.trim().toUpperCase();
-      }
+      fetch(`${API_BASE_URL}/api/dancer/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dancerData)
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to update dancer');
+        return response.json();
+      })
+      .then(() => {
+        fetchDancersFromAPI();
+        editModal.hide();
+      })
+      .catch(err => console.error(err));
       
     }
 
-    fetchDancersFromAPI();
-
-
-    editModal.hide();
   });
       
   loadCategories();
@@ -220,9 +205,9 @@ function loadDancers() {
     const row = document.createElement('tr');
     row.dataset.id = dancer.id;
 
-    let stylesSpans = dancer.styles
-        ? dancer.styles.split(',').map(style => `<span class="badge bg-warning text-dark me-1">${style.trim()}</span>`).join('')
-        : '<span class="badge bg-secondary">No styles</span>';
+    let stylesSpans = Array.isArray(dancer.styles) && dancer.styles.length > 0
+      ? dancer.styles.map(style => `<span class="badge bg-warning text-dark me-1">${style.name}</span>`).join('')
+      : '<span class="badge bg-secondary">No styles</span>';
 
     row.innerHTML = `
       <td class="align-middle">
@@ -264,9 +249,14 @@ async function loadCategories() {
     if (!response.ok) throw new Error('Error fetching categories');
     const categories = await response.json();
 
+    const emptyOption1 = document.createElement('option');
+    emptyOption1.value = '';
+    emptyOption1.textContent = '';
+    categorySelect.appendChild(emptyOption1);
+
     categories.forEach(category => {
       const option1 = document.createElement('option');
-      option1.value = category.name || category; // por si es string directo
+      option1.value = category.id || category; // por si es string directo
       option1.textContent = category.name || category;
       categorySelect.appendChild(option1);
 
@@ -291,7 +281,7 @@ async function loadStyles() {
 
     styles.forEach(style => {
       const option = document.createElement('option');
-      option.value = style.name || style;
+      option.value = style.id || style;
       option.textContent = style.name || style;
       styleSelect.appendChild(option);
     });
@@ -309,13 +299,48 @@ async function loadMasters() {
     if (!response.ok) throw new Error('Error fetching masters');
     const masters = await response.json();
 
+    const emptyOption1 = document.createElement('option');
+    emptyOption1.value = '';
+    emptyOption1.textContent = '';
+    masterSelect.appendChild(emptyOption1);
+
     masters.forEach(master => {
       const option = document.createElement('option');
-      option.value = master.name;
+      option.value = master.id;
       option.textContent = master.name;
       masterSelect.appendChild(option);
     });
   } catch (err) {
     console.error('Failed to load masters:', err);
+  }
+}
+
+async function getDancerById(id) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/dancer/${id}`);
+    if (!res.ok) throw new Error(`Error ${res.status} al recuperar la bailarina`);
+    return await res.json();
+  } catch (err) {
+    console.error('Error al obtener la bailarina:', err);
+    return null;
+  }
+}
+
+async function deleteDancer(dancerIdToDelete) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/dancer/${dancerIdToDelete}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error(`Error ${res.status} al eliminar bailarina`);
+
+    // Si quieres, obtén respuesta confirmando borrado
+    // const data = await res.json();
+
+    // Actualizar array local solo si la API respondió bien
+    //dancers = dancers.filter(d => d.id != dancerIdToDelete);
+
+    console.log(`Bailarina con id ${dancerIdToDelete} eliminada correctamente.`);
+  } catch (error) {
+    console.error('Error al eliminar la bailarina:', error);
   }
 }

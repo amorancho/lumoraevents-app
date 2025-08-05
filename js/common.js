@@ -1,3 +1,5 @@
+const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
+
 const eventId = getEventIdFromUrl();
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -10,6 +12,10 @@ function getEventIdFromUrl() {
     if (key.toLowerCase() === 'eventid') {
       return value;
     }
+  }
+
+  if (pageName !== 'index') {    
+    window.location.href = 'index.html';
   }
   return null;
 }
@@ -50,7 +56,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
 // Ejecutar al cargar el DOM
 document.addEventListener('DOMContentLoaded', async () => {
   const savedLang = localStorage.getItem('lang') || 'es';
-  const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
+  //const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
 
   await loadTranslations(savedLang, pageName);
   document.documentElement.setAttribute('lang', savedLang);

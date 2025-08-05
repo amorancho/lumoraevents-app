@@ -5,9 +5,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await eventReadyPromise;
 
     updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
-    updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${getEvent().id}`);
-    updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${getEvent().id}`);
-    updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${getEvent().id}`);
+    updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
+    updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);
+    updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
     loadAll();
 
