@@ -1,5 +1,7 @@
 var title = 'Dancers';
 
+let dancers = [];
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   await eventReadyPromise;

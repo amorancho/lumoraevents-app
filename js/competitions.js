@@ -1,82 +1,15 @@
-var competitions = [
-  { 
-    id: 1, 
-    category: 'Amateur', 
-    style: 'Raqs sharki', 
-    startTime: '10/06/2025 17:00', 
-    status: 'OPEN', 
-    judges: ['Leandro', 'Aliah'],
-    dancers: [{ name: 'Alice', code: 'ES' }, 
-              { name: 'Bob', code: 'FR' }, 
-              { name: 'Charlie', code: 'IT' }, 
-              { name: 'David', code: 'DE' }, 
-              { name: 'Eve', code: 'ES' }, 
-              { name: 'Frank', code: 'FR' }, 
-              { name: 'Grace', code: 'IT' }, 
-              { name: 'Hannah', code: 'DE' }, 
-              { name: 'Ivy', code: 'ES' }, 
-              { name: 'Liam', code: 'FR' }, 
-              { name: 'Mia', code: 'IT' }]
-  },
-  { 
-    id: 2, 
-    category: 'Professional', 
-    style: 'Fusion', 
-    startTime: '11/06/2025 18:30', 
-    status: 'CLOSED', 
-    judges: ['Zara', 'Alberto'],
-    dancers: [{ name: 'John', code: 'US' }, 
-              { name: 'Emma', code: 'CA' }, 
-              { name: 'Olivia', code: 'UK' }, 
-              { name: 'Liam', code: 'AU' }, 
-              { name: 'Noah', code: 'NZ' }, 
-              { name: 'Ava', code: 'IE' }, 
-              { name: 'Sophia', code: 'ZA' }, 
-              { name: 'Isabella', code: 'IN' }]
-  }
-];
+var competitions = [];
 
-
-var categoryList = [
-    'Baby Amateur',
-    'Baby Advenced',
-    'Kid Amateur',
-    'Kid Advenced',
-    'Junior Amateur',
-    'Junior Advenced',
-    'Senior Amateur',
-    'Senior Advenced',
-    'Golden',
-    'Amateur',
-    'Semiprofessional',
-    'Professional',
-    'Master',
-    'Group Oriental',
-    'Group Folklore and Fusions',
-    'Talento Nacional'
-];
-var styleList = [
-    'Raqs sharki',
-    'Baladi',
-    'Shaabi',
-    'Folklore',
-    'Fusion',
-    'Pop song',
-    'Drum CD',
-    'Live Drum'
-];
-
-var masters = [
-  { id: 1, name: 'Leandro' },
-  { id: 2, name: 'Aliah' },
-  { id: 3, name: 'Zara' },
-  { id: 4, name: 'Alberto' }
-];
+const convertStatus = {
+  'OPE': 'OPEN',
+  'FIN': 'FINISHED', 
+  'CLO': 'CLOSED'
+}
 
 const statusColor = {
-  'OPEN': 'success',
-  'FINISHED': 'info',
-  'CLOSED': 'danger'
+  'OPE': 'success',
+  'FIN': 'info',
+  'CLO': 'danger'
 };
 
 var title = 'Competitions';
@@ -114,8 +47,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadCategories();
   loadStyles();
   loadMasters();
-  loadCompetitions();
+  fetchCompetitionsFromAPI();
 });
+
+async function fetchCompetitionsFromAPI() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competition?event_id=${eventId}`);
+    if (!response.ok) throw new Error('Error fetching dancers');
+    competitions = await response.json();
+    loadCompetitions();
+  } catch (error) {
+    console.error('Failed to fetch dancers:', error);
+  }
+}
 
 function loadCompetitions() {
   const competitionsTable = document.getElementById('competitionsTable');
@@ -127,15 +71,18 @@ function loadCompetitions() {
     row.dataset.id = comp.id;
 
     let colorBg = statusColor[comp.status];
+    let statusText = convertStatus[comp.status];
+
+    const fechaLocal = new Date(comp.estimated_start);
 
     row.innerHTML = `
-      <td><span class="badge bg-info fs-6">${comp.category}</span></td>
-      <td><span class="badge bg-warning text-dark fs-6">${comp.style}</span></td>
-      <td><i class="bi bi-clock me-1 text-muted"></i>${comp.startTime}</td>
-      <td><span class="badge bg-${colorBg}">${comp.status}</span></td>
+      <td><span class="badge bg-info fs-6">${comp.category_name}</span></td>
+      <td><span class="badge bg-warning text-dark fs-6">${comp.style_name}</span></td>
+      <td><i class="bi bi-clock me-1 text-muted"></i>${fechaLocal.toLocaleString()}</td>
+      <td><span class="badge bg-${colorBg}">${statusText}</span></td>
       <td>
         <i class="bi bi-people me-1 text-muted"></i>
-        ${comp.judges.join(', ')}
+        ${comp.judges.map(j => j.name).join(', ')}
       </td>
       <td>
         <span class="badge bg-secondary">${comp.judges.length}</span>
@@ -159,7 +106,7 @@ function loadCompetitions() {
   });
 }
 
-function addCompt() {
+async function addCompt() {
   const inputCat = document.getElementById('categoryDropdown');
   const inputSty = document.getElementById('styleDropdown');
   const valueCat = inputCat.value.trim();
@@ -168,22 +115,40 @@ function addCompt() {
   if (valueCat !== "" && valueSty !== "") {
 
     const newComp = {
-      id: competitions.length + 1,
-      category: valueCat,
-      style: valueSty,
+      event_id: eventId,
+      category_id: valueCat,
+      style_id: valueSty,
       startTime: '',
-      status: 'OPEN',
-      judges: []
+      status: 'OPE'
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/competition`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newComp)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error al crear competición: ${response.status}`);
+      }
+
+      // Vuelves a cargar la lista desde la API
+      await fetchCompetitionsFromAPI();
+
+      // Limpias los inputs
+      inputCat.value = '';
+      inputSty.value = '';
+
+    } catch (error) {
+      console.error(error);
+      alert('No se pudo añadir la competición');
     }
-    competitions.push(newComp);
-
-    loadCompetitions();
-
-    inputCat.value = '';
-    inputSty.value = '';
   }
-  
-} 
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
@@ -341,33 +306,70 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-function loadCategories() {
+
+async function loadCategories() {
   const categorySelect = document.getElementById('categoryDropdown');
-  categoryList.forEach(category => {
-    const option = document.createElement('option');
-    option.value = category;
-    option.textContent = category;
-    categorySelect.appendChild(option);
-  });
+  //categorySelect.innerHTML = ''; // Limpiar opciones anteriores
+
+  const categoryFilter = document.getElementById('categoryFilter');
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/category?event_id=${eventId}`);
+    if (!response.ok) throw new Error('Error fetching categories');
+    const categories = await response.json();
+
+    categories.forEach(category => {
+      const option1 = document.createElement('option');
+      option1.value = category.id || category; // por si es string directo
+      option1.textContent = category.name || category;
+      categorySelect.appendChild(option1);
+
+      const option2 = document.createElement('option');
+      option2.value = category.name || category; // por si es string directo
+      option2.textContent = category.name || category;
+      categoryFilter.appendChild(option2);
+    });
+  } catch (err) {
+    console.error('Failed to load categories:', err);
+  }
 }
 
-function loadStyles() {
+async function loadStyles() {
   const styleSelect = document.getElementById('styleDropdown');
-  styleList.forEach(style => {
-    const option = document.createElement('option');
-    option.value = style;
-    option.textContent = style;
-    styleSelect.appendChild(option);
-  });
+  //styleSelect.innerHTML = ''; // Limpiar opciones anteriores
 
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/style?event_id=${eventId}`);
+    if (!response.ok) throw new Error('Error fetching styles');
+    const styles = await response.json();
+
+    styles.forEach(style => {
+      const option = document.createElement('option');
+      option.value = style.id || style;
+      option.textContent = style.name || style;
+      styleSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error('Failed to load styles:', err);
+  }
 }
 
-function loadMasters() {
-  const masterSelect = document.getElementById('editJudges');   
-  masters.forEach(master => {
-    const option = document.createElement('option');
-    option.value = master.name;
-    option.textContent = master.name;
-    masterSelect.appendChild(option);
-  });
+async function loadMasters() {
+  const masterSelect = document.getElementById('editJudges');
+  masterSelect.innerHTML = ''; // Limpiar opciones anteriores
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/judge?event_id=${eventId}`);
+    if (!response.ok) throw new Error('Error fetching masters');
+    const masters = await response.json();
+
+    masters.forEach(master => {
+      const option = document.createElement('option');
+      option.value = master.id;
+      option.textContent = master.name;
+      masterSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error('Failed to load masters:', err);
+  }
 }
