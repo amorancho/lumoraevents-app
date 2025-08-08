@@ -69,6 +69,8 @@ function loadCompetitions() {
   competitions.forEach(comp => {
     const row = document.createElement('tr');
     row.dataset.id = comp.id;
+    row.dataset.cat_id = comp.category_id;
+    row.dataset.style_id = comp.style_id;
 
     let colorBg = statusColor[comp.status];
     let statusText = convertStatus[comp.status];
@@ -78,14 +80,14 @@ function loadCompetitions() {
     row.innerHTML = `
       <td><span class="badge bg-info fs-6">${comp.category_name}</span></td>
       <td><span class="badge bg-warning text-dark fs-6">${comp.style_name}</span></td>
-      <td><i class="bi bi-clock me-1 text-muted"></i>${fechaLocal.toLocaleString()}</td>
+      <td><i class="bi bi-clock me-1 text-muted"></i>${comp.estimated_start_form ?? 'Not defined'}</td>
       <td><span class="badge bg-${colorBg}">${statusText}</span></td>
       <td>
         <i class="bi bi-people me-1 text-muted"></i>
         ${comp.judges.map(j => j.name).join(', ')}
       </td>
       <td>
-        <span class="badge bg-secondary">${comp.judges.length}</span>
+        <span class="badge bg-secondary">${comp.dancers.length}</span>
       </td>
       <td class="text-center">
         <div class="btn-group" role="group">
@@ -149,6 +151,27 @@ async function addCompt() {
   }
 }
 
+function toDatetimeLocalFormat(str) {
+  if (!str) return ''; // evitar errores con null o undefined
+
+  const [datePart, timePart] = str.split(" ");
+  if (!datePart || !timePart) return '';
+
+  const [day, month, year] = datePart.split("/").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+
+  if (
+    !day || !month || !year ||
+    hour === undefined || minute === undefined
+  ) return '';
+
+  return `${year.toString().padStart(4, '0')}-` +
+         `${month.toString().padStart(2, '0')}-` +
+         `${day.toString().padStart(2, '0')}T` +
+         `${hour.toString().padStart(2, '0')}:` +
+         `${minute.toString().padStart(2, '0')}`;
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
@@ -167,57 +190,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const editForm = document.getElementById('editForm');
         editForm.dataset.id = button.closest('tr').dataset.id;
+        editForm.dataset.cat_id = competition.category_id;
+        editForm.dataset.style_id = competition.style_id;
 
-        document.getElementById('modalTitleCategory').textContent = competition.category;
-        document.getElementById('modalTitleStyle').textContent = competition.style;
-
-        let parsedDate = null;
-
-        if (competition.startTime) {
-          const [datePart, timePart] = competition.startTime.split(' ');
-          if (datePart && timePart) {
-            const [day, month, year] = datePart.split('/');
-            const isoString = `${year}-${month}-${day}T${timePart}`;
-            parsedDate = new Date(isoString);
-          }
-        }
-
-        if (parsedDate && !isNaN(parsedDate.getTime())) {
-          const formatted = parsedDate.toISOString().slice(0, 16); // 'YYYY-MM-DDTHH:mm'
-          document.getElementById('editStartTime').value = formatted;
-        } else {
-          document.getElementById('editStartTime').value = '';
-        }
-
+        document.getElementById('modalTitleCategory').textContent = competition.category_name;
+        document.getElementById('modalTitleStyle').textContent = competition.style_name;
+        document.getElementById('editStartTime').value = toDatetimeLocalFormat(competition.estimated_start_form);
         document.getElementById('editStatus').value = competition.status;
 
-    
         const judges = competition.judges || [];
 
         const judgeOptions = document.getElementById('editJudges').options;
         
+        const judgeIds = judges.map(j => String(j.id)); // ids como strings para comparar
+
         Array.from(judgeOptions).forEach(opt => {
-          opt.selected = judges.includes(opt.value);
+          opt.selected = judgeIds.includes(opt.value);
         });
 
         editModal.show();
       } else if (event.target.closest('.btn-delete-competition')) {
 
         const button = event.target.closest('.btn-delete-competition');
+
         const tr = button.closest('tr');
         const competitionId = tr.dataset.id;
         const competition = competitions.find(c => c.id == competitionId);
 
         if (competition) {
-          const message = `Are you sure you want to delete the competition for <strong>${competition.category} - ${competition.style}</strong>?`;
+          const message = `Are you sure you want to delete the competition for <strong>${competition.category_name} - ${competition.style_name}</strong>?`;
           document.getElementById('deleteModalMessage').innerHTML = message;
 
           const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
           deleteModal.show();
 
-          document.getElementById('confirmDeleteBtn').onclick = () => {
-            competitions = competitions.filter(c => c.id != competitionId);
-            loadCompetitions();
+          document.getElementById('confirmDeleteBtn').onclick = async () => {
+            await deleteCompetition(competitionId);
+            fetchCompetitionsFromAPI();
             deleteModal.hide();
           };
         }
@@ -226,20 +235,42 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('saveEditBtn').addEventListener('click', () => {
-      console.log('Save button clicked');
+
       const competitionId = document.getElementById('editForm').dataset.id;
-      console.log('Competition ID:', competitionId);
+      const categoryId = document.getElementById('editForm').dataset.cat_id;
+      const styleId = document.getElementById('editForm').dataset.style_id;
 
-      const competition = competitions.find(c => c.id == competitionId);
-      if (!competition) return;
+      inputEstimatedStart = document.getElementById('editStartTime');
+      inputStatus = document.getElementById('editStatus');
+      inputJudges = Array.from(document.getElementById('editJudges').selectedOptions).map(opt => opt.value);
 
-      competition.startTime = document.getElementById('editStartTime').value;
-      competition.status = document.getElementById('editStatus').value;
-      const selectedJudges = Array.from(document.getElementById('editJudges').selectedOptions).map(opt => opt.value);
-      console.log('Selected judges:', selectedJudges);
-      competition.judges = selectedJudges;
+      console.log('Selected judges:', inputJudges);
 
-      loadCompetitions();
+      const competitionData = {
+        category_id: categoryId,
+        style_id: styleId,
+        estimated_start: inputEstimatedStart.value,
+        status: inputStatus.value,
+        judges: inputJudges,
+        event_id: eventId
+      }
+
+      console.log('Updating competition:', competitionId, competitionData);
+
+      fetch(`${API_BASE_URL}/api/competition/${competitionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(competitionData)
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Failed to update competition');
+        return response.json();
+      })
+      .then(() => {
+        fetchCompetitionsFromAPI();
+        editModal.hide();
+      })
+      .catch(err => console.error(err));
 
       editModal.hide();
     });
@@ -371,5 +402,24 @@ async function loadMasters() {
     });
   } catch (err) {
     console.error('Failed to load masters:', err);
+  }
+}
+
+async function deleteCompetition(competitionIdToDelete) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/competition/${competitionIdToDelete}`, {
+      method: 'DELETE'
+    });
+    if (!res.ok) throw new Error(`Error ${res.status} al eliminar la competición`);
+
+    // Si quieres, obtén respuesta confirmando borrado
+    // const data = await res.json();
+
+    // Actualizar array local solo si la API respondió bien
+    //dancers = dancers.filter(d => d.id != dancerIdToDelete);
+
+    console.log(`Competición con id ${competitionIdToDelete} eliminada correctamente.`);
+  } catch (error) {
+    console.error('Error al eliminar la competición:', error);
   }
 }
