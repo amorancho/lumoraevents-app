@@ -1,8 +1,8 @@
 const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
 
 const eventId = getEventIdFromUrl();
-const API_BASE_URL = 'http://localhost:3000';
-//const API_BASE_URL = 'https://api.lumoraevents.net';
+//const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'https://api.lumoraevents.net';
 
 let eventObj = null;
 let eventReadyPromise = null;
