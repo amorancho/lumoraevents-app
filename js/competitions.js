@@ -87,7 +87,7 @@ function loadCompetitions() {
         ${comp.judges.map(j => j.name).join(', ')}
       </td>
       <td>
-        <span class="badge bg-secondary">${comp.dancers.length}</span>
+        <span class="badge bg-secondary">${comp.num_dancers}</span>
       </td>
       <td class="text-center">
         <div class="btn-group" role="group">
@@ -284,54 +284,66 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
-    document.querySelectorAll('.btn-dancers-order').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const category = btn.dataset.category;
-        const style = btn.dataset.style;
-        const id = btn.closest('tr').dataset.id;
-    
-        const comp = competitions.find(c => c.id == id);
-        const list = document.getElementById('sortableDancers');
-        list.innerHTML = '';
-    
-        comp.dancers.forEach((dancer, index) => {
+    document.addEventListener('click', async (event) => {
+      const btn = event.target.closest('.btn-dancers-order');
+      if (!btn) return;
+
+      const compId = btn.closest('tr').dataset.id;
+
+      console.log('Loading dancers for competition:', compId);
+      const list = document.getElementById('sortableDancers');
+      list.innerHTML = '';
+      list.dataset.competitionId = compId;
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/competition_dancer?event_id=${eventId}&competition_id=${compId}`);
+        if (!res.ok) throw new Error('Error fetching dancers');
+        const dancers = await res.json();
+
+        dancers.forEach(dancer => {
           const li = document.createElement('li');
           li.className = 'list-group-item d-flex align-items-center draggable-item';
-          li.dataset.name = dancer.name;
-    
+          li.dataset.id = dancer.id;
+
           li.innerHTML = `
             <span class="me-3 text-muted drag-icon"><i class="bi bi-grip-vertical"></i></span>
-            <span class="me-2 order-number">${index + 1}.</span>
-            <img src="https://flagsapi.com/${dancer.code}/shiny/24.png" class="me-2" style="width: 24px;" />
-            <span class="dancer-name">${dancer.name}</span>
+            <span class="me-2 order-number">${dancer.position}.</span>
+            <img src="https://flagsapi.com/${dancer.nationality}/shiny/24.png" class="me-2" style="width: 24px;" />
+            <span class="dancer-name">${dancer.dancer_name}</span>
           `;
-    
+
           list.appendChild(li);
         });
-    
-        list.dataset.competitionId = comp.id;
+
         dancersOrderModal.show();
-      });
+      } catch (err) {
+        console.error('Error loading dancers:', err);
+      }
     });
+
   
     document.getElementById('saveDancerOrder').addEventListener('click', () => {
       const items = document.querySelectorAll('#sortableDancers li');
-      const newOrderNames = Array.from(items).map(item => item.dataset.name);
+      const dancerIds = Array.from(items).map(item => item.dataset.id, 10);
       const compId = document.getElementById('sortableDancers').dataset.competitionId;
     
-      const competition = competitions.find(c => c.id == compId);
-      if (!competition) return;
-    
-      // Crear nuevo array de bailarinas según el orden actual
-      const newDancers = newOrderNames.map(name => 
-        competition.dancers.find(d => d.name === name)
-      );
-    
-      // Guardar el nuevo orden
-      competition.dancers = newDancers;
-    
-      console.log('Nuevo orden guardado para competición:', compId, competition.dancers);
-    
+      fetch(`${API_BASE_URL}/api/competition_dancer/order?event_id=${eventId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          competition_id: compId,
+          order: dancerIds
+        })
+      })
+      .then(res => {
+        if (!res.ok) throw new Error(`Error ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        dancersOrderModal.hide();
+      })
+      .catch(err => console.error('Error al guardar orden:', err));
+
       // Cerrar modal
       dancersOrderModal.hide();
     });
