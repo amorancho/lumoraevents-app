@@ -23,7 +23,7 @@ function loadAll() {
 async function loadTable(table) {
     try {
         const eventId = getEventIdFromUrl();
-        const response = await fetch(`${API_BASE_URL}/api/${table}?event_id=${eventId}`);
+        const response = await fetch(`${API_BASE_URL}/api/${table}?event_id=${getEvent().id}`);
         if (!response.ok) throw new Error(`Error loading ${table}`);
         const data = await response.json();
 
@@ -34,8 +34,6 @@ async function loadTable(table) {
         console.error(`Failed to load ${table}:`, error);
     }
 }
-
-
 
 function renderTable(table, names, fullData) {
     const list = document.getElementById(`list-${table}`);
@@ -56,12 +54,21 @@ function renderTable(table, names, fullData) {
             const confirmed = await showModal(`Delete "${item}" from ${table}?`);
             if (confirmed) {
                 try {
-                    const id = fullData[i].id;
-                    const res = await fetch(`${API_BASE_URL}/api/${table}/${id}`, { method: "DELETE" });
-                    if (!res.ok) throw new Error(`Failed to delete ${table} id=${id}`);
-                    loadTable(table);
+                const id = fullData[i].id;
+                const res = await fetch(`${API_BASE_URL}/api/${table}/${id}`, { method: "DELETE" });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showMessageModal(data.error || 'Unknown error', 'Error eliminando el item');
+                    return; // Sales sin error para que no vaya al catch
+                }
+
+                loadTable(table);
                 } catch (error) {
-                    alert(`Error deleting item: ${error.message}`);
+                // Este catch ya sería sólo para errores inesperados tipo red caida
+                console.error('Unexpected error:', error);
+                showMessageModal(`Unexpected error: ${error.message}`, 'Error');
                 }
             }
         };
@@ -82,7 +89,7 @@ async function addEntry(table) {
             const res = await fetch(`${API_BASE_URL}/api/${table}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ event_id: getEventIdFromUrl(), name: value })
+                body: JSON.stringify({ event_id: getEvent().id, name: value })
             });
             if (!res.ok) throw new Error(`Failed to create ${table}`);
             input.value = "";

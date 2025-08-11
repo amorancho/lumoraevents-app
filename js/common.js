@@ -7,6 +7,25 @@ const API_BASE_URL = 'https://api.lumoraevents.net';
 let eventObj = null;
 let eventReadyPromise = null;
 
+const modalHtml = `
+<div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="messageModalLabel">Mensaje</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body" id="messageModalBody">
+        <!-- Aquí va el mensaje -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+      </div>
+    </div>
+  </div>
+</div>
+`;
+
 function getEventIdFromUrl() {
   const urlParams = new URLSearchParams(window.location.search);
   for (const [key, value] of urlParams.entries()) {
@@ -56,8 +75,10 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
 
 // Ejecutar al cargar el DOM
 document.addEventListener('DOMContentLoaded', async () => {
+  // Cargar el modal de mensajes
+  document.body.insertAdjacentHTML('beforeend', modalHtml);
+
   const savedLang = localStorage.getItem('lang') || 'es';
-  //const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
 
   await loadTranslations(savedLang, pageName);
   document.documentElement.setAttribute('lang', savedLang);
@@ -110,3 +131,16 @@ function updateFlag(lang) {
     flag.alt = lang === 'es' ? 'Español' : 'English';
   }
 }
+
+function showMessageModal(message, title = "Mensaje") {
+    // Establece el título y el cuerpo del modal
+    document.getElementById('messageModalLabel').textContent = title;
+    document.getElementById('messageModalBody').textContent = message;
+
+    // Muestra el modal (requiere Bootstrap 5)
+    const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+    modal.show();
+  }
+
+// 5. Hacer la función global para usarla desde cualquier script inline o externo
+window.showMessageModal = showMessageModal;
