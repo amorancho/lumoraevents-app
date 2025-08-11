@@ -61,8 +61,8 @@ function initJudgeManagement() {
       document.getElementById('deleteModalMessage').innerHTML = `Are you sure you want to delete judge <strong>${judge.name}</strong>?`;
       deleteModal.show();
 
-      document.getElementById('confirmDeleteBtn').onclick = () => {
-        fetch(`${API_BASE_URL}/api/judge/${id}`, {
+      document.getElementById('confirmDeleteBtn').onclick = async () => {
+        /*fetch(`${API_BASE_URL}/api/judge/${id}`, {
           method: 'DELETE'
         })
         .then(response => {
@@ -71,13 +71,28 @@ function initJudgeManagement() {
         })
         .then(() => loadJudges())
         .catch(err => console.error(err));
-
+*/
         deleteModal.hide();
+
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/judge/${id}`, { method: 'DELETE' });
+          if (!res.ok) {
+            const errData = await res.json();
+            showMessageModal(errData.error || 'Failed to delete judge', 'Error');
+            return; // Parar para no cargar tabla
+          }
+          await loadJudges();
+          deleteModal.hide();
+        } catch (err) {
+          console.error(err);
+          showMessageModal('Unexpected error deleting judge', 'Error');
+        }
+        
       };
     }
   });
 
-  document.getElementById('saveEditBtn').addEventListener('click', () => {
+  document.getElementById('saveEditBtn').addEventListener('click', async () => {
     const action = document.getElementById('editForm').dataset.action;
     const id = document.getElementById('editForm').dataset.id;
 
@@ -95,58 +110,56 @@ function initJudgeManagement() {
       password: inputPassword.value.trim()
     };
 
-    if (action === 'create') {
-      judgeData.event_id = eventId;
+    try {
+      let res;
+      if (action === 'create') {
+        judgeData.event_id = getEvent().id;
+        res = await fetch(`${API_BASE_URL}/api/judge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(judgeData)
+        });
+      } else if (action === 'edit') {
+        res = await fetch(`${API_BASE_URL}/api/judge/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(judgeData)
+        });
+      }
 
-      fetch(`${API_BASE_URL}/api/judge`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(judgeData)
-      })
-      .then(response => {        
-        if (!response.ok) throw new Error('Failed to create judge');
-        return response.json();
-      })
-      .then(() => {
-        loadJudges();
-        editModal.hide();
-      })
-      .catch(err => console.error(err));
+      if (!res.ok) {
+        const errData = await res.json();
+        showMessageModal(errData.error || 'Error saving judge', 'Error');
+        return;
+      }
 
-    } else if (action === 'edit') {
-      fetch(`${API_BASE_URL}/api/judge/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(judgeData)
-      })
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to update judge');
-        return response.json();
-      })
-      .then(() => {
-        loadJudges();
-        editModal.hide();
-      })
-      .catch(err => console.error(err));
+      await loadJudges();
+      editModal.hide();
+
+    } catch (err) {
+      console.error(err);
+      showMessageModal('Unexpected error saving judge', 'Error');
     }
   });
 
   loadJudges();
 }
 
-function loadJudges() {
-  fetch(`${API_BASE_URL}/api/judge?event_id=${eventId}`)
-    .then(response => {
-      if (!response.ok) throw new Error(`Error fetching judges: ${response.status}`);
-      return response.json();
-    })
-    .then(data => {
-      judges = data;
-      renderJudges();
-    })
-    .catch(error => {
-      console.error('Failed to load judges:', error);
-    });
+async function loadJudges() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/judge?event_id=${getEvent().id}`);
+    if (!res.ok) {
+      const errData = await res.json();
+      showMessageModal(errData.error || `Error fetching judges: ${res.status}`, 'Error');
+      return;
+    }
+    const data = await res.json();
+    judges = data;
+    renderJudges();
+  } catch (error) {
+    console.error('Failed to load judges:', error);
+    showMessageModal('Unexpected error loading judges', 'Error');
+  }
 }
 
 function renderJudges() {
