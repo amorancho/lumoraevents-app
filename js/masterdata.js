@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 function loadAll() {
 
-    loadTable("category");
-    loadTable("style");
+    loadTable("categories");
+    loadTable("styles");
     loadTable("criteria");
 }
 

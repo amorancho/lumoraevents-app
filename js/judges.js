@@ -23,8 +23,11 @@ function initJudgeManagement() {
     document.getElementById('judgeEmail').value = '';
     document.getElementById('judgeMaster').checked = false;
     document.getElementById('judgeUsername').value = '';
-    document.getElementById('judgePassword').value = '';
     document.querySelector('#editModal .modal-title span').textContent = 'Create Judge';
+
+    document.getElementById('actionsCard').classList.add('d-none');
+    document.getElementById('welcomeSendDiv').classList.add('d-none');
+
     editModal.show();
   });
 
@@ -46,9 +49,14 @@ function initJudgeManagement() {
       document.getElementById('judgeEmail').value = judge.email;
       document.getElementById('judgeMaster').checked = master;
       document.getElementById('judgeUsername').value = judge.username;
-      document.getElementById('judgePassword').value = judge.password;
-
+      console.log('Judge welcome date:', judge.welcomesended);
+      setWelcomeDate(judge.welcomesended);
+      
       document.querySelector('#editModal .modal-title span').textContent = 'Edit Judge';
+
+      document.getElementById('actionsCard').classList.remove('d-none');
+      document.getElementById('welcomeSendDiv').classList.remove('d-none');
+
       editModal.show();
 
     } else if (event.target.closest('.btn-delete-judge')) {
@@ -62,20 +70,11 @@ function initJudgeManagement() {
       deleteModal.show();
 
       document.getElementById('confirmDeleteBtn').onclick = async () => {
-        /*fetch(`${API_BASE_URL}/api/judge/${id}`, {
-          method: 'DELETE'
-        })
-        .then(response => {
-          if (!response.ok) throw new Error('Failed to delete judge');
-          return response.json();
-        })
-        .then(() => loadJudges())
-        .catch(err => console.error(err));
-*/
+
         deleteModal.hide();
 
         try {
-          const res = await fetch(`${API_BASE_URL}/api/judge/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${API_BASE_URL}/api/judges/${id}`, { method: 'DELETE' });
           if (!res.ok) {
             const errData = await res.json();
             showMessageModal(errData.error || 'Failed to delete judge', 'Error');
@@ -100,32 +99,32 @@ function initJudgeManagement() {
     const inputEmail = document.getElementById('judgeEmail');
     const inputMaster = document.getElementById('judgeMaster');
     const inputUsername = document.getElementById('judgeUsername');
-    const inputPassword = document.getElementById('judgePassword');
+    const inputWelcomeSended = document.getElementById('judgeWelcomeSended');
 
     const judgeData = {
-      name: inputName.value.trim(),
-      email: inputEmail.value.trim(),
+      name: inputName.value.trim() || null,
+      email: inputEmail.value.trim() || null,
       ismaster: inputMaster.checked ? 1 : 0,
-      username: inputUsername.value.trim(),
-      password: inputPassword.value.trim()
+      username: inputUsername.value.trim() || null,
+      welcomesended: inputWelcomeSended.value || null,
+      event_id: getEvent().id
     };
 
     try {
       let res;
-      if (action === 'create') {
-        judgeData.event_id = getEvent().id;
-        res = await fetch(`${API_BASE_URL}/api/judge`, {
+      if (action === 'create') {        
+        res = await fetch(`${API_BASE_URL}/api/judges`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(judgeData)
         });
       } else if (action === 'edit') {
-        res = await fetch(`${API_BASE_URL}/api/judge/${id}`, {
+        res = await fetch(`${API_BASE_URL}/api/judges/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(judgeData)
         });
-      }
+      }      
 
       if (!res.ok) {
         const errData = await res.json();
@@ -133,21 +132,52 @@ function initJudgeManagement() {
         return;
       }
 
-      await loadJudges();
       editModal.hide();
 
+      await loadJudges();
+      
     } catch (err) {
       console.error(err);
       showMessageModal('Unexpected error saving judge', 'Error');
     }
   });
 
+  document.getElementById('sendEmail').addEventListener('click', async () => {
+    const judgeId = document.getElementById('editForm').dataset.id; // o como guardes el ID del juez
+    if (!judgeId) {
+      showMessageModal('No judge selected.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/judges/${judgeId}/send-welcome-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error sending email: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      // Actualiza fecha en el formulario
+      setWelcomeDate(data.sentAt);
+
+    } catch (err) {
+      console.error(err);
+      showMessageModal('Error sending welcome email.');
+    }
+  });
+
+
+
   loadJudges();
 }
 
 async function loadJudges() {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/judge?event_id=${getEvent().id}`);
+    const res = await fetch(`${API_BASE_URL}/api/judges?event_id=${getEvent().id}`);
     if (!res.ok) {
       const errData = await res.json();
       showMessageModal(errData.error || `Error fetching judges: ${res.status}`, 'Error');
@@ -179,7 +209,6 @@ function renderJudges() {
         ${Number(judge.ismaster) === 1 ? '✓' : ''}
       </td>
       <td>${judge.username}</td>
-      <td>${judge.password}</td>
       <td class="text-center align-middle">
         <div class="btn-group" role="group">
           <button type="button" class="btn btn-outline-primary btn-sm btn-edit-judge" title="Edit">
@@ -193,4 +222,27 @@ function renderJudges() {
     `;
     judgesTable.appendChild(row);
   });
+}
+
+function setWelcomeDate(dateValue) {
+  const displayField = document.getElementById('judgeWelcomeSendedDisplay');
+  const hiddenField = document.getElementById('judgeWelcomeSended');
+
+  if (!dateValue) {
+    // Si es null o vacío
+    displayField.value = 'No enviado';
+    hiddenField.value = '';
+  } else {
+    // Convierte la fecha a texto legible
+    const dateObj = new Date(dateValue);
+
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // meses base 0
+    const year = dateObj.getFullYear();
+
+    const formatted = `${day}/${month}/${year}`;
+
+    displayField.value = formatted;
+    hiddenField.value = dateValue; // aquí guardas el valor crudo para backend
+  }
 }

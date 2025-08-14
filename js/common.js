@@ -11,9 +11,13 @@ const modalHtml = `
 <div class="modal fade" id="messageModal" tabindex="-1" aria-labelledby="messageModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <div class="modal-header">
+      <!--div class="modal-header">
         <h5 class="modal-title" id="messageModalLabel">Mensaje</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div-->
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="messageModalLabel">Error</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body" id="messageModalBody">
         <!-- Aquí va el mensaje -->
@@ -54,7 +58,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
   try {
 
     if (eventId) {
-      const res = await fetch(`${API_BASE_URL}/api/event/code/${eventId}`);
+      const res = await fetch(`${API_BASE_URL}/api/events/code/${eventId}`);
       if (!res.ok) throw new Error(`Error ${res.status} al recuperar el evento`);
       const data = await res.json();
 

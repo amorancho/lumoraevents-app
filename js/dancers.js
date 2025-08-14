@@ -190,7 +190,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 async function fetchDancersFromAPI() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/dancer?event_id=${eventId}`);
+    console.log('event:', getEvent());
+    const response = await fetch(`${API_BASE_URL}/api/dancer?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching dancers');
     dancers = await response.json();
     loadDancers();
