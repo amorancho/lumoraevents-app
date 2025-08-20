@@ -8,7 +8,7 @@ const formatFecha = (isoString) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  fetch(`${API_BASE_URL}/api/event`)
+  fetch(`${API_BASE_URL}/api/events`)
     .then(response => {
       if (!response.ok) throw new Error(`Error fetching events: ${response.status}`);
       return response.json();

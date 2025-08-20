@@ -1,11 +1,10 @@
-// En el principio sigue igual
 let judges = [];
-//const eventId = 'etoilesdorientfest25';
 var title = 'Judges';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
   await eventReadyPromise;
+  
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${eventId}`);
   updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);
@@ -169,8 +168,6 @@ function initJudgeManagement() {
       showMessageModal('Error sending welcome email.');
     }
   });
-
-
 
   loadJudges();
 }

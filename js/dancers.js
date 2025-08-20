@@ -1,6 +1,5 @@
-var title = 'Dancers';
-
 let dancers = [];
+var title = 'Dancers';
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -15,6 +14,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   tooltipTriggerList.forEach(function (tooltipTriggerEl) {
     new bootstrap.Tooltip(tooltipTriggerEl);
   });
+
+  loadCategories();
+  loadStyles();
+  loadMasters(); 
+
+  fetchDancersFromAPI();
 
 });
 
@@ -140,13 +145,13 @@ document.addEventListener('DOMContentLoaded', function () {
       styles: selectedValues,
       master_id: inputMaster.value ? parseInt(inputMaster.value, 10) : null,
       nationality: inputNationality.value.trim().toUpperCase(),
-      event_id: eventId
+      event_id: getEvent().id
     }
 
     // actualizar los valores del array dancers
     if (action === 'create') {
       
-      fetch(`${API_BASE_URL}/api/dancer`, {
+      fetch(`${API_BASE_URL}/api/dancers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dancerData)
@@ -162,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
       .catch(err => console.error(err));
 
     } else if (action === 'edit') { 
-      fetch(`${API_BASE_URL}/api/dancer/${id}`, {
+      fetch(`${API_BASE_URL}/api/dancers/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dancerData)
@@ -179,19 +184,13 @@ document.addEventListener('DOMContentLoaded', function () {
       
     }
 
-  });
-      
-  loadCategories();
-  loadStyles();
-  loadMasters();
-  fetchDancersFromAPI();  
+  });         
 
 });
 
 async function fetchDancersFromAPI() {
   try {
-    console.log('event:', getEvent());
-    const response = await fetch(`${API_BASE_URL}/api/dancer?event_id=${getEvent().id}`);
+    const response = await fetch(`${API_BASE_URL}/api/dancers?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching dancers');
     dancers = await response.json();
     loadDancers();
@@ -248,7 +247,7 @@ async function loadCategories() {
   const categoryFilter = document.getElementById('categoryFilter');
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/category?event_id=${eventId}`);
+    const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching categories');
     const categories = await response.json();
 
@@ -278,7 +277,7 @@ async function loadStyles() {
   styleSelect.innerHTML = ''; // Limpiar opciones anteriores
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/style?event_id=${eventId}`);
+    const response = await fetch(`${API_BASE_URL}/api/styles?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching styles');
     const styles = await response.json();
 
@@ -298,7 +297,7 @@ async function loadMasters() {
   masterSelect.innerHTML = ''; // Limpiar opciones anteriores
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/judge?event_id=${eventId}`);
+    const response = await fetch(`${API_BASE_URL}/api/judges?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching masters');
     const masters = await response.json();
 
@@ -320,7 +319,7 @@ async function loadMasters() {
 
 async function getDancerById(id) {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dancer/${id}`);
+    const res = await fetch(`${API_BASE_URL}/api/dancers/${id}`);
     if (!res.ok) throw new Error(`Error ${res.status} al recuperar la bailarina`);
     return await res.json();
   } catch (err) {
@@ -331,18 +330,11 @@ async function getDancerById(id) {
 
 async function deleteDancer(dancerIdToDelete) {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/dancer/${dancerIdToDelete}`, {
+    const res = await fetch(`${API_BASE_URL}/api/dancers/${dancerIdToDelete}`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error(`Error ${res.status} al eliminar bailarina`);
 
-    // Si quieres, obtén respuesta confirmando borrado
-    // const data = await res.json();
-
-    // Actualizar array local solo si la API respondió bien
-    //dancers = dancers.filter(d => d.id != dancerIdToDelete);
-
-    console.log(`Bailarina con id ${dancerIdToDelete} eliminada correctamente.`);
   } catch (error) {
     console.error('Error al eliminar la bailarina:', error);
   }
