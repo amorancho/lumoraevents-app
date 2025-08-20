@@ -30,21 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const table = document.getElementById('dancersTable');
 
   filter.addEventListener('change', () => {
-    const selected = filter.value.toLowerCase();
-    const rows = table.querySelectorAll('tr');
-
-    rows.forEach(row => {
-      const category = row.children[1]?.textContent.trim().toLowerCase();
-      if (!selected || category === selected) {
-        row.classList.remove('d-none');
-      } else {
-        row.classList.add('d-none');
-      }
-    });
-
-    // Mostrar o no el empty state
-    const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
-    document.getElementById('emptyState').classList.toggle('d-none', visibleRows.length > 0);
+    applyFilter();
   });
 
   document.getElementById('createNewDancerBtn').addEventListener('click', function () {
@@ -120,25 +106,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
   });
 
-  document.getElementById('saveEditBtn').addEventListener('click', () => {
-
+  document.getElementById('saveEditBtn').addEventListener('click', async () => {
     const action = document.getElementById('editForm').dataset.action;
     const id = document.getElementById('editForm').dataset.id;
 
-    inputName = document.getElementById('dancerName');
-    inputCategory = document.getElementById('editCategory');
-    inputMaster = document.getElementById('editMaster');
-    inputNationality = document.getElementById('nationality');
-    inputStyles = document.getElementById('editStyles');
+    const inputName = document.getElementById('dancerName');
+    const inputCategory = document.getElementById('editCategory');
+    const inputMaster = document.getElementById('editMaster');
+    const inputNationality = document.getElementById('nationality');
+    const inputStyles = document.getElementById('editStyles');
 
     if (!inputCategory.value) {
       alert('Please choose a category before saving.');
       inputCategory.focus();
-      return; // No continúa si está vacío
+      return;
     }
 
     const selectedValues = Array.from(inputStyles.selectedOptions).map(option => option.value); 
-    
+
     const dancerData = {
       name: inputName.value.trim().toUpperCase(),
       category_id: parseInt(inputCategory.value, 10),
@@ -146,45 +131,33 @@ document.addEventListener('DOMContentLoaded', function () {
       master_id: inputMaster.value ? parseInt(inputMaster.value, 10) : null,
       nationality: inputNationality.value.trim().toUpperCase(),
       event_id: getEvent().id
-    }
+    };
 
-    // actualizar los valores del array dancers
-    if (action === 'create') {
-      
-      fetch(`${API_BASE_URL}/api/dancers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dancerData)
-      })
-      .then(response => {        
+    try {
+      if (action === 'create') {
+        const response = await fetch(`${API_BASE_URL}/api/dancers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dancerData)
+        });
         if (!response.ok) throw new Error('Failed to create dancer');
-        return response.json();
-      })
-      .then(() => {
-        fetchDancersFromAPI();
-        editModal.hide();
-      })
-      .catch(err => console.error(err));
-
-    } else if (action === 'edit') { 
-      fetch(`${API_BASE_URL}/api/dancers/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dancerData)
-      })
-      .then(response => {
+      } else if (action === 'edit') {
+        const response = await fetch(`${API_BASE_URL}/api/dancers/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dancerData)
+        });
         if (!response.ok) throw new Error('Failed to update dancer');
-        return response.json();
-      })
-      .then(() => {
-        fetchDancersFromAPI();
-        editModal.hide();
-      })
-      .catch(err => console.error(err));
-      
-    }
+      }
 
-  });         
+      await fetchDancersFromAPI(); // 👈 esperamos a que termine
+      editModal.hide();
+      applyFilter(); // 👈 ahora sí funciona con datos nuevos
+    } catch (err) {
+      console.error(err);
+    }
+  });
+         
 
 });
 
@@ -338,4 +311,22 @@ async function deleteDancer(dancerIdToDelete) {
   } catch (error) {
     console.error('Error al eliminar la bailarina:', error);
   }
+}
+
+function applyFilter() {
+  const filter = document.getElementById('categoryFilter').value.toLowerCase();
+  const rows = document.querySelectorAll('#dancersTable tr');
+
+  rows.forEach(row => {
+    const category = row.children[1]?.textContent.trim().toLowerCase();
+    if (!filter || category === filter) {
+      row.classList.remove('d-none');
+    } else {
+      row.classList.add('d-none');
+    }
+  });
+
+  // Mostrar o no el empty state
+  const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
+  document.getElementById('emptyState').classList.toggle('d-none', visibleRows.length > 0);
 }
