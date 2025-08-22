@@ -98,7 +98,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
       document.getElementById('confirmDeleteBtn').onclick = async () => {
         await deleteDancer(dancerIdToDelete);
-        fetchDancersFromAPI();
+        await fetchDancersFromAPI();
+        applyFilter(); 
         deleteModal.hide();
       };
 
@@ -116,12 +117,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const inputNationality = document.getElementById('nationality');
     const inputStyles = document.getElementById('editStyles');
 
-    if (!inputCategory.value) {
-      alert('Please choose a category before saving.');
-      inputCategory.focus();
-      return;
-    }
-
     const selectedValues = Array.from(inputStyles.selectedOptions).map(option => option.value); 
 
     const dancerData = {
@@ -134,25 +129,32 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     try {
+      let res;
       if (action === 'create') {
-        const response = await fetch(`${API_BASE_URL}/api/dancers`, {
+        res = await fetch(`${API_BASE_URL}/api/dancers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dancerData)
         });
-        if (!response.ok) throw new Error('Failed to create dancer');
+
       } else if (action === 'edit') {
-        const response = await fetch(`${API_BASE_URL}/api/dancers/${id}`, {
+        res = await fetch(`${API_BASE_URL}/api/dancers/${id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(dancerData)
         });
-        if (!response.ok) throw new Error('Failed to update dancer');
+
       }
 
-      await fetchDancersFromAPI(); // 👈 esperamos a que termine
+      if (!res.ok) {
+        const errData = await res.json();
+        showMessageModal(errData.error || 'Error saving dancer', 'Error');
+        return;
+      }
+
+      await fetchDancersFromAPI(); 
       editModal.hide();
-      applyFilter(); // 👈 ahora sí funciona con datos nuevos
+      applyFilter(); 
     } catch (err) {
       console.error(err);
     }
@@ -306,7 +308,7 @@ async function deleteDancer(dancerIdToDelete) {
     const res = await fetch(`${API_BASE_URL}/api/dancers/${dancerIdToDelete}`, {
       method: 'DELETE'
     });
-    if (!res.ok) throw new Error(`Error ${res.status} al eliminar bailarina`);
+    if (!res.ok) throw new Error(`Error ${res.status} al eliminar bailarina`);    
 
   } catch (error) {
     console.error('Error al eliminar la bailarina:', error);
