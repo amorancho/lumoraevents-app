@@ -1,6 +1,22 @@
 let dancers = [];
 var title = 'Dancers';
 
+const select = document.getElementById("nationality");
+
+countries.forEach(c => {
+  const option = document.createElement("option");
+  option.value = c.code;
+  option.textContent = `${c.code} - ${c.name}`;
+  select.appendChild(option);
+});
+
+// Inicializamos Tom Select
+new TomSelect("#nationality", {
+  maxOptions: 100,
+  placeholder: "Type to search...",
+  allowEmptyOption: true
+});
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   await eventReadyPromise;
@@ -42,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('dancerName').value = '';
     document.getElementById('editCategory').selectedIndex = 0;
     document.getElementById('editMaster').selectedIndex = 0;
-    document.getElementById('nationality').value = '';
+    document.getElementById('nationality').tomselect.setValue('');
     document.getElementById('editStyles').selectedIndex = -1; // Deseleccionar todos los estilos
 
     // Cambiar el título del modal si lo deseas
@@ -68,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('dancerName').value = dancer.name;
       document.getElementById('editCategory').value = dancer.category_id;
       document.getElementById('editMaster').value = dancer.master_id;
-      document.getElementById('nationality').value = dancer.nationality;
+      document.getElementById('nationality').tomselect.setValue(dancer.nationality);
 
       const stylesOptions = document.getElementById('editStyles').options;
     
