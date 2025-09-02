@@ -1,6 +1,8 @@
 let dancers = [];
 var title = 'Dancers';
 
+const allowedRoles = ["admin", "organizer"];
+
 const select = document.getElementById("nationality");
 
 countries.forEach(c => {
@@ -18,6 +20,8 @@ new TomSelect("#nationality", {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
+
+  validateRoles(allowedRoles);
 
   await eventReadyPromise;
 

@@ -1,5 +1,7 @@
 var title = 'Voting';
 
+const allowedRoles = ["admin", "organizer"];
+
 const mockCategories = [
     { id: 1, name: 'Solo' },
     { id: 2, name: 'Duo' }

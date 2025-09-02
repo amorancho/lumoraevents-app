@@ -1,8 +1,19 @@
 const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
 
 const eventId = getEventIdFromUrl();
-//const API_BASE_URL = 'http://localhost:3000';
-const API_BASE_URL = 'https://api.lumoraevents.net';
+
+
+const originalFetch = window.fetch;
+
+window.fetch = function(url, options = {}) {
+  const lang = localStorage.getItem('lang') || 'es';
+  options = options || {};
+  options.headers = {
+    ...options.headers,
+    'Accept-Language': lang
+  };
+  return originalFetch(url, options);
+};
 
 let eventObj = null;
 let eventReadyPromise = null;

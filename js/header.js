@@ -26,6 +26,63 @@ function generateHeader(callback) {
         headerContainer.outerHTML = doc.body.innerHTML;
       }
 
+      initUserInfo();
+
       if (callback) callback();
     });
+}
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch (e) {
+    return null;
+  }
+}
+
+function renderUser() {
+  const token = getToken();
+  const userNameEl = document.getElementById("user-name");
+  const authBtn = document.getElementById("auth-btn");
+
+  if (!userNameEl || !authBtn) return;
+
+  if (token) {
+    const payload = parseJwt(token);
+    const name = payload?.name || "User";
+    const role = payload?.role || "";
+
+    if (role && role.toLowerCase() !== "guest") {
+      userNameEl.textContent = `${name} (${role})`;
+    } else {
+      userNameEl.textContent = "Guest";
+    }
+
+    authBtn.textContent = "Logout";
+  } else {
+    userNameEl.textContent = "Guest";
+    authBtn.textContent = "Login";
+  }
+}
+
+
+function initUserInfo() {
+  renderUser();
+
+  const authBtn = document.getElementById("auth-btn");
+  if (authBtn) {
+    authBtn.addEventListener("click", () => {
+      const token = getToken();
+      if (token) {
+        localStorage.removeItem("token");
+        renderUser();
+        window.location.href = `/home.html?eventId=${encodeURIComponent(eventId)}`;
+      } else {
+        window.location.href = `/login.html?eventId=${encodeURIComponent(eventId)}`;
+      }
+    });
+  }
 }

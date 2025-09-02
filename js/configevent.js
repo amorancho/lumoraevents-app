@@ -1,6 +1,10 @@
 var title = 'Event Configuration';
 
+const allowedRoles = ["admin", "organizer"];
+
 document.addEventListener('DOMContentLoaded', async () => {
+
+  validateRoles(allowedRoles);
 
   await eventReadyPromise;
 

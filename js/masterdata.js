@@ -1,8 +1,12 @@
 var title = 'Event Master Data';
 
+const allowedRoles = ["admin", "organizer"];
+
 document.addEventListener('DOMContentLoaded', async () => {
 
-    await eventReadyPromise;
+    validateRoles(allowedRoles);
+
+    await eventReadyPromise;    
 
     updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
     updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
