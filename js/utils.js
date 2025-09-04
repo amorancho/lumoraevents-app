@@ -10,7 +10,16 @@ function getUserFromToken() {
   if (!token) return null;
 
   try {
-    return jwt_decode(token); // devuelve { id, name, role, iat, exp, ... }
+    const decoded = jwt_decode(token); // { id, name, role, iat, exp, ... }
+
+    // Validar expiración
+    if (decoded.exp * 1000 < Date.now()) {
+      console.warn("Token expirado");
+      localStorage.removeItem("token");
+      return null;
+    }
+
+    return decoded;
   } catch (err) {
     console.warn("Token inválido:", err.message);
     return null;
