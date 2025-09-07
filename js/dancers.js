@@ -14,7 +14,7 @@ countries.forEach(c => {
 
 // Inicializamos Tom Select
 new TomSelect("#nationality", {
-  maxOptions: 100,
+  maxOptions: 200,
   placeholder: "Type to search...",
   allowEmptyOption: true
 });

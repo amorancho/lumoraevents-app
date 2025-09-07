@@ -14,7 +14,11 @@ const statusColor = {
 
 var title = 'Competitions';
 
+const allowedRoles = ["admin", "organizer"];
+
 document.addEventListener('DOMContentLoaded', async () => {
+
+  validateRoles(allowedRoles);
 
   await eventReadyPromise;
 
@@ -52,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function fetchCompetitionsFromAPI() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/competition?event_id=${eventId}`);
+    const response = await fetch(`${API_BASE_URL}/api/competitions?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching dancers');
     competitions = await response.json();
     loadCompetitions();
@@ -117,7 +121,7 @@ async function addCompt() {
   if (valueCat !== "" && valueSty !== "") {
 
     const newComp = {
-      event_id: eventId,
+      event_id: getEvent().id,
       category_id: valueCat,
       style_id: valueSty,
       startTime: '',
@@ -125,7 +129,7 @@ async function addCompt() {
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/competition`, {
+      const response = await fetch(`${API_BASE_URL}/api/competitions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -134,7 +138,11 @@ async function addCompt() {
       });
 
       if (!response.ok) {
-        throw new Error(`Error al crear competición: ${response.status}`);
+        const errData = await response.json();
+        inputCat.value = '';
+        inputSty.value = '';
+        showMessageModal(errData.error || 'Error saving competition', 'Error');
+        return;
       }
 
       // Vuelves a cargar la lista desde la API
@@ -146,7 +154,6 @@ async function addCompt() {
 
     } catch (error) {
       console.error(error);
-      alert('No se pudo añadir la competición');
     }
   }
 }
@@ -244,20 +251,16 @@ document.addEventListener('DOMContentLoaded', () => {
       inputStatus = document.getElementById('editStatus');
       inputJudges = Array.from(document.getElementById('editJudges').selectedOptions).map(opt => opt.value);
 
-      console.log('Selected judges:', inputJudges);
-
       const competitionData = {
         category_id: categoryId,
         style_id: styleId,
         estimated_start: inputEstimatedStart.value,
         status: inputStatus.value,
         judges: inputJudges,
-        event_id: eventId
+        event_id: getEvent().id
       }
 
-      console.log('Updating competition:', competitionId, competitionData);
-
-      fetch(`${API_BASE_URL}/api/competition/${competitionId}`, {
+      fetch(`${API_BASE_URL}/api/competitions/${competitionId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(competitionData)
@@ -290,13 +293,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const compId = btn.closest('tr').dataset.id;
 
-      console.log('Loading dancers for competition:', compId);
       const list = document.getElementById('sortableDancers');
       list.innerHTML = '';
       list.dataset.competitionId = compId;
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/competition_dancer?event_id=${eventId}&competition_id=${compId}`);
+        const res = await fetch(`${API_BASE_URL}/api/competitions/${compId}/dancers?event_id=${getEvent().id}`);
         if (!res.ok) throw new Error('Error fetching dancers');
         const dancers = await res.json();
 
@@ -327,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const dancerIds = Array.from(items).map(item => item.dataset.id, 10);
       const compId = document.getElementById('sortableDancers').dataset.competitionId;
     
-      fetch(`${API_BASE_URL}/api/competition_dancer/order?event_id=${eventId}`, {
+      fetch(`${API_BASE_URL}/api/competitions/${compId}/order?event_id=${getEvent().id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -357,7 +359,7 @@ async function loadCategories() {
   const categoryFilter = document.getElementById('categoryFilter');
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/category?event_id=${eventId}`);
+    const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching categories');
     const categories = await response.json();
 
@@ -382,7 +384,7 @@ async function loadStyles() {
   //styleSelect.innerHTML = ''; // Limpiar opciones anteriores
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/style?event_id=${eventId}`);
+    const response = await fetch(`${API_BASE_URL}/api/styles?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching styles');
     const styles = await response.json();
 
@@ -402,7 +404,7 @@ async function loadMasters() {
   masterSelect.innerHTML = ''; // Limpiar opciones anteriores
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/judge?event_id=${eventId}`);
+    const response = await fetch(`${API_BASE_URL}/api/judges?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching masters');
     const masters = await response.json();
 
@@ -419,18 +421,11 @@ async function loadMasters() {
 
 async function deleteCompetition(competitionIdToDelete) {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/competition/${competitionIdToDelete}`, {
+    const res = await fetch(`${API_BASE_URL}/api/competitions/${competitionIdToDelete}`, {
       method: 'DELETE'
     });
     if (!res.ok) throw new Error(`Error ${res.status} al eliminar la competición`);
 
-    // Si quieres, obtén respuesta confirmando borrado
-    // const data = await res.json();
-
-    // Actualizar array local solo si la API respondió bien
-    //dancers = dancers.filter(d => d.id != dancerIdToDelete);
-
-    console.log(`Competición con id ${competitionIdToDelete} eliminada correctamente.`);
   } catch (error) {
     console.error('Error al eliminar la competición:', error);
   }
