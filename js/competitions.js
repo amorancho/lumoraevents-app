@@ -67,7 +67,6 @@ async function fetchCompetitionsFromAPI() {
 
 function loadCompetitions() {
   const competitionsTable = document.getElementById('competitionsTable');
-  
   competitionsTable.innerHTML = ''; // Limpiar tabla
 
   competitions.forEach(comp => {
@@ -78,8 +77,30 @@ function loadCompetitions() {
 
     let colorBg = statusColor[comp.status];
     let statusText = convertStatus[comp.status];
+    let colorJudges;
+
+    if (comp.judges.length < comp.judge_number) {
+      colorJudges = 'danger';
+    } else if (comp.judges.length > comp.judge_number) {
+      colorJudges = 'success';
+    } else {
+      colorJudges = 'primary';
+    }
 
     const fechaLocal = new Date(comp.estimated_start);
+
+    // --- Construimos texto del tooltip ---
+    let faltan = comp.judge_number - comp.judges.length;
+    let reservas = comp.judges.length > comp.judge_number 
+                    ? comp.judges.length - comp.judge_number 
+                    : 0;
+
+    let tooltipText = `
+      Total asignados: ${comp.judges.length}<br>
+      Deben votar: ${comp.judge_number}<br>
+      ${faltan > 0 ? `Faltan: ${faltan}<br>` : ''}
+      ${reservas > 0 ? `Reservas: ${reservas}` : ''}
+    `.trim();
 
     row.innerHTML = `
       <td><span class="badge bg-info fs-6">${comp.category_name}</span></td>
@@ -89,6 +110,15 @@ function loadCompetitions() {
       <td>
         <i class="bi bi-people me-1 text-muted"></i>
         ${comp.judges.map(j => j.name).join(', ')}
+      </td>
+      <td>
+        <span class="badge bg-${colorJudges}" 
+              data-bs-toggle="tooltip" 
+              data-bs-placement="top" 
+              data-bs-html="true"
+              title="${tooltipText}">
+              ${comp.judge_number}
+        </span>
       </td>
       <td>
         <span class="badge bg-secondary">${comp.num_dancers}</span>
@@ -110,7 +140,12 @@ function loadCompetitions() {
 
     competitionsTable.appendChild(row);
   });
+
+  // Activar tooltips de Bootstrap después de crear los elementos
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
 }
+
 
 async function addCompt() {
   const inputCat = document.getElementById('categoryDropdown');
