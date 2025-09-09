@@ -239,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modalTitleStyle').textContent = competition.style_name;
         document.getElementById('editStartTime').value = toDatetimeLocalFormat(competition.estimated_start_form);
         document.getElementById('editStatus').value = competition.status;
+        document.getElementById('editJudgeNumber').value = competition.judge_number;
 
         const judges = competition.judges || [];
 
@@ -292,6 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
         estimated_start: inputEstimatedStart.value,
         status: inputStatus.value,
         judges: inputJudges,
+        judge_number: parseInt(document.getElementById('editJudgeNumber').value, 10) || 1,
         event_id: getEvent().id
       }
 
