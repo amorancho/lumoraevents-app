@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="favicon32.png" type="image/png">
-  <title>Event Configuration</title>
+  <title>Voting</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />  
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
@@ -29,6 +29,193 @@
         <div class="col-md-4">
           <button class="btn btn-primary w-100" id="getDancersBtn" disabled>Get Dancers</button>
         </div>
+      </div>
+
+      <div class="card mb-4" id="competitionInfo">
+        <div class="card-header text-center">
+          <h5 class="mb-0">Competition Info</h5>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6 col-md-2">
+              <p class="mb-1 fw-semibold">Category</p>
+              <p id="compCategory"><span class="badge bg-secondary">Category 1</span></p>
+            </div>
+            <div class="col-6 col-md-2">
+              <p class="mb-1 fw-semibold">Style</p>
+              <p id="compStyle"><span class="badge bg-secondary">Style 1</span></p>
+            </div>
+            <div class="col-6 col-md-2">
+              <p class="mb-1 fw-semibold">Estimated Time</p>
+              <p id="compTime">08/09/2025 15:00</p>
+            </div>
+            <div class="col-6 col-md-2">
+              <p class="mb-1 fw-semibold">Status</p>
+              <p id="compStatus"><span class="badge bg-success">OPEN</span></p>
+            </div>
+            <div class="col-6 col-md-2">
+              <p class="mb-1 fw-semibold">Dancers</p>
+              <p id="compDancers"><span class="badge bg-primary">12</span></p>
+            </div>
+            <div class="col-6 col-md-2">
+              <p class="mb-1 fw-semibold">Pending</p>
+              <p id="compDancersPend"><span class="badge bg-warning">6</span></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de bailarinas -->
+      <div class="table-responsive" id="dancersTableContainer">
+        <table class="table table-bordered align-middle text-center">
+          <thead class="table-light">
+            <tr>
+              <th scope="col">Name</th>
+              <th scope="col">Position</th>
+              <th scope="col">Choreography</th>
+              <th scope="col">Technique</th>
+              <th scope="col">Expression</th>
+              <th scope="col">Total</th>
+              <th scope="col">Status</th>
+              <th scope="col">Action</th>
+            </tr>
+          </thead>
+          <tbody id="dancersTableBody">
+            <!-- Bailarinas -->
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/ES/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>María López</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#1</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
+              <td><span class="badge bg-warning">Pending</span></td>
+              <td><button class="btn btn-sm btn-primary">Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/FR/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Claire Dubois</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#2</span></td><td>8</td><td>9</td><td>7</td><td>24</td>
+              <td><span class="badge bg-success">Closed</span></td>
+              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/IT/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Giulia Rossi</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#3</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
+              <td><span class="badge bg-warning">Pending</span></td>
+              <td><button class="btn btn-sm btn-primary">Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/DE/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Anna Müller</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#4</span></td><td>7</td><td>8</td><td>9</td><td>24</td>
+              <td><span class="badge bg-success">Closed</span></td>
+              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/PT/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Inês Carvalho</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#5</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
+              <td><span class="badge bg-warning">Pending</span></td>
+              <td><button class="btn btn-sm btn-primary">Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/GB/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Emily Johnson</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#6</span></td><td>9</td><td>8</td><td>9</td><td>26</td>
+              <td><span class="badge bg-success">Closed</span></td>
+              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/US/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Sophia Miller</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#7</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
+              <td><span class="badge bg-warning">Pending</span></td>
+              <td><button class="btn btn-sm btn-primary">Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/MX/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Valentina Torres</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#8</span></td><td>7</td><td>7</td><td>8</td><td>22</td>
+              <td><span class="badge bg-success">Closed</span></td>
+              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/AR/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Camila Fernández</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#9</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
+              <td><span class="badge bg-warning">Pending</span></td>
+              <td><button class="btn btn-sm btn-primary">Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/BR/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Larissa Oliveira</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#10</span></td><td>8</td><td>9</td><td>8</td><td>25</td>
+              <td><span class="badge bg-success">Closed</span></td>
+              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/JP/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Aiko Tanaka</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#11</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
+              <td><span class="badge bg-warning">Pending</span></td>
+              <td><button class="btn btn-sm btn-primary">Vote</button></td>
+            </tr>
+            <tr>
+              <td class="align-middle">
+                <div class="d-flex align-items-center">
+                  <img src="https://flagsapi.com/RU/shiny/24.png" class="me-2" style="vertical-align: middle;">
+                  <span>Anastasia Petrova</span>
+                </div>
+              </td>
+              <td><span class="badge bg-info">#12</span></td><td>9</td><td>9</td><td>8</td><td>26</td>
+              <td><span class="badge bg-success">Closed</span></td>
+              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <h3 id="dancersTitle"></h3>

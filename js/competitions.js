@@ -28,30 +28,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);
 
   const filter = document.getElementById('categoryFilter');
-  const table = document.getElementById('competitionsTable');
 
-  filter.addEventListener('change', () => {
-    const selected = filter.value.toLowerCase();
-    const rows = table.querySelectorAll('tr');
-
-    rows.forEach(row => {
-      const category = row.children[0]?.textContent.trim().toLowerCase();
-      if (!selected || category === selected) {
-        row.classList.remove('d-none');
-      } else {
-        row.classList.add('d-none');
-      }
-    });
-
-    // Mostrar o no el empty state
-    const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
-    document.getElementById('emptyState').classList.toggle('d-none', visibleRows.length > 0);
-  });
+  filter.addEventListener('change', applyCategoryFilter);
 
   loadCategories();
   loadStyles();
   loadMasters();
   fetchCompetitionsFromAPI();
+
+  const editForm = document.getElementById("editForm");
+
+  if (editForm) {
+    editForm.addEventListener("submit", (e) => {
+      e.preventDefault(); // evita recarga/redirección
+    });
+  }
 });
 
 async function fetchCompetitionsFromAPI() {
@@ -60,6 +51,7 @@ async function fetchCompetitionsFromAPI() {
     if (!response.ok) throw new Error('Error fetching dancers');
     competitions = await response.json();
     loadCompetitions();
+    applyCategoryFilter();
   } catch (error) {
     console.error('Failed to fetch dancers:', error);
   }
@@ -466,4 +458,28 @@ async function deleteCompetition(competitionIdToDelete) {
   } catch (error) {
     console.error('Error al eliminar la competición:', error);
   }
+}
+
+
+function applyCategoryFilter() {
+  const filter = document.getElementById('categoryFilter');
+  const table = document.getElementById('competitionsTable');
+
+  if (!filter || !table) return; // seguridad por si aún no existen en el DOM
+
+  const selected = filter.value.toLowerCase();
+  const rows = table.querySelectorAll('tr');
+
+  rows.forEach(row => {
+    const category = row.children[0]?.textContent.trim().toLowerCase();
+    if (!selected || category === selected) {
+      row.classList.remove('d-none');
+    } else {
+      row.classList.add('d-none');
+    }
+  });
+
+  // Mostrar o no el empty state
+  const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
+  document.getElementById('emptyState')?.classList.toggle('d-none', visibleRows.length > 0);
 }
