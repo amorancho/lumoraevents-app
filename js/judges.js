@@ -95,6 +95,12 @@ function initJudgeManagement() {
   });
 
   document.getElementById('saveEditBtn').addEventListener('click', async () => {
+    // Deshabilitar botón para evitar múltiples envíos
+    const saveBtn = document.getElementById('saveEditBtn');
+    if (saveBtn.disabled) return; // prevención extra por si acaso
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+
     const action = document.getElementById('editForm').dataset.action;
     const id = document.getElementById('editForm').dataset.id;
 
@@ -142,6 +148,9 @@ function initJudgeManagement() {
     } catch (err) {
       console.error(err);
       showMessageModal('Unexpected error saving judge', 'Error');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save changes";
     }
   });
 

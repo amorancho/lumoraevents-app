@@ -140,6 +140,12 @@ function loadCompetitions() {
 
 
 async function addCompt() {
+  // Deshabilitar botón para evitar múltiples envíos
+  const addBtn = document.getElementById('createBtn');
+  if (addBtn.disabled) return;
+  addBtn.disabled = true;
+  addBtn.textContent = "Adding...";
+
   const inputCat = document.getElementById('categoryDropdown');
   const inputSty = document.getElementById('styleDropdown');
   const valueCat = inputCat.value.trim();
@@ -181,6 +187,9 @@ async function addCompt() {
 
     } catch (error) {
       console.error(error);
+    } finally {
+      addBtn.disabled = false;
+      addBtn.textContent = "Add Competition";
     }
   }
 }

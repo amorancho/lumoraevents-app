@@ -128,6 +128,12 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   document.getElementById('saveEditBtn').addEventListener('click', async () => {
+    const saveBtn = document.getElementById('saveEditBtn');
+    if (saveBtn.disabled) return; // prevención extra por si acaso
+
+    saveBtn.disabled = true;  
+    saveBtn.textContent = "Saving..."; // feedback opcional al usuario
+
     const action = document.getElementById('editForm').dataset.action;
     const id = document.getElementById('editForm').dataset.id;
 
@@ -177,6 +183,9 @@ document.addEventListener('DOMContentLoaded', function () {
       applyFilter(); 
     } catch (err) {
       console.error(err);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save changes";
     }
   });
          
