@@ -31,7 +31,7 @@
         </div>
       </div>
 
-      <div class="card mb-4" id="competitionInfo">
+      <div class="card mb-4" id="competitionInfo" style="display:none;">
         <div class="card-header text-center">
           <h5 class="mb-0">Competition Info</h5>
         </div>
@@ -39,183 +39,63 @@
           <div class="row text-center">
             <div class="col-6 col-md-2">
               <p class="mb-1 fw-semibold">Category</p>
-              <p id="compCategory"><span class="badge bg-secondary">Category 1</span></p>
+              <p id="compCategory"><span class="badge bg-secondary"></span></p>
             </div>
             <div class="col-6 col-md-2">
               <p class="mb-1 fw-semibold">Style</p>
-              <p id="compStyle"><span class="badge bg-secondary">Style 1</span></p>
+              <p id="compStyle"><span class="badge bg-secondary"></span></p>
             </div>
             <div class="col-6 col-md-2">
               <p class="mb-1 fw-semibold">Estimated Time</p>
-              <p id="compTime">08/09/2025 15:00</p>
+              <p id="compTime"></p>
             </div>
             <div class="col-6 col-md-2">
               <p class="mb-1 fw-semibold">Status</p>
-              <p id="compStatus"><span class="badge bg-success">OPEN</span></p>
+              <p id="compStatus"><span class="badge bg-success"></span></p>
             </div>
             <div class="col-6 col-md-2">
               <p class="mb-1 fw-semibold">Dancers</p>
-              <p id="compDancers"><span class="badge bg-primary">12</span></p>
+              <p id="compDancers"><span class="badge bg-primary"></span></p>
             </div>
             <div class="col-6 col-md-2">
               <p class="mb-1 fw-semibold">Pending</p>
-              <p id="compDancersPend"><span class="badge bg-warning">6</span></p>
+              <p id="compDancersPend"><span class="badge bg-warning"></span></p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Tabla de bailarinas -->
-      <div class="table-responsive" id="dancersTableContainer">
+      <div class="table-responsive mx-auto" id="dancersTableContainer" style="max-width: 700px; display:none;">
         <table class="table table-bordered align-middle text-center">
           <thead class="table-light">
             <tr>
-              <th scope="col">Name</th>
-              <th scope="col">Position</th>
-              <th scope="col">Choreography</th>
-              <th scope="col">Technique</th>
-              <th scope="col">Expression</th>
-              <th scope="col">Total</th>
-              <th scope="col">Status</th>
-              <th scope="col">Action</th>
+              <th>Dancer</th>
+              <th class="text-center">Qualif.</th>
+              <th class="text-center">Vote</th>
             </tr>
           </thead>
           <tbody id="dancersTableBody">
-            <!-- Bailarinas -->
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/ES/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>María López</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#1</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
-              <td><span class="badge bg-warning">Pending</span></td>
-              <td><button class="btn btn-sm btn-primary">Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/FR/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Claire Dubois</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#2</span></td><td>8</td><td>9</td><td>7</td><td>24</td>
-              <td><span class="badge bg-success">Closed</span></td>
-              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/IT/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Giulia Rossi</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#3</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
-              <td><span class="badge bg-warning">Pending</span></td>
-              <td><button class="btn btn-sm btn-primary">Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/DE/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Anna Müller</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#4</span></td><td>7</td><td>8</td><td>9</td><td>24</td>
-              <td><span class="badge bg-success">Closed</span></td>
-              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/PT/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Inês Carvalho</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#5</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
-              <td><span class="badge bg-warning">Pending</span></td>
-              <td><button class="btn btn-sm btn-primary">Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/GB/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Emily Johnson</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#6</span></td><td>9</td><td>8</td><td>9</td><td>26</td>
-              <td><span class="badge bg-success">Closed</span></td>
-              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/US/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Sophia Miller</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#7</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
-              <td><span class="badge bg-warning">Pending</span></td>
-              <td><button class="btn btn-sm btn-primary">Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/MX/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Valentina Torres</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#8</span></td><td>7</td><td>7</td><td>8</td><td>22</td>
-              <td><span class="badge bg-success">Closed</span></td>
-              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/AR/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Camila Fernández</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#9</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
-              <td><span class="badge bg-warning">Pending</span></td>
-              <td><button class="btn btn-sm btn-primary">Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/BR/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Larissa Oliveira</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#10</span></td><td>8</td><td>9</td><td>8</td><td>25</td>
-              <td><span class="badge bg-success">Closed</span></td>
-              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/JP/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Aiko Tanaka</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#11</span></td><td>-</td><td>-</td><td>-</td><td>0</td>
-              <td><span class="badge bg-warning">Pending</span></td>
-              <td><button class="btn btn-sm btn-primary">Vote</button></td>
-            </tr>
-            <tr>
-              <td class="align-middle">
-                <div class="d-flex align-items-center">
-                  <img src="https://flagsapi.com/RU/shiny/24.png" class="me-2" style="vertical-align: middle;">
-                  <span>Anastasia Petrova</span>
-                </div>
-              </td>
-              <td><span class="badge bg-info">#12</span></td><td>9</td><td>9</td><td>8</td><td>26</td>
-              <td><span class="badge bg-success">Closed</span></td>
-              <td><button class="btn btn-sm btn-primary" disabled>Vote</button></td>
-            </tr>
+            <!-- Bailarinas se cargarán aquí dinámicamente -->
           </tbody>
         </table>
+      </div>
+
+      <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="detailsModalLabel">Votes</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row g-3 text-center" id="criteriaContainer"></div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <h3 id="dancersTitle"></h3>
@@ -230,6 +110,7 @@
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
