@@ -45,73 +45,149 @@ document.addEventListener('DOMContentLoaded', async () => {
     dancersTableContainer.style.display = 'block';
   });
 
-  // Modal único
-  const modalEl = document.createElement('div');
-  modalEl.className = 'modal fade';
-  modalEl.id = 'detailsModal';
-  modalEl.tabIndex = -1;
-  modalEl.innerHTML = `
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title" id="detailsModalLabel">Votes</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="row g-3 text-center" id="criteriaContainer"></div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modalEl);
-
+  const modalEl = document.getElementById('detailsModal');
   modal = new bootstrap.Modal(modalEl);
   criteriaContainer = document.getElementById('criteriaContainer');
-  
-
 });
 
-function showVotesModal(dancer) {
-  document.getElementById('detailsModalLabel').textContent = `Votes for ${dancer.name}`;
+function showVotesModal(dancer, mode = "details") {
+  document.getElementById('detailsModalLabel').textContent =
+    mode === "details" ? `Votes for ${dancer.name}` : `Vote for ${dancer.name}`;
 
   criteriaContainer.innerHTML = '';
 
-  console.log('criteriaContainer:', criteriaContainer);
-
   let total = 0;
-  criteriaList.forEach((c, i) => {
 
-    const value = dancer.scores[c.name] ?? '-';
-
-    if (typeof value === 'number') total += value;
+  criteriaList.forEach(c => {
+    const value = dancer.scores?.[c.name] ?? '-';
     const col = document.createElement('div');
     col.className = 'col-6 text-center';
-    col.innerHTML = `
-      <div class="mb-1 fw-semibold">${c.name}</div>
-      <span class="badge bg-info fs-5">${value}</span>
-    `;
+
+    if (mode === "details") {
+      // Solo lectura
+      if (typeof value === 'number') total += value;
+      col.innerHTML = `
+        <div class="mb-1 fw-semibold">${c.name}</div>
+        <span class="badge bg-info fs-5">${value}</span>
+      `;
+    } else {
+      // Modo edición
+      const currentVal = typeof value === 'number' ? value : '';
+      col.innerHTML = `
+        <div class="mb-1 fw-semibold">${c.name}</div>
+        <input type="number" class="form-control form-control-sm score-input"
+               data-criteria="${c.id}" min="0" max="10" step="1" value="${currentVal}">
+      `;
+    }
 
     criteriaContainer.appendChild(col);
   });
-
-  console.log('criteriaContainer:', criteriaContainer);
 
   // Total
   const totalCol = document.createElement('div');
   totalCol.className = 'col-12 mt-3 text-center';
   totalCol.innerHTML = `
     <div class="fw-bold mb-1">Total</div>
-    <span class="badge bg-success fs-4 px-4">${total}</span>
+    <span id="totalScore" class="badge bg-success fs-4 px-4">${total}</span>
   `;
   criteriaContainer.appendChild(totalCol);
 
-  console.log('criteriaContainer:', criteriaContainer);
+  // Footer → limpiar primero
+  const footer = modal._element.querySelector('.modal-footer');
+  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>`;
+
+  if (mode === "vote") {
+
+    const sendBtn = document.createElement('button');
+    sendBtn.className = "btn btn-primary btn-sm";
+    sendBtn.textContent = "Send votes";
+
+    sendBtn.addEventListener('click', async () => {
+      const scores = [];
+      let allFilled = true;
+
+      criteriaContainer.querySelectorAll('.score-input').forEach(input => {
+        const val = input.value.trim();
+        if (val === "" || isNaN(Number(val))) {
+          allFilled = false;
+        } else {
+          scores.push({
+            criteria_id: Number(input.dataset.criteria),
+            score: Number(val)
+          });
+        }
+      });
+
+      if (!allFilled) {
+        // Verificar si ya existe el alert
+        if (!document.getElementById("voteErrorAlert")) {
+          const alertDiv = document.createElement("div");
+          alertDiv.id = "voteErrorAlert";
+          alertDiv.className = "alert alert-danger alert-dismissible fade show mt-3";
+          alertDiv.role = "alert";
+          alertDiv.innerHTML = `
+            You must fill in all criteria before sending the votes.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          `;
+          criteriaContainer.appendChild(alertDiv);
+        }
+        return;
+      }
+
+      // Si estaba el alert, lo quitamos porque ya está todo informado
+      const existingAlert = document.getElementById("voteErrorAlert");
+      if (existingAlert) existingAlert.remove();
+
+      // llamada API para enviar votos
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/voting`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event_id: getEvent().id,
+            competition_id: dancer.competition_id,
+            judge_id: getUserId(),
+            dancer_id: dancer.id,
+            scores: scores
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          showMessageModal(errData.error || 'Error sending votes', 'Error');
+          return;
+        }
+
+        modal.hide();
+
+        // Recargar tabla de bailarinas
+        document.getElementById('getDancersBtn').click();
+
+      } catch (err) {
+        console.error("Error sending votes", err);
+        alert("Error sending votes");
+      }
+    });
+
+    footer.appendChild(sendBtn);
+
+    // Escuchar cambios en inputs para recalcular total
+    criteriaContainer.querySelectorAll('.score-input').forEach(input => {
+      input.addEventListener('input', () => {
+        let sum = 0;
+        criteriaContainer.querySelectorAll('.score-input').forEach(inp => {
+          const val = Number(inp.value);
+          if (!isNaN(val)) sum += val;
+        });
+        document.getElementById('totalScore').textContent = sum;
+      });
+    });
+  }
+
 
   modal.show();
 }
+
 
 async function loadCriteria() {
   try {
@@ -125,7 +201,7 @@ async function loadCriteria() {
 async function fetchVoting(category, style) {
   try {
     const userId = getUserId();
-    const res = await fetch(`${API_BASE_URL}/api/voting?event=${getEvent().id}&judge=${userId}&category=${category}&style=${style}`);
+    const res = await fetch(`${API_BASE_URL}/api/voting?event_id=${getEvent().id}&judge=${userId}&category=${category}&style=${style}`);
     return await res.json();
   } catch (err) {
     console.error('Error loading dancers', err);
@@ -139,46 +215,54 @@ function renderDancersTable(dancers) {
   dancers.forEach(d => {
     const tr = document.createElement('tr');
 
-    // Columna Dancer + estado + orden
+    // Columna Dancer (bandera + nombre + orden)
     const tdDancer = document.createElement('td');
     tdDancer.innerHTML = `
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center">
-          <img src="https://flagsapi.com/${d.nationality}/shiny/24.png" class="me-2" style="vertical-align: middle;">
+          <img src="https://flagsapi.com/${d.nationality}/shiny/24.png" 
+               class="me-2" style="vertical-align: middle;">
           <span>${d.name}</span>
         </div>
-        <div class="d-flex align-items-center">
-          <span class="badge ${d.status==='Pending' ? 'bg-warning' : 'bg-success'} me-2">${d.status}</span>
-          <span class="badge bg-info">#${d.position}</span>
-        </div>
+        <span class="badge bg-info">#${d.position}</span>
       </div>
     `;
     tr.appendChild(tdDancer);
 
-    // Columna Details
-    const tdDetails = document.createElement('td');
-    tdDetails.className = 'text-center';
-    const btnDetails = document.createElement('button');
-    btnDetails.className = 'btn btn-sm btn-secondary';
-    btnDetails.textContent = 'Details';
-    btnDetails.disabled = d.status === 'Pending';
-    btnDetails.addEventListener('click', () => showVotesModal(d));
-    tdDetails.appendChild(btnDetails);
-    tr.appendChild(tdDetails);
+    // Columna Status
+    const tdStatus = document.createElement('td');
+    tdStatus.className = 'text-center';
+    tdStatus.innerHTML = `
+      <span class="badge ${d.status === 'Pending' ? 'bg-warning' : 'bg-success'}">
+        ${d.status}
+      </span>
+    `;
+    tr.appendChild(tdStatus);
 
-    // Columna Vote
-    const tdVote = document.createElement('td');
-    tdVote.className = 'text-center';
-    const btnVote = document.createElement('button');
-    btnVote.className = 'btn btn-sm btn-primary';
-    btnVote.textContent = 'Vote';
-    btnVote.disabled = d.status !== 'Pending';
-    tdVote.appendChild(btnVote);
-    tr.appendChild(tdVote);
+    // Columna Actions
+    const tdActions = document.createElement('td');
+    tdActions.className = 'text-center';
+
+    if (d.status === 'Completed') {
+      const btnDetails = document.createElement('button');
+      btnDetails.className = 'btn btn-sm btn-secondary';
+      btnDetails.textContent = 'Details';
+      btnDetails.addEventListener('click', () => showVotesModal(d, "details"));
+      tdActions.appendChild(btnDetails);
+    } else if (d.status === 'Pending') {
+      const btnVote = document.createElement('button');
+      btnVote.className = 'btn btn-sm btn-primary';
+      btnVote.textContent = 'Vote';
+      btnVote.addEventListener('click', () => showVotesModal(d, "vote"));
+      tdActions.appendChild(btnVote);
+    }
+
+    tr.appendChild(tdActions);
 
     dancersTableBody.appendChild(tr);
   });
 }
+
 
 function getUserId() {
   const token = getToken();
@@ -238,18 +322,22 @@ function renderCompetitionInfo(competition) {
 
   // Estado
   let statusClass = 'bg-secondary';
+  let statusText;
   switch (competition.status) {
     case 'OPE':
-      statusClass = 'bg-success';
+      statusClass = 'bg-warning';
+      statusText = 'OPEN';
       break;
     case 'CLO':
       statusClass = 'bg-danger';
+      statusText = 'CLOSED';
       break;
-    case 'PEN':
-      statusClass = 'bg-warning';
+    case 'FIN':
+      statusClass = 'bg-success';
+      statusText = 'FINISHED';
       break;
   }
-  document.getElementById('compStatus').innerHTML = `<span class="badge ${statusClass}">${competition.status}</span>`;
+  document.getElementById('compStatus').innerHTML = `<span class="badge ${statusClass}">${statusText}</span>`;
 
   // Número de bailarinas
   document.getElementById('compDancers').innerHTML = `<span class="badge bg-primary">${competition.num_dancers}</span>`;
