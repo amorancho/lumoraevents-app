@@ -311,10 +311,12 @@ async function loadMasters() {
     masterSelect.appendChild(emptyOption1);
 
     masters.forEach(master => {
-      const option = document.createElement('option');
-      option.value = master.id;
-      option.textContent = master.name;
-      masterSelect.appendChild(option);
+      if (master.ismaster == 1) {
+        const option = document.createElement('option');
+        option.value = master.id;
+        option.textContent = master.name;
+        masterSelect.appendChild(option);
+      }
     });
   } catch (err) {
     console.error('Failed to load masters:', err);

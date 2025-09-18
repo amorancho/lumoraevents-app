@@ -174,6 +174,16 @@ function showVotesModal(dancer, mode = "details") {
     // Escuchar cambios en inputs para recalcular total
     criteriaContainer.querySelectorAll('.score-input').forEach(input => {
       input.addEventListener('input', () => {
+
+        let min = parseInt(input.min);
+        let max = parseInt(input.max);
+        let val = parseInt(input.value);
+
+        if (!isNaN(val)) {
+          if (val < min) input.value = min;
+          if (val > max) input.value = max;
+        }
+
         let sum = 0;
         criteriaContainer.querySelectorAll('.score-input').forEach(inp => {
           const val = Number(inp.value);
@@ -233,7 +243,12 @@ function renderDancersTable(dancers) {
     const tdStatus = document.createElement('td');
     tdStatus.className = 'text-center';
     tdStatus.innerHTML = `
-      <span class="badge ${d.status === 'Pending' ? 'bg-warning' : 'bg-success'}">
+      <span class="badge 
+        ${d.status === 'Pending' 
+            ? 'bg-warning' 
+            : d.status === 'Incompatible' 
+              ? 'bg-danger' 
+              : 'bg-success'}">
         ${d.status}
       </span>
     `;

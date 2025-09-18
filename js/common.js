@@ -7,10 +7,16 @@ const originalFetch = window.fetch;
 
 window.fetch = function(url, options = {}) {
   const lang = localStorage.getItem('lang') || 'es';
+
+  // obtenemos el role del usuario
+  const user = getUserFromToken();
+  const role = user ? user.role : 'guest';
+
   options = options || {};
   options.headers = {
     ...options.headers,
-    'Accept-Language': lang
+    'Accept-Language': lang,
+    'X-User-Role': role
   };
   return originalFetch(url, options);
 };
