@@ -201,7 +201,7 @@ function showVotesModal(dancer, mode = "details") {
 
 async function loadCriteria() {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/criteria?event_id=1`);
+    const res = await fetch(`${API_BASE_URL}/api/criteria?event_id=${getEvent().id}`);
     criteriaList = await res.json();
   } catch (err) {
     console.error('Error loading criteria', err);

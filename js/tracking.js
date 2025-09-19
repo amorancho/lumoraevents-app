@@ -1,8 +1,12 @@
 var title = 'Competition Tracking';
 
+const allowedRoles = ["admin", "organizer"];
+
 const categorySelect = document.getElementById('categorySelect');
 
 document.addEventListener('DOMContentLoaded', async () => {
+
+  validateRoles(allowedRoles);
 
   const refreshBtn = document.getElementById('refreshBtn');
 
@@ -154,29 +158,41 @@ function renderCompetitions(competitions) {
           else if (v.status === 'Pending') badgeClass = 'warning';
           else if (v.status === 'Incompatible') badgeClass = 'danger';
 
+          // async function resetVote(categoryId, styleId, judgeId, dancerId, rowId) {
+
+          let ind = `${comp.id}-${d.dancer_id}-${v.judge.id}`; // ID de la fila para localizarla en reset
+
           if (v.status === 'Completed') {
+
+            let params = `${comp.category_id}, ${comp.style_id}, ${v.judge.id}, ${d.dancer_id}, '${ind}', '${d.dancer_name}', '${v.judge.name}'`;
+            
             return `
-              <td class="text-center">
+              <td class="text-center" id="row-${ind}">
                 <div class="d-flex justify-content-between align-items-center">
+                  <!-- Ver detalles (izquierda) -->
+                  <button class="btn btn-link text-primary p-0" 
+                    onclick="showVoteDetails(${params})" 
+                    title="Ver detalles">
+                    <i class="bi bi-eye"></i>
+                  </button>
+
+                  <!-- Badge (centro) -->
                   <span class="badge status-badge bg-${badgeClass}">${v.status}</span>
-                  <div class="actions-cell">
-                    <button class="btn btn-sm btn-outline-primary me-1" 
-                      onclick="showVoteDetails(${comp.id}, ${d.id}, ${comp.judges[judgeIndex].id})" 
-                      title="Ver detalles">
-                      <i class="bi bi-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger" 
-                      onclick="resetVote(${comp.id}, ${d.id}, ${comp.judges[judgeIndex].id}, '${comp.id}-${d.id}-${comp.judges[judgeIndex].id}')"
-                      title="Reiniciar voto">
-                      <i class="bi bi-arrow-counterclockwise"></i>
-                    </button>
-                  </div>
+
+                  <!-- Reiniciar voto (derecha) -->
+                  <button class="btn btn-link text-danger p-0" 
+                    onclick="resetVote(${params})" 
+                    title="Reiniciar voto">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                  </button>
                 </div>
               </td>
             `;
+
+
           }
 
-          return `<td class="text-center"><span class="badge status-badge bg-${badgeClass}">${v.status}</span></td>`;
+          return `<td class="text-center" id="row-${ind}"><span class="badge status-badge bg-${badgeClass}">${v.status}</span></td>`;
         }).join('');
 
         // Asignar ID a la fila combinando competición-dancer-judge (para poder localizarla en reset)
@@ -198,16 +214,76 @@ function renderCompetitions(competitions) {
   });
 }
 
+// async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
+async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
+  document.getElementById('detailsModalLabel').textContent = `Judge: ${judgeName} / Dancer: ${dancerName}`;
 
-async function showVoteDetails(competitionId, dancerId, judgeId) {
+  criteriaContainer.innerHTML = '';
+
+  let total = 0;
+
+  const res = await fetch(`${API_BASE_URL}/api/voting?event_id=${getEvent().id}&judge=${judgeId}&category=${categoryId}&style=${styleId}`);
+  if (!res.ok) {
+    throw new Error('Error al obtener detalles de la votación');
+  }
+
+  const data = await res.json();
+  // Filtramos dancerId de data.dancers
+  data.dancers = data.dancers.find(d => d.id === dancerId);
+  if (!data.dancers) throw new Error('No se han encontrado datos de la bailarina');
+
+  data.criteria.forEach(c => {
+    const value = data.dancers.scores?.[c.name] ?? '-';
+    const col = document.createElement('div');
+    col.className = 'col-6 text-center';
+
+    // Solo lectura
+    if (typeof value === 'number') total += value;
+    col.innerHTML = `
+      <div class="mb-1 fw-semibold">${c.name}</div>
+      <span class="badge bg-info fs-5">${value}</span>
+    `;    
+
+    criteriaContainer.appendChild(col);
+  });
+
+  // Total
+  const totalCol = document.createElement('div');
+  totalCol.className = 'col-12 mt-3 text-center';
+  totalCol.innerHTML = `
+    <div class="fw-bold mb-1">Total</div>
+    <span id="totalScore" class="badge bg-success fs-4 px-4">${total}</span>
+  `;
+  criteriaContainer.appendChild(totalCol);
+
+  const modalEl = document.getElementById('detailsModal');
+  modal = new bootstrap.Modal(modalEl);
+
+  // Footer → limpiar primero
+  const footer = modal._element.querySelector('.modal-footer');
+  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>`;
+
+  
+  modal.show();
+}
+
+/*
+async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
   try {
-    const res = await fetch(`/api/votes/${competitionId}/${dancerId}/${judgeId}`);
+    //const res = await fetch(`/api/votes/${competitionId}/${dancerId}/${judgeId}`);
+    const res = await fetch(`${API_BASE_URL}/api/voting?event_id=${getEvent().id}&judge=${judgeId}&category=${categoryId}&style=${styleId}`);
     if (!res.ok) {
       throw new Error('Error al obtener detalles de la votación');
     }
 
     const data = await res.json();
-    // data debe tener { dancer, criteriaList } o similar
+    
+    // Filtramos dancerId de data.dancers
+    data.dancers = data.dancers.find(d => d.id === dancerId);
+    if (!data.dancers) throw new Error('No se han encontrado datos de la bailarina');
+
+    // Título del modal
+    //document.getElementById('voteDetailsModalLabel').textContent = `Details for ${dancerName} (Judge: ${judgeName})`;    
 
     // Referencias al modal
     const modalEl = document.getElementById('voteDetailsModal');
@@ -218,8 +294,8 @@ async function showVoteDetails(competitionId, dancerId, judgeId) {
     let total = 0;
 
     // Pintar criterios en modo "details"
-    data.criteriaList.forEach(c => {
-      const value = data.dancer.scores?.[c.name] ?? '-';
+    data.criteria.forEach(c => {
+      const value = data.dancers.scores?.[c.name] ?? '-';
       const col = document.createElement('div');
       col.className = 'col-6 text-center';
 
@@ -255,14 +331,15 @@ async function showVoteDetails(competitionId, dancerId, judgeId) {
     alert(err.message);
   }
 }
+*/
+async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
 
+  const confirmed = await showModal(`¿Seguro que quieres reiniciar el voto del juez "${judgeName}" a la bailarina "${dancerName}"?`);
 
-async function resetVote(eventId, categoryId, styleId, judgeId, dancerId, rowId) {
-  console.log({ eventId, categoryId, styleId, judgeId, dancerId, rowId });
-  if (!confirm('¿Seguro que quieres reiniciar este voto?')) return;
+  if (!confirmed) return;
 
   try {
-    const res = await fetch(`${API_BASE_URL}/api/voting/resetVoting?event_id=${eventId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/voting/resetVoting?event_id=${getEvent().id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -274,32 +351,45 @@ async function resetVote(eventId, categoryId, styleId, judgeId, dancerId, rowId)
     });
 
     if (!res.ok) throw new Error('Error al reiniciar el voto');
+
     const data = await res.json();
-
+    
     if (data.success) {
-      // ✅ Actualizar DOM
-      const row = document.getElementById(`row-${rowId}`);
-      if (row) {
-        // Cambiar badge a Pending
-        const badge = row.querySelector('.status-badge');
-        if (badge) {
-          badge.textContent = 'Pending';
-          badge.classList.remove('bg-success');
-          badge.classList.add('bg-warning');
-        }
+      const td = document.getElementById(`row-${rowId}`);
 
-        // Quitar iconos de acción
-        const actionsCell = row.querySelector('.actions-cell');
-        if (actionsCell) {
-          actionsCell.innerHTML = ''; // vaciar los botones
+      if (td) {
+        // Buscar el badge actual
+        const badge = td.querySelector('.status-badge');
+        if (badge) {
+          // Crear un nuevo badge limpio
+          const newBadge = document.createElement('span');
+          newBadge.className = 'badge status-badge bg-warning';
+          newBadge.textContent = 'Pending';
+
+          // Reemplazar todo el contenido del td por el badge
+          td.innerHTML = '';
+          td.appendChild(newBadge);
         }
       }
     }
 
-    // refrescar la pantalla / recargar tabla aquí si hace falta
 
   } catch (err) {
     alert(err.message);
   }
 }
 
+function showModal(message) {
+    return new Promise((resolve) => {
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    document.getElementById('deleteModalMessage').textContent = message;
+    
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    confirmBtn.onclick = () => {
+        modal.hide();
+        resolve(true);
+    };
+    
+    modal.show();
+    });
+}
