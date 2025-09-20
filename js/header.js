@@ -37,7 +37,18 @@ function getToken() {
 
 function parseJwt(token) {
   try {
-    return JSON.parse(atob(token.split(".")[1]));
+    //return JSON.parse(atob(token.split(".")[1]));
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const binary = atob(base64);
+
+    // Convertir a Uint8Array
+    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+
+    // Decodificar como UTF-8
+    const jsonPayload = new TextDecoder().decode(bytes);
+
+    return JSON.parse(jsonPayload);
   } catch (e) {
     return null;
   }

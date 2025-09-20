@@ -84,8 +84,11 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         name: data.name,
         eventLogo: data.eventlogo,
         eventUrl: data.eventurl,
+        status: (new Date(data.start) > new Date()) ? 'upcoming' :
+                (new Date(data.start) < new Date()) ? 'completed' : 'ongoing',
         homeUrl: `home.html?eventId=${eventId}`
       };
+
     }
     resolve(eventObj);
   } catch (err) {

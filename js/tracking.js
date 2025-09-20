@@ -102,14 +102,22 @@ function renderCompetitions(competitions) {
           <div class="col-6 col-md-2">
             <p class="mb-1 fw-semibold">Status</p>
             <p><span class="badge bg-${comp.status === 'OPE' ? 'success' : 'warning'}">${comp.status}</span></p>
-          </div>
-          <div class="col-6 col-md-2">
-            <p class="mb-1 fw-semibold">Dancers</p>
-            <p><span class="badge bg-primary">${comp.num_dancers}</span></p>
-          </div>
-          <div class="col-6 col-md-2">
-            <p class="mb-1 fw-semibold">Pending</p>
-            <p><span class="badge bg-warning">${comp.dancers.filter(d => d.votes.some(v => v.status === 'Pending')).length}</span></p>
+          </div>                  
+          <div class="col-12 col-md-4">
+              <div class="row text-center">
+                <div class="col-4">
+                  <p class="mb-1 fw-semibold"># Judges</p>
+                  <p><span class="badge bg-primary">${comp.judge_number}</span></p>
+                </div>
+                <div class="col-4">
+                  <p class="mb-1 fw-semibold">Dancers</p>
+                  <p><span class="badge bg-primary">${comp.num_dancers}</span></p>
+                </div>
+                <div class="col-4">
+                  <p class="mb-1 fw-semibold">Pending</p>
+                  <p><span class="badge bg-warning">${comp.dancers.filter(d => d.votes.some(v => v.status === 'Pending')).length}</span></p>
+                </div>
+              </div>
           </div>
         </div>
       </div>
@@ -157,6 +165,7 @@ function renderCompetitions(competitions) {
           if (v.status === 'Completed') badgeClass = 'success';
           else if (v.status === 'Pending') badgeClass = 'warning';
           else if (v.status === 'Incompatible') badgeClass = 'danger';
+          else if (v.status === 'Max Judges Voted') badgeClass = 'danger';
 
           // async function resetVote(categoryId, styleId, judgeId, dancerId, rowId) {
 
@@ -214,7 +223,6 @@ function renderCompetitions(competitions) {
   });
 }
 
-// async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
 async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
   document.getElementById('detailsModalLabel').textContent = `Judge: ${judgeName} / Dancer: ${dancerName}`;
 

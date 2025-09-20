@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Voting card solo para admin + judge
     const votingCol = document.getElementById("col-votingUrl");
-    if (votingCol && (!user || !["admin", "organizer", "judge"].includes(user.role))) {
+    if (votingCol && (!user || !["admin", "judge"].includes(user.role))) {
         votingCol.remove();
     }
 

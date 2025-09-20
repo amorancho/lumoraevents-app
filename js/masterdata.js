@@ -13,6 +13,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);
     updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
+    // Mostrar alerta si el evento ha comenzado o finalizado
+    const alertPanel = document.getElementById('alertPanel');
+    if (getEvent().status !== 'upcoming') {
+        alertPanel.style.display = 'block';
+    }
+
     loadAll();
 
 });

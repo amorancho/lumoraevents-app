@@ -1,6 +1,6 @@
 var title = 'Voting';
 
-const allowedRoles = ["admin", "organizer", "judge"];
+const allowedRoles = ["admin", "judge"];
 
 let criteriaList = [];
 
@@ -248,6 +248,8 @@ function renderDancersTable(dancers) {
             ? 'bg-warning' 
             : d.status === 'Incompatible' 
               ? 'bg-danger' 
+              : d.status === 'Max Judges Voted'
+                ? 'bg-danger'
               : 'bg-success'}">
         ${d.status}
       </span>
@@ -353,6 +355,9 @@ function renderCompetitionInfo(competition) {
       break;
   }
   document.getElementById('compStatus').innerHTML = `<span class="badge ${statusClass}">${statusText}</span>`;
+
+  // Número de jueces
+  document.getElementById('compNumJudges').innerHTML = `<span class="badge bg-primary">${competition.judge_number}</span>`;
 
   // Número de bailarinas
   document.getElementById('compDancers').innerHTML = `<span class="badge bg-primary">${competition.num_dancers}</span>`;
