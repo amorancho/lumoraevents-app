@@ -78,6 +78,15 @@ function renderCompetitions(competitions) {
   }
 
   competitions.forEach((comp, index) => {
+
+    let statusText;
+    if (comp.status === 'OPE') {
+      statusText = 'OPEN';
+    } else if (comp.status === 'FIN') {
+      statusText = 'FINISHED';
+    } else {
+      statusText = comp.status;
+    }
     // Card con info de competición
     const card = document.createElement('div');
     card.className = 'card mb-4';
@@ -101,7 +110,7 @@ function renderCompetitions(competitions) {
           </div>
           <div class="col-6 col-md-2">
             <p class="mb-1 fw-semibold">Status</p>
-            <p><span class="badge bg-${comp.status === 'OPE' ? 'success' : 'warning'}">${comp.status}</span></p>
+            <p><span class="badge bg-${comp.status === 'OPE' ? 'warning' : 'success'}">${statusText}</span></p>
           </div>                  
           <div class="col-12 col-md-4">
               <div class="row text-center">
@@ -140,6 +149,7 @@ function renderCompetitions(competitions) {
             <tr>
               <th>Dancer</th>
               ${comp.judges.map(j => `<th class="text-center">${j.name}</th>`).join('')}
+              <th>Voted</th>
             </tr>
           </thead>
           <tbody>
@@ -198,14 +208,13 @@ function renderCompetitions(competitions) {
               </td>
             `;
 
-
           }
 
           return `<td class="text-center" id="row-${ind}"><span class="badge status-badge bg-${badgeClass}">${v.status}</span></td>`;
         }).join('');
 
         // Asignar ID a la fila combinando competición-dancer-judge (para poder localizarla en reset)
-        tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}</tr>`;
+        tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}<td>${d.judges_voted}</td></tr>`;
       });
 
       tableHTML += '</tbody></table>';
@@ -265,7 +274,7 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
   criteriaContainer.appendChild(totalCol);
 
   const modalEl = document.getElementById('detailsModal');
-  modal = new bootstrap.Modal(modalEl);
+  let modal = new bootstrap.Modal(modalEl);
 
   // Footer → limpiar primero
   const footer = modal._element.querySelector('.modal-footer');
@@ -275,71 +284,6 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
   modal.show();
 }
 
-/*
-async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
-  try {
-    //const res = await fetch(`/api/votes/${competitionId}/${dancerId}/${judgeId}`);
-    const res = await fetch(`${API_BASE_URL}/api/voting?event_id=${getEvent().id}&judge=${judgeId}&category=${categoryId}&style=${styleId}`);
-    if (!res.ok) {
-      throw new Error('Error al obtener detalles de la votación');
-    }
-
-    const data = await res.json();
-    
-    // Filtramos dancerId de data.dancers
-    data.dancers = data.dancers.find(d => d.id === dancerId);
-    if (!data.dancers) throw new Error('No se han encontrado datos de la bailarina');
-
-    // Título del modal
-    //document.getElementById('voteDetailsModalLabel').textContent = `Details for ${dancerName} (Judge: ${judgeName})`;    
-
-    // Referencias al modal
-    const modalEl = document.getElementById('voteDetailsModal');
-    const modal = new bootstrap.Modal(modalEl);
-    const criteriaContainer = modalEl.querySelector('#voteDetailsBody');
-    criteriaContainer.innerHTML = ''; // limpiar antes de pintar
-
-    let total = 0;
-
-    // Pintar criterios en modo "details"
-    data.criteria.forEach(c => {
-      const value = data.dancers.scores?.[c.name] ?? '-';
-      const col = document.createElement('div');
-      col.className = 'col-6 text-center';
-
-      if (typeof value === 'number') total += value;
-      col.innerHTML = `
-        <div class="mb-1 fw-semibold">${c.name}</div>
-        <span class="badge bg-info fs-5">${value}</span>
-      `;
-
-      criteriaContainer.appendChild(col);
-    });
-
-    // Total
-    const totalCol = document.createElement('div');
-    totalCol.className = 'col-12 mt-3 text-center';
-    totalCol.innerHTML = `
-      <div class="fw-bold mb-1">Total</div>
-      <span id="totalScore" class="badge bg-success fs-4 px-4">${total}</span>
-    `;
-    criteriaContainer.appendChild(totalCol);
-
-    // Footer (limpiamos y dejamos solo botón Cerrar)
-    const footer = modalEl.querySelector('.modal-footer');
-    footer.innerHTML = `
-      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-    `;
-
-    // Mostrar modal
-    modal.show();
-
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  }
-}
-*/
 async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
 
   const confirmed = await showModal(`¿Seguro que quieres reiniciar el voto del juez "${judgeName}" a la bailarina "${dancerName}"?`);
