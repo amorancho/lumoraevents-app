@@ -33,22 +33,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadCriteria();
 
   getDancersBtn.addEventListener('click', async () => {
-    const category = categorySelect.value;
-    const style = styleSelect.value;
-    if (!category || !style) return;
-
-    const data = await fetchVoting(category, style);
-    renderCompetitionInfo(data.competition);
-    renderDancersTable(data.dancers);
-
-    competitionInfo.style.display = 'block';
-    dancersTableContainer.style.display = 'block';
+    loadCompetitionAndDancers();
   });
 
   const modalEl = document.getElementById('detailsModal');
   modal = new bootstrap.Modal(modalEl);
   criteriaContainer = document.getElementById('criteriaContainer');
 });
+
+async function loadCompetitionAndDancers() {
+  const category = categorySelect.value;
+  const style = styleSelect.value;
+  if (!category || !style) return;
+
+  const data = await fetchVoting(category, style);
+  renderCompetitionInfo(data.competition);
+  renderDancersTable(data.dancers);
+
+  competitionInfo.style.display = 'block';
+  dancersTableContainer.style.display = 'block';
+}
 
 function showVotesModal(dancer, mode = "details") {
   document.getElementById('detailsModalLabel').textContent =
@@ -75,7 +79,7 @@ function showVotesModal(dancer, mode = "details") {
       const currentVal = typeof value === 'number' ? value : '';
       col.innerHTML = `
         <div class="mb-1 fw-semibold">${c.name}</div>
-        <input type="number" class="form-control form-control-sm score-input"
+        <input type="number" inputmode="numeric" pattern="[0-9]*" class="form-control form-control-lg score-input"
                data-criteria="${c.id}" min="0" max="10" step="1" value="${currentVal}">
       `;
     }
@@ -158,10 +162,10 @@ function showVotesModal(dancer, mode = "details") {
           return;
         }
 
-        modal.hide();
-
         // Recargar tabla de bailarinas
-        document.getElementById('getDancersBtn').click();
+        await loadCompetitionAndDancers();
+
+        modal.hide();
 
       } catch (err) {
         console.error("Error sending votes", err);
