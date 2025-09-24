@@ -307,6 +307,10 @@ async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerNa
     const data = await res.json();
     
     if (data.success) {
+
+      loadCompetitions(document.getElementById('categorySelect').value);
+
+      /*
       const td = document.getElementById(`row-${rowId}`);
 
       if (td) {
@@ -323,6 +327,7 @@ async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerNa
           td.appendChild(newBadge);
         }
       }
+        */
     }
 
 

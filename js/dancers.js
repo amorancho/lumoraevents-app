@@ -339,7 +339,12 @@ async function deleteDancer(dancerIdToDelete) {
     const res = await fetch(`${API_BASE_URL}/api/dancers/${dancerIdToDelete}`, {
       method: 'DELETE'
     });
-    if (!res.ok) throw new Error(`Error ${res.status} al eliminar bailarina`);    
+
+    if (!res.ok) {
+      const errData = await res.json();
+      showMessageModal(errData.error || 'Error deleting dancer', 'Error');
+      return;
+    }
 
   } catch (error) {
     console.error('Error al eliminar la bailarina:', error);
