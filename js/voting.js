@@ -79,7 +79,7 @@ function showVotesModal(dancer, mode = "details") {
       const currentVal = typeof value === 'number' ? value : '';
       col.innerHTML = `
         <div class="mb-1 fw-semibold">${c.name}</div>
-        <input type="number" inputmode="numeric" pattern="[0-9]*" class="form-control form-control-lg score-input"
+        <input type="text" inputmode="numeric" pattern="[0-9]*" class="form-control form-control-lg score-input"
                data-criteria="${c.id}" min="0" max="10" step="1" value="${currentVal}">
       `;
     }
