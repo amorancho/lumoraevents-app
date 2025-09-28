@@ -140,18 +140,20 @@ function loadCompetitions() {
 
 
 async function addCompt() {
-  // Deshabilitar botón para evitar múltiples envíos
-  const addBtn = document.getElementById('createBtn');
-  if (addBtn.disabled) return;
-  addBtn.disabled = true;
-  addBtn.textContent = "Adding...";
-
+  
   const inputCat = document.getElementById('categoryDropdown');
   const inputSty = document.getElementById('styleDropdown');
   const valueCat = inputCat.value.trim();
   const valueSty = inputSty.value.trim();
 
   if (valueCat !== "" && valueSty !== "") {
+
+    // Deshabilitar botón para evitar múltiples envíos
+    const addBtn = document.getElementById('createBtn');
+    if (addBtn.disabled) return;
+    addBtn.disabled = true;
+    addBtn.textContent = "Adding...";
+
 
     const newComp = {
       event_id: getEvent().id,
@@ -191,6 +193,8 @@ async function addCompt() {
       addBtn.disabled = false;
       addBtn.textContent = "Add Competition";
     }
+  } else {
+    showMessageModal('Select Category and Style to create a competition', 'Error');
   }
 }
 
