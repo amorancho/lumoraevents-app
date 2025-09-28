@@ -466,7 +466,11 @@ async function deleteCompetition(competitionIdToDelete) {
     const res = await fetch(`${API_BASE_URL}/api/competitions/${competitionIdToDelete}`, {
       method: 'DELETE'
     });
-    if (!res.ok) throw new Error(`Error ${res.status} al eliminar la competición`);
+    const data = await res.json();
+    if (!res.ok) {
+      showMessageModal(data.error || 'Unknown error', 'Error eliminando la competición');
+      return;
+    }
 
   } catch (error) {
     console.error('Error al eliminar la competición:', error);

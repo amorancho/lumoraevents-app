@@ -116,6 +116,8 @@ function createCategoryItem(category, categoryData, index) {
         icon.style.cursor = 'pointer';
         icon.title = 'Ver bailarinas de este estilo';
         icon.dataset.compId = style.competition_id; // Se usará en el fetch
+        icon.dataset.start = style.start;
+        icon.dataset.categoryName = category;
         icon.dataset.styleName = style.name;
         th.appendChild(icon);
     } else {
@@ -234,11 +236,21 @@ document.addEventListener('click', async (event) => {
   if (!icon) return;
 
   const compId = icon.dataset.compId;
+  const categoryName = icon.dataset.categoryName;
   const styleName = icon.dataset.styleName;
+  const startTime = icon.dataset.start;
   const eventId = getEvent().id; // tu función existente
 
   const modalTitle = document.getElementById('styleDancersModalLabel');
-  modalTitle.textContent = `Bailarinas del estilo: ${styleName}`;
+  modalTitle.textContent = `Competition: ${categoryName} / ${styleName}`;
+
+  // Mostrar hora de inicio (si existe en el dataset)
+  const estimatedStartEl = document.getElementById('estimatedStart');
+  if (startTime) {
+    estimatedStartEl.textContent = startTime;
+  } else {
+    estimatedStartEl.textContent = 'N/A';
+  }
 
   const list = document.getElementById('styleDancersList');
   list.innerHTML = '';
