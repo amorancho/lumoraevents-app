@@ -146,8 +146,6 @@ function makeSortable(table) {
                 position: idx + 1
             }));
 
-            const dancerIds = Array.from(items).map(item => item.dataset.id, 10);
-
             try {
                 const res = await fetch(`${API_BASE_URL}/api/${table}/reorder`, {
                     method: "PUT",
