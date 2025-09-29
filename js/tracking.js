@@ -214,7 +214,7 @@ function renderCompetitions(competitions) {
         }).join('');
 
         // Asignar ID a la fila combinando competición-dancer-judge (para poder localizarla en reset)
-        tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}<td>${d.judges_voted}</td></tr>`;
+        tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}<td class="bg-light">${d.judges_voted}</td></tr>`;
       });
 
       tableHTML += '</tbody></table>';

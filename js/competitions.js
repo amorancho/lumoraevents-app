@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     });
 
-    document.getElementById('saveEditBtn').addEventListener('click', () => {
+    document.getElementById('saveEditBtn').addEventListener('click', async () => {
 
       const competitionId = document.getElementById('editForm').dataset.id;
       const categoryId = document.getElementById('editForm').dataset.cat_id;
@@ -302,20 +302,20 @@ document.addEventListener('DOMContentLoaded', () => {
         event_id: getEvent().id
       }
 
-      fetch(`${API_BASE_URL}/api/competitions/${competitionId}`, {
+
+      const response = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(competitionData)
-      })
-      .then(response => {
-        if (!response.ok) throw new Error('Failed to update competition');
-        return response.json();
-      })
-      .then(() => {
-        fetchCompetitionsFromAPI();
-        editModal.hide();
-      })
-      .catch(err => console.error(err));
+      });
+
+      if (!response.ok) {
+        const errData = await response.json();
+        showMessageModal(errData.error || 'Error saving competition', 'Error');
+        return;
+      }
+
+      await fetchCompetitionsFromAPI();
 
       editModal.hide();
     });
