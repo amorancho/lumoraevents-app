@@ -232,6 +232,12 @@ function renderJudges() {
     `;
     judgesTable.appendChild(row);
   });
+
+  // actualizar contador
+  const countEl = document.getElementById(`count-judges`);
+  if (countEl) {
+      countEl.textContent = judges.length;
+  }
 }
 
 function setWelcomeDate(dateValue) {

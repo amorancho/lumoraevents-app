@@ -133,6 +133,12 @@ function loadCompetitions() {
     competitionsTable.appendChild(row);
   });
 
+  // actualizar contador
+  const countEl = document.getElementById(`count-competitions`);
+  if (countEl) {
+      countEl.textContent = competitions.length;
+  }
+
   // Activar tooltips de Bootstrap después de crear los elementos
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.map(el => new bootstrap.Tooltip(el));

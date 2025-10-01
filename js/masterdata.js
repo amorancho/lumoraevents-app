@@ -95,6 +95,12 @@ function renderTable(table, fullData) {
         li.appendChild(btn);
         list.appendChild(li);
     });
+
+    // actualizar contador
+    const countEl = document.getElementById(`count-${table}`);
+    if (countEl) {
+        countEl.textContent = fullData.length;
+    }
 }
 
 

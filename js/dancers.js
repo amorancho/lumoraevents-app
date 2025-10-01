@@ -242,6 +242,12 @@ function loadDancers() {
     `;
     dancersTable.appendChild(row);
   });
+  
+  // actualizar contador
+  const countEl = document.getElementById(`count-dancers`);
+  if (countEl) {
+      countEl.textContent = dancers.length;
+  }
 }
 
 async function loadCategories() {
