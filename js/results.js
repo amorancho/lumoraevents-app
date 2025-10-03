@@ -1,4 +1,45 @@
 var title = 'Results';
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await eventReadyPromise;
+  loadCategories();  
+
+  categorySelect.addEventListener('change', async (e) => {
+    const categoryId = e.target.value;
+    if (categoryId) {
+      await loadClasifications(categoryId);
+    }
+  });
+
+  refreshBtn.addEventListener('click', () => {
+    categorySelect.dispatchEvent(new Event('change'));
+  });
+});
+
+async function loadCategories() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    const categories = await response.json();
+    populateCategorySelect(categories);
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+  }
+}
+
+function populateCategorySelect(categories) {  
+  
+  categorySelect.innerHTML = '<option selected disabled>Select a category</option>';
+  categories.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category.id;
+    option.textContent = category.name;
+    categorySelect.appendChild(option);
+  });
+}
+
 /*
 const mockData = {
   'Junior': {
@@ -332,7 +373,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
       col.appendChild(listGroup);
       return col;
-  }
+    }
   
     function createListGroup(title, list) {
         const col = document.createElement('div');
