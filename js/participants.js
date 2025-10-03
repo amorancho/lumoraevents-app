@@ -16,7 +16,7 @@ async function loadParticipants() {
 
   let data;
   try {
-    const res = await fetch(`${API_BASE_URL}/api/events/info?event_id=${getEvent().id}`);
+    const res = await fetch(`${API_BASE_URL}/api/events/participants?event_id=${getEvent().id}`);
     if (!res.ok) throw new Error('Error fetching data');
     data = await res.json();
   } catch (err) {
