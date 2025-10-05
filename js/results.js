@@ -1,12 +1,26 @@
 var title = 'Results';
 
 document.addEventListener('DOMContentLoaded', async () => {
+
   await eventReadyPromise;
+
+  const categorySelect = document.getElementById('categorySelect');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const titulo = document.getElementById("categoriaTitulo");
+  const categoriaBadge = document.getElementById('categoriaBadge');
+
+  refreshBtn.disabled = true;
+
   loadCategories();  
 
   categorySelect.addEventListener('change', async (e) => {
     const categoryId = e.target.value;
     if (categoryId) {
+      refreshBtn.disabled = false;
+      categoriaBadge.textContent = categorySelect.options[categorySelect.selectedIndex].text;
+      categoriaBadge.classList.remove('d-none');
+      infoText.classList.remove('d-none');
+      infoText.classList.add('d-block');
       await loadClasifications(categoryId);
     }
   });
@@ -38,6 +52,139 @@ function populateCategorySelect(categories) {
     option.textContent = category.name;
     categorySelect.appendChild(option);
   });
+}
+
+async function loadClasifications(categoryId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitions/results?event_id=${getEvent().id}&category_id=${categoryId}`);
+    if (!response.ok) throw new Error("Network error");
+    const results = await response.json();
+
+    renderResults(results);
+  } catch (err) {
+    console.error("Error loading results:", err);
+    resultsContainer.innerHTML = `<div class="alert alert-danger">Error loading results.</div>`;
+  }
+}
+
+function renderResults(data) {
+  resultsContainer.innerHTML = ""; // limpiar
+  
+  const row = document.createElement("div");
+  row.className = "row g-4 pt-2";
+
+  // === GENERAL CLASSIFICATION ===
+  const colGeneral = document.createElement("div");
+  colGeneral.className = "col-12 col-lg-4";
+  colGeneral.innerHTML = renderGeneralClassification(data.general);
+  row.appendChild(colGeneral);
+
+  // === STYLES CLASSIFICATIONS ===
+  const colStyles = document.createElement("div");
+  colStyles.className = "col-12 col-lg-8";
+
+  const stylesRow = document.createElement("div");
+  stylesRow.className = "row g-4";
+
+  data.styles.forEach(style => {
+    const styleCol = document.createElement("div");
+    styleCol.className = "col-12 col-md-6 col-lg-4";
+    styleCol.innerHTML = renderStyleClassification(style);
+    stylesRow.appendChild(styleCol);
+  });
+
+  colStyles.appendChild(stylesRow);
+  row.appendChild(colStyles);
+
+  resultsContainer.appendChild(row);
+}
+
+function renderGeneralClassification(general) {
+  if (!general || general.length === 0) {
+    return `<div class="alert alert-warning">No general classification available</div>`;
+  }
+
+  let html = `
+    <div class="list-group shadow-sm border-primary border-2 h-100">
+      <div class="list-group-item active bg-primary fs-5 text-center">General Classification</div>
+  `;
+
+  general.forEach((d, i) => {
+    const medals = ["🥇", "🥈", "🥉"];
+    const colors = ["warning", "secondary", "warning-subtle"];
+
+    // Para los 3 primeros → card destacada
+    if (i < 3) {
+      html += `
+        <div class="row my-2">
+          <div class="col-12${i === 0 ? "" : " col-6"}">
+            <div class="card border-${colors[i]} shadow text-center">
+              <div class="card-header bg-${colors[i]} text-${i === 2 ? "dark" : "white"} fs-4">${medals[i]} ${i+1}º Place</div>
+              <div class="card-body">
+                <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
+                  <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" width="24" height="24" alt="${d.dancer_nationality}">
+                  <h3 class="mb-0 dancer-result">${d.dancer_name}</h3>
+                </div>
+                <p class="card-text fs-4">
+                  🥇 ${d.num_oros} &nbsp;|&nbsp; 🥈 ${d.num_platas} &nbsp;|&nbsp; 🥉 ${d.num_bronces}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      // El resto → list-group
+      html += `
+        <div class="list-group-item d-flex justify-content-between align-items-center fs-6">
+          <span class="me-2">${d.position}</span>
+          <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
+          <span class="me-auto dancer-result">${d.dancer_name}</span>
+          <span class="badge bg-light text-dark rounded-pill">
+            🥇 ${d.num_oros} | 🥈 ${d.num_platas} | 🥉 ${d.num_bronces}
+          </span>
+        </div>
+      `;
+    }
+  });
+
+  html += `</div>`;
+  return html;
+}
+
+
+function renderStyleClassification(style) {
+  if (!style.clasification || style.clasification.length === 0) {
+    return `
+      <div class="list-group shadow-sm">
+        <div class="list-group-item active bg-secondary fs-5 text-center">${style.style_name}</div>
+        <div class="list-group-item text-center text-muted">No results available</div>
+      </div>
+    `;
+  }
+
+  let html = `
+    <div class="list-group shadow-sm">
+      <div class="list-group-item active bg-secondary fs-5 text-center">${style.style_name}</div>
+  `;
+
+  style.clasification.forEach((d, i) => {
+    const medals = ["🥇", "🥈", "🥉"];
+    const bg = i === 0 ? "bg-warning" : i === 1 ? "bg-secondary-subtle" : i === 2 ? "bg-warning-subtle" : "";
+    const fw = i < 3 ? "fw-bold" : "";
+
+    html += `
+      <div class="list-group-item d-flex justify-content-between align-items-center ${bg} fs-6 ${fw}">
+        <span class="me-2">${i+1}</span>
+        <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
+        <span class="me-auto dancer-result">${d.dancer_name} ${i<3 ? medals[i] : ""}</span>
+        <span class="badge bg-light text-dark rounded-pill">${d.total_score}</span>
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+  return html;
 }
 
 /*
