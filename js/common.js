@@ -88,7 +88,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         trial: data.trial === 1,
         status: (new Date(data.start) > new Date()) ? 'upcoming' :
                 (new Date(data.start) < new Date()) ? 'completed' : 'ongoing',
-        homeUrl: `home.html?eventId=${eventId}`
+        homeUrl: `home.html?eventId=${eventId}`,
+        language: data.language
       };
 
     }

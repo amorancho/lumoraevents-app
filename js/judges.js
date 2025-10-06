@@ -15,6 +15,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
   initJudgeManagement();
+
+  const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+  tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 });
 
 function initJudgeManagement() {
@@ -26,6 +29,7 @@ function initJudgeManagement() {
     document.getElementById('judgeEmail').value = '';
     document.getElementById('judgeMaster').checked = false;
     document.getElementById('judgeUsername').value = '';
+    document.getElementById('judgeLanguage').value = getEvent().language;
     document.querySelector('#editModal .modal-title span').textContent = 'Create Judge';
 
     document.getElementById('actionsCard').classList.add('d-none');
@@ -52,7 +56,8 @@ function initJudgeManagement() {
       document.getElementById('judgeEmail').value = judge.email;
       document.getElementById('judgeMaster').checked = master;
       document.getElementById('judgeUsername').value = judge.username;
-      console.log('Judge welcome date:', judge.welcomesended);
+      document.getElementById('judgeLanguage').value = judge.language;
+
       setWelcomeDate(judge.welcomesended);
       
       document.querySelector('#editModal .modal-title span').textContent = 'Edit Judge';
@@ -109,6 +114,7 @@ function initJudgeManagement() {
     const inputMaster = document.getElementById('judgeMaster');
     const inputUsername = document.getElementById('judgeUsername');
     const inputWelcomeSended = document.getElementById('judgeWelcomeSended');
+    const inputLanguage = document.getElementById('judgeLanguage');
 
     const judgeData = {
       name: inputName.value.trim() || null,
@@ -116,6 +122,7 @@ function initJudgeManagement() {
       ismaster: inputMaster.checked ? 1 : 0,
       username: inputUsername.value.trim() || null,
       welcomesended: inputWelcomeSended.value || null,
+      language: inputLanguage.value,
       event_id: getEvent().id
     };
 
@@ -155,32 +162,89 @@ function initJudgeManagement() {
   });
 
   document.getElementById('sendEmail').addEventListener('click', async () => {
-    const judgeId = document.getElementById('editForm').dataset.id; // o como guardes el ID del juez
+    const sendBtn = document.getElementById('sendEmail');
+    const judgeId = document.getElementById('editForm').dataset.id;
+  
     if (!judgeId) {
       showMessageModal('No judge selected.');
       return;
     }
+  
+    // Mostrar spinner y deshabilitar botón
+    const originalText = sendBtn.innerHTML;
+    sendBtn.disabled = true;
+    //sendBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...`;
 
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner-border spinner-border-sm';
+    spinner.setAttribute('role', 'status');
+    spinner.setAttribute('aria-hidden', 'true');
+    sendBtn.appendChild(spinner);
+  
     try {
       const response = await fetch(`${API_BASE_URL}/api/judges/${judgeId}/send-welcome-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
-
+  
       if (!response.ok) {
         throw new Error(`Error sending email: ${response.statusText}`);
       }
-
+  
       const data = await response.json();
-
+      console.log('data: ', data);
+  
       // Actualiza fecha en el formulario
-      setWelcomeDate(data.sentAt);
-
+      setWelcomeDate(data.welcomesended);
+  
     } catch (err) {
       console.error(err);
       showMessageModal('Error sending welcome email.');
+    } finally {
+      // Quitar spinner y restaurar botón
+      sendBtn.removeChild(spinner);
+      sendBtn.value = originalText;
+      sendBtn.disabled = false;
     }
   });
+
+  document.getElementById('sendWelcomeAll').addEventListener('click', async () => {
+
+    const confirmed = await showModal(`Are you sure you want to send the welcome email to all judges who have not received it?`);
+
+    if (!confirmed) return;
+
+    const btn = document.getElementById('sendWelcomeAll');
+    const originalText = btn.innerHTML;
+  
+    // Mostrar spinner y deshabilitar botón
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...`;
+    btn.disabled = true;
+  
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/judges/send-welcome-email?event_id=${getEvent().id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Error sending welcome emails: ${response.statusText}`);
+      }
+  
+      const data = await response.json();
+  
+      //showMessageModal('Welcome emails sent to all judges.');
+      loadJudges();
+  
+    } catch (err) {
+      console.error(err);
+      showMessageModal('Error sending welcome emails.');
+    } finally {
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    }
+  });
+  
 
   loadJudges();
 }
@@ -218,7 +282,10 @@ function renderJudges() {
       <td class="align-middle text-center text-success">
         ${Number(judge.ismaster) === 1 ? '✓' : ''}
       </td>
-      <td>${judge.username}</td>
+      <td class="align-middle text-center text-success">
+        ${judge.welcomesended ? '✓' : ''}
+      </td>
+      <td>${judge.username}</td>      
       <td class="text-center align-middle">
         <div class="btn-group" role="group">
           <button type="button" class="btn btn-outline-primary btn-sm btn-edit-judge" title="Edit">
@@ -241,6 +308,7 @@ function renderJudges() {
 }
 
 function setWelcomeDate(dateValue) {
+  
   const displayField = document.getElementById('judgeWelcomeSendedDisplay');
   const hiddenField = document.getElementById('judgeWelcomeSended');
 
@@ -261,4 +329,19 @@ function setWelcomeDate(dateValue) {
     displayField.value = formatted;
     hiddenField.value = dateValue; // aquí guardas el valor crudo para backend
   }
+}
+
+function showModal(message) {
+  return new Promise((resolve) => {
+  const modal = new bootstrap.Modal(document.getElementById('confirmSend'));
+  document.getElementById('sendModalMessage').textContent = message;
+  
+  const confirmBtn = document.getElementById('confirmSendBtn');
+  confirmBtn.onclick = () => {
+      modal.hide();
+      resolve(true);
+  };
+  
+  modal.show();
+  });
 }
