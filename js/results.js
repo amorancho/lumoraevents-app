@@ -1,29 +1,40 @@
-var title = 'Results';
 
+var title = 'Results';
 let categoryName;
 
 document.addEventListener('DOMContentLoaded', async () => {
-
   await eventReadyPromise;
 
   const categorySelect = document.getElementById('categorySelect');
   const refreshBtn = document.getElementById('refreshBtn');
-  const titulo = document.getElementById("categoriaTitulo");
   const categoriaBadge = document.getElementById('categoriaBadge');
+  const infoText = document.getElementById('infoText');
+  const resultsContainer = document.getElementById('resultsContainer');
 
   refreshBtn.disabled = true;
 
-  loadCategories();  
+  // Inicializar modal (si existe)
+  const votingModalEl = document.getElementById('votingDetailsModal');
+  let votingModal = null;
+  const detailsContainer = document.getElementById('votingDetailsContainer');
+  if (votingModalEl) votingModal = new bootstrap.Modal(votingModalEl);
+
+  // Cargar categorías y preparar eventos
+  loadCategories();
 
   categorySelect.addEventListener('change', async (e) => {
     const categoryId = e.target.value;
     if (categoryId) {
       refreshBtn.disabled = false;
       categoryName = categorySelect.options[categorySelect.selectedIndex].text;
-      categoriaBadge.textContent = categoryName;
-      categoriaBadge.classList.remove('d-none');
-      infoText.classList.remove('d-none');
-      infoText.classList.add('d-block');
+      if (categoriaBadge) {
+        categoriaBadge.textContent = categoryName;
+        categoriaBadge.classList.remove('d-none');
+      }
+      if (infoText) {
+        infoText.classList.remove('d-none');
+        infoText.classList.add('d-block');
+      }
       await loadClasifications(categoryId);
     }
   });
@@ -31,14 +42,103 @@ document.addEventListener('DOMContentLoaded', async () => {
   refreshBtn.addEventListener('click', () => {
     categorySelect.dispatchEvent(new Event('change'));
   });
-});
+
+  // CLICK GLOBAL: abrir modal solo si el click viene de una bailarina dentro de un bloque de estilo
+  document.addEventListener('click', (event) => {
+    const dancerEl = event.target.closest('.dancer-result');
+    if (!dancerEl) return;
+    const styleBlock = dancerEl.closest('.style-block');
+    if (!styleBlock) return;
+
+    if (!window.resultsData || !votingModal || !detailsContainer) return;
+
+    const styleId = Number(styleBlock.dataset.styleId);
+    const dancerId = Number(dancerEl.dataset.dancerId);
+
+    const styleObj = (window.resultsData.styles || []).find(s => Number(s.style_id) === styleId);
+    if (!styleObj) return;
+
+    const dancerData = (styleObj.clasification || []).find(d => Number(d.dancer_id) === dancerId);
+    if (!dancerData) return;
+
+    // --- Contenido del modal ---
+    detailsContainer.innerHTML = '';
+
+    // Caja superior con categoría, estilo, bandera, nombre y total score
+    const summaryCard = document.createElement('div');
+    summaryCard.className = 'card mb-3 border-primary shadow-sm';
+    summaryCard.innerHTML = `
+      <div class="card-body">
+        <div class="row align-items-center">
+          <!-- IZQUIERDA: Category - Style y Bandera/Nombre -->
+          <div class="col">
+            <div class="fw-bold fs-2 text-primary mb-2">
+              ${escapeHtml(categoryName || '-')} - ${escapeHtml(styleObj.style_name || '-')}
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <img src="https://flagsapi.com/${dancerData.dancer_nationality}/shiny/24.png" width="24" height="24" alt="${dancerData.dancer_nationality}">
+              <strong class="fs-5">${escapeHtml(dancerData.dancer_name || '-')}</strong>
+            </div>
+          </div>
+          <!-- DERECHA: Total Score -->
+          <div class="col-auto text-center">
+            <span class="badge bg-success fs-4 py-2 px-3">
+              ${Math.round(dancerData.total_score || 0)}
+            </span>
+          </div>
+        </div>
+      </div>
+    `;
+    detailsContainer.appendChild(summaryCard);
+
+    // Detalle por juez
+    if (Array.isArray(dancerData.votes) && dancerData.votes.length > 0) {
+      dancerData.votes.forEach(vote => {
+        const totalJudge = (vote.criteria || []).reduce((sum, c) => sum + (Number(c.score) || 0), 0);
+
+        const judgeCard = document.createElement('div');
+        judgeCard.className = 'card mb-3';
+        judgeCard.innerHTML = `
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 text-primary">${escapeHtml(vote.judge_name || 'Judge')}</h6>
+            <span class="badge bg-primary fs-6">Total: ${Math.round(totalJudge)}</span>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              ${ (vote.criteria || []).map(c => `
+                <div class="col-6 col-md-4 col-lg-3 mb-2">
+                  <label class="form-label mb-1">${escapeHtml(c.name || '')}</label>
+                  <input type="number" class="form-control" value="${Math.round(c.score || 0)}" readonly>
+                </div>
+              `).join('') }
+            </div>
+          </div>
+        `;
+        detailsContainer.appendChild(judgeCard);
+      });
+    } else {
+      const noVotes = document.createElement('p');
+      noVotes.textContent = 'No vote details available for this dancer in this style.';
+      detailsContainer.appendChild(noVotes);
+    }
+
+    // Título modal fijo
+    const titleSpan = votingModalEl.querySelector('.modal-title span');
+    if (titleSpan) {
+      titleSpan.textContent = 'Voting Details';
+    }
+
+    votingModal.show();
+  });
+
+}); // end DOMContentLoaded
+
+// ---- Helpers y funciones originales adaptadas ----
 
 async function loadCategories() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
-    }
+    if (!response.ok) throw new Error('Network response was not ok');
     const categories = await response.json();
     populateCategorySelect(categories);
   } catch (error) {
@@ -47,7 +147,7 @@ async function loadCategories() {
 }
 
 function populateCategorySelect(categories) {  
-  
+  const categorySelect = document.getElementById('categorySelect');
   categorySelect.innerHTML = '<option selected disabled>Select a category</option>';
   categories.forEach(category => {
     const option = document.createElement('option');
@@ -58,12 +158,13 @@ function populateCategorySelect(categories) {
 }
 
 async function loadClasifications(categoryId) {
+  const resultsContainer = document.getElementById("resultsContainer");
   try {
     const response = await fetch(`${API_BASE_URL}/api/competitions/results?event_id=${getEvent().id}&category_id=${categoryId}`);
     if (!response.ok) throw new Error("Network error");
-    const results = await response.json();
-
-    renderResults(results);
+    const data = await response.json();
+    window.resultsData = data; // guardamos la respuesta para uso global
+    renderResults(data);
   } catch (err) {
     console.error("Error loading results:", err);
     resultsContainer.innerHTML = `<div class="alert alert-danger">Error loading results.</div>`;
@@ -71,6 +172,7 @@ async function loadClasifications(categoryId) {
 }
 
 function renderResults(data) {
+  const resultsContainer = document.getElementById("resultsContainer");
   resultsContainer.innerHTML = ""; // limpiar
   
   const row = document.createElement("div");
@@ -79,7 +181,7 @@ function renderResults(data) {
   // === GENERAL CLASSIFICATION ===
   const colGeneral = document.createElement("div");
   colGeneral.className = "col-12 col-lg-4";
-  colGeneral.innerHTML = renderGeneralClassification(data.general);
+  colGeneral.innerHTML = renderGeneralClassification(data.general || []);
   row.appendChild(colGeneral);
 
   // === STYLES CLASSIFICATIONS ===
@@ -89,7 +191,7 @@ function renderResults(data) {
   const stylesRow = document.createElement("div");
   stylesRow.className = "row g-4";
 
-  data.styles.forEach(style => {
+  (data.styles || []).forEach(style => {
     const styleCol = document.createElement("div");
     styleCol.className = "col-12 col-md-6 col-lg-4";
     styleCol.innerHTML = renderStyleClassification(style);
@@ -107,8 +209,7 @@ function renderGeneralClassification(general) {
     return `
       <div class="list-group shadow-sm border-primary border-2 h-100">
         <div class="list-group-item active bg-primary fs-5 text-center">General Classification</div>
-          <div class="list-group-item text-center text-muted">No results available</div>
-        </div>
+        <div class="list-group-item text-center text-muted">No results available</div>
       </div>
     `;
   }
@@ -121,8 +222,6 @@ function renderGeneralClassification(general) {
   general.forEach((d, i) => {
     const medals = ["🥇", "🥈", "🥉"];
     const colors = ["warning", "secondary", "warning-subtle"];
-
-    // Para los 3 primeros → card destacada
     if (i < 3) {
       html += `
         <div class="row my-2">
@@ -132,10 +231,10 @@ function renderGeneralClassification(general) {
               <div class="card-body">
                 <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
                   <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" width="24" height="24" alt="${d.dancer_nationality}">
-                  <h3 class="mb-0 dancer-result">${d.dancer_name}</h3>
+                  <h3 class="mb-0 dancer-result">${escapeHtml(d.dancer_name)}</h3>
                 </div>
                 <p class="card-text fs-4">
-                  🥇 ${d.num_oros} &nbsp;|&nbsp; 🥈 ${d.num_platas} &nbsp;|&nbsp; 🥉 ${d.num_bronces}
+                  🥇 ${d.num_oros || 0} &nbsp;|&nbsp; 🥈 ${d.num_platas || 0} &nbsp;|&nbsp; 🥉 ${d.num_bronces || 0}
                 </p>
               </div>
             </div>
@@ -143,14 +242,13 @@ function renderGeneralClassification(general) {
         </div>
       `;
     } else {
-      // El resto → list-group
       html += `
         <div class="list-group-item d-flex justify-content-between align-items-center fs-6">
           <span class="me-2">${d.position}</span>
           <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
-          <span class="me-auto dancer-result">${d.dancer_name}</span>
+          <span class="me-auto dancer-result">${escapeHtml(d.dancer_name)}</span>
           <span class="badge bg-light text-dark rounded-pill">
-            🥇 ${d.num_oros} | 🥈 ${d.num_platas} | 🥉 ${d.num_bronces}
+            🥇 ${d.num_oros || 0} | 🥈 ${d.num_platas || 0} | 🥉 ${d.num_bronces || 0}
           </span>
         </div>
       `;
@@ -161,20 +259,21 @@ function renderGeneralClassification(general) {
   return html;
 }
 
-
 function renderStyleClassification(style) {
-  if (!style.clasification || style.clasification.length === 0) {
+  // style block with data-style-id so we can detect clicks inside it
+  if (!style || !style.clasification || style.clasification.length === 0) {
     return `
-      <div class="list-group shadow-sm">
-        <div class="list-group-item active bg-secondary fs-5 text-center">${style.style_name}</div>
+      <div class="list-group shadow-sm style-block" data-style-id="${style?.style_id || ''}">
+        <div class="list-group-item active bg-secondary fs-5 text-center">${escapeHtml(style?.style_name || "Unknown Style")}</div>
         <div class="list-group-item text-center text-muted">No results available</div>
       </div>
     `;
   }
 
+  // build list-group and each dancer is a button with data-dancer-id and class dancer-result
   let html = `
-    <div class="list-group shadow-sm">
-      <div class="list-group-item active bg-secondary fs-5 text-center">${style.style_name}</div>
+    <div class="list-group shadow-sm style-block" data-style-id="${style.style_id}">
+      <div class="list-group-item active bg-secondary fs-5 text-center">${escapeHtml(style.style_name)}</div>
   `;
 
   style.clasification.forEach((d, i) => {
@@ -183,12 +282,12 @@ function renderStyleClassification(style) {
     const fw = i < 3 ? "fw-bold" : "";
 
     html += `
-      <div class="list-group-item d-flex justify-content-between align-items-center ${bg} fs-6 ${fw}">
+      <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${bg} fs-6 ${fw} dancer-result" data-dancer-id="${d.dancer_id}">
         <span class="me-2">${i+1}</span>
         <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
-        <span class="me-auto dancer-result">${d.dancer_name} ${i<3 ? medals[i] : ""}</span>
-        <span class="badge bg-light text-dark rounded-pill">${d.total_score}</span>
-      </div>
+        <span class="me-auto">${escapeHtml(d.dancer_name)} ${i<3 ? medals[i] : ""}</span>
+        <span class="badge bg-light text-dark rounded-pill">${Math.round(d.total_score || 0)}</span>
+      </button>
     `;
   });
 
@@ -196,388 +295,69 @@ function renderStyleClassification(style) {
   return html;
 }
 
+// small helper to avoid injecting raw text into HTML
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+
 /*
-const mockData = {
-  'Junior': {
-    general: [
-    { position: 1, name: 'Amina Hassan', country: 'EG', score: 93.5 },
-    { position: 2, name: 'Lina Torres', country: 'ES', score: 92.0 },
-    { position: 3, name: 'Zara Malik', country: 'IN', score: 91.2 },
-    { position: 4, name: 'Sofia Chen', country: 'CN', score: 90.5 },
-    { position: 5, name: 'Nora Haddad', country: 'FR', score: 89.3 },
-    { position: 6, name: 'Lucía Romero', country: 'AR', score: 88.7 },
-    { position: 7, name: 'Fatima Noor', country: 'PK', score: 87.9 },
-    { position: 8, name: 'Yasmine Ali', country: 'MA', score: 86.5 },
-    { position: 9, name: 'Nadia Karim', country: 'DZ', score: 85.2 },
-    { position: 10, name: 'Camila Díaz', country: 'CL', score: 84.6 }
-    ],
-    styles: {
-    'Oriental': [
-        { position: 1, name: 'Amina Hassan', country: 'EG', score: 94.1 },
-        { position: 2, name: 'Lina Torres', country: 'ES', score: 92.3 },
-        { position: 3, name: 'Zara Malik', country: 'IN', score: 91.9 },
-        { position: 4, name: 'Lucía Romero', country: 'AR', score: 89.5 },
-        { position: 5, name: 'Nadia Karim', country: 'DZ', score: 87.1 }
-    ],
-    'Folklore': [
-        { position: 1, name: 'Fatima Noor', country: 'PK', score: 90.7 },
-        { position: 2, name: 'Sofia Chen', country: 'CN', score: 89.3 },
-        { position: 3, name: 'Nora Haddad', country: 'FR', score: 88.8 },
-        { position: 4, name: 'Camila Díaz', country: 'CL', score: 86.0 }
-    ],
-    'Fusión': [
-        { position: 1, name: 'Yasmine Ali', country: 'MA', score: 92.2 },
-        { position: 2, name: 'Zara Malik', country: 'IN', score: 90.1 },
-        { position: 3, name: 'Lucía Romero', country: 'AR', score: 89.0 }
-    ],
-    'Saidi': [
-        { position: 1, name: 'Sofia Chen', country: 'CN', score: 91.4 },
-        { position: 2, name: 'Amina Hassan', country: 'EG', score: 90.9 },
-        { position: 3, name: 'Yasmine Ali', country: 'MA', score: 89.7 },
-        { position: 4, name: 'Nadia Karim', country: 'DZ', score: 87.6 }
-    ],
-    'Baladi': [
-        { position: 1, name: 'Lina Torres', country: 'ES', score: 93.3 },
-        { position: 2, name: 'Fatima Noor', country: 'PK', score: 91.2 },
-        { position: 3, name: 'Camila Díaz', country: 'CL', score: 89.9 },
-        { position: 4, name: 'Nora Haddad', country: 'FR', score: 88.5 }
-    ]
-    }
-},
-  'Senior': {
-    general: [
-        { position: 1, name: 'Nadia Karim', country: 'MA', score: 95.4 },
-        { position: 2, name: 'Camila Díaz', country: 'AR', score: 94.0 },
-        { position: 3, name: 'Fatima Noor', country: 'PK', score: 92.3 },
-        { position: 4, name: 'Leila Ahmed', country: 'EG', score: 91.5 },
-        { position: 5, name: 'Soraya Bensalem', country: 'DZ', score: 90.2 },
-        { position: 6, name: 'Mariana Silva', country: 'BR', score: 89.8 },
-        { position: 7, name: 'Ines Bouazizi', country: 'TN', score: 88.6 },
-        { position: 8, name: 'Samira Al-Masri', country: 'SA', score: 87.9 },
-        { position: 9, name: 'Valeria Russo', country: 'IT', score: 86.7 },
-        { position: 10, name: 'Aya Yamamoto', country: 'JP', score: 85.5 }
-    ],
-    styles: {
-        'Oriental': [
-        { position: 1, name: 'Nadia Karim', country: 'MA', score: 96.2 },
-        { position: 2, name: 'Leila Ahmed', country: 'EG', score: 94.5 },
-        { position: 3, name: 'Fatima Noor', country: 'PK', score: 93.1 },
-        { position: 4, name: 'Samira Al-Masri', country: 'SA', score: 90.8 },
-        { position: 5, name: 'Valeria Russo', country: 'IT', score: 89.0 }
-        ],
-        'Folklore': [
-        { position: 1, name: 'Soraya Bensalem', country: 'DZ', score: 93.7 },
-        { position: 2, name: 'Mariana Silva', country: 'BR', score: 92.6 },
-        { position: 3, name: 'Camila Díaz', country: 'AR', score: 91.4 },
-        { position: 4, name: 'Ines Bouazizi', country: 'TN', score: 90.2 }
-        ],
-        'Fusión': [
-        { position: 1, name: 'Aya Yamamoto', country: 'JP', score: 92.1 },
-        { position: 2, name: 'Fatima Noor', country: 'PK', score: 91.3 },
-        { position: 3, name: 'Samira Al-Masri', country: 'SA', score: 90.5 }
-        ],
-        'Saidi': [
-        { position: 1, name: 'Leila Ahmed', country: 'EG', score: 94.7 },
-        { position: 2, name: 'Soraya Bensalem', country: 'DZ', score: 93.3 },
-        { position: 3, name: 'Nadia Karim', country: 'MA', score: 92.6 },
-        { position: 4, name: 'Camila Díaz', country: 'AR', score: 91.1 }
-        ],
-        'Baladi': [
-        { position: 1, name: 'Ines Bouazizi', country: 'TN', score: 93.0 },
-        { position: 2, name: 'Mariana Silva', country: 'BR', score: 91.8 },
-        { position: 3, name: 'Valeria Russo', country: 'IT', score: 90.7 },
-        { position: 4, name: 'Aya Yamamoto', country: 'JP', score: 89.4 }
-        ]
-    }
-    }
-
-};
-
-const mockvotingDetails = {
-  'Junior': [
-    {
-      judge: 'Amina Hassan', 
-      totalScore: 9.5, 
-      criteria: [
-        { name: 'Technique', score: 9.0 },
-        { name: 'Interpretation', score: 9.5 },
-        { name: 'Musicality', score: 10.0 },
-        { name: 'Expression', score: 9.0 }
-      ]
-    },
-    {
-      judge: 'Lina Torres', 
-      totalScore: 9.0, 
-      criteria: [
-        { name: 'Technique', score: 8.5 },
-        { name: 'Interpretation', score: 9.0 },
-        { name: 'Musicality', score: 9.5 },
-        { name: 'Expression', score: 9.0 }
-      ]
-    },
-    {
-        judge: 'Zara Malik', 
-        totalScore: 9.2, 
-        criteria: [
-        { name: 'Technique', score: 9.0 },
-        { name: 'Interpretation', score: 9.0 },
-        { name: 'Musicality', score: 9.5 },
-        { name: 'Expression', score: 9.0 }
-      ]
-    }
-  ],
-  'Senior': [
-    {
-      judge: 'Fatima Noor', 
-      totalScore: 9.3, 
-      criteria: [
-        { name: 'Technique', score: 9.0 },
-        { name: 'Interpretation', score: 9.5 },
-        { name: 'Musicality', score: 9.0 },
-        { name: 'Expression', score: 9.0 }
-      ]
-    },
-    {
-      judge: 'Sofia Chen', 
-      totalScore: 8.8, 
-      criteria: [
-        { name: 'Technique', score: 8.5 },
-        { name: 'Interpretation', score: 9.0 },
-        { name: 'Musicality', score: 8.5 },
-        { name: 'Expression', score: 8.5 }
-      ]
-    }
-  ],
-};
 
 document.addEventListener('DOMContentLoaded', () => {
-    const categorySelect = document.getElementById('categorySelect');
-    const resultsContainer = document.getElementById('resultsContainer');
+  const categorySelect = document.getElementById('categorySelect');
+  const resultsContainer = document.getElementById('resultsContainer');
 
-    const editModal = new bootstrap.Modal(document.getElementById('votingDetailsModal'));
+  const editModal = new bootstrap.Modal(document.getElementById('votingDetailsModal'));
 
-    document.addEventListener('click', (event) => {
-      const spanDancer = event.target.closest('.dancer-result');
+  document.addEventListener('click', (event) => {
+    const spanDancer = event.target.closest('.dancer-result');
 
-      if (spanDancer) {
-        const dancerName = spanDancer.textContent.trim();
+    if (spanDancer) {
+      const dancerName = spanDancer.textContent.trim();
 
-        const detailsContainer = document.getElementById('votingDetailsContainer');
+      const detailsContainer = document.getElementById('votingDetailsContainer');
 
-        detailsContainer.innerHTML = ''; // Limpiar contenido previo
+      detailsContainer.innerHTML = ''; // Limpiar contenido previo
 
-        const category = categorySelect.value;
-        const votingDetails = mockvotingDetails[category] || [];
+      const category = categorySelect.value;
+      const votingDetails = mockvotingDetails[category] || [];
 
-        votingDetails.forEach(detail => {
-          const judgeCard = document.createElement('div');
-          judgeCard.className = 'card mb-3';
+      votingDetails.forEach(detail => {
+        const judgeCard = document.createElement('div');
+        judgeCard.className = 'card mb-3';
 
-          judgeCard.innerHTML = `
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <h6 class="mb-0 text-primary">${detail.judge}</h6>
-              <span class="badge bg-primary fs-6">Total Score: ${detail.totalScore.toFixed(1)}</span>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                ${detail.criteria.map(c => `
-                  <div class="col-4 col-md-2 mb-2">
-                    <label class="form-label">${c.name}</label>
-                    <input type="number" class="form-control" value="${c.score.toFixed(1)}" readonly>
-                  </div>
-                `).join('')}
-              </div>
-            </div>
-          `;
-
-          detailsContainer.appendChild(judgeCard);
-        });
-
-
-        document.querySelector('#votingDetailsModal .modal-title span').textContent = dancerName;
-        editModal.show();
-      }
-    });
-  
-    
-  
-    // Rellenar dropdown
-    Object.keys(mockData).forEach(category => {
-      const option = document.createElement('option');
-      option.value = category;
-      option.textContent = category;
-      categorySelect.appendChild(option);
-    });
-  
-    categorySelect.addEventListener('change', () => {
-      const infoText = document.getElementById('infoText');
-      infoText.classList.remove('d-none');
-      const selected = categorySelect.value;
-      if (!selected || !mockData[selected]) return;
-  
-      resultsContainer.innerHTML = '';
-  
-      const data = mockData[selected];
-      const columns = document.createElement('div');
-      columns.className = 'row g-4 pt-2';
-  
-      // Clasificación general
-      columns.appendChild(createListGroupGeneral(`${selected} - General Classification`, data.general));
-
-      const divCol = document.createElement('div');
-      divCol.className = 'col-12 col-lg-8';
-      
-      divRow = document.createElement('div');
-      divRow.className = 'row g-4';
-      
-  
-      // Clasificaciones por estilo
-      for (const [style, dancers] of Object.entries(data.styles)) {
-        divRow.appendChild(createListGroup(`${selected} - ${style}`, dancers));
-      }
-
-      divCol.appendChild(divRow);
-      columns.appendChild(divCol);
-  
-      resultsContainer.appendChild(columns);
-    });
-
-    function createListGroupGeneral(title, list) {
-      const col = document.createElement('div');
-      col.className = 'col-12 col-lg-4';
-    
-      const listGroup = document.createElement('div');
-      listGroup.className = `list-group shadow-sm border-primary border-2 h-100`;
-    
-      const header = document.createElement('div');
-      header.className = `list-group-item active bg-primary fs-5 text-center`;
-      header.textContent = title;
-      listGroup.appendChild(header);
-
-      rowFirst = document.createElement('div');
-      rowFirst.className = 'row my-2';
-
-      const colFirst = document.createElement('div');
-      colFirst.className = 'col-12 text-center';
-
-      colFirst.innerHTML = `
-        <div class="card border-warning shadow-lg text-center">
-          <div class="card-header bg-warning text-white fs-5">🥇 1º Place</div>
+        judgeCard.innerHTML = `
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 text-primary">${detail.judge}</h6>
+            <span class="badge bg-primary fs-6">Total Score: ${detail.totalScore.toFixed(1)}</span>
+          </div>
           <div class="card-body">
-            <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-              <img src="https://flagsapi.com/${list[0].country}/shiny/24.png" class="img-fluid" alt="${list[0].country}" width="24" height="24">
-              <h3 class="mb-0 dancer-result">${list[0].name}</h3>
-            </div>
-            <p class="card-text fs-5">Score: ${list[0].score}</p>
-          </div>
-        </div>
-      `;
-
-      rowFirst.appendChild(colFirst);
-      listGroup.appendChild(rowFirst);
-
-      rowSecondAndThird = document.createElement('div');
-      rowSecondAndThird.className = 'row my-2';
-
-      rowSecondAndThird.innerHTML = `
-        <div class="col-6">
-          <div class="card border-secondary shadow text-center">
-            <div class="card-header bg-secondary text-white fs-5">🥈 2º Place</div>
-            <div class="card-body">
-              <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-                <img src="https://flagsapi.com/${list[1].country}/shiny/24.png" class="img-fluid" alt="${list[1].country}" width="24" height="24">
-                <h3 class="mb-0 dancer-result">${list[1].name}</h3>
-              </div>
-              <p class="card-text fs-5">Score: ${list[1].score}</p>
+            <div class="row">
+              ${detail.criteria.map(c => `
+                <div class="col-4 col-md-2 mb-2">
+                  <label class="form-label">${c.name}</label>
+                  <input type="number" class="form-control" value="${c.score.toFixed(1)}" readonly>
+                </div>
+              `).join('')}
             </div>
           </div>
-        </div>
-
-        
-        <div class="col-6">
-          <div class="card border-warning-subtle shadow text-center">
-            <div class="card-header bg-warning-subtle text-dark fs-5">🥉 3º Place</div>
-            <div class="card-body">
-              <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-                <img src="https://flagsapi.com/${list[2].country}/shiny/24.png" class="img-fluid" alt="${list[2].country}" width="24" height="24">
-                <h3 class="mb-0 dancer-result">${list[2].name}</h3>
-              </div>
-              <p class="card-text fs-5">Score: ${list[2].score}</p>
-            </div>
-          </div>
-        </div>
-      `;
-
-      listGroup.appendChild(rowSecondAndThird);
-    
-      list.forEach(item => {
-
-        if (item.position <= 3) return; // Solo mostrar los primeros 3 en la lista general
-        
-        const li = document.createElement('div');
-        li.className = `list-group-item d-flex justify-content-between align-items-center fs-6`;
-    
-        li.innerHTML = `
-          <span class="me-2">${item.position}</span>
-          <img src="https://flagsapi.com/${item.country}/shiny/24.png" class="me-2" alt="${item.country}">
-          <span class="me-auto dancer-result">${item.name}</span>
-          <span class="badge bg-light text-dark rounded-pill">${item.score.toFixed(1)}</span>
         `;
-    
-        listGroup.appendChild(li);
+
+        detailsContainer.appendChild(judgeCard);
       });
-    
-      col.appendChild(listGroup);
-      return col;
+
+
+      document.querySelector('#votingDetailsModal .modal-title span').textContent = dancerName;
+      editModal.show();
     }
-  
-    function createListGroup(title, list) {
-        const col = document.createElement('div');
-        col.className = 'col-12 col-md-6 col-lg-4';
-      
-        const listGroup = document.createElement('div');
-        listGroup.className = `list-group shadow-sm`;
-      
-        const header = document.createElement('div');
-        header.className = `list-group-item active bg-secondary fs-5  text-center`;
-        header.textContent = title;
-        listGroup.appendChild(header);
-      
-        list.forEach(item => {
-          let bgClass = '';
-          let medal = '';
-          let fontWeight = '';
-          if (item.position === 1) {
-            bgClass = 'bg-warning'; // oro
-            medal = '🥇';
-            fontWeight = 'fw-bold';
-          } else if (item.position === 2) {
-            bgClass = 'bg-secondary-subtle'; // plata
-            medal = '🥈';
-            fontWeight = 'fw-bold';
-          } else if (item.position === 3) {
-            bgClass = 'bg-warning-subtle'; // bronce (neutro claro, pero 100% Bootstrap)
-            medal = '🥉';
-            fontWeight = 'fw-bold';
-          }
-      
-          const li = document.createElement('div');
-          li.className = `list-group-item d-flex justify-content-between align-items-center ${bgClass} fs-6 ${fontWeight}`;
-      
-          li.innerHTML = `
-            <span class="me-2">${item.position}</span>
-            <img src="https://flagsapi.com/${item.country}/shiny/24.png" class="me-2" alt="${item.country}">
-            <span class="me-auto dancer-result">${item.name} ${medal}</span>
-            <span class="badge bg-light text-dark rounded-pill">${item.score.toFixed(1)}</span>
-          `;
-      
-          listGroup.appendChild(li);
-        });
-      
-        col.appendChild(listGroup);
-        return col;
-    }
-      
-      
   });
-  */
+   
+    
+});
+*/
