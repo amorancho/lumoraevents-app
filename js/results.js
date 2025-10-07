@@ -2,6 +2,9 @@
 var title = 'Results';
 let categoryName;
 
+let autoRefreshInterval = null;
+
+
 document.addEventListener('DOMContentLoaded', async () => {
   await eventReadyPromise;
 
@@ -10,8 +13,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const categoriaBadge = document.getElementById('categoriaBadge');
   const infoText = document.getElementById('infoText');
   const resultsContainer = document.getElementById('resultsContainer');
+  const autoRefreshToggle = document.getElementById("autoRefreshToggle");
 
   refreshBtn.disabled = true;
+  autoRefreshToggle.disabled = true;
 
   // Inicializar modal (si existe)
   const votingModalEl = document.getElementById('votingDetailsModal');
@@ -26,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const categoryId = e.target.value;
     if (categoryId) {
       refreshBtn.disabled = false;
+      autoRefreshToggle.disabled = false;
       categoryName = categorySelect.options[categorySelect.selectedIndex].text;
       if (categoriaBadge) {
         categoriaBadge.textContent = categoryName;
@@ -41,6 +47,23 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   refreshBtn.addEventListener('click', () => {
     categorySelect.dispatchEvent(new Event('change'));
+  });
+
+  autoRefreshToggle.addEventListener("change", () => {
+    // Si se activa
+    if (autoRefreshToggle.checked) {
+      // Llamada inmediata
+      //categorySelect.dispatchEvent(new Event('change'));
+
+      // Configurar intervalo cada 2 minutos (120000 ms)
+      autoRefreshInterval = setInterval(() => {
+        categorySelect.dispatchEvent(new Event('change'));
+      }, 120000);
+    } else {
+      // Si se desactiva, limpiar intervalo
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+    }
   });
 
   // CLICK GLOBAL: abrir modal solo si el click viene de una bailarina dentro de un bloque de estilo
@@ -159,6 +182,15 @@ function populateCategorySelect(categories) {
 
 async function loadClasifications(categoryId) {
   const resultsContainer = document.getElementById("resultsContainer");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const categorySelect = document.getElementById("categorySelect");
+
+  // Deshabilitar botones y mostrar estado de carga
+  refreshBtn.disabled = true;
+  categorySelect.disabled = true;
+  const originalBtnText = refreshBtn.innerHTML;
+  refreshBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Loading...`;
+
   try {
     const response = await fetch(`${API_BASE_URL}/api/competitions/results?event_id=${getEvent().id}&category_id=${categoryId}`);
     if (!response.ok) throw new Error("Network error");
@@ -168,8 +200,14 @@ async function loadClasifications(categoryId) {
   } catch (err) {
     console.error("Error loading results:", err);
     resultsContainer.innerHTML = `<div class="alert alert-danger">Error loading results.</div>`;
+  } finally {
+    // Volver a habilitar y restaurar texto
+    refreshBtn.disabled = false;
+    categorySelect.disabled = false;
+    refreshBtn.innerHTML = originalBtnText;
   }
 }
+
 
 function renderResults(data) {
   const resultsContainer = document.getElementById("resultsContainer");
@@ -305,59 +343,3 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-
-
-/*
-
-document.addEventListener('DOMContentLoaded', () => {
-  const categorySelect = document.getElementById('categorySelect');
-  const resultsContainer = document.getElementById('resultsContainer');
-
-  const editModal = new bootstrap.Modal(document.getElementById('votingDetailsModal'));
-
-  document.addEventListener('click', (event) => {
-    const spanDancer = event.target.closest('.dancer-result');
-
-    if (spanDancer) {
-      const dancerName = spanDancer.textContent.trim();
-
-      const detailsContainer = document.getElementById('votingDetailsContainer');
-
-      detailsContainer.innerHTML = ''; // Limpiar contenido previo
-
-      const category = categorySelect.value;
-      const votingDetails = mockvotingDetails[category] || [];
-
-      votingDetails.forEach(detail => {
-        const judgeCard = document.createElement('div');
-        judgeCard.className = 'card mb-3';
-
-        judgeCard.innerHTML = `
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 text-primary">${detail.judge}</h6>
-            <span class="badge bg-primary fs-6">Total Score: ${detail.totalScore.toFixed(1)}</span>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              ${detail.criteria.map(c => `
-                <div class="col-4 col-md-2 mb-2">
-                  <label class="form-label">${c.name}</label>
-                  <input type="number" class="form-control" value="${c.score.toFixed(1)}" readonly>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        `;
-
-        detailsContainer.appendChild(judgeCard);
-      });
-
-
-      document.querySelector('#votingDetailsModal .modal-title span').textContent = dancerName;
-      editModal.show();
-    }
-  });
-   
-    
-});
-*/

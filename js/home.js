@@ -11,28 +11,37 @@ const formatFecha = (isoString) => {
 
 document.addEventListener('DOMContentLoaded', async () => {
 
-    const user = getUserFromToken();
-
-    const configCol = document.getElementById("col-configUrl");
-    if (configCol && (!user || !["admin", "organizer"].includes(user.role))) {
-        configCol.remove();
-    }
-
-    // Voting card solo para admin + judge
-    const votingCol = document.getElementById("col-votingUrl");
-    if (votingCol && (!user || !["admin", "judge"].includes(user.role))) {
-        votingCol.remove();
-    }
-
     await eventReadyPromise;
 
+    const principalContainer = document.getElementById('principalContainer');
+    const hiddenMessage = document.getElementById('eventHiddenMessage');
 
-    updateElementProperty('event-logo', 'src', getEvent().eventLogo);
+    if (getEvent().visible) {
 
-    updateElementProperty('configUrl', 'href', `?eventId=${eventId}`, false);
-    updateElementProperty('votingUrl', 'href', `?eventId=${eventId}`, false);
-    updateElementProperty('participantsUrl', 'href', `?eventId=${eventId}`, false);
-    updateElementProperty('resultsUrl', 'href', `?eventId=${eventId}`, false);
+        const user = getUserFromToken();
 
+        const configCol = document.getElementById("col-configUrl");
+        if (configCol && (!user || !["admin", "organizer"].includes(user.role))) {
+            configCol.remove();
+        }
+
+        // Voting card solo para admin + judge
+        const votingCol = document.getElementById("col-votingUrl");
+        if (votingCol && (!user || !["admin", "judge"].includes(user.role))) {
+            votingCol.remove();
+        }
+
+        updateElementProperty('event-logo', 'src', getEvent().eventLogo);
+
+        updateElementProperty('configUrl', 'href', `?eventId=${eventId}`, false);
+        updateElementProperty('votingUrl', 'href', `?eventId=${eventId}`, false);
+        updateElementProperty('participantsUrl', 'href', `?eventId=${eventId}`, false);
+        updateElementProperty('resultsUrl', 'href', `?eventId=${eventId}`, false);
+
+    } else {
+        // Mostrar mensaje de evento oculto
+        principalContainer.classList.add('d-none');
+        hiddenMessage.classList.remove('d-none');
+    }
     
 });

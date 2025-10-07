@@ -12,9 +12,11 @@
   <div id="header"></div>
 
   <div class="container-fluid py-4">
+
     <div class="row g-3 justify-content-center mb-2">
+      <!-- Desplegable + botón (centrado) -->
       <div class="col-12 col-sm-8 col-md-6 col-lg-4">
-        <!--label for="categorySelect" class="form-label fw-semibold">Category</label-->
+        
         <div class="input-group">
           <select class="form-select" id="categorySelect">
             <!-- opciones -->
@@ -23,24 +25,32 @@
             Refresh
           </button>
         </div>
-      </div>
-    </div>
 
-    <div class="row justify-content-center mb-2">
-        <span class="col-12 col-sm-8 col-md-6 col-lg-4 text-center text-muted small d-none mt-2" id="infoText">
-            Click on each dancer to see their voting details.
-        </span>
+        <!-- Toggle debajo del select, centrado -->
+        <div class="form-check form-switch d-flex justify-content-center mt-2">
+          <input class="form-check-input" type="checkbox" id="autoRefreshToggle">
+          <label class="form-check-label ms-2" for="autoRefreshToggle">Auto-refresh</label>
+        </div>
+      </div>
     </div>
 
     <div class="row">
-      <div class="col text-center my-3">
-        <h2 id="categoriaTitulo">
-          <span id="categoriaBadge" class="badge bg-primary text-white fs-3 px-4 py-2 d-none">
-            <!-- Texto dinámico -->
-          </span>
-        </h2>
+      <div class="col text-center small text-muted" id="infoText">
+        Click on each dancer to see their voting details.
       </div>
     </div>
+
+    <!-- Categoría (badge más pequeño y con menos margen) -->
+    <div class="row">
+      <div class="col text-center my-2">
+        <h4 id="categoriaTitulo">
+          <span id="categoriaBadge" class="badge bg-primary text-white fs-5 px-3 py-2 d-none">
+            <!-- Texto dinámico -->
+          </span>
+        </h4>
+      </div>
+    </div>
+
     
     <div id="resultsContainer"></div>
   </div>
