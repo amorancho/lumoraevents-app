@@ -1,5 +1,7 @@
 var title = 'Welcome';
 
+const allowedRoles = ["admin", "organizer"];
+
 const user = getUserFromToken();
 
 const formatFecha = (isoString) => {
@@ -16,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const principalContainer = document.getElementById('principalContainer');
     const hiddenMessage = document.getElementById('eventHiddenMessage');
 
-    if (getEvent().visible) {
+    if ((getEvent().visible) || validateRoles(allowedRoles, false)) {
 
         const user = getUserFromToken();
 
