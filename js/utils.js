@@ -26,7 +26,7 @@ function getUserFromToken() {
   }
 }
 
-function validateRoles(allowedRoles, redirect) {
+function validateRoles(allowedRoles, redirect = true) {
   const user = getUserFromToken();
   if (!user || !allowedRoles.includes(user.role)) {
 
