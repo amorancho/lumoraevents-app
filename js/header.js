@@ -63,32 +63,47 @@ function renderUser() {
   const token = getToken();
   const userNameEl = document.getElementById("user-name");
   const authBtn = document.getElementById("auth-btn");
+  const adminBtn = document.getElementById("admin-btn");
 
-  if (!userNameEl || !authBtn) return;
+  if (!userNameEl || !authBtn || !adminBtn) return;
 
   if (token) {
     const payload = parseJwt(token);
     const name = payload?.name || "User";
-    const role = payload?.role || "";
+    const role = payload?.role?.toLowerCase() || "guest";
 
-    if (role && role.toLowerCase() !== "guest") {
-      userNameEl.textContent = `${name} (${role})`;
+    userNameEl.textContent = role !== "guest" ? `${name} (${role})` : "Guest";
+    authBtn.textContent = "Logout";
+
+    // Mostrar botón admin solo si el rol es "admin"
+    if (role === "admin") {
+      adminBtn.classList.remove("d-none");
     } else {
-      userNameEl.textContent = "Guest";
+      adminBtn.classList.add("d-none");
     }
 
-    authBtn.textContent = "Logout";
   } else {
     userNameEl.textContent = "Guest";
     authBtn.textContent = "Login";
+    adminBtn.classList.add("d-none");
   }
 }
+
 
 
 function initUserInfo() {
   renderUser();
 
-  const authBtn = document.getElementById("auth-btn");
+  const adminBtn = document.getElementById("admin-btn");
+  const authBtn = document.getElementById("auth-btn");  
+
+  if (adminBtn) {
+    adminBtn.addEventListener("click", (e) => {
+      window.location.href = `/admin.html`;
+      return;
+    });
+  }
+
   if (authBtn) {
     authBtn.addEventListener("click", () => {
       const token = getToken();

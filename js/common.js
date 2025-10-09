@@ -54,8 +54,9 @@ function getEventIdFromUrl() {
       return value;
     }
   }
+  
 
-  if (pageName !== 'index') {    
+  if (pageName !== 'index' && pageName !== 'admin') {    
     window.location.href = 'index.html';
   }
   return null;
@@ -113,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Esperamos a que los datos del evento estén listos
   try {
     await eventReadyPromise;
-    if (pageName !== 'index') {
+    if (pageName !== 'index' && pageName !== 'admin') {
       generateHeader(() => { setPageTitleAndLang(title, savedLang); });
       generateFooter();
     }

@@ -31,7 +31,11 @@ function validateRoles(allowedRoles) {
   if (!user || !allowedRoles.includes(user.role)) {
     alert("No tienes permiso para acceder a esta página");  
     // Redirige al login o home
-    window.location.href = `/home.html?eventId=${eventId}`;
+    if (eventId) {
+      window.location.href = `/home.html?eventId=${eventId}`;
+    } else {
+      window.location.href = `/index.html`;
+    }
     return false;
   }
   return true;
