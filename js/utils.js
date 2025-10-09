@@ -26,15 +26,14 @@ function getUserFromToken() {
   }
 }
 
-function validateRoles(allowedRoles) {
+function validateRoles(allowedRoles, redirect = true) {
   const user = getUserFromToken();
   if (!user || !allowedRoles.includes(user.role)) {
-    alert("No tienes permiso para acceder a esta página");  
-    // Redirige al login o home
-    if (eventId) {
+
+    if (redirect) {
+      alert("No tienes permiso para acceder a esta página");  
+      // Redirige al login o home
       window.location.href = `/home.html?eventId=${eventId}`;
-    } else {
-      window.location.href = `/index.html`;
     }
     return false;
   }
