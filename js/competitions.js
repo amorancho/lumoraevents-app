@@ -166,7 +166,7 @@ async function addCompt() {
       category_id: valueCat,
       style_id: valueSty,
       startTime: '',
-      status: 'OPE'
+      status: 'CLO'
     };
 
     try {

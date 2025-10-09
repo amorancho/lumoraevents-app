@@ -48,7 +48,7 @@ async function loadCompetitionAndDancers() {
 
   const data = await fetchVoting(category, style);
   renderCompetitionInfo(data.competition);
-  renderDancersTable(data.dancers);
+  renderDancersTable(data.dancers, data.competition.status);
 
   competitionInfo.style.display = 'block';
   dancersTableContainer.style.display = 'block';
@@ -223,7 +223,7 @@ async function fetchVoting(category, style) {
   }
 }
 
-function renderDancersTable(dancers) {
+function renderDancersTable(dancers, compStatus) {
   dancersTableBody.innerHTML = ''; // limpiar
 
   dancers.forEach(d => {
@@ -270,7 +270,7 @@ function renderDancersTable(dancers) {
       btnDetails.textContent = 'Details';
       btnDetails.addEventListener('click', () => showVotesModal(d, "details"));
       tdActions.appendChild(btnDetails);
-    } else if (d.status === 'Pending') {
+    } else if (d.status === 'Pending' && compStatus === 'OPE') {
       const btnVote = document.createElement('button');
       btnVote.className = 'btn btn-sm btn-primary';
       btnVote.textContent = 'Vote';
