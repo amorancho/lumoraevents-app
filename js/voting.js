@@ -144,6 +144,9 @@ function showVotesModal(dancer, mode = "details") {
 
       // llamada API para enviar votos
       try {
+        setVoteButtonsDisabled(true);
+        sendBtn.disabled = true;
+
         const response = await fetch(`${API_BASE_URL}/api/voting`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -159,6 +162,8 @@ function showVotesModal(dancer, mode = "details") {
         if (!response.ok) {
           const errData = await response.json();
           showMessageModal(errData.error || 'Error sending votes', 'Error');
+          setVoteButtonsDisabled(false);
+          sendBtn.disabled = false;
           return;
         }
 
@@ -200,6 +205,14 @@ function showVotesModal(dancer, mode = "details") {
 
 
   modal.show();
+}
+
+function setVoteButtonsDisabled(disabled) {
+  document.querySelectorAll('button.btn-primary').forEach(btn => {
+    if (btn.textContent.trim() === 'Vote') {
+      btn.disabled = disabled;
+    }
+  });
 }
 
 
