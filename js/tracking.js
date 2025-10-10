@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const refreshBtn = document.getElementById('refreshBtn');
 
-  await eventReadyPromise;
+  //await eventReadyPromise;
+  await WaitEventLoaded();
 
   loadCategories();
 

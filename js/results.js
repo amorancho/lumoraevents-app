@@ -6,7 +6,8 @@ let autoRefreshInterval = null;
 
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await eventReadyPromise;
+  //await eventReadyPromise;
+  await WaitEventLoaded();
 
   const categorySelect = document.getElementById('categorySelect');
   const refreshBtn = document.getElementById('refreshBtn');

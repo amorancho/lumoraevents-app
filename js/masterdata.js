@@ -5,7 +5,8 @@ const allowedRoles = ["admin", "organizer"];
 
 document.addEventListener('DOMContentLoaded', async () => {
     validateRoles(allowedRoles);
-    await eventReadyPromise;
+    //await eventReadyPromise;
+    await WaitEventLoaded();
 
     updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
     updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);

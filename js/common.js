@@ -103,6 +103,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
 
 // Ejecutar al cargar el DOM
 document.addEventListener('DOMContentLoaded', async () => {
+
   // Cargar el modal de mensajes
   document.body.insertAdjacentHTML('beforeend', modalHtml);
 
@@ -169,6 +170,26 @@ function showMessageModal(message, title = "Mensaje") {
     const modal = new bootstrap.Modal(document.getElementById('messageModal'));
     modal.show();
   }
+
+async function WaitEventLoaded() {
+  try {
+    await eventReadyPromise;
+  } catch (error) {
+      console.error('Evento no encontrado:', error);
+
+      // Mostrar mensaje
+      const body = document.body;
+      body.innerHTML = `<div style="text-align:center; margin-top:50px;">
+                          <h2>No se ha encontrado el evento</h2>
+                          <p>Redirigiendo a la página principal...</p>
+                      </div>`;
+
+      // Redirigir después de 2 segundos
+      setTimeout(() => {
+      window.location.href = 'index.html';
+      }, 2000);
+  }
+}
 
 // 5. Hacer la función global para usarla desde cualquier script inline o externo
 window.showMessageModal = showMessageModal;

@@ -4,7 +4,8 @@ var title = 'Participants';
 //const eventReadyPromise = Promise.resolve();
 
 document.addEventListener('DOMContentLoaded', async () => {
-  await eventReadyPromise;
+  //await eventReadyPromise;
+  await WaitEventLoaded();
   loadParticipants();  
 });
 

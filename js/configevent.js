@@ -6,7 +6,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
 
-  await eventReadyPromise;
+  //await eventReadyPromise;
+  await WaitEventLoaded();
 
   updateElementProperty('masterdataUrl', 'href', `?eventId=${eventId}`, false);
   updateElementProperty('judgesUrl', 'href', `?eventId=${eventId}`, false);

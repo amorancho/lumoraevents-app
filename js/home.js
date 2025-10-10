@@ -13,7 +13,7 @@ const formatFecha = (isoString) => {
 
 document.addEventListener('DOMContentLoaded', async () => {
 
-    await eventReadyPromise;
+    await WaitEventLoaded();
 
     const principalContainer = document.getElementById('principalContainer');
     const hiddenMessage = document.getElementById('eventHiddenMessage');

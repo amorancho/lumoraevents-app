@@ -10,7 +10,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
 
-  await eventReadyPromise;
+  //await eventReadyPromise;
+  await WaitEventLoaded();
 
   const categorySelect = document.getElementById('categorySelect');
   const styleSelect = document.getElementById('styleSelect');

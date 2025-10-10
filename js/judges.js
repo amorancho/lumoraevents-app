@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
 
-  await eventReadyPromise;
+  //await eventReadyPromise;
+  await WaitEventLoaded();
   
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${eventId}`);
@@ -192,7 +193,6 @@ function initJudgeManagement() {
       }
   
       const data = await response.json();
-      console.log('data: ', data);
   
       // Actualiza fecha en el formulario
       setWelcomeDate(data.welcomesended);

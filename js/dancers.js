@@ -23,7 +23,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
 
-  await eventReadyPromise;
+  //await eventReadyPromise;
+  await WaitEventLoaded();
 
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${eventId}`);
