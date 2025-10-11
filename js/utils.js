@@ -1,5 +1,17 @@
 //const API_BASE_URL = 'http://localhost:3000';
-const API_BASE_URL = 'https://api.lumoraevents.net';
+//const API_BASE_URL = 'https://api.lumoraevents.net';
+
+var API_BASE_URL;
+
+(function() {
+  var host = window.location.hostname;
+
+  if (host === "localhost" || host === "127.0.0.1") {
+    API_BASE_URL = "http://localhost:3000"; // local
+  } else {
+    API_BASE_URL = "https://api.lumoraevents.net"; // producción
+  }
+})();
 
 function getToken() {
   return localStorage.getItem("token");

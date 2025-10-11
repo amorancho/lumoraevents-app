@@ -85,6 +85,8 @@ function renderCompetitions(competitions) {
       statusText = 'OPEN';
     } else if (comp.status === 'FIN') {
       statusText = 'FINISHED';
+    } else if (comp.status === 'CLO') {
+      statusText = 'CLOSED';
     } else {
       statusText = comp.status;
     }
@@ -111,7 +113,18 @@ function renderCompetitions(competitions) {
           </div>
           <div class="col-6 col-md-2">
             <p class="mb-1 fw-semibold">Status</p>
-            <p><span class="badge bg-${comp.status === 'OPE' ? 'warning' : 'success'}">${statusText}</span></p>
+            <p>
+              <span class="badge bg-${
+                comp.status === 'OPE'
+                  ? 'warning'
+                  : comp.status === 'CLO'
+                  ? 'danger'
+                  : 'success'
+              }">
+                ${statusText}
+              </span>
+            </p>
+
           </div>                  
           <div class="col-12 col-md-4">
               <div class="row text-center">

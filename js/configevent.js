@@ -22,74 +22,80 @@ document.addEventListener('DOMContentLoaded', async () => {
   toggleVisible.checked = getEvent().visible;
 
   toggleVisible.addEventListener('change', async () => {
+    const isMakingVisible = toggleVisible.checked;
 
-    // confirmar acción
-    const confirmed = await showModal("¿Seguro que quieres cambiar la visibilidad del evento?");
+    const { confirmed, notifyJudges } = await showVisibilityModal(
+      isMakingVisible
+        ? "¿Seguro que quieres marcar el evento como visible?"
+        : "¿Seguro que quieres ocultar el evento?",
+      isMakingVisible // solo mostrar checkbox si está marcando visible
+    );
 
-    if (confirmed) {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}/setvisible`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ visible: toggleVisible.checked ? 1 : 0 })
-        });
+    if (!confirmed) {
+      toggleVisible.checked = !isMakingVisible; // revertir toggle
+      return;
+    }
 
-        if (!response.ok) {
-          toggleVisible.checked = !toggleVisible.checked;
-          const errData = await response.json();
-          showMessageModal(errData.error || 'Error updating event', 'Error');
-          return;
-        }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}/setvisible`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visible: isMakingVisible ? 1 : 0, notify_judges: notifyJudges })
+      });
 
-      } catch (error) {
-        console.error('Error al actualizar visibilidad:', error);
-        // opcional: revertir el toggle si hubo error
-        toggleVisible.checked = !toggleVisible.checked;
+      if (!response.ok) {
+        toggleVisible.checked = !isMakingVisible;
+        const errData = await response.json();
+        showMessageModal(errData.error || 'Error updating event', 'Error');
       }
-    } else {
-      console.log('hola');
-      toggleVisible.checked = !toggleVisible.checked;
+    } catch (err) {
+      console.error('Error al actualizar visibilidad:', err);
+      toggleVisible.checked = !isMakingVisible; // revertir toggle si hay error
     }
   });
 
+
+
+
 });
 
-function showModal(message) {
+function showVisibilityModal(message, showCheckbox = false) {
   return new Promise((resolve) => {
-    const modalElement = document.getElementById('deleteModal');
-    const modal = new bootstrap.Modal(modalElement);
-    const confirmBtn = document.getElementById('confirmDeleteBtn');
-    const cancelBtn = document.getElementById('cancelDeleteBtn');
-    const messageEl = document.getElementById('deleteModalMessage');
+    const modalEl = document.getElementById('visibilityModal');
+    const modal = new bootstrap.Modal(modalEl);
+    const confirmBtn = document.getElementById('visibilityConfirmBtn');
+    const cancelBtn = document.getElementById('visibilityCancelBtn');
+    const messageEl = document.getElementById('visibilityModalMessage');
+    const checkboxContainer = document.getElementById('notifyJudgesContainer');
+    const checkbox = document.getElementById('notifyJudgesCheck');
 
     messageEl.textContent = message;
+    checkboxContainer.style.display = showCheckbox ? 'block' : 'none';
+    checkbox.checked = false;
+
+    const cleanup = () => {
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+    };
 
     const onConfirm = () => {
       cleanup();
       modal.hide();
-      resolve(true);
+      resolve({ confirmed: true, notifyJudges: showCheckbox ? checkbox.checked : false });
     };
 
     const onCancel = () => {
       cleanup();
       modal.hide();
-      resolve(false);
-    };
-
-    const cleanup = () => {
-      confirmBtn.removeEventListener('click', onConfirm);
-      cancelBtn.removeEventListener('click', onCancel);
-      modalElement.removeEventListener('hidden.bs.modal', onCancel);
+      resolve({ confirmed: false, notifyJudges: false });
     };
 
     confirmBtn.addEventListener('click', onConfirm, { once: true });
     cancelBtn.addEventListener('click', onCancel, { once: true });
-    modalElement.addEventListener('hidden.bs.modal', onCancel, { once: true });
 
     modal.show();
   });
 }
+
 
 

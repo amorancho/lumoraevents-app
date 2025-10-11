@@ -80,23 +80,31 @@
     
   </div>  
 
-  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="visibilityModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Confirmación</h5>
+          <h5 class="modal-title">Cambiar visibilidad del evento</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
-          <p id="deleteModalMessage">¿Seguro que quieres continuar?</p>
+          <p id="visibilityModalMessage">Mensaje dinámico</p>
+          <div class="form-check mt-2" id="notifyJudgesContainer">
+            <input class="form-check-input" type="checkbox" value="" id="notifyJudgesCheck">
+            <label class="form-check-label" for="notifyJudgesCheck">
+              Enviar email de bienvenida a los jueces
+            </label>
+          </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" id="cancelDeleteBtn" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Aceptar</button>
+          <button type="button" id="visibilityCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="visibilityConfirmBtn" class="btn btn-primary">Aceptar</button>
         </div>
       </div>
     </div>
   </div>
+
+
 
   <div id="footer"></div>
 
