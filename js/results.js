@@ -275,6 +275,9 @@ function renderGeneralClassification(general) {
                 <p class="card-text fs-4">
                   🥇 ${d.num_oros || 0} &nbsp;|&nbsp; 🥈 ${d.num_platas || 0} &nbsp;|&nbsp; 🥉 ${d.num_bronces || 0}
                 </p>
+                <p class="fs-5 text-muted mb-0">
+                  <strong>Total Score:</strong> ${d.total_score ?? 0}
+                </p>
               </div>
             </div>
           </div>
@@ -286,6 +289,9 @@ function renderGeneralClassification(general) {
           <span class="me-2">${d.position}</span>
           <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
           <span class="me-auto dancer-result">${escapeHtml(d.dancer_name)}</span>
+          <span class="mx-2 text-muted small">
+            (Total Score: ${d.total_score ?? 0})
+          </span>
           <span class="badge bg-light text-dark rounded-pill">
             🥇 ${d.num_oros || 0} | 🥈 ${d.num_platas || 0} | 🥉 ${d.num_bronces || 0}
           </span>

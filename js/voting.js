@@ -81,7 +81,7 @@ function showVotesModal(dancer, mode = "details") {
       col.innerHTML = `
         <div class="mb-1 fw-semibold">${c.name}</div>
         <input type="tel" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'');" class="form-control form-control-lg score-input"
-               data-criteria="${c.id}" min="0" max="10" step="1" value="${currentVal}">
+               data-criteria="${c.id}" min="1" max="10" step="1" value="${currentVal}">
       `;
     }
 
