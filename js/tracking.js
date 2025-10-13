@@ -8,53 +8,34 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
 
-  const refreshBtn = document.getElementById('refreshBtn');
+  const getCompetitionsBtn = document.getElementById('getCompetitionsBtn');
+  const categorySelect = document.getElementById('categorySelect');
+  const styleSelect = document.getElementById('styleSelect');
 
   //await eventReadyPromise;
   await WaitEventLoaded();
 
-  loadCategories();
+  const data = await loadCategoriesAndStyles();
+  populateCategorySelect(data, categorySelect);
 
-  categorySelect.addEventListener('change', async (e) => {
-    const categoryId = e.target.value;
-    if (categoryId) {
-      await loadCompetitions(categoryId);
-    }
+  categorySelect.addEventListener('change', () => {
+    populateStyleSelect(categorySelect.value, data, styleSelect);
   });
 
-  refreshBtn.addEventListener('click', () => {
-    categorySelect.dispatchEvent(new Event('change'));
+  getCompetitionsBtn.addEventListener('click', async () => {
+    await loadCompetitions(categorySelect.value, styleSelect.value);
   });
 
 });
 
-async function loadCategories() {
+
+async function loadCompetitions(categoryId, styleId) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+    let url = `${API_BASE_URL}/api/competitions/tracking?event_id=${getEvent().id}&category_id=${categoryId}`;
+    if (styleId) {
+      url += `&style_id=${styleId}`;
     }
-    const categories = await response.json();
-    populateCategorySelect(categories);
-  } catch (error) {
-    console.error('Error fetching categories:', error);
-  }
-}
-
-function populateCategorySelect(categories) {  
-  
-  categorySelect.innerHTML = '<option selected disabled>Select a category</option>';
-  categories.forEach(category => {
-    const option = document.createElement('option');
-    option.value = category.id;
-    option.textContent = category.name;
-    categorySelect.appendChild(option);
-  });
-}
-
-async function loadCompetitions(categoryId) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/competitions/tracking?event_id=${getEvent().id}&category_id=${categoryId}`);
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error('Network response was not ok');
     }
@@ -363,4 +344,41 @@ function showModal(message) {
     
     modal.show();
     });
+}
+
+async function loadCategoriesAndStyles() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/competitions/categories-and-styles?event_id=${getEvent().id}`);
+    const data = await res.json();
+    return data; // array de { category: {...}, styles: [...] }
+  } catch (err) {
+    console.error('Error loading categories and styles', err);
+    return [];
+  }
+}
+
+function populateCategorySelect(data, categorySelect) {
+  categorySelect.innerHTML = '<option selected disabled>Select a category</option>';
+  data.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.category.id;
+    option.textContent = item.category.name;
+    categorySelect.appendChild(option);
+  });
+}
+
+function populateStyleSelect(selectedCategoryId, data, styleSelect) {
+  const categoryData = data.find(item => item.category.id == selectedCategoryId);
+  styleSelect.innerHTML = '<option selected value="">All styles</option>';
+  if (categoryData) {
+    categoryData.styles.forEach(style => {
+      const option = document.createElement('option');
+      option.value = style.id;
+      option.textContent = style.name;
+      styleSelect.appendChild(option);
+    });
+    styleSelect.disabled = false;
+  } else {
+    styleSelect.disabled = true;
+  }
 }

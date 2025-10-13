@@ -232,7 +232,7 @@ function renderResults(data) {
 
   (data.styles || []).forEach(style => {
     const styleCol = document.createElement("div");
-    styleCol.className = "col-12 col-md-6 col-lg-4";
+    styleCol.className = "col-12 col-md-6 col-xl-4";
     styleCol.innerHTML = renderStyleClassification(style);
     stylesRow.appendChild(styleCol);
   });

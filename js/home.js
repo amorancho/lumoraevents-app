@@ -25,12 +25,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const configCol = document.getElementById("col-configUrl");
         if (configCol && (!user || !["admin", "organizer"].includes(user.role))) {
             configCol.remove();
+        } else {
+            configCol.classList.remove("d-none");
         }
 
         // Voting card solo para admin + judge
         const votingCol = document.getElementById("col-votingUrl");
         if (votingCol && (!user || !["admin", "judge"].includes(user.role))) {
             votingCol.remove();
+        } else {
+            votingCol.classList.remove("d-none");
         }
 
         updateElementProperty('event-logo', 'src', getEvent().eventLogo);

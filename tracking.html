@@ -14,23 +14,32 @@
 
   <div class="container py-4">        
     <div class="container my-4" id="trackingContainer">
-
       <div class="row g-3 justify-content-center mb-4">
-        <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+        <!-- Category -->
+        <div class="col-12 col-sm-8 col-md-5 col-lg-4">
           <label for="categorySelect" class="form-label fw-semibold">Category</label>
-          <div class="input-group">
-            <select class="form-select" id="categorySelect">
-              <!-- opciones -->
-            </select>
-            <button class="btn btn-primary" id="refreshBtn" type="button">Refresh</button>
-          </div>
+          <select class="form-select" id="categorySelect">
+            <option selected disabled>Select a category</option>
+          </select>
+        </div>
+
+        <!-- Style -->
+        <div class="col-12 col-sm-8 col-md-5 col-lg-4">
+          <label for="styleSelect" class="form-label fw-semibold">Style (optional)</label>
+          <select class="form-select" id="styleSelect" disabled>
+            <option selected value="">All styles</option>
+          </select>
+        </div>
+
+        <!-- Button -->
+        <div class="col-12 col-sm-8 col-md-3 col-lg-2 d-flex align-items-end">
+          <button class="btn btn-primary w-100" id="getCompetitionsBtn" type="button">Get Competitions</button>
         </div>
       </div>
 
-      <div id="competitionsContainer">.
-
-      </div>
+      <div id="competitionsContainer"></div>
     </div>
+
 
     <div class="modal fade" id="voteDetailsModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-lg">

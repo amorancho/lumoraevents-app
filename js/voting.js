@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const categorySelect = document.getElementById('categorySelect');
   const styleSelect = document.getElementById('styleSelect');
-  const getDancersBtn = document.getElementById('getDancersBtn');
   const competitionInfo = document.getElementById('competitionInfo');
   const dancersTableContainer = document.getElementById('dancersTableContainer');
 
@@ -24,18 +23,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   categorySelect.addEventListener('change', () => {
     populateStyleSelect(categorySelect.value, data, styleSelect);
-    getDancersBtn.disabled = true; // habilitar solo cuando haya estilo seleccionado
   });
 
   styleSelect.addEventListener('change', () => {
-    getDancersBtn.disabled = false;
+    loadCompetitionAndDancers();
   });
 
   await loadCriteria();
-
-  getDancersBtn.addEventListener('click', async () => {
-    loadCompetitionAndDancers();
-  });
 
   const modalEl = document.getElementById('detailsModal');
   modal = new bootstrap.Modal(modalEl);
