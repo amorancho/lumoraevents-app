@@ -50,6 +50,11 @@ function renderCompetitions(competitions) {
   const container = document.getElementById('competitionsContainer');
   container.innerHTML = '';
 
+  let btnDisabled = '';
+  if (getEvent().status === 'completed') {
+    btnDisabled = 'disabled';
+  }
+
   if (!competitions || competitions.length === 0) {
     container.innerHTML = `
       <div class="alert alert-warning text-center my-4">
@@ -196,7 +201,7 @@ function renderCompetitions(competitions) {
                   <!-- Reiniciar voto (derecha) -->
                   <button class="btn btn-link text-danger p-0" 
                     onclick="resetVote(${params})" 
-                    title="Reiniciar voto">
+                    title="Reiniciar voto" ${btnDisabled}>
                     <i class="bi bi-arrow-counterclockwise"></i>
                   </button>
                 </div>

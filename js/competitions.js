@@ -29,6 +29,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
   updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);
 
+  const closedPanel = document.getElementById('closedPanel');
+
+  if (getEvent().status == 'completed') {
+      closedPanel.style.display = 'block';
+
+      // deshabilitar inputs y botones
+      document.querySelectorAll('input, button').forEach(el => el.disabled = true);
+  }
+
   const filter = document.getElementById('categoryFilter');
 
   filter.addEventListener('change', applyCategoryFilter);
@@ -100,6 +109,11 @@ function loadCompetitions() {
     const isOpen = comp.status === 'OPE';
     const isClosed = comp.status === 'CLO';
 
+    let btnDisabled = '';
+    if (getEvent().status === 'completed') {
+      btnDisabled = 'disabled';
+    }
+
     // Botón de estado
     let statusBtn;
     if (isFinished) {
@@ -107,7 +121,7 @@ function loadCompetitions() {
         <button type="button" 
                 class="btn btn-outline-secondary btn-sm" 
                 disabled
-                title="Finished">
+                title="Finished" ${btnDisabled}>
             <i class="bi bi-check-circle"></i>
         </button>
       `;
@@ -116,11 +130,13 @@ function loadCompetitions() {
         <button type="button" 
                 class="btn btn-outline-${isOpen ? 'warning' : 'success'} btn-sm btn-toggle-status"
                 title="${isOpen ? 'Close competition' : 'Open competition'}"
-                data-action="${isOpen ? 'close' : 'open'}">
+                data-action="${isOpen ? 'close' : 'open'}" ${btnDisabled}>
             <i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'}"></i>
         </button>
       `;
     }
+
+    
 
 
     row.innerHTML = `
@@ -147,13 +163,13 @@ function loadCompetitions() {
       <td class="text-center">
         <div class="btn-group" role="group">
             ${statusBtn}
-            <button type="button" class="btn btn-outline-secondary btn-sm btn-dancers-order" title="Dancers Order" data-bs-toggle="modal" data-bs-target="#dancersOrderModal">
+            <button type="button" class="btn btn-outline-secondary btn-sm btn-dancers-order" title="Dancers Order" data-bs-toggle="modal" data-bs-target="#dancersOrderModal" ${btnDisabled}>
                 <i class="bi bi-list-ol"></i>
             </button>
-            <button type="button" class="btn btn-outline-primary btn-sm btn-edit-competition" title="Edit">
+            <button type="button" class="btn btn-outline-primary btn-sm btn-edit-competition" title="Edit" ${btnDisabled}>
                 <i class="bi bi-pencil"></i>
             </button>
-            <button type="button" class="btn btn-outline-danger btn-sm btn-delete-competition" title="Delete">
+            <button type="button" class="btn btn-outline-danger btn-sm btn-delete-competition" title="Delete" ${btnDisabled}>
                 <i class="bi bi-trash"></i>
             </button>
         </div>

@@ -46,10 +46,19 @@
 
     <!-- Panel de alerta -->
     <div id="alertPanel" class="mb-4" style="display: none;">
-      <div class="alert alert-danger d-flex align-items-center" role="alert">
+      <div class="alert alert-warning d-flex align-items-center" role="alert">
         <i class="bi bi-info-circle-fill me-2"></i>
         <div>
           El festival ha dado comienzo o ya ha finalizado. Si modifica estos datos puede provocar inconsistencias en los datos.
+        </div>
+      </div>
+    </div>
+
+    <div id="closedPanel" class="mb-4" style="display: none;">
+      <div class="alert alert-danger d-flex align-items-center" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <div>
+          El festival ha finalizado. No se pueden modificar los datos.
         </div>
       </div>
     </div>

@@ -80,6 +80,27 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
       if (!res.ok) throw new Error(`Error ${res.status} al recuperar el evento`);
       const data = await res.json();
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // eliminamos horas para comparar solo la fecha
+
+      const start = new Date(data.start);
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(data.end);
+      end.setHours(0, 0, 0, 0);
+
+      let status;
+
+      if (data.status === 'CLO') {
+        status = 'completed';
+      } else if (start > today) {
+        status = 'upcoming';
+      } else if (start <= today && end >= today) {
+        status = 'ongoing';
+      } else {
+        status = 'completed';
+      }
+
       eventObj = {
         id: data.id,
         name: data.name,
@@ -87,11 +108,12 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         eventUrl: data.eventurl,
         visible: data.visible === 1,
         trial: data.trial === 1,
-        status: (new Date(data.start) > new Date()) ? 'upcoming' :
-                (new Date(data.start) < new Date()) ? 'completed' : 'ongoing',
+        status: status,
         homeUrl: `home.html?eventId=${eventId}`,
         language: data.language
       };
+
+      //console.log('Datos del evento cargados:', eventObj);
 
     }
     resolve(eventObj);

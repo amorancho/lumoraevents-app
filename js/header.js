@@ -10,7 +10,7 @@ function generateHeader(callback) {
       // Modificar campos dentro del fragmento
       const titulo = doc.getElementById('event-name');
       const homeUrl = doc.getElementById('home-link');
-      const trialBadge = doc.getElementById('event-trial-badge');
+      const infoBadge = doc.getElementById('event-info-badge');
 
       if (titulo) {
         titulo.textContent = getEvent().name;
@@ -21,8 +21,12 @@ function generateHeader(callback) {
         homeUrl.href = getEvent().homeUrl;
       }
 
-      if (trialBadge && getEvent().trial ) {
-        trialBadge.textContent = 'TRIAL EVENT';
+      if (infoBadge && getEvent().trial ) {
+        infoBadge.textContent = 'TRIAL EVENT';
+      }
+
+      if (infoBadge && getEvent().status === 'completed' ) {
+        infoBadge.textContent = 'CLOSED EVENT';
       }
 
       // Insertar el HTML modificado en el DOM final

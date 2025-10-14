@@ -14,8 +14,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
     const alertPanel = document.getElementById('alertPanel');
-    if (getEvent().status !== 'upcoming') {
+    const closedPanel = document.getElementById('closedPanel');
+    if (getEvent().status == 'ongoing') {
         alertPanel.style.display = 'block';
+    }
+
+    if (getEvent().status == 'completed') {
+        closedPanel.style.display = 'block';
+
+        // deshabilitar inputs y botones
+        document.querySelectorAll('input, button').forEach(el => el.disabled = true);
     }
 
     loadAll();
@@ -58,42 +66,50 @@ function renderTable(table, fullData) {
         const leftDiv = document.createElement("div");
         leftDiv.className = "d-flex align-items-center gap-2";
 
-        const dragHandle = document.createElement("i");
-        dragHandle.className = "bi bi-grip-vertical text-muted drag-handle";
-        dragHandle.style.cursor = "grab";
+        if (getEvent().status !== 'completed') {
+
+            const dragHandle = document.createElement("i");
+            dragHandle.className = "bi bi-grip-vertical text-muted drag-handle";
+            dragHandle.style.cursor = "grab";
+            leftDiv.appendChild(dragHandle);
+        }
 
         const span = document.createElement("span");
         span.textContent = item.name;
 
-        leftDiv.appendChild(dragHandle);
+        
         leftDiv.appendChild(span);
 
-        // botón eliminar
-        const btn = document.createElement("button");
-        btn.className = "btn btn-link text-danger p-0 delete-btn";
-        btn.innerHTML = '<i class="bi bi-trash"></i>';
-
-        btn.onclick = async () => {
-            const confirmed = await showModal(`Delete "${item.name}" from ${table}?`);
-            if (confirmed) {
-                try {
-                    const res = await fetch(`${API_BASE_URL}/api/${table}/${item.id}`, { method: "DELETE" });
-                    const data = await res.json();
-
-                    if (!res.ok) {
-                        showMessageModal(data.error || 'Unknown error', 'Error eliminando el item');
-                        return;
-                    }
-                    loadTable(table);
-                } catch (error) {
-                    console.error('Unexpected error:', error);
-                    showMessageModal(`Unexpected error: ${error.message}`, 'Error');
-                }
-            }
-        };
-
         li.appendChild(leftDiv);
-        li.appendChild(btn);
+
+        if (getEvent().status !== 'completed') {
+
+            // botón eliminar
+            const btn = document.createElement("button");
+            btn.className = "btn btn-link text-danger p-0 delete-btn";
+            btn.innerHTML = '<i class="bi bi-trash"></i>';
+
+            btn.onclick = async () => {
+                const confirmed = await showModal(`Delete "${item.name}" from ${table}?`);
+                if (confirmed) {
+                    try {
+                        const res = await fetch(`${API_BASE_URL}/api/${table}/${item.id}`, { method: "DELETE" });
+                        const data = await res.json();
+
+                        if (!res.ok) {
+                            showMessageModal(data.error || 'Unknown error', 'Error eliminando el item');
+                            return;
+                        }
+                        loadTable(table);
+                    } catch (error) {
+                        console.error('Unexpected error:', error);
+                        showMessageModal(`Unexpected error: ${error.message}`, 'Error');
+                    }
+                }
+            };
+            li.appendChild(btn);
+        }
+
         list.appendChild(li);
     });
 

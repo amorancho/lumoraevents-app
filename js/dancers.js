@@ -31,6 +31,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
   updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
+  const closedPanel = document.getElementById('closedPanel');
+
+  if (getEvent().status == 'completed') {
+      closedPanel.style.display = 'block';
+
+      // deshabilitar inputs y botones
+      document.querySelectorAll('input, button').forEach(el => el.disabled = true);
+  }
+
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
   tooltipTriggerList.forEach(function (tooltipTriggerEl) {
     new bootstrap.Tooltip(tooltipTriggerEl);
@@ -209,6 +218,11 @@ function loadDancers() {
   dancersTable.innerHTML = ''; // Clear existing rows
   dancers.forEach(dancer => {
 
+    let btnDisabled = '';
+    if (getEvent().status === 'completed') {
+      btnDisabled = 'disabled';
+    }
+
     const row = document.createElement('tr');
     row.dataset.id = dancer.id;
 
@@ -232,10 +246,10 @@ function loadDancers() {
       <td class="align-middle">${dancer.nationality}</td>
       <td class="text-center align-middle">
           <div class="btn-group" role="group">
-              <button type="button" class="btn btn-outline-primary btn-sm btn-edit-dancer" title="Edit">
+              <button type="button" class="btn btn-outline-primary btn-sm btn-edit-dancer" title="Edit" ${btnDisabled}>
                   <i class="bi bi-pencil"></i>
               </button>
-              <button type="button" class="btn btn-outline-danger btn-sm btn-delete-dancer" title="Delete">
+              <button type="button" class="btn btn-outline-danger btn-sm btn-delete-dancer" title="Delete" ${btnDisabled}>
                   <i class="bi bi-trash"></i>
               </button>
           </div>

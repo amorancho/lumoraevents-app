@@ -17,8 +17,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const toggleVisible = document.getElementById('flexSwitchCheckDefault');
 
-  console.log('visible: ', getEvent().visible);
-
   toggleVisible.checked = getEvent().visible;
 
   toggleVisible.addEventListener('change', async () => {
