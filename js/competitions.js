@@ -96,6 +96,33 @@ function loadCompetitions() {
       ${reservas > 0 ? `Reservas: ${reservas}` : ''}
     `.trim();
 
+    const isFinished = comp.status === 'FIN';
+    const isOpen = comp.status === 'OPE';
+    const isClosed = comp.status === 'CLO';
+
+    // Botón de estado
+    let statusBtn;
+    if (isFinished) {
+      statusBtn = `
+        <button type="button" 
+                class="btn btn-outline-secondary btn-sm" 
+                disabled
+                title="Finished">
+            <i class="bi bi-check-circle"></i>
+        </button>
+      `;
+    } else {
+      statusBtn = `
+        <button type="button" 
+                class="btn btn-outline-${isOpen ? 'warning' : 'success'} btn-sm btn-toggle-status"
+                title="${isOpen ? 'Close competition' : 'Open competition'}"
+                data-action="${isOpen ? 'close' : 'open'}">
+            <i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'}"></i>
+        </button>
+      `;
+    }
+
+
     row.innerHTML = `
       <td><span class="badge bg-info fs-6">${comp.category_name}</span></td>
       <td><span class="badge bg-warning text-dark fs-6">${comp.style_name}</span></td>
@@ -119,6 +146,7 @@ function loadCompetitions() {
       </td>
       <td class="text-center">
         <div class="btn-group" role="group">
+            ${statusBtn}
             <button type="button" class="btn btn-outline-secondary btn-sm btn-dancers-order" title="Dancers Order" data-bs-toggle="modal" data-bs-target="#dancersOrderModal">
                 <i class="bi bi-list-ol"></i>
             </button>
@@ -144,6 +172,39 @@ function loadCompetitions() {
   // Activar tooltips de Bootstrap después de crear los elementos
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+
+  competitionsTable.querySelectorAll('.btn-toggle-status').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      const row = e.target.closest('tr');
+      const compId = row.dataset.id;
+      const action = btn.dataset.action; // ahora usamos data-action
+
+      if (!action) return; // botón disabled (finished), no hacemos nada
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/competitions/${compId}/changestatus`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_id: getEvent().id, action })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showMessageModal(data.error || 'Error saving competition', 'Error');
+          return;
+        }
+
+        // Recargamos la lista para reflejar el cambio de estado
+        await fetchCompetitionsFromAPI();
+
+      } catch (error) {
+        console.error('Error changing status:', error);
+        showMessageModal('Unexpected error changing status', 'Error');
+      }
+    });
+  });
+
 }
 
 
