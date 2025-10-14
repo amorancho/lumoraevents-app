@@ -208,6 +208,48 @@ function initJudgeManagement() {
     }
   });
 
+  document.getElementById('resetPassword').addEventListener('click', async () => {
+    const sendBtn = document.getElementById('resetPassword');
+    const judgeId = document.getElementById('editForm').dataset.id;
+  
+    if (!judgeId) {
+      showMessageModal('No judge selected.');
+      return;
+    }
+  
+    // Mostrar spinner y deshabilitar botón
+    const originalText = sendBtn.innerHTML;
+    sendBtn.disabled = true;
+    //sendBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Sending...`;
+
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner-border spinner-border-sm';
+    spinner.setAttribute('role', 'status');
+    spinner.setAttribute('aria-hidden', 'true');
+    sendBtn.appendChild(spinner);
+  
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/judges/${judgeId}/send-reset-password-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Error sending email: ${response.statusText}`);
+      }
+  
+  
+    } catch (err) {
+      console.error(err);
+      showMessageModal('Error sending welcome email.');
+    } finally {
+      // Quitar spinner y restaurar botón
+      sendBtn.removeChild(spinner);
+      sendBtn.value = originalText;
+      sendBtn.disabled = false;
+    }
+  });
+
   document.getElementById('sendWelcomeAll').addEventListener('click', async () => {
 
     const confirmed = await showModal(`Are you sure you want to send the welcome email to all judges who have not received it?`);

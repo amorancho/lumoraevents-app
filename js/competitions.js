@@ -127,7 +127,7 @@ function loadCompetitions() {
       <td><span class="badge bg-info fs-6">${comp.category_name}</span></td>
       <td><span class="badge bg-warning text-dark fs-6">${comp.style_name}</span></td>
       <td><i class="bi bi-clock me-1 text-muted"></i>${comp.estimated_start_form ?? 'Not defined'}</td>
-      <td><span class="badge bg-${colorBg}">${statusText}</span></td>
+      <td data-status><span class="badge bg-${colorBg}">${statusText}</span></td>
       <td>
         <i class="bi bi-people me-1 text-muted"></i>
         ${comp.judges.map(j => j.name).join(', ')}
@@ -196,7 +196,27 @@ function loadCompetitions() {
         }
 
         // Recargamos la lista para reflejar el cambio de estado
-        await fetchCompetitionsFromAPI();
+        //await fetchCompetitionsFromAPI();
+        let newStatus;
+        if (action === 'open') {
+          newStatus = 'OPEN';
+        } else if (action === 'close') {
+          newStatus = 'CLOSED';
+        }
+
+        const statusTd = row.querySelector('td[data-status]');
+        const badge = statusTd.querySelector('.badge');
+        if (badge) {
+          badge.textContent = newStatus;
+          badge.classList.remove('bg-success', 'bg-danger');
+          badge.classList.add(newStatus === 'OPEN' ? 'bg-success' : 'bg-danger');
+        }
+
+        // Actualizamos el botón
+        btn.dataset.action = newStatus === 'OPEN' ? 'close' : 'open';
+        btn.title = newStatus === 'OPEN' ? 'Close competition' : 'Open competition';
+        btn.querySelector('i').className = newStatus === 'OPEN' ? 'bi bi-lock' : 'bi bi-unlock';
+
 
       } catch (error) {
         console.error('Error changing status:', error);
