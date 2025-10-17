@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
   await WaitEventLoaded();
 
+  updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `?eventId=${eventId}`, false);
   updateElementProperty('judgesUrl', 'href', `?eventId=${eventId}`, false);
   updateElementProperty('dancersUrl', 'href', `?eventId=${eventId}`, false);
