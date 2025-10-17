@@ -74,11 +74,18 @@
                 <label for="end" class="form-label">End Date</label>
                 <input type="date" class="form-control" id="end">
               </div>
-              <div class="col-md-4">
+              <div class="col-md-2">
                 <label for="status" class="form-label">Status</label>
                 <select id="status" class="form-select">
                   <option value="OPE">Open</option>
                   <option value="CLO">Closed</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label for="language" class="form-label">Language</label>
+                <select id="language" class="form-select">
+                  <option value="en">EN</option>
+                  <option value="es">ES</option>
                 </select>
               </div>
 
@@ -91,32 +98,41 @@
                 <label for="eventurl" class="form-label">Event Page URL</label>
                 <input type="text" class="form-control" id="eventurl" placeholder="https://...">
               </div>
-
-              <!-- Username, Password, Language -->
-              <div class="col-md-5">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" class="form-control" id="username" disabled>
-              </div>
-              <div class="col-md-5">
-                <label for="password" class="form-label">Password</label>
-                <input type="number" class="form-control" id="password" min="0" max="200000">
-              </div>
-              <div class="col-md-2">
-                <label for="language" class="form-label">Language</label>
-                <select id="language" class="form-select">
-                  <option value="en">EN</option>
-                  <option value="es">ES</option>
-                </select>
-              </div>
+             
 
               <!-- Parámetros adicionales -->
-              <div class="col-md-6">
-                <label for="min_styles" class="form-label">Minimum Styles</label>
-                <input type="number" class="form-control" id="min_styles">
-              </div>
-              <div class="col-md-6">
-                <label for="autorefresh_minutes" class="form-label">Auto Refresh (minutes)</label>
-                <input type="number" class="form-control" id="autorefresh_minutes">
+              <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-secondary text-white fw-semibold">
+                  <i class="bi bi-sliders me-2"></i>Preferences
+                </div>
+                <div class="card-body">
+                  <div class="row g-3">
+
+                    <div class="col-md-6">
+                      <label for="min_styles" class="form-label">Default Judges to vote in Competitions</label>
+                      <input type="number" class="form-control" id="judges_to_vote">
+                    </div>
+                  
+                    <div class="col-md-6">
+                      <label for="autorefresh_minutes" class="form-label">Auto Refresh (minutes)</label>
+                      <input type="number" class="form-control" id="autorefresh_minutes">
+                    </div>
+
+                    <div class="col-md-6">
+                      <label for="category_class_type" class="form-label">Category Classification Type</label>
+                      <select id="category_class_type" class="form-select">
+                        <option value="NO">No Category Classification</option>
+                        <option value="NUM_MEDALS">By Number of Medals in Styles</option>
+                      </select>
+                    </div>
+
+                    <div class="col-md-6">
+                      <label for="min_styles" class="form-label">Minimum Styles</label>
+                      <input type="number" class="form-control" id="min_styles">
+                    </div>
+
+                  </div>
+                </div>
               </div>
 
               <!-- Logo preview -->
@@ -126,11 +142,8 @@
 
               <!-- Botones -->
               <div class="col-12 text-center mt-3">
-                <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold" id="saveEventBtn">
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold" id="saveEventBtn" disabled>
                   <i class="bi bi-save me-2"></i>Save Changes
-                </button>
-                <button type="reset" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold ms-2">
-                  <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
                 </button>
               </div>
 
@@ -144,6 +157,29 @@
 
   </div>
 
+  <div class="modal fade" id="visibilityModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Cambiar visibilidad del evento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p id="visibilityModalMessage">Mensaje dinámico</p>
+          <div class="form-check mt-2" id="notifyJudgesContainer">
+            <input class="form-check-input" type="checkbox" value="" id="notifyJudgesCheck">
+            <label class="form-check-label" for="notifyJudgesCheck">
+              Enviar email de bienvenida a los jueces
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" id="visibilityCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" id="visibilityConfirmBtn" class="btn btn-primary">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <div id="footer"></div>
 

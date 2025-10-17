@@ -12,6 +12,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);
   updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
+  const toggleVisible = document.getElementById('visible');
+
+  toggleVisible.addEventListener('change', async () => {
+    const isMakingVisible = toggleVisible.checked;
+
+    const { confirmed, notifyJudges } = await showVisibilityModal(
+      isMakingVisible
+        ? "¿Seguro que quieres marcar el evento como visible?"
+        : "¿Seguro que quieres ocultar el evento?",
+      isMakingVisible // solo mostrar checkbox si está marcando visible
+    );
+
+    if (!confirmed) {
+      toggleVisible.checked = !isMakingVisible; // revertir toggle
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}/setvisible`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visible: isMakingVisible ? 1 : 0, notify_judges: notifyJudges })
+      });
+
+      if (!response.ok) {
+        toggleVisible.checked = !isMakingVisible;
+        const errData = await response.json();
+        showMessageModal(errData.error || 'Error updating event', 'Error');
+      }
+    } catch (err) {
+      console.error('Error al actualizar visibilidad:', err);
+      toggleVisible.checked = !isMakingVisible; // revertir toggle si hay error
+    }
+  });
+
   await loadEventData(eventId);
 
   document.getElementById('saveEventBtn').addEventListener('click', async () => {
@@ -19,8 +54,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   document.getElementById('eventlogo').addEventListener('input', updateLogoPreview);
-});
 
+  const categorySelect = document.getElementById('category_class_type');
+  const minStylesInput = document.getElementById('min_styles');
+
+  function updateMinStylesState() {
+    if (categorySelect.value === 'NO') {
+      minStylesInput.value = '';      // limpiar valor
+      minStylesInput.disabled = true; // deshabilitar input
+    } else {
+      minStylesInput.disabled = false; // permitir editar
+    }
+  }
+
+  // Ejecutar al cargar la página
+  updateMinStylesState();
+
+  // Ejecutar cada vez que cambie el select
+  categorySelect.addEventListener('change', updateMinStylesState);
+});
 
 async function loadEventData(eventId) {
   try {
@@ -29,24 +81,27 @@ async function loadEventData(eventId) {
     const data = await res.json();
 
     const f = id => document.getElementById(id);
+
+    const dateFields = ['start', 'end'];
+
     for (let key in data) {
-      if (f(key)) f(key).value = data[key] ?? '';
+      const input = f(key);
+      if (!input) continue;
+
+      if (dateFields.includes(key) && data[key]) {
+        // Campo de fecha → tomar solo YYYY-MM-DD
+        input.value = data[key].slice(0, 10);
+      } else {
+        // Todo lo demás → asignar tal cual o vacío
+        input.value = data[key] ?? '';
+      }
     }
 
-    console.log('Fecha original:', data.start);
-
-    if (f('start') && data.start)
-      f('start').value = data.start.slice(0, 10);
-    if (f('end') && data.end)
-      f('end').value = data.end.slice(0, 10);
-
-
     if (f('visible')) f('visible').checked = data.visible == 1; 
-    if (f('username') && f('code')) f('username').value = f('code').value;
 
     updateLogoPreview();
   } catch (err) {
-    showAlert('danger', '❌ Error loading event information');
+    showAlert('danger', 'Error loading event information');
     console.error(err);
   }
 }
@@ -112,4 +167,42 @@ function showAlert(type, message) {
   `;
   container.prepend(alert);
   setTimeout(() => alert.classList.remove('show'), 4000);
+}
+
+function showVisibilityModal(message, showCheckbox = false) {
+  return new Promise((resolve) => {
+    const modalEl = document.getElementById('visibilityModal');
+    const modal = new bootstrap.Modal(modalEl);
+    const confirmBtn = document.getElementById('visibilityConfirmBtn');
+    const cancelBtn = document.getElementById('visibilityCancelBtn');
+    const messageEl = document.getElementById('visibilityModalMessage');
+    const checkboxContainer = document.getElementById('notifyJudgesContainer');
+    const checkbox = document.getElementById('notifyJudgesCheck');
+
+    messageEl.textContent = message;
+    checkboxContainer.style.display = showCheckbox ? 'block' : 'none';
+    checkbox.checked = false;
+
+    const cleanup = () => {
+      confirmBtn.removeEventListener('click', onConfirm);
+      cancelBtn.removeEventListener('click', onCancel);
+    };
+
+    const onConfirm = () => {
+      cleanup();
+      modal.hide();
+      resolve({ confirmed: true, notifyJudges: showCheckbox ? checkbox.checked : false });
+    };
+
+    const onCancel = () => {
+      cleanup();
+      modal.hide();
+      resolve({ confirmed: false, notifyJudges: false });
+    };
+
+    confirmBtn.addEventListener('click', onConfirm, { once: true });
+    cancelBtn.addEventListener('click', onCancel, { once: true });
+
+    modal.show();
+  });
 }

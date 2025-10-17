@@ -133,7 +133,11 @@ async function addEntry(table) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ event_id: getEvent().id, name: value })
             });
-            if (!res.ok) throw new Error(`Failed to create ${table}`);
+            if (!res.ok) {
+                const error = await res.json();
+                showMessageModal(error.error || 'Unknown error', 'Error adding entry');
+                return;
+            }
             input.value = "";
             loadTable(table);
         } catch (error) {
