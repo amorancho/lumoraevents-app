@@ -110,7 +110,10 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         trial: data.trial === 1,
         status: status,
         homeUrl: `home.html?eventId=${eventId}`,
-        language: data.language
+        language: data.language,
+        judgesToVote: data.judges_to_vote,
+        autoRefreshMin: data.autorefresh_minutes,
+        catClassification: data.category_class_type
       };
 
       //console.log('Datos del evento cargados:', eventObj);

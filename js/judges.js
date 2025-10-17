@@ -40,7 +40,7 @@ function initJudgeManagement() {
     document.getElementById('judgeEmail').value = '';
     document.getElementById('judgeMaster').checked = false;
     document.getElementById('judgeUsername').value = '';
-    document.getElementById('judgeLanguage').value = getEvent().language;
+    document.getElementById('judgeLanguage').value = getEvent().language;    
     document.querySelector('#editModal .modal-title span').textContent = 'Create Judge';
 
     document.getElementById('actionsCard').classList.add('d-none');

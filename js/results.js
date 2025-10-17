@@ -15,9 +15,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   const infoText = document.getElementById('infoText');
   const resultsContainer = document.getElementById('resultsContainer');
   const autoRefreshToggle = document.getElementById("autoRefreshToggle");
+  const autoRefreshLabel = document.getElementById("autoRefreshLabel");
 
   refreshBtn.disabled = true;
   autoRefreshToggle.disabled = true;
+
+  autoRefreshLabel.textContent += ` (${getEvent().autoRefreshMin || 2} min)`;
 
   // Inicializar modal (si existe)
   const votingModalEl = document.getElementById('votingDetailsModal');
@@ -59,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Configurar intervalo cada 2 minutos (120000 ms)
       autoRefreshInterval = setInterval(() => {
         categorySelect.dispatchEvent(new Event('change'));
-      }, 120000);
+      }, 60000 * (getEvent().autoRefreshMin || 2));
     } else {
       // Si se desactiva, limpiar intervalo
       clearInterval(autoRefreshInterval);
@@ -217,11 +220,15 @@ function renderResults(data) {
   const row = document.createElement("div");
   row.className = "row g-4 pt-2";
 
-  // === GENERAL CLASSIFICATION ===
-  const colGeneral = document.createElement("div");
-  colGeneral.className = "col-12 col-lg-4";
-  colGeneral.innerHTML = renderGeneralClassification(data.general || []);
-  row.appendChild(colGeneral);
+  // Si hay clasificación general, generamos columna
+  if (getEvent().catClassification != 'NO') {
+
+    // === GENERAL CLASSIFICATION ===
+    const colGeneral = document.createElement("div");
+    colGeneral.className = "col-12 col-lg-4";
+    colGeneral.innerHTML = renderGeneralClassification(data.general || []);
+    row.appendChild(colGeneral);
+  }
 
   // === STYLES CLASSIFICATIONS ===
   const colStyles = document.createElement("div");
