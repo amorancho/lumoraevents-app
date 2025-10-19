@@ -21,26 +21,38 @@
         ⚙️ Event Configuration
       </a>
     </div>
-    <div class="d-flex justify-content-center gap-3 mb-4">
-      <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="masterdataUrl">
-        🌐 Master Data
-      </a>
-      <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="judgesUrl">
-        ⚖️ Judges
-      </a>
-      <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="dancersUrl">
-        💃 Dancers
-      </a>      
-      <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="competitionsUrl">
-        🚀​ Competitions
-      </a>
+    <div class="row justify-content-center mb-4 g-2">
+      <div class="col-6 col-md-auto d-flex justify-content-center">
+        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="masterdataUrl">
+          🌐 Master Data
+        </a>
+      </div>
+      <div class="col-6 col-md-auto d-flex justify-content-center">
+        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="judgesUrl">
+          ⚖️ Judges
+        </a>
+      </div>
+      <div class="col-6 col-md-auto d-flex justify-content-center">
+        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="dancersUrl">
+          💃 Dancers
+        </a>
+      </div>
+      <div class="col-6 col-md-auto d-flex justify-content-center">
+        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="competitionsUrl">
+          🚀 Competitions
+        </a>
+      </div>
     </div>
+
 
     <div class="row g-4" id="dataEvent">
       <div class="col-12 col-lg-10 mx-auto">
         <div class="card shadow-sm border-0">
-          <div class="card-header bg-primary text-white fw-semibold">
-            <i class="bi bi-gear me-2"></i>Event Information
+          <div class="card-header bg-primary text-white fw-semibold d-flex flex-wrap justify-content-between align-items-center">
+            <div class="me-2">
+              <i class="bi bi-gear me-2"></i>Event Information
+            </div>
+            <div id="licenseInfo" class="fw-normal fst-italic text-truncate" style="min-width: 0;"></div>
           </div>
           <div class="card-body">
             <form id="eventForm" class="row g-3">
@@ -89,17 +101,29 @@
                 </select>
               </div>
 
-              <!-- Logo y URL -->
-              <div class="col-md-6">
-                <label for="eventlogo" class="form-label">Event Logo URL</label>
-                <input type="text" class="form-control" id="eventlogo" placeholder="https://...">
-              </div>
-              <div class="col-md-6">
-                <label for="eventurl" class="form-label">Event Page URL</label>
-                <input type="text" class="form-control" id="eventurl" placeholder="https://...">
+              <div class="col-12">
+                <div class="row g-3 align-items-end">
+                  
+                  <!-- Inputs URL y Logo -->
+                  <div class="col-md-9">
+                    <div class="mb-3">
+                      <label for="eventurl" class="form-label">Event Page URL</label>
+                      <input type="text" class="form-control" id="eventurl" placeholder="https://...">
+                    </div>
+                    <div class="mb-3">
+                      <label for="eventlogo" class="form-label">Event Logo URL</label>
+                      <input type="text" class="form-control" id="eventlogo" placeholder="https://...">
+                    </div>
+                  </div>
+
+                  <!-- Preview a la derecha -->
+                  <div class="col-md-3 text-center">
+                    <img id="previewLogo" src="" alt="Event logo" class="img-fluid rounded shadow-sm d-none" style="max-height:150px;">
+                  </div>
+
+                </div>
               </div>
              
-
               <!-- Parámetros adicionales -->
               <div class="card shadow-sm border-0 mt-4">
                 <div class="card-header bg-secondary text-white fw-semibold">
@@ -135,14 +159,11 @@
                 </div>
               </div>
 
-              <!-- Logo preview -->
-              <div class="col-12 text-center mt-4">
-                <img id="previewLogo" src="" alt="Event logo" class="img-fluid rounded shadow-sm d-none" style="max-height:150px;">
-              </div>
+              
 
               <!-- Botones -->
               <div class="col-12 text-center mt-3">
-                <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold" id="saveEventBtn" disabled>
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold" id="saveEventBtn">
                   <i class="bi bi-save me-2"></i>Save Changes
                 </button>
               </div>

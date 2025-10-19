@@ -113,7 +113,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         language: data.language,
         judgesToVote: data.judges_to_vote,
         autoRefreshMin: data.autorefresh_minutes,
-        catClassification: data.category_class_type
+        catClassification: data.category_class_type,
+        license: data.license
       };
 
       //console.log('Datos del evento cargados:', eventObj);

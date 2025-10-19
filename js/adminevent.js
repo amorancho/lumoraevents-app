@@ -72,6 +72,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Ejecutar cada vez que cambie el select
   categorySelect.addEventListener('change', updateMinStylesState);
+
+  
 });
 
 async function loadEventData(eventId) {
@@ -99,6 +101,39 @@ async function loadEventData(eventId) {
 
     if (f('visible')) f('visible').checked = data.visible == 1; 
 
+    const licenseInfo = document.getElementById("licenseInfo");
+    if (licenseInfo) {
+      const licenseDetails = {
+        small: {
+          icon: "bi-person",
+          name: "Small",
+          text: "Máximo de 25 bailarinas"
+        },
+        medium: {
+          icon: "bi-people",
+          name: "Medium",
+          text: "Máximo de 75 bailarinas"
+        },
+        large: {
+          icon: "bi-stars",
+          name: "Large",
+          text: "Bailarinas ilimitadas"
+        }
+      };
+
+      const license = licenseDetails[data.license];
+      if (license) {
+        licenseInfo.innerHTML = `
+          <span class="badge bg-warning text-dark px-3 py-2 fs-6">
+            <i class="bi ${license.icon} me-1"></i>
+            Licencia <strong>${license.name}</strong> — ${license.text}
+          </span>
+        `;
+      } else {
+        licenseInfo.textContent = "Licencia desconocida";
+      }
+    }
+
     updateLogoPreview();
   } catch (err) {
     showAlert('danger', 'Error loading event information');
@@ -109,20 +144,19 @@ async function loadEventData(eventId) {
 
 async function saveEventData(eventId) {
   const f = id => document.getElementById(id);
+  
   const payload = {
-    code: f('code').value.trim(),
     name: f('name').value.trim(),
     start: f('start').value,
     end: f('end').value,
     status: f('status').value,
     eventlogo: f('eventlogo').value.trim(),
     eventurl: f('eventurl').value.trim(),
-    client_id: parseInt(f('client_id').value) || null,
-    password: parseInt(f('password').value) || null,
-    visible: parseInt(f('visible').value) || 0,
     language: f('language').value,
     min_styles: parseInt(f('min_styles').value) || null,
     autorefresh_minutes: parseInt(f('autorefresh_minutes').value) || null,
+    judges_to_vote: parseInt(f('judges_to_vote').value) || null,
+    category_class_type: f('category_class_type').value
   };
 
   try {
@@ -133,7 +167,6 @@ async function saveEventData(eventId) {
     });
 
     if (!res.ok) throw new Error('Error saving event data');
-    const result = await res.json();
 
     showAlert('success', '✅ Event updated successfully!');
   } catch (err) {
@@ -157,7 +190,9 @@ function updateLogoPreview() {
 
 
 function showAlert(type, message) {
-  const container = document.querySelector('.container');
+  const saveBtn = document.getElementById('saveEventBtn');
+  if (!saveBtn) return;
+
   const alert = document.createElement('div');
   alert.className = `alert alert-${type} alert-dismissible fade show mt-3`;
   alert.role = 'alert';
@@ -165,9 +200,17 @@ function showAlert(type, message) {
     ${message}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   `;
-  container.prepend(alert);
-  setTimeout(() => alert.classList.remove('show'), 4000);
+
+  // Insertamos justo después del botón
+  saveBtn.parentNode.insertBefore(alert, saveBtn.nextSibling);
+
+  // Eliminamos el alert después de 4 segundos
+  setTimeout(() => {
+    alert.classList.remove('show'); // animación fade out
+    alert.addEventListener('transitionend', () => alert.remove());
+  }, 2000);
 }
+
 
 function showVisibilityModal(message, showCheckbox = false) {
   return new Promise((resolve) => {
