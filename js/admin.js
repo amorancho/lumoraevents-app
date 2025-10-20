@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadClients() {
   try {
-    const response = await fetch('http://127.0.0.1:3000/api/clients');
+    const response = await fetch(`${API_BASE_URL}/api/clients`);
     if (!response.ok) throw new Error('Error al cargar los clientes');
 
     clients = await response.json();
