@@ -1,3 +1,18 @@
 {
-  
+  "title": "Datos Maestros del Evento",  
+  "menu_config": "⚙️ Configuración Evento",
+  "menu_general": "⚙️ Config. General",
+  "menu_master": "🌐 Datos Maestros",
+  "menu_judges": "⚖️ Jueces",
+  "menu_dancers": "💃 Bailarinas",
+  "menu_competitions": "🚀 Competiciones",
+  "alert_start_event": "El festival ha dado comienzo. Si modifica estos datos puede provocar inconsistencias en los datos.",
+  "alert_end_event": "El festival ha finalizado. No se pueden modificar los datos.",
+  "categories": "Categorías",
+  "styles": "Estilos",
+  "criteria": "Criterios",
+  "add": "Añadir",
+  "new_category": "Nueva Categoría",
+  "new_style": "Nuevo Estilo",
+  "new_criteria": "Nuevo Criterio"
 }

@@ -1,5 +1,5 @@
 let judges = [];
-var title = 'Judges';
+//var title = 'Judges';
 
 const allowedRoles = ["admin", "organizer"];
 
@@ -71,7 +71,7 @@ function initJudgeManagement() {
 
       setWelcomeDate(judge.welcomesended);
       
-      document.querySelector('#editModal .modal-title span').textContent = 'Edit Judge';
+      document.querySelector('#editModal .modal-title span').textContent = translations['edit_judge'];
 
       document.getElementById('actionsCard').classList.remove('d-none');
       document.getElementById('welcomeSendDiv').classList.remove('d-none');
@@ -362,6 +362,12 @@ function renderJudges() {
   if (countEl) {
       countEl.textContent = judges.length;
   }
+
+  if (judges.length === 0) {
+    document.getElementById('emptyState').classList.remove('d-none');
+  } else {
+    document.getElementById('emptyState').classList.add('d-none');
+  }
 }
 
 function setWelcomeDate(dateValue) {
@@ -372,6 +378,7 @@ function setWelcomeDate(dateValue) {
   if (!dateValue) {
     // Si es null o vacío
     displayField.value = 'No enviado';
+    displayField.value = translations['not_sent'];
     hiddenField.value = '';
   } else {
     // Convierte la fecha a texto legible

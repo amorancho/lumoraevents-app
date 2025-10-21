@@ -1,1 +1,13 @@
-{}
+{
+  "title": "Configuración del Evento",
+  "card_title_general": "Datos Maestros",
+  "card_text_master": "Configura Categorías, Estilos y Criterios.",
+  "card_title_judges": "Jueces",
+  "card_text_judges": "Configura Jueces.",
+  "card_title_dancers": "Bailarinas",
+  "card_text_dancers": "Configura Bailarinas.",
+  "card_title_competitions": "Competiciones",
+  "card_text_competitions": "Configura Competiciones.",
+  "card_title_tracking": "Seguimiento de Competiciones",
+  "card_text_tracking": "Sigue las Competiciones en tiempo real."
+}

@@ -1,7 +1,10 @@
 const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
+const savedLang = localStorage.getItem('lang') || 'es';
+let translations = {};
+
+updateFlag(savedLang);
 
 const eventId = getEventIdFromUrl();
-
 
 const originalFetch = window.fetch;
 
@@ -117,8 +120,6 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         license: data.license
       };
 
-      //console.log('Datos del evento cargados:', eventObj);
-
     }
     resolve(eventObj);
   } catch (err) {
@@ -132,17 +133,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Cargar el modal de mensajes
   document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-  const savedLang = localStorage.getItem('lang') || 'es';
+  document.documentElement.setAttribute('lang', savedLang);
 
   await loadTranslations(savedLang, pageName);
-  document.documentElement.setAttribute('lang', savedLang);
+  applyTranslations();
 
   // Esperamos a que los datos del evento estén listos
   try {
     await eventReadyPromise;
     if (pageName !== 'index' && pageName !== 'admin') {
-      generateHeader(() => { setPageTitleAndLang(title, savedLang); });
+      generateHeader(() => { setPageTitleAndLang(translations['title'], savedLang); });
       generateFooter();
     }
   } catch (err) {
@@ -153,26 +153,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadTranslations(lang, page) {
   try {
-    const res = await fetch(`/lang/${page}.${lang}.json`);
-    const translations = await res.json();
 
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      const key = el.getAttribute('data-i18n');
-      if (translations[key]) {
-        el.textContent = translations[key];
-      }
-    });
+    const res = await fetch(`/lang/${page}.${lang}.json`);
+    translations = await res.json();
+
   } catch (error) {
     console.error(`Error cargando traducciones para ${page}.${lang}:`, error);
   }
 }
 
-function changeLanguage(lang, page = null) {
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (translations[key]) {
+      el.textContent = translations[key];
+    }
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    if (translations[key]) el.placeholder = translations[key];
+  });
+}
+
+async function changeLanguage(lang, page = null) {
   localStorage.setItem('lang', lang);
   document.documentElement.setAttribute('lang', lang); 
   updateFlag(lang);
-  const currentPage = page || window.location.pathname.split("/").pop().split(".")[0] || "index";
-  loadTranslations(lang, currentPage);
+  //const currentPage = page || window.location.pathname.split("/").pop().split(".")[0] || "index";
+  await loadTranslations(lang, pageName);
+  applyTranslations();
+  updateElementProperty('screen-title', 'textContent', title);
 }
 
 function updateFlag(lang) {

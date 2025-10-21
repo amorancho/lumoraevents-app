@@ -1,1 +1,26 @@
-{}
+{
+  "title": "Configuración General",  
+  "menu_config": "⚙️ Configuración Evento",
+  "menu_general": "⚙️ Config. General",
+  "menu_master": "🌐 Datos Maestros",
+  "menu_judges": "⚖️ Jueces",
+  "menu_dancers": "💃 Bailarinas",
+  "menu_competitions": "🚀 Competiciones",
+  "card_title": "Información del Evento",
+  "prop_code": "Código",
+  "prop_event_name": "Nombre del Evento",
+  "prop_start": "Fecha de Inicio",
+  "prop_end": "Fecha de Fin",
+  "prop_status": "Estado",
+  "prop_lang": "Idioma",
+  "prop_event_page": "URL de la Página del Evento",
+  "prop_event_logo": "URL del Logo del Evento",
+  "prop_preferences": "Preferencias",
+  "prop_num_judges": "Jueces por defecto para votar en Competiciones",
+  "prop_autorefresh": "Auto Refresco (minutos)",
+  "prop_class_type": "Tipo de Clasificación por Categorías",
+  "no_cat_class": "Sin Clasificación por Categorías",
+  "num_medals": "Por Número de Medallas en Estilos",
+  "prop_min_styles": "Estilos Mínimos",
+  "save_changes": "Guardar Cambios"
+}

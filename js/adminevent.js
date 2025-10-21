@@ -1,4 +1,4 @@
-var title = 'General Configuration';
+//var title = 'General Configuration';
 const allowedRoles = ["admin", "organizer"];
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
                    alt="${event.name}">
               <p class="text-muted text-center">${formatFecha(event.start)} / ${formatFecha(event.end)}</p>
               <div class="mt-auto text-center">
-                <a href="home.html?eventId=${event.code}" class="btn btn-primary">Go to Event</a>
+                <a href="home.html?eventId=${event.code}" class="btn btn-primary" data-i18n="go_to_event">Go to Event</a>
               </div>
             </div>
           </div>
@@ -40,6 +40,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.appendChild(col);
       });
+    })
+    .then(() => {
+      applyTranslations();
     })
     .catch(error => {
       console.error('Failed to load events:', error);

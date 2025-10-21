@@ -1,4 +1,4 @@
-var title = 'Welcome';
+//var title = 'Welcome';
 
 const allowedRoles = ["admin", "organizer"];
 

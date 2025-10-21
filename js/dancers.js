@@ -264,6 +264,13 @@ function loadDancers() {
   if (countEl) {
       countEl.textContent = dancers.length;
   }
+
+  // Mostrar o no el empty state
+  if (dancers.length === 0) {
+    document.getElementById('emptyState').classList.remove('d-none');
+  } else {
+    document.getElementById('emptyState').classList.add('d-none');
+  }
 }
 
 async function loadCategories() {

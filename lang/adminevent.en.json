@@ -1,1 +1,26 @@
-{}
+{
+  "title": "General Configuration",
+  "menu_config": "⚙️ Event Configuration",
+  "menu_general": "⚙️ General Config.",
+  "menu_master": "🌐 Master Data",
+  "menu_judges": "⚖️ Judges",
+  "menu_dancers": "💃 Dancers",
+  "menu_competitions": "🚀 Competitions",
+  "card_title": "Event Information",
+  "prop_code": "Code",
+  "prop_event_name": "Event Name",
+  "prop_start": "Start Date",
+  "prop_end": "End Date",
+  "prop_status": "Status",
+  "prop_lang": "Language",
+  "prop_event_page": "Event Page URL",
+  "prop_event_logo": "Event Logo URL",
+  "prop_preferences": "Preferences",
+  "prop_num_judges": "Default Judges to vote in Competitions",
+  "prop_autorefresh": "Auto Refresh (minutes)",
+  "prop_class_type": "Category Classification Type",
+  "no_cat_class": "No Category Classification",
+  "num_medals": "By Number of Medals in Styles",
+  "prop_min_styles": "Minimum Styles",
+  "save_changes": "Save Changes"
+}

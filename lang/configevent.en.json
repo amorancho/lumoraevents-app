@@ -1,1 +1,13 @@
-{}
+{
+  "title": "Event Configuration",
+  "card_title_general": "Master Data",
+  "card_text_master": "Configure Cotegories, Styles and Criterias.",
+  "card_title_judges": "Judges",
+  "card_text_judges": "Configure Judges.",
+  "card_title_dancers": "Dancers",
+  "card_text_dancers": "Configure Dancers.",
+  "card_title_competitions": "Competitions",
+  "card_text_competitions": "Configure Competitions.",
+  "card_title_tracking": "Competition Tracking",
+  "card_text_tracking": "Track Competitions in real time."
+}

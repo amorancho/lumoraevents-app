@@ -1,5 +1,5 @@
 // --- masterdata.js adaptado con Sortable ---
-var title = 'Event Master Data';
+//var title = 'Event Master Data';
 
 const allowedRoles = ["admin", "organizer"];
 

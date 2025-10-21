@@ -1,4 +1,4 @@
-var title = 'Event Configuration';
+//var title = 'Event Configuration';
 
 const allowedRoles = ["admin", "organizer"];
 
