@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('editStyles').selectedIndex = -1; // Deseleccionar todos los estilos
 
     // Cambiar el título del modal si lo deseas
-    document.querySelector('#editModal .modal-title span').textContent = 'Create Dancer';
+    document.querySelector('#editModal .modal-title span').textContent = translations['create_dancer'];
 
     editModal.show();
   });
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function () {
         opt.selected = dancer.styles.some(style => style.id == opt.value);
       });
 
-      document.querySelector('#editModal .modal-title span').textContent = 'Edit Dancer';
+      document.querySelector('#editModal .modal-title span').textContent = translations['edit_dancer'];
 
       editModal.show();
 
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       dancerIdToDelete = id;
 
-      const message = `Are you sure you want to delete dancer <strong>${dancer.name}</strong>?`;
+      const message = `${translations['delete_question']} <strong>${dancer.name}</strong>?`;
       document.getElementById('deleteModalMessage').innerHTML = message;
 
       const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (saveBtn.disabled) return; // prevención extra por si acaso
 
     saveBtn.disabled = true;  
-    saveBtn.textContent = "Saving..."; // feedback opcional al usuario
+    saveBtn.textContent = translations['guardando']; // feedback opcional al usuario
 
     const action = document.getElementById('editForm').dataset.action;
     const id = document.getElementById('editForm').dataset.id;
@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function () {
       console.error(err);
     } finally {
       saveBtn.disabled = false;
-      saveBtn.textContent = "Save changes";
+      saveBtn.textContent = translations['save'];
     }
   });
          
@@ -229,7 +229,7 @@ function loadDancers() {
 
     let stylesSpans = Array.isArray(dancer.styles) && dancer.styles.length > 0
       ? dancer.styles.map(style => `<span class="badge bg-warning text-dark me-1">${style.name}</span>`).join('')
-      : '<span class="badge bg-secondary">No styles</span>';
+      : `<span class="badge bg-secondary" data-i18n="no_styles">${translations['no_styles']}</span>`;
 
     row.innerHTML = `
       <td class="align-middle">

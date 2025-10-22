@@ -22,5 +22,9 @@
   "no_cat_class": "No Category Classification",
   "num_medals": "By Number of Medals in Styles",
   "prop_min_styles": "Minimum Styles",
-  "save_changes": "Save Changes"
+  "save_changes": "Save Changes",
+  "license_small_text": "Maximum of 25 dancers",
+  "license_medium_text": "Maximum of 75 dancers",
+  "license_large_text": "Unlimited dancers",
+  "license": "License"
 }

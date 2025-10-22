@@ -41,7 +41,7 @@ function initJudgeManagement() {
     document.getElementById('judgeMaster').checked = false;
     document.getElementById('judgeUsername').value = '';
     document.getElementById('judgeLanguage').value = getEvent().language;    
-    document.querySelector('#editModal .modal-title span').textContent = 'Create Judge';
+    document.querySelector('#editModal .modal-title span').textContent = translations['create_judge'];
 
     document.getElementById('actionsCard').classList.add('d-none');
     document.getElementById('welcomeSendDiv').classList.add('d-none');
@@ -85,7 +85,8 @@ function initJudgeManagement() {
       const judge = judges.find(d => d.id == id);
 
       const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-      document.getElementById('deleteModalMessage').innerHTML = `Are you sure you want to delete judge <strong>${judge.name}</strong>?`;
+      document.getElementById('deleteModalMessage').innerHTML = `${translations['delete_question']} <strong>${judge.name}</strong>?`;
+      
       deleteModal.show();
 
       document.getElementById('confirmDeleteBtn').onclick = async () => {
@@ -115,7 +116,7 @@ function initJudgeManagement() {
     const saveBtn = document.getElementById('saveEditBtn');
     if (saveBtn.disabled) return; // prevención extra por si acaso
     saveBtn.disabled = true;
-    saveBtn.textContent = "Saving...";
+    saveBtn.textContent = translations['guardando'];
 
     const action = document.getElementById('editForm').dataset.action;
     const id = document.getElementById('editForm').dataset.id;
@@ -168,7 +169,7 @@ function initJudgeManagement() {
       showMessageModal('Unexpected error saving judge', 'Error');
     } finally {
       saveBtn.disabled = false;
-      saveBtn.textContent = "Save changes";
+      saveBtn.textContent = translations['save'];
     }
   });
 
@@ -199,7 +200,7 @@ function initJudgeManagement() {
       });
   
       if (!response.ok) {
-        throw new Error(`Error sending email: ${response.statusText}`);
+        throw new Error(`${translations['error_sending_email']}: ${response.statusText}`);
       }
   
       const data = await response.json();
@@ -245,7 +246,7 @@ function initJudgeManagement() {
       });
   
       if (!response.ok) {
-        throw new Error(`Error sending email: ${response.statusText}`);
+        throw new Error(`${translations['error_sending_email']}: ${response.statusText}`);
       }
   
   
@@ -262,7 +263,7 @@ function initJudgeManagement() {
 
   document.getElementById('sendWelcomeAll').addEventListener('click', async () => {
 
-    const confirmed = await showModal(`Are you sure you want to send the welcome email to all judges who have not received it?`);
+    const confirmed = await showModal(translations['confirm_send_email_to_all']);
 
     if (!confirmed) return;
 
@@ -270,7 +271,7 @@ function initJudgeManagement() {
     const originalText = btn.innerHTML;
   
     // Mostrar spinner y deshabilitar botón
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...`;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${translations['enviando']}`;
     btn.disabled = true;
   
     try {
@@ -377,7 +378,6 @@ function setWelcomeDate(dateValue) {
 
   if (!dateValue) {
     // Si es null o vacío
-    displayField.value = 'No enviado';
     displayField.value = translations['not_sent'];
     hiddenField.value = '';
   } else {

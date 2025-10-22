@@ -1,6 +1,8 @@
 {
   "title": "Configuración del Evento",
-  "card_title_general": "Datos Maestros",
+  "card_title_general": "Configuración General",
+  "card_text_general": "Configura el evento.",
+  "card_title_master": "Datos Maestros",
   "card_text_master": "Configura Categorías, Estilos y Criterios.",
   "card_title_judges": "Jueces",
   "card_text_judges": "Configura Jueces.",

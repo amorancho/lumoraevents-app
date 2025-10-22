@@ -1,6 +1,8 @@
 {
   "title": "Event Configuration",
-  "card_title_general": "Master Data",
+  "card_title_general": "General Configuration",
+  "card_text_general": "Configure the Event.",
+  "card_title_master": "Master Data",
   "card_text_master": "Configure Cotegories, Styles and Criterias.",
   "card_title_judges": "Judges",
   "card_text_judges": "Configure Judges.",

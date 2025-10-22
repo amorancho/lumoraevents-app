@@ -6,7 +6,7 @@
   "menu_judges": "⚖️ Jueces",
   "menu_dancers": "💃 Bailarinas",
   "menu_competitions": "🚀 Competiciones",
-  "create_judge": "Crear Nuevo Juez",
+  "create_judge": "Crear Juez",
   "edit_judge": "Editar Juez",
   "alert_end_event": "El festival ha finalizado. No se pueden modificar los datos.",
   "table_title": "Jueces",
@@ -24,5 +24,14 @@
   "send_welcome_email": "Enviar Email de Bienvenida",
   "reset_password": "Restablecer PIN de Acceso",
   "welcome_sended": "Fecha de Envío de Bienvenida",
-  "not_sent": "No enviado"
+  "not_sent": "No enviado",
+  "delete_confirm": "Confirmar Eliminación",
+  "delete_question": "¿Estás seguro de que deseas eliminar el juez",
+  "cancel": "Cancelar",
+  "delete": "Eliminar",
+  "save": "Guardar cambios",
+  "guardando": "Guardando...",
+  "error_sending_email": "Error al enviar el email",
+  "confirm_send_email_to_all": "¿Estás seguro de que deseas enviar el email de bienvenida a todos los jueces que aún no lo han recibido?",
+  "enviando": "Enviando..."
 }

@@ -107,17 +107,17 @@ async function loadEventData(eventId) {
         small: {
           icon: "bi-person",
           name: "Small",
-          text: "Máximo de 25 bailarinas"
+          text: translations["license_small_text"]
         },
         medium: {
           icon: "bi-people",
           name: "Medium",
-          text: "Máximo de 75 bailarinas"
+          text: translations["license_medium_text"]
         },
         large: {
           icon: "bi-stars",
           name: "Large",
-          text: "Bailarinas ilimitadas"
+          text: translations["license_large_text"]
         }
       };
 
@@ -126,8 +126,10 @@ async function loadEventData(eventId) {
         licenseInfo.innerHTML = `
           <span class="badge bg-warning text-dark px-3 py-2 fs-6">
             <i class="bi ${license.icon} me-1"></i>
-            Licencia <strong>${license.name}</strong> — ${license.text}
+            <span data-i18n="license">${translations["license"]}</span> <strong>${license.name}</strong> — 
+            <span data-i18n="license_${data.license}_text">${license.text}</span>
           </span>
+
         `;
       } else {
         licenseInfo.textContent = "Licencia desconocida";
