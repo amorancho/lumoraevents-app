@@ -16,5 +16,7 @@
     "competition": "Competition",
     "not_defined": "Not Defined",
     "icon_legend": "Click this icon in each style to view the dancers' order.",
-    "style_schedule": "Styles Schedule"
+    "style_schedule": "Styles Schedule",
+    "col_style": "Style",
+    "col_start": "Estimated Start Time"
 }

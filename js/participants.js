@@ -89,7 +89,7 @@ function createCategoryItem(category, categoryData, index) {
   const body = document.createElement('div');
   body.className = 'accordion-body';
 
-  const title = document.createElement('h3'); 
+  const title = document.createElement('h4'); 
   const titleText = document.createElement('span'); 
   titleText.className = 'badge bg-warning'; 
   titleText.textContent = `${translations["total_participants"]}: ${categoryData.participants.length}`; 
@@ -109,7 +109,7 @@ function createCategoryItem(category, categoryData, index) {
   btnSchedule.addEventListener('click', () => {
     // Título del modal
     const modalTitle = document.getElementById('styleScheduleLabel');
-    modalTitle.textContent = `Style Schedule - ${category}`;
+    modalTitle.textContent = `${translations["style_schedule"]} - ${category}`;
 
     // Cuerpo del modal: tabla
     const tbodyModal = document.querySelector('#styleScheduleModal tbody');

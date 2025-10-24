@@ -16,5 +16,7 @@
     "competition": "Competición",
     "not_defined": "No Definida",
     "icon_legend": "Clica este icono de cada estilo para ver el orden de las bailarinas.",
-    "style_schedule": "Horario de Estilos"
+    "style_schedule": "Horario de Estilos",
+    "col_style": "Estilo",
+    "col_start": "Hora Estimada de Inicio"
 }
