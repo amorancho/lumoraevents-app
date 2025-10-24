@@ -11,20 +11,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadParticipants() {
   const participantsContainer = document.getElementById('participantsContainer');
-  const numCategories = document.getElementById('numCat');
-  const numStyles = document.getElementById('numSty');
-  const numParticipants = document.getElementById('numPar');
+  
 
   let data;
   try {
     const res = await fetch(`${API_BASE_URL}/api/events/participants?event_id=${getEvent().id}`);
     if (!res.ok) throw new Error('Error fetching data');
     data = await res.json();
+    window.participantsData = data;
   } catch (err) {
     console.error('Error fetching participants:', err);
     participantsContainer.innerHTML = '<p class="text-danger">Error loading participants.</p>';
     return;
-  }
+  }  
+
+  renderData(data);  
+}
+
+function renderData(data) {
+
+  const numCategories = document.getElementById('numCat');
+  const numStyles = document.getElementById('numSty');
+  const numParticipants = document.getElementById('numPar');
 
   const totals = {
     categories: data.length,
@@ -84,7 +92,7 @@ function createCategoryItem(category, categoryData, index) {
   const title = document.createElement('h3');
   const titleText = document.createElement('span');
   titleText.className = 'badge bg-warning';
-  titleText.textContent = `Total Participants: ${categoryData.participants.length}`;
+  titleText.textContent = `${translations["total_participants"]}: ${categoryData.participants.length}`;
   title.appendChild(titleText);
 
   const tableDiv = document.createElement('div');
@@ -98,7 +106,7 @@ function createCategoryItem(category, categoryData, index) {
 
   const thParticipant = document.createElement('th');
   thParticipant.className = 'text-center';
-  thParticipant.textContent = 'Participant';
+  thParticipant.textContent = translations["participant"];
   headerRow.appendChild(thParticipant);
 
   categoryData.styles.forEach(style => {
@@ -115,7 +123,7 @@ function createCategoryItem(category, categoryData, index) {
         const icon = document.createElement('i');
         icon.className = 'bi bi-list-ol ms-2 text-primary';
         icon.style.cursor = 'pointer';
-        icon.title = 'Ver bailarinas de este estilo';
+        icon.title = translations["participants_by_style"];
         icon.dataset.compId = style.competition_id; // Se usará en el fetch
         icon.dataset.start = style.start;
         icon.dataset.categoryName = category;
@@ -162,7 +170,7 @@ function createCategoryItem(category, categoryData, index) {
     // Badge derecha
     const badge = document.createElement('span');
     badge.className = 'badge bg-info me-2';
-    badge.textContent = `${participant.styles.length} Styles`;
+    badge.textContent = `${participant.styles.length} ${translations["styles"]}`;
 
     tdParticipant.appendChild(leftDiv);
     tdParticipant.appendChild(badge);
@@ -243,7 +251,7 @@ document.addEventListener('click', async (event) => {
   const eventId = getEvent().id; // tu función existente
 
   const modalTitle = document.getElementById('styleDancersModalLabel');
-  modalTitle.textContent = `Competition: ${categoryName} / ${styleName}`;
+  modalTitle.textContent = `${translations["competition"]}: ${categoryName} / ${styleName}`;
 
   // Mostrar hora de inicio (si existe en el dataset)
   const estimatedStartEl = document.getElementById('estimatedStart');

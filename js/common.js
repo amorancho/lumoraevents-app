@@ -184,6 +184,13 @@ async function changeLanguage(lang, page = null) {
   await loadTranslations(lang, pageName);
   applyTranslations();
   //updateElementProperty('screen-title', 'textContent', title);
+
+  // Carga de elementos dinámicos por página
+  if (pageName === 'results') {
+    renderResults(window.resultsData);
+  } else if (pageName === 'participants') {
+    renderData(window.participantsData);
+  }
 }
 
 function updateFlag(lang) {

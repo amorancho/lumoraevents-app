@@ -1,1 +1,15 @@
-{}
+{
+    "title": "Results",
+    "refresh": "Refresh",
+    "auto_refresh": "Auto-Refresh",
+    "info_click_dancer": "Click on each dancer to see their voting details",
+    "voting_details": "Voting Details",
+    "cerrar": "Close",
+    "select_category": "Select Category",
+    "cargando": "Loading...",
+    "no_results": "No results available",
+    "general_classification": "General Classification",
+    "place": "Place",
+    "total_score": "Total Score",
+    "no_voting_details": "No vote details available for this dancer in this style."
+}

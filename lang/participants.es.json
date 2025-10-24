@@ -1,1 +1,17 @@
-{}
+{
+    "title": "Participantes",
+    "categories": "Categorías",
+    "styles": "Estilos",
+    "participants": "Participantes",
+    "search": "Buscar",
+    "clear": "Limpiar",
+    "dancer_styles": "Bailarinas del estilo",
+    "stimated_start": "Inicio Estimado: ",
+    "close": "Cerrar",
+    "search_placeholder": "Buscar participante por nombre o apellido",
+    "total_participants": "Total de Participantes",
+    "participant": "Participante",
+    "participants_by_style": "Ver bailarinas de este estilo",
+    "no_competitions": "Sin Competición",
+    "competition": "Competición"
+}

@@ -1,5 +1,5 @@
 
-var title = 'Results';
+//var title = 'Results';
 let categoryName;
 
 let autoRefreshInterval = null;
@@ -145,14 +145,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     } else {
       const noVotes = document.createElement('p');
-      noVotes.textContent = 'No vote details available for this dancer in this style.';
+      noVotes.textContent = translations["no_voting_details"];
       detailsContainer.appendChild(noVotes);
     }
 
     // Título modal fijo
     const titleSpan = votingModalEl.querySelector('.modal-title span');
     if (titleSpan) {
-      titleSpan.textContent = 'Voting Details';
+      titleSpan.textContent = translations["voting_details"];
     }
 
     votingModal.show();
@@ -175,7 +175,7 @@ async function loadCategories() {
 
 function populateCategorySelect(categories) {  
   const categorySelect = document.getElementById('categorySelect');
-  categorySelect.innerHTML = '<option selected disabled>Select a category</option>';
+  categorySelect.innerHTML = `<option selected disabled>${translations["select_category"]}</option>`;
   categories.forEach(category => {
     const option = document.createElement('option');
     option.value = category.id;
@@ -193,7 +193,7 @@ async function loadClasifications(categoryId) {
   refreshBtn.disabled = true;
   categorySelect.disabled = true;
   const originalBtnText = refreshBtn.innerHTML;
-  refreshBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Loading...`;
+  refreshBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> ${translations["loading"]}`;
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/competitions/results?event_id=${getEvent().id}&category_id=${categoryId}`);
@@ -255,14 +255,14 @@ function renderGeneralClassification(general) {
     return `
       <div class="list-group shadow-sm border-primary border-2 h-100">
         <div class="list-group-item active bg-primary fs-5 text-center">General Classification</div>
-        <div class="list-group-item text-center text-muted">No results available</div>
+        <div class="list-group-item text-center text-muted">${translations["no_results"]}</div>
       </div>
     `;
   }
 
   let html = `
     <div class="list-group shadow-sm border-primary border-2 h-100">
-      <div class="list-group-item active bg-primary fs-5 text-center">General Classification</div>
+      <div class="list-group-item active bg-primary fs-5 text-center">${translations["general_classification"]}</div>
   `;
 
   general.forEach((d, i) => {
@@ -273,7 +273,7 @@ function renderGeneralClassification(general) {
         <div class="row my-2">
           <div class="col-12${i === 0 ? "" : " col-6"}">
             <div class="card border-${colors[i]} shadow text-center">
-              <div class="card-header bg-${colors[i]} text-${i === 2 ? "dark" : "white"} fs-4">${medals[i]} ${i+1}º Place</div>
+              <div class="card-header bg-${colors[i]} text-${i === 2 ? "dark" : "white"} fs-4">${medals[i]} ${i+1}º ${translations["place"]}</div>
               <div class="card-body">
                 <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
                   <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" width="24" height="24" alt="${d.dancer_nationality}">
@@ -283,7 +283,7 @@ function renderGeneralClassification(general) {
                   🥇 ${d.num_oros || 0} &nbsp;|&nbsp; 🥈 ${d.num_platas || 0} &nbsp;|&nbsp; 🥉 ${d.num_bronces || 0}
                 </p>
                 <p class="fs-5 text-muted mb-0">
-                  <strong>Total Score:</strong> ${d.total_score ?? 0}
+                  <strong>${translations["total_score"]}:</strong> ${d.total_score ?? 0}
                 </p>
               </div>
             </div>
@@ -297,7 +297,7 @@ function renderGeneralClassification(general) {
           <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
           <span class="me-auto dancer-result">${escapeHtml(d.dancer_name)}</span>
           <span class="mx-2 text-muted small">
-            (Total Score: ${d.total_score ?? 0})
+            (${translations["total_score"]}: ${d.total_score ?? 0})
           </span>
           <span class="badge bg-light text-dark rounded-pill">
             🥇 ${d.num_oros || 0} | 🥈 ${d.num_platas || 0} | 🥉 ${d.num_bronces || 0}
@@ -317,7 +317,7 @@ function renderStyleClassification(style) {
     return `
       <div class="list-group shadow-sm style-block" data-style-id="${style?.style_id || ''}">
         <div class="list-group-item active bg-secondary fs-5 text-center">${escapeHtml(style?.style_name || "Unknown Style")}</div>
-        <div class="list-group-item text-center text-muted">No results available</div>
+        <div class="list-group-item text-center text-muted">${translations["no_results"]}</div>
       </div>
     `;
   }

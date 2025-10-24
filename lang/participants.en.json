@@ -1,1 +1,17 @@
-{}
+{
+    "title": "Participants",
+    "categories": "Categories",
+    "styles": "Styles",
+    "participants": "Participants",
+    "search": "Search",
+    "clear": "Clear",
+    "dancer_styles": "Dancers in this style",
+    "stimated_start": "Estimated Start: ",
+    "close": "Close",
+    "search_placeholder": "Search for participant by first or last name",
+    "total_participants": "Total Participants",
+    "participant": "Participant",
+    "participants_by_style": "View dancers of this style",
+    "no_competitions": "No Competition",
+    "competition": "Competition"
+}

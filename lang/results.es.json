@@ -1,1 +1,15 @@
-{}
+{
+    "title": "Resultados",
+    "refresh": "Actualizar",
+    "auto_refresh": "Actualización automática",
+    "info_click_dancer": "Haga clic en un bailarín para ver más detalles",
+    "voting_details": "Detalles de la votación",
+    "cerrar": "Cerrar",
+    "select_category": "Selecciona Categoría",
+    "cargando": "Cargando...",
+    "no_results": "No hay resultados disponibles",
+    "general_classification": "Clasificación General",
+    "place": "Puesto",
+    "total_score": "Puntuación Total",
+    "no_voting_details": "No hay detalles de votación disponibles para este bailarín en este estilo."
+}

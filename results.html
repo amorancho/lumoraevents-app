@@ -21,7 +21,7 @@
           <select class="form-select" id="categorySelect">
             <!-- opciones -->
           </select>
-          <button id="refreshBtn" class="btn btn-primary" disabled>
+          <button id="refreshBtn" class="btn btn-primary" data-i18n="refresh" disabled >
             Refresh
           </button>
         </div>
@@ -29,13 +29,13 @@
         <!-- Toggle debajo del select, centrado -->
         <div class="form-check form-switch d-flex justify-content-center mt-2">
           <input class="form-check-input" type="checkbox" id="autoRefreshToggle">
-          <label class="form-check-label ms-2" for="autoRefreshToggle" id="autoRefreshLabel">Auto-refresh</label>
+          <label class="form-check-label ms-2" for="autoRefreshToggle" id="autoRefreshLabel" data-i18n="auto_refresh">Auto-refresh</label>
         </div>
       </div>
     </div>
 
     <div class="row">
-      <div class="col text-center small text-muted" id="infoText">
+      <div class="col text-center small text-muted" id="infoText" data-i18n="info_click_dancer">
         Click on each dancer to see their voting details.
       </div>
     </div>
@@ -61,7 +61,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <span class="fw-bold text-primary">Voting Details</span>
+            <span class="fw-bold text-primary" data-i18n="voting_details">Voting Details</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
@@ -70,7 +70,7 @@
           
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cerrar">Close</button>
           <!--button type="button" class="btn btn-primary" id="saveEditBtn">Save changes</button-->
         </div>
       </div>
