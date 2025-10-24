@@ -140,13 +140,14 @@ function createCategoryItem(category, categoryData, index) {
         icon.dataset.categoryName = category;
         icon.dataset.styleName = style.name;
         th.appendChild(icon);
-
+/*
         if (style.start && style.start.toLowerCase() !== 'null') {
           const timeDiv = document.createElement('div');
           timeDiv.className = 'text-secondary small mt-1';
           timeDiv.innerHTML = `<i class="bi bi-clock me-1"></i>${style.start}`;
           th.appendChild(timeDiv);
         }
+          */
     } else {
         // Badge rojo "No Competition"
         const badge = document.createElement('span');
