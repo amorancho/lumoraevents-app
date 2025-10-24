@@ -89,11 +89,22 @@ function createCategoryItem(category, categoryData, index) {
   const body = document.createElement('div');
   body.className = 'accordion-body';
 
-  const title = document.createElement('h3');
-  const titleText = document.createElement('span');
-  titleText.className = 'badge bg-warning';
-  titleText.textContent = `${translations["total_participants"]}: ${categoryData.participants.length}`;
-  title.appendChild(titleText);
+  const headerLine = document.createElement('div');
+  headerLine.className = 'd-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-1 gap-2';
+
+  // Izquierda: h3 con badge amarillo
+  const h3 = document.createElement('h4');
+  const participantsBadge = document.createElement('span');
+  participantsBadge.className = 'badge bg-warning';
+  participantsBadge.textContent = `${translations["total_participants"]}: ${categoryData.participants.length}`;
+  h3.appendChild(participantsBadge);
+  headerLine.appendChild(h3);
+
+  // Derecha: leyenda con icono lista
+  const legend = document.createElement('small');
+  legend.className = 'text-muted';
+  legend.innerHTML = '<i class="bi bi-list-ol text-primary me-1"></i>Click to view the dancers\' order.';
+  headerLine.appendChild(legend);
 
   const tableDiv = document.createElement('div');
   tableDiv.className = 'table-responsive';
@@ -129,16 +140,23 @@ function createCategoryItem(category, categoryData, index) {
         icon.dataset.categoryName = category;
         icon.dataset.styleName = style.name;
         th.appendChild(icon);
+
+        if (style.start && style.start.toLowerCase() !== 'null') {
+          const timeDiv = document.createElement('div');
+          timeDiv.className = 'text-secondary small mt-1';
+          timeDiv.innerHTML = `<i class="bi bi-clock me-1"></i>${style.start}`;
+          th.appendChild(timeDiv);
+        }
     } else {
         // Badge rojo "No Competition"
         const badge = document.createElement('span');
         badge.className = 'badge bg-danger d-block mt-1';
-        badge.textContent = 'No Competition';
+        badge.textContent = translations["no_competition"];
         th.appendChild(badge);
     }
 
     headerRow.appendChild(th);
-    });
+  });
 
   thead.appendChild(headerRow);
   table.appendChild(thead);
@@ -195,7 +213,9 @@ function createCategoryItem(category, categoryData, index) {
   table.appendChild(tbody);
   tableDiv.appendChild(table);
 
-  body.appendChild(title);
+  //body.appendChild(title);
+  //body.appendChild(controlsDiv);
+  body.appendChild(headerLine);
   body.appendChild(tableDiv);
   collapse.appendChild(body);
 
