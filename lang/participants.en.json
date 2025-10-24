@@ -13,5 +13,8 @@
     "participant": "Participant",
     "participants_by_style": "View dancers of this style",
     "no_competition": "No Competition",
-    "competition": "Competition"
+    "competition": "Competition",
+    "not_defined": "Not Defined",
+    "icon_legend": "Click this icon in each style to view the dancers' order.",
+    "style_schedule": "Styles Schedule"
 }

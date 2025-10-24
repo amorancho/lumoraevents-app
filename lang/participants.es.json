@@ -13,5 +13,8 @@
     "participant": "Participante",
     "participants_by_style": "Ver bailarinas de este estilo",
     "no_competition": "Sin Competición",
-    "competition": "Competición"
+    "competition": "Competición",
+    "not_defined": "No Definida",
+    "icon_legend": "Clica este icono de cada estilo para ver el orden de las bailarinas.",
+    "style_schedule": "Horario de Estilos"
 }

@@ -89,22 +89,61 @@ function createCategoryItem(category, categoryData, index) {
   const body = document.createElement('div');
   body.className = 'accordion-body';
 
-  const headerLine = document.createElement('div');
-  headerLine.className = 'd-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-1 gap-2';
+  const title = document.createElement('h3'); 
+  const titleText = document.createElement('span'); 
+  titleText.className = 'badge bg-warning'; 
+  titleText.textContent = `${translations["total_participants"]}: ${categoryData.participants.length}`; 
+  title.appendChild(titleText);
 
-  // Izquierda: h3 con badge amarillo
-  const h3 = document.createElement('h4');
-  const participantsBadge = document.createElement('span');
-  participantsBadge.className = 'badge bg-warning';
-  participantsBadge.textContent = `${translations["total_participants"]}: ${categoryData.participants.length}`;
-  h3.appendChild(participantsBadge);
-  headerLine.appendChild(h3);
+  const controlsDiv = document.createElement('div');
+  // flex-column en móvil, fila en pantallas medianas o mayores
+  controlsDiv.className = 'd-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-3 gap-2';
 
-  // Derecha: leyenda con icono lista
+  // Botón "Style Schedule"
+  const btnSchedule = document.createElement('button');
+  btnSchedule.type = 'button';
+  btnSchedule.className = 'btn btn-primary';
+  btnSchedule.innerHTML = `<i class="bi bi-calendar-week me-2"></i>${translations["style_schedule"]}`;
+  controlsDiv.appendChild(btnSchedule);
+
+  btnSchedule.addEventListener('click', () => {
+    // Título del modal
+    const modalTitle = document.getElementById('styleScheduleLabel');
+    modalTitle.textContent = `Style Schedule - ${category}`;
+
+    // Cuerpo del modal: tabla
+    const tbodyModal = document.querySelector('#styleScheduleModal tbody');
+    tbodyModal.innerHTML = ''; // limpiar filas previas
+
+    categoryData.styles.forEach(style => {
+      const tr = document.createElement('tr');
+
+      const tdStyle = document.createElement('td');
+      tdStyle.textContent = style.name;
+      tr.appendChild(tdStyle);
+
+      const tdStart = document.createElement('td');
+      if (style.start && style.start.toLowerCase() !== 'null') {
+        tdStart.innerHTML = `<i class="bi bi-clock me-1"></i>${style.start}`;
+      } else {
+        tdStart.innerHTML = `<span class="text-muted">${translations["not_defined"]}</span>`; // Aquí el texto si no hay hora
+      }
+      tr.appendChild(tdStart);
+
+      tbodyModal.appendChild(tr);
+    });
+
+    // Abrir el modal con Bootstrap 5
+    const modal = new bootstrap.Modal(document.getElementById('styleScheduleModal'));
+    modal.show();
+  });
+
+
+  // Leyenda con icono y texto explicativo
   const legend = document.createElement('small');
   legend.className = 'text-muted';
-  legend.innerHTML = '<i class="bi bi-list-ol text-primary me-1"></i>Click to view the dancers\' order.';
-  headerLine.appendChild(legend);
+  legend.innerHTML = `<i class="bi bi-list-ol text-primary me-1"></i>${translations["icon_legend"]}`;
+  controlsDiv.appendChild(legend);
 
   const tableDiv = document.createElement('div');
   tableDiv.className = 'table-responsive';
@@ -140,14 +179,6 @@ function createCategoryItem(category, categoryData, index) {
         icon.dataset.categoryName = category;
         icon.dataset.styleName = style.name;
         th.appendChild(icon);
-/*
-        if (style.start && style.start.toLowerCase() !== 'null') {
-          const timeDiv = document.createElement('div');
-          timeDiv.className = 'text-secondary small mt-1';
-          timeDiv.innerHTML = `<i class="bi bi-clock me-1"></i>${style.start}`;
-          th.appendChild(timeDiv);
-        }
-          */
     } else {
         // Badge rojo "No Competition"
         const badge = document.createElement('span');
@@ -214,9 +245,9 @@ function createCategoryItem(category, categoryData, index) {
   table.appendChild(tbody);
   tableDiv.appendChild(table);
 
-  //body.appendChild(title);
-  //body.appendChild(controlsDiv);
-  body.appendChild(headerLine);
+  body.appendChild(title);
+  body.appendChild(controlsDiv);
+  //body.appendChild(headerLine);
   body.appendChild(tableDiv);
   collapse.appendChild(body);
 
@@ -276,10 +307,10 @@ document.addEventListener('click', async (event) => {
 
   // Mostrar hora de inicio (si existe en el dataset)
   const estimatedStartEl = document.getElementById('estimatedStart');
-  if (startTime) {
+  if (startTime && startTime != 'null') {
     estimatedStartEl.textContent = startTime;
   } else {
-    estimatedStartEl.textContent = 'N/A';
+    estimatedStartEl.textContent = translations["not_defined"];
   }
 
   const list = document.getElementById('styleDancersList');
