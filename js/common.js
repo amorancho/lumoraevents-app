@@ -187,7 +187,8 @@ async function changeLanguage(lang, page = null) {
 
   // Carga de elementos dinámicos por página
   if (pageName === 'results') {
-    renderResults(window.resultsData);
+    if (window.resultsData) renderResults(window.resultsData);
+    loadCategories();
   } else if (pageName === 'participants') {
     renderData(window.participantsData);
   }

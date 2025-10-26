@@ -254,7 +254,7 @@ function renderGeneralClassification(general) {
   if (!general || general.length === 0) {
     return `
       <div class="list-group shadow-sm border-primary border-2 h-100">
-        <div class="list-group-item active bg-primary fs-5 text-center">General Classification</div>
+        <div class="list-group-item active bg-primary fs-5 text-center">${translations["general_classification"]}</div>
         <div class="list-group-item text-center text-muted">${translations["no_results"]}</div>
       </div>
     `;
