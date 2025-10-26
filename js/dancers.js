@@ -68,13 +68,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.getElementById('editForm').dataset.action = 'create';
     
-
     // Vaciar los campos del modal
     document.getElementById('dancerName').value = '';
+    document.getElementById('dancerEmail').value = '';
+    document.getElementById('dancerLanguage').value = getEvent().language;
     document.getElementById('editCategory').selectedIndex = 0;
     document.getElementById('editMaster').selectedIndex = 0;
     document.getElementById('nationality').tomselect.setValue('');
     document.getElementById('editStyles').selectedIndex = -1; // Deseleccionar todos los estilos
+    
 
     // Cambiar el título del modal si lo deseas
     document.querySelector('#editModal .modal-title span').textContent = translations['create_dancer'];
@@ -97,9 +99,11 @@ document.addEventListener('DOMContentLoaded', function () {
       const dancer = dancers.find(d => d.id == id);
 
       document.getElementById('dancerName').value = dancer.name;
+      document.getElementById('dancerEmail').value = dancer.email;
+      document.getElementById('dancerLanguage').value = dancer.language;
       document.getElementById('editCategory').value = dancer.category_id;
       document.getElementById('editMaster').value = dancer.master_id;
-      document.getElementById('nationality').tomselect.setValue(dancer.nationality);
+      document.getElementById('nationality').tomselect.setValue(dancer.nationality);      
 
       const stylesOptions = document.getElementById('editStyles').options;
     
@@ -149,6 +153,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const id = document.getElementById('editForm').dataset.id;
 
     const inputName = document.getElementById('dancerName');
+    const inputEmail = document.getElementById('dancerEmail');
+    const inputLanguage = document.getElementById('dancerLanguage');
     const inputCategory = document.getElementById('editCategory');
     const inputMaster = document.getElementById('editMaster');
     const inputNationality = document.getElementById('nationality');
@@ -162,7 +168,9 @@ document.addEventListener('DOMContentLoaded', function () {
       styles: selectedValues,
       master_id: inputMaster.value ? parseInt(inputMaster.value, 10) : null,
       nationality: inputNationality.value.trim().toUpperCase(),
-      event_id: getEvent().id
+      event_id: getEvent().id,
+      email: inputEmail.value.trim().toLowerCase(),
+      language: inputLanguage.value,
     };
 
     try {

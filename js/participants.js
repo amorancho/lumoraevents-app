@@ -33,21 +33,56 @@ function renderData(data) {
   const numCategories = document.getElementById('numCat');
   const numStyles = document.getElementById('numSty');
   const numParticipants = document.getElementById('numPar');
+  const numNationalities = document.getElementById('numNat');
+  const parByNat = document.getElementById('parByNat');
 
   const totals = {
     categories: data.length,
     styles: new Set(),
-    participants: 0
+    participants: 0,
+    nationalities: new Set(),
+    participantsByNat: {}
   };
 
   data.forEach(cat => {
     cat.styles.forEach(s => totals.styles.add(s.name));
-    totals.participants += cat.participants.length;
+
+    cat.participants.forEach(p => {
+      totals.participants++;
+      totals.nationalities.add(p.nationality);
+      totals.participantsByNat[p.nationality] =
+        (totals.participantsByNat[p.nationality] || 0) + 1;
+    });
   });
 
+  // Mostrar totales
   numCategories.textContent = totals.categories;
   numStyles.textContent = totals.styles.size;
   numParticipants.textContent = totals.participants;
+  numNationalities.textContent = totals.nationalities.size;
+
+  // Mostrar banderas + número (sin recuadro)
+  parByNat.innerHTML = ''; // limpiar contenedor
+
+  Object.entries(totals.participantsByNat)
+  .sort((a, b) => b[1] - a[1])
+  .forEach(([nat, count]) => {
+    const div = document.createElement('div');
+    div.className = 'd-flex align-items-center';
+
+    const img = document.createElement('img');
+    img.className = 'me-1';
+    img.src = `https://flagsapi.com/${nat}/shiny/24.png`;
+    img.alt = nat;
+
+    const span = document.createElement('span');
+    span.textContent = count;
+
+    div.appendChild(img);
+    div.appendChild(span);
+    parByNat.appendChild(div);
+  });
+
 
   participantsContainer.innerHTML = '';
 

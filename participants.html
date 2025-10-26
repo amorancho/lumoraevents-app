@@ -11,12 +11,12 @@
 </head>
 
 <body class="d-flex flex-column min-vh-100">
-
     
-    <div id="header"></div>
+  <div id="header"></div>
+
   <div class="container py-4">
   
-    <section class="row justify-content-center text-center mb-4">
+    <section class="row justify-content-center text-center mb-2">
       <div class="col-md-2 col-12 mb-2">
         <div class="bg-white border border-secondary p-2 shadow-sm rounded">
           <h5 class="text-primary mb-1" id="numCat"></h5>
@@ -35,8 +35,25 @@
           <p class="mb-0 small" data-i18n="participants">Participants</p>
         </div>
       </div>
+      <div class="col-md-2 col-12 mb-2">
+        <div class="bg-white border border-secondary p-2 shadow-sm rounded">
+          <h5 class="text-primary mb-1" id="numNat"></h5>
+          <p class="mb-0 small" data-i18n="nationalities">Nationalities</p>
+        </div>
+      </div>
     </section>
 
+    <section class="row justify-content-center text-center mb-4">
+      <!-- Total de nacionalidades (mismo ancho que numCategories) -->
+      
+
+      <!-- Banderas con número: ahora col-md-4 para que la fila ocupe 6 columnas en total (2 + 4) -->
+      <div class="col-md-8 col-12 mb-2">
+        <div class="bg-white border border-secondary p-3 shadow-sm rounded">
+          <div id="parByNat" class="d-flex flex-wrap justify-content-center align-items-center gap-2 small text-secondary"></div>
+        </div>
+      </div>
+    </section>
 
     <div class="row justify-content-center mb-5">
       <div class="col-md-8">
@@ -53,9 +70,8 @@
         </div>
       </div>
     </div>
-    <div id="participantsContainer">
-        
-    </div>
+
+    <div id="participantsContainer"></div>
 
   </div>
 

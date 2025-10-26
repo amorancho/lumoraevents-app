@@ -12,6 +12,8 @@
   "table_title": "Dancers",
   "all_categories": "All Categories",
   "col_name": "Name",
+  "col_email": "Email",
+  "col_language": "Language",
   "col_category": "Category",
   "col_styles": "Styles",
   "col_master": "Master",

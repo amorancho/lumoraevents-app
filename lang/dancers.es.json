@@ -12,6 +12,8 @@
   "table_title": "Bailarinas",
   "all_categories": "Todas las Categorías",
   "col_name": "Nombre",
+  "col_email": "Email",
+  "col_language": "Idioma",
   "col_category": "Categoría",
   "col_styles": "Estilos",
   "col_master": "Maestro",
