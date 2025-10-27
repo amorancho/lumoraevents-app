@@ -41,10 +41,10 @@ function renderSchedule(data) {
 
         dayItem.innerHTML = `
             <h2 class="accordion-header" id="heading-${dayId}">
-                <button class="accordion-button ${index !== 0 ? 'collapsed' : ''}" type="button" 
+                <button class="accordion-button ${index !== 0 ? 'collapsed' : ''} w-100 d-flex justify-content-center" type="button" 
                         data-bs-toggle="collapse" data-bs-target="#collapse-${dayId}" 
                         aria-expanded="${index === 0}" aria-controls="collapse-${dayId}">
-                    <strong>${formatDate(date)}</strong>
+                    <div style="width: 100%; display: flex; justify-content: center"><strong>${formatDate(date)}</strong></div>
                 </button>
             </h2>
             <div id="collapse-${dayId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" 
@@ -64,23 +64,23 @@ function renderSchedule(data) {
                 <div class="card-body">
                     <div class="row text-center align-items-center">
                         <div class="col-6 col-md-3 mb-2 mb-md-0">
-                            <p class="mb-1 fw-semibold">Category</p>
+                            <p class="mb-1 fw-semibold">${translations["category"]}</p>
                             <span class="badge bg-primary">${item.category}</span>
                         </div>
                         <div class="col-6 col-md-3 mb-2 mb-md-0">
-                            <p class="mb-1 fw-semibold">Style</p>
+                            <p class="mb-1 fw-semibold">${translations["style"]}</p>
                             <span class="badge bg-primary">${item.style}</span>
                         </div>
                         <div class="col-4 col-md-2 mb-2 mb-md-0">
-                            <p class="mb-1 fw-semibold">Time</p>
+                            <p class="mb-1 fw-semibold">${translations["time"]}</p>
                             <span>${item.time}</span>
                         </div>
                         <div class="col-4 col-md-2 mb-2 mb-md-0">
-                            <p class="mb-1 fw-semibold">Status</p>
+                            <p class="mb-1 fw-semibold">${translations["status"]}</p>
                             ${getStatusBadge(item.status)}
                         </div>
                         <div class="col-4 col-md-2">
-                            <p class="mb-1 fw-semibold">Dancers</p>
+                            <p class="mb-1 fw-semibold">${translations["dancers"]}</p>
                             <span class="badge bg-secondary">${item.dancers}</span>
                         </div>
                     </div>
@@ -105,7 +105,7 @@ function formatDate(dateStr) {
     } else {
         locale = 'en-GB';
     }
-    return d.toLocaleDateString(locale, { weekday: 'long',  month: 'long', day: 'numeric' });
+    return d.toLocaleDateString(locale, { weekday: 'long',  month: 'long', day: 'numeric' }).toUpperCase();
 }
 
 function getStatusBadge(status) {
