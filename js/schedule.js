@@ -1,7 +1,24 @@
 let lang;
 
+async function waitForTranslations(timeout = 5000) {
+  const start = Date.now();
+
+  while (!translations) {
+    // salir si pasaron más de 5 segundos
+    if (Date.now() - start > timeout) {
+      break;
+    }
+
+    // esperar 100 ms antes de volver a comprobar
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     await WaitEventLoaded();
+
+    await waitForTranslations();
 
     loadSchedule();
 });
@@ -41,16 +58,17 @@ function renderSchedule(data) {
 
         dayItem.innerHTML = `
             <h2 class="accordion-header" id="heading-${dayId}">
-                <button class="accordion-button ${index !== 0 ? 'collapsed' : ''} w-100 d-flex justify-content-center" type="button" 
+                <button class="accordion-button collapsed w-100 d-flex justify-content-center" type="button" 
                         data-bs-toggle="collapse" data-bs-target="#collapse-${dayId}" 
-                        aria-expanded="${index === 0}" aria-controls="collapse-${dayId}">
-                    <div style="width: 100%; display: flex; justify-content: center"><strong>${formatDate(date)}</strong></div>
+                        aria-expanded="false" aria-controls="collapse-${dayId}">
+                    <div style="width: 100%; display: flex; justify-content: center">
+                        <strong>${formatDate(date)}</strong>
+                    </div>
                 </button>
             </h2>
-            <div id="collapse-${dayId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" 
-                 aria-labelledby="heading-${dayId}" data-bs-parent="#scheduleAccordion">
-                <div class="accordion-body">
-                </div>
+            <div id="collapse-${dayId}" class="accordion-collapse collapse" 
+                aria-labelledby="heading-${dayId}" data-bs-parent="#scheduleAccordion">
+                <div class="accordion-body"></div>
             </div>
         `;
 
