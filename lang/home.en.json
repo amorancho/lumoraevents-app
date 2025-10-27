@@ -3,9 +3,11 @@
   "org_access": "Organization Access",
   "jud_access": "Judges Access",
   "par_access": "Participants",
+  "sch_access": "Schedule",
   "res_access": "Results",
   "org_access_sub": "Exclusive panel to configure the event.",
   "jud_access_sub": "Exclusive panel for the event's jury.",
   "par_access_sub": "Explore the participants of the event.",
+  "sch_access_sub": "Planning of the Event.",
   "res_access_sub": "Display of classifications and scores."
 }

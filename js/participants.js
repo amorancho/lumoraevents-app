@@ -1,4 +1,4 @@
-var title = 'Participants';
+//var title = 'Participants';
 
 // Simula tu eventReadyPromise si existe
 //const eventReadyPromise = Promise.resolve();

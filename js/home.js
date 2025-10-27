@@ -42,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateElementProperty('configUrl', 'href', `?eventId=${eventId}`, false);
         updateElementProperty('votingUrl', 'href', `?eventId=${eventId}`, false);
         updateElementProperty('participantsUrl', 'href', `?eventId=${eventId}`, false);
+        updateElementProperty('scheduleUrl', 'href', `?eventId=${eventId}`, false);
         updateElementProperty('resultsUrl', 'href', `?eventId=${eventId}`, false);
 
     } else {

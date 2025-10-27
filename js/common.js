@@ -191,6 +191,8 @@ async function changeLanguage(lang, page = null) {
     loadCategories();
   } else if (pageName === 'participants') {
     renderData(window.participantsData);
+  } else if (pageName === 'schedule') {
+    renderSchedule(window.scheData);
   }
 }
 
