@@ -16,6 +16,7 @@
   "prop_event_page": "URL de la Página del Evento",
   "prop_event_logo": "URL del Logo del Evento",
   "prop_preferences": "Preferencias",
+  "prop_visibility": "Visibilidad",
   "prop_num_judges": "Jueces por defecto para votar en Competiciones",
   "prop_autorefresh": "Auto Refresco (minutos)",
   "prop_class_type": "Tipo de Clasificación por Categorías",
@@ -26,5 +27,9 @@
   "license_small_text": "Máximo de 25 bailarinas",
   "license_medium_text": "Máximo de 75 bailarinas",
   "license_large_text": "Bailarinas ilimitadas",
-  "license": "Licencia"
+  "license": "Licencia",
+  "visible_judges": "Menú Jueces Visible",
+  "visible_participants": "Menú Participantes Visible",
+  "visible_schedule": "Menú Programación Visible",
+  "visible_results": "Menú Resultados Visible"
 }

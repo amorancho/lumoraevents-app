@@ -117,7 +117,11 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         judgesToVote: data.judges_to_vote,
         autoRefreshMin: data.autorefresh_minutes,
         catClassification: data.category_class_type,
-        license: data.license
+        license: data.license,
+        visibleJudges: data.visible_judges,
+        visibleParticipants: data.visible_participants,
+        visibleSchedule: data.visible_schedule,
+        visibleResults: data.visible_results
       };
 
     }
@@ -162,23 +166,6 @@ async function loadTranslations(lang, page) {
   }
 }
 
-/*
-async function loadTranslations(lang, page) {
-  try {
-    console.log(`🕒 Simulando carga lenta de traducciones para ${page}.${lang}...`);
-
-    // 🔹 Simular un retraso artificial de 2 segundos
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const res = await fetch(`/lang/${page}.${lang}.json`);
-    translations = await res.json();
-
-    console.log("✅ Traducciones cargadas (simulado con retraso)", translations);
-  } catch (error) {
-    console.error(`Error cargando traducciones para ${page}.${lang}:`, error);
-  }
-}
-*/
 function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');

@@ -16,6 +16,7 @@
   "prop_event_page": "Event Page URL",
   "prop_event_logo": "Event Logo URL",
   "prop_preferences": "Preferences",
+  "prop_visibility": "Visibility",
   "prop_num_judges": "Default Judges to vote in Competitions",
   "prop_autorefresh": "Auto Refresh (minutes)",
   "prop_class_type": "Category Classification Type",
@@ -26,5 +27,9 @@
   "license_small_text": "Maximum of 25 dancers",
   "license_medium_text": "Maximum of 75 dancers",
   "license_large_text": "Unlimited dancers",
-  "license": "License"
+  "license": "License",
+  "visible_judges": "Menú Judges Visible",
+  "visible_participants": "Menú Participants Visible",
+  "visible_schedule": "Menú Schedule Visible",
+  "visible_results": "Menú Results Visible"
 }

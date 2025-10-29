@@ -45,6 +45,12 @@ function renderSchedule(data) {
     const container = document.getElementById('scheduleContainer');
     container.innerHTML = '';
 
+    // Row + Col para centrar y limitar ancho
+    const row = document.createElement('div');
+    row.className = 'row justify-content-center';
+    const col = document.createElement('div');
+    col.className = 'col-12 col-md-10 col-lg-8';
+
     const accordion = document.createElement('div');
     accordion.className = 'accordion';
     accordion.id = 'scheduleAccordion';
@@ -58,7 +64,7 @@ function renderSchedule(data) {
 
         dayItem.innerHTML = `
             <h2 class="accordion-header" id="heading-${dayId}">
-                <button class="accordion-button collapsed w-100 d-flex justify-content-center" type="button" 
+                <button class="accordion-button collapsed" type="button" 
                         data-bs-toggle="collapse" data-bs-target="#collapse-${dayId}" 
                         aria-expanded="false" aria-controls="collapse-${dayId}">
                     <div style="width: 100%; display: flex; justify-content: center">
@@ -68,50 +74,106 @@ function renderSchedule(data) {
             </h2>
             <div id="collapse-${dayId}" class="accordion-collapse collapse" 
                 aria-labelledby="heading-${dayId}" data-bs-parent="#scheduleAccordion">
-                <div class="accordion-body"></div>
+                <div class="accordion-body">
+                </div>
             </div>
         `;
 
         const body = dayItem.querySelector('.accordion-body');
 
-        // Cards de estilos dentro del día
-        items.forEach(item => {
+        // Cards dentro del día
+        items.forEach((item, itemIndex) => {
             const card = document.createElement('div');
             card.className = 'card mb-3 border border-secondary-subtle rounded-3 shadow-none';
             card.innerHTML = `
                 <div class="card-body">
-                    <div class="row text-center align-items-center">
-                        <div class="col-6 col-md-3 mb-2 mb-md-0">
-                            <p class="mb-1 fw-semibold">${translations["category"]}</p>
-                            <span class="badge bg-primary">${item.category}</span>
-                        </div>
-                        <div class="col-6 col-md-3 mb-2 mb-md-0">
-                            <p class="mb-1 fw-semibold">${translations["style"]}</p>
-                            <span class="badge bg-primary">${item.style}</span>
-                        </div>
-                        <div class="col-4 col-md-2 mb-2 mb-md-0">
-                            <p class="mb-1 fw-semibold">${translations["time"]}</p>
-                            <span>${item.time}</span>
-                        </div>
-                        <div class="col-4 col-md-2 mb-2 mb-md-0">
-                            <p class="mb-1 fw-semibold">${translations["status"]}</p>
-                            ${getStatusBadge(item.status)}
-                        </div>
-                        <div class="col-4 col-md-2">
-                            <p class="mb-1 fw-semibold">${translations["dancers"]}</p>
-                            <span class="badge bg-secondary">${item.dancers}</span>
-                        </div>
+                <div class="row text-center align-items-center">
+                    <div class="col-6 col-md-3 mb-2 mb-md-0">
+                        <p class="mb-1 fw-semibold">${translations["category"]}</p>
+                        <span class="badge bg-primary">${item.category}</span>
+                    </div>
+                    <div class="col-6 col-md-3 mb-2 mb-md-0">
+                        <p class="mb-1 fw-semibold">${translations["style"]}</p>
+                        <span class="badge bg-primary">${item.style}</span>
+                    </div>
+                    <div class="col-4 col-md-2 mb-2 mb-md-0">
+                        <p class="mb-1 fw-semibold">${translations["time"]}</p>
+                        <span>${item.time}</span>
+                    </div>
+                    <div class="col-4 col-md-2 mb-2 mb-md-0">
+                        <p class="mb-1 fw-semibold">${translations["status"]}</p>
+                        ${getStatusBadge(item.status)}
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <p class="mb-1 fw-semibold">${translations["dancers"]}</p>
+                        <span class="badge bg-secondary">${item.dancers}</span>
                     </div>
                 </div>
+                </div>
             `;
+
+            // Solo si visibleParticipants == 1 añadimos el sub-accordion
+            if (getEvent().visibleParticipants == 1 && item.dancersList?.length) {
+                const rowWrapper = document.createElement('div');
+                rowWrapper.className = 'row justify-content-center mt-2 mt-4'; // row para centrar col
+
+                const subAccordionCol = document.createElement('div');
+                subAccordionCol.className = 'col-12 col-md-10';
+
+                // ID único para cada sub-accordion
+                const subId = `subAccordion-${item.id}-${itemIndex}`;
+                subAccordionCol.innerHTML = `
+                <div class="accordion" id="${subId}">
+                    <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading-${subId}">
+                        <button class="accordion-button collapsed py-1 px-2" type="button" 
+                                data-bs-toggle="collapse" data-bs-target="#collapse-${subId}" 
+                                aria-expanded="false" aria-controls="collapse-${subId}">
+                        <div class="d-flex justify-content-center w-100">
+                            <strong>${translations["participants"]}</strong>
+                        </div>
+                        </button>
+                    </h2>
+                    <div id="collapse-${subId}" class="accordion-collapse collapse" 
+                        aria-labelledby="heading-${subId}" data-bs-parent="#${subId}">
+                        <div class="accordion-body p-0">
+                        <ul class="list-group list-group-flush"></ul>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+                `;
+
+                // Añadimos los bailarines a la lista
+                const list = subAccordionCol.querySelector('ul');
+                item.dancersList.forEach(dancer => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item d-flex align-items-center';
+                    li.innerHTML = `
+                    <span class="badge bg-info me-2">#${dancer.position}</span>
+                    <img src="https://flagsapi.com/${dancer.nationality}/shiny/24.png" class="me-2" style="width: 24px;" />
+                    <span class="dancer-name">${dancer.name || dancer.dancer_name}</span>
+                    `;
+                    list.appendChild(li);
+                });
+
+                rowWrapper.appendChild(subAccordionCol);
+                card.querySelector('.card-body').appendChild(rowWrapper);
+            }
+
             body.appendChild(card);
-        });
+            });
+
 
         accordion.appendChild(dayItem);
     });
 
-    container.appendChild(accordion);
+    col.appendChild(accordion);
+    row.appendChild(col);
+    container.appendChild(row);
 }
+
+
 
 // 🔹 Helpers
 function formatDate(dateStr) {

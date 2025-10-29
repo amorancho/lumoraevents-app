@@ -4,5 +4,6 @@
     "style": "Style",
     "time": "Time",
     "status": "Status",
-    "dancers": "Dancers"
+    "dancers": "Dancers",
+    "participants": "Participants (starting order)"
 }

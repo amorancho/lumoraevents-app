@@ -124,11 +124,51 @@
 
                 </div>
               </div>
+
+              <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-secondary text-white fw-semibold">
+                  <i class="bi bi-eye me-2"></i><span data-i18n="prop_visibility">Visibility</span>
+                </div>
+                <div class="card-body">
+                  <div class="row g-3">                    
+
+                    <div class="col-12 mt-3">
+                      <div class="row">
+                        <div class="col-md-3">
+                          <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="visible_judges">
+                            <label class="form-check-label" for="toggle1" data-i18n="visible_judges">Menú Jueces Visible</label>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="visible_participants">
+                            <label class="form-check-label" for="toggle2" data-i18n="visible_participants">Menú Participantes Visible</label>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="visible_schedule">
+                            <label class="form-check-label" for="toggle3" data-i18n="visible_schedule">Menú Programación Visible</label>
+                          </div>
+                        </div>
+                        <div class="col-md-3">
+                          <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="visible_results">
+                            <label class="form-check-label" for="toggle4" data-i18n="visible_results">Menú Resultados Visible</label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
              
               <!-- Parámetros adicionales -->
               <div class="card shadow-sm border-0 mt-4">
-                <div class="card-header bg-secondary text-white fw-semibold" data-i18n="prop_preferences">
-                  <i class="bi bi-sliders me-2"></i>Preferences
+                <div class="card-header bg-secondary text-white fw-semibold">
+                  <i class="bi bi-sliders me-2"></i><span data-i18n="prop_preferences">Preferences</span>
                 </div>
                 <div class="card-body">
                   <div class="row g-3">
@@ -154,13 +194,11 @@
                     <div class="col-md-6">
                       <label for="min_styles" class="form-label" data-i18n="prop_min_styles">Minimum Styles</label>
                       <input type="number" class="form-control" id="min_styles">
-                    </div>
+                    </div>                    
 
                   </div>
                 </div>
               </div>
-
-              
 
               <!-- Botones -->
               <div class="col-12 text-center mt-3">
