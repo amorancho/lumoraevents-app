@@ -49,7 +49,7 @@ function renderSchedule(data) {
     const row = document.createElement('div');
     row.className = 'row justify-content-center';
     const col = document.createElement('div');
-    col.className = 'col-12 col-md-10 col-lg-8';
+    col.className = 'col-12 col-md-12 col-lg-10';
 
     const accordion = document.createElement('div');
     accordion.className = 'accordion';
@@ -113,52 +113,57 @@ function renderSchedule(data) {
             `;
 
             // Solo si visibleParticipants == 1 añadimos el sub-accordion
-            if (getEvent().visibleParticipants == 1 && item.dancersList?.length) {
-                const rowWrapper = document.createElement('div');
-                rowWrapper.className = 'row justify-content-center mt-2 mt-4'; // row para centrar col
+            if (item.dancersList?.length) {
 
-                const subAccordionCol = document.createElement('div');
-                subAccordionCol.className = 'col-12 col-md-10';
+                if ((getEvent().visibleParticipants == 1) || validateRoles(["admin", "organizer"], false)) {
 
-                // ID único para cada sub-accordion
-                const subId = `subAccordion-${item.id}-${itemIndex}`;
-                subAccordionCol.innerHTML = `
-                <div class="accordion" id="${subId}">
-                    <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading-${subId}">
-                        <button class="accordion-button collapsed py-1 px-2" type="button" 
-                                data-bs-toggle="collapse" data-bs-target="#collapse-${subId}" 
-                                aria-expanded="false" aria-controls="collapse-${subId}">
-                        <div class="d-flex justify-content-center w-100">
-                            <strong>${translations["participants"]}</strong>
+                    const rowWrapper = document.createElement('div');
+                    rowWrapper.className = 'row justify-content-center mt-2 mt-4'; // row para centrar col
+
+                    const subAccordionCol = document.createElement('div');
+                    subAccordionCol.className = 'col-12 col-md-10';
+
+                    // ID único para cada sub-accordion
+                    const subId = `subAccordion-${item.id}-${itemIndex}`;
+                    subAccordionCol.innerHTML = `
+                    <div class="accordion" id="${subId}">
+                        <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading-${subId}">
+                            <button class="accordion-button collapsed py-1 px-2" type="button" 
+                                    data-bs-toggle="collapse" data-bs-target="#collapse-${subId}" 
+                                    aria-expanded="false" aria-controls="collapse-${subId}">
+                            <div class="d-flex justify-content-center w-100">
+                                <strong>${translations["participants"]}</strong>
+                            </div>
+                            </button>
+                        </h2>
+                        <div id="collapse-${subId}" class="accordion-collapse collapse" 
+                            aria-labelledby="heading-${subId}" data-bs-parent="#${subId}">
+                            <div class="accordion-body p-0">
+                            <ul class="list-group list-group-flush"></ul>
+                            </div>
                         </div>
-                        </button>
-                    </h2>
-                    <div id="collapse-${subId}" class="accordion-collapse collapse" 
-                        aria-labelledby="heading-${subId}" data-bs-parent="#${subId}">
-                        <div class="accordion-body p-0">
-                        <ul class="list-group list-group-flush"></ul>
                         </div>
                     </div>
-                    </div>
-                </div>
-                `;
-
-                // Añadimos los bailarines a la lista
-                const list = subAccordionCol.querySelector('ul');
-                item.dancersList.forEach(dancer => {
-                    const li = document.createElement('li');
-                    li.className = 'list-group-item d-flex align-items-center';
-                    li.innerHTML = `
-                    <span class="badge bg-info me-2">#${dancer.position}</span>
-                    <img src="https://flagsapi.com/${dancer.nationality}/shiny/24.png" class="me-2" style="width: 24px;" />
-                    <span class="dancer-name">${dancer.name || dancer.dancer_name}</span>
                     `;
-                    list.appendChild(li);
-                });
 
-                rowWrapper.appendChild(subAccordionCol);
-                card.querySelector('.card-body').appendChild(rowWrapper);
+                    // Añadimos los bailarines a la lista
+                    const list = subAccordionCol.querySelector('ul');
+                    item.dancersList.forEach(dancer => {
+                        const li = document.createElement('li');
+                        li.className = 'list-group-item d-flex align-items-center';
+                        li.innerHTML = `
+                        <span class="badge bg-info me-2">#${dancer.position}</span>
+                        <img src="https://flagsapi.com/${dancer.nationality}/shiny/24.png" class="me-2" style="width: 24px;" />
+                        <span class="dancer-name">${dancer.name || dancer.dancer_name}</span>
+                        `;
+                        list.appendChild(li);
+                    });
+
+                    rowWrapper.appendChild(subAccordionCol);
+                    card.querySelector('.card-body').appendChild(rowWrapper);
+
+                }
             }
 
             body.appendChild(card);
