@@ -100,11 +100,53 @@ function showVotesModal(dancer, mode = "details") {
     const sendBtn = document.createElement('button');
     sendBtn.className = "btn btn-primary btn-sm";
     sendBtn.textContent = "Send votes";
-
+  
+    const noShowBtn = document.createElement('button');
+    noShowBtn.className = "btn btn-warning btn-sm me-auto";
+    noShowBtn.textContent = "No show";
+  
+    // --- función auxiliar para enviar votos ---
+    async function sendVotes(scores) {
+      try {
+        setVoteButtonsDisabled(true);
+        sendBtn.disabled = true;
+        noShowBtn.disabled = true;
+  
+        const response = await fetch(`${API_BASE_URL}/api/voting`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event_id: getEvent().id,
+            competition_id: dancer.competition_id,
+            judge_id: getUserId(),
+            dancer_id: dancer.id,
+            scores: scores
+          })
+        });
+  
+        if (!response.ok) {
+          const errData = await response.json();
+          showMessageModal(errData.error || 'Error sending votes', 'Error');
+          setVoteButtonsDisabled(false);
+          sendBtn.disabled = false;
+          noShowBtn.disabled = false;
+          return;
+        }
+  
+        await loadCompetitionAndDancers();
+        modal.hide();
+  
+      } catch (err) {
+        console.error("Error sending votes", err);
+        alert("Error sending votes");
+      }
+    }
+  
+    // --- botón normal: enviar votos manuales ---
     sendBtn.addEventListener('click', async () => {
       const scores = [];
       let allFilled = true;
-
+  
       criteriaContainer.querySelectorAll('.score-input').forEach(input => {
         const val = input.value.trim();
         if (val === "" || isNaN(Number(val))) {
@@ -116,9 +158,8 @@ function showVotesModal(dancer, mode = "details") {
           });
         }
       });
-
+  
       if (!allFilled) {
-        // Verificar si ya existe el alert
         if (!document.getElementById("voteErrorAlert")) {
           const alertDiv = document.createElement("div");
           alertDiv.id = "voteErrorAlert";
@@ -132,62 +173,73 @@ function showVotesModal(dancer, mode = "details") {
         }
         return;
       }
-
-      // Si estaba el alert, lo quitamos porque ya está todo informado
+  
       const existingAlert = document.getElementById("voteErrorAlert");
       if (existingAlert) existingAlert.remove();
-
-      // llamada API para enviar votos
-      try {
-        setVoteButtonsDisabled(true);
-        sendBtn.disabled = true;
-
-        const response = await fetch(`${API_BASE_URL}/api/voting`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            event_id: getEvent().id,
-            competition_id: dancer.competition_id,
-            judge_id: getUserId(),
-            dancer_id: dancer.id,
-            scores: scores
-          })
-        });
-
-        if (!response.ok) {
-          const errData = await response.json();
-          showMessageModal(errData.error || 'Error sending votes', 'Error');
-          setVoteButtonsDisabled(false);
-          sendBtn.disabled = false;
-          return;
-        }
-
-        // Recargar tabla de bailarinas
-        await loadCompetitionAndDancers();
-
-        modal.hide();
-
-      } catch (err) {
-        console.error("Error sending votes", err);
-        alert("Error sending votes");
-      }
+  
+      await sendVotes(scores);
     });
-
-    footer.appendChild(sendBtn);
-
-    // Escuchar cambios en inputs para recalcular total
+  
+    // --- modal de confirmación (solo se crea si no existe aún) ---
+    if (!document.getElementById("noShowConfirmModal")) {
+      document.body.insertAdjacentHTML("beforeend", `
+        <div class="modal fade" id="noShowConfirmModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Confirm No Show</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p>This action will set all criteria scores to 0 for this dancer. Are you sure you want to continue?</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmNoShowBtn">Confirm</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+  
+    const noShowModal = new bootstrap.Modal(document.getElementById("noShowConfirmModal"));
+    const confirmNoShowBtn = document.getElementById("confirmNoShowBtn");
+  
+    // --- botón no show ---
+    noShowBtn.addEventListener('click', () => {
+      // abrir modal de confirmación
+      noShowModal.show();
+  
+      // asignar listener temporal para este bailarín
+      confirmNoShowBtn.onclick = async () => {
+        noShowModal.hide();
+  
+        const scores = criteriaList.map(c => ({
+          criteria_id: c.id,
+          score: 0
+        }));
+  
+        await sendVotes(scores);
+      };
+    });
+  
+    // Añadir botones al footer
+    footer.prepend(noShowBtn);  // a la izquierda
+    footer.appendChild(sendBtn); // los actuales permanecen a la derecha
+  
+    // --- recalcular total al cambiar inputs ---
     criteriaContainer.querySelectorAll('.score-input').forEach(input => {
       input.addEventListener('input', () => {
-
         let min = parseInt(input.min);
         let max = parseInt(input.max);
         let val = parseInt(input.value);
-
+  
         if (!isNaN(val)) {
           if (val < min) input.value = min;
           if (val > max) input.value = max;
         }
-
+  
         let sum = 0;
         criteriaContainer.querySelectorAll('.score-input').forEach(inp => {
           const val = Number(inp.value);
@@ -196,7 +248,7 @@ function showVotesModal(dancer, mode = "details") {
         document.getElementById('totalScore').textContent = sum;
       });
     });
-  }
+  }  
 
 
   modal.show();
