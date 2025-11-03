@@ -308,26 +308,8 @@ async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerNa
     
     if (data.success) {
 
-      loadCompetitions(document.getElementById('categorySelect').value);
+      loadCompetitions(document.getElementById('categorySelect').value, document.getElementById('styleSelect').value);
 
-      /*
-      const td = document.getElementById(`row-${rowId}`);
-
-      if (td) {
-        // Buscar el badge actual
-        const badge = td.querySelector('.status-badge');
-        if (badge) {
-          // Crear un nuevo badge limpio
-          const newBadge = document.createElement('span');
-          newBadge.className = 'badge status-badge bg-warning';
-          newBadge.textContent = 'Pending';
-
-          // Reemplazar todo el contenido del td por el badge
-          td.innerHTML = '';
-          td.appendChild(newBadge);
-        }
-      }
-        */
     }
 
 
