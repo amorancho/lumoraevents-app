@@ -13,18 +13,18 @@
   <div id="header"></div>
   <div class="container py-4">
       
-    <div class="container my-4" id="voteContainer">
+    <div class="container" id="voteContainer">
       <div class="row g-3 align-items-end mb-4 justify-content-center">
         <div class="col-md-3">
-          <label for="categorySelect" class="form-label fw-semibold">Category</label>
+          <label for="categorySelect" class="form-label fw-semibold" data-i18n="category">Category</label>
           <select class="form-select" id="categorySelect">
             <option selected disabled>Select a category</option>
           </select>
         </div>
         <div class="col-md-3">
-          <label for="styleSelect" class="form-label fw-semibold">Style</label>
+          <label for="styleSelect" class="form-label fw-semibold" data-i18n="style">Style</label>
           <select class="form-select" id="styleSelect" disabled>
-            <option selected disabled>Select a style</option>
+            <option selected disabled data-i18n="select_style">Select a style</option>
           </select>
         </div>
         <!--div class="col-md-4">
@@ -34,38 +34,38 @@
 
       <div class="card mb-4" id="competitionInfo" style="display:none;">
         <div class="card-header text-center">
-          <h5 class="mb-0">Competition Info</h5>
+          <h5 class="mb-0" data-i18n="info">Competition Info</h5>
         </div>
         <div class="card-body">
           <div class="row text-center">
             <div class="col-6 col-md-2">
-              <p class="mb-1 fw-semibold">Category</p>
+              <p class="mb-1 fw-semibold" data-i18n="category">Category</p>
               <p id="compCategory"><span class="badge bg-secondary"></span></p>
             </div>
             <div class="col-6 col-md-2">
-              <p class="mb-1 fw-semibold">Style</p>
+              <p class="mb-1 fw-semibold" data-i18n="style">Style</p>
               <p id="compStyle"><span class="badge bg-secondary"></span></p>
             </div>
             <div class="col-6 col-md-2">
-              <p class="mb-1 fw-semibold">Estimated Time</p>
+              <p class="mb-1 fw-semibold" data-i18n="start_time">Estimated Time</p>
               <p id="compTime"></p>
             </div>
             <div class="col-6 col-md-2">
-              <p class="mb-1 fw-semibold">Status</p>
+              <p class="mb-1 fw-semibold" data-i18n="status">Status</p>
               <p id="compStatus"><span class="badge bg-success"></span></p>
             </div>
             <div class="col-12 col-md-4">
               <div class="row text-center">
                 <div class="col-4">
-                  <p class="mb-1 fw-semibold"># Judges</p>
+                  <p class="mb-1 fw-semibold" data-i18n="num_judges"># Judges</p>
                   <p id="compNumJudges"><span class="badge bg-primary"></span></p>
                 </div>
                 <div class="col-4">
-                  <p class="mb-1 fw-semibold">Dancers</p>
+                  <p class="mb-1 fw-semibold" data-i18n="dancers">Dancers</p>
                   <p id="compDancers"><span class="badge bg-primary"></span></p>
                 </div>
                 <div class="col-4">
-                  <p class="mb-1 fw-semibold">Pending</p>
+                  <p class="mb-1 fw-semibold" data-i18n="pending">Pending</p>
                   <p id="compDancersPend"><span class="badge bg-warning"></span></p>
                 </div>
               </div>
@@ -79,9 +79,9 @@
         <table class="table table-bordered align-middle text-center">
           <thead class="table-light">
             <tr>
-              <th>Dancer</th>
-              <th class="text-center">Status</th>
-              <th class="text-center">Action</th>
+              <th data-i18n="col_dancer">Dancer</th>
+              <th class="text-center" data-i18n="col_status">Status</th>
+              <th class="text-center" data-i18n="col_action">Action</th>
             </tr>
           </thead>
           <tbody id="dancersTableBody">

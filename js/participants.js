@@ -12,7 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadParticipants() {
   const participantsContainer = document.getElementById('participantsContainer');
   
-
   let data;
   try {
     const res = await fetch(`${API_BASE_URL}/api/events/participants?event_id=${getEvent().id}`);
@@ -177,7 +176,7 @@ function createCategoryItem(category, categoryData, index) {
   // Leyenda con icono y texto explicativo
   const legend = document.createElement('small');
   legend.className = 'text-muted';
-  legend.innerHTML = `<i class="bi bi-list-ol text-primary me-1"></i>${translations["icon_legend"]}`;
+  legend.innerHTML = `<i class="bi bi-list-ol text-primary me-1 legend-icon"></i>${translations["icon_legend"]}`;
   controlsDiv.appendChild(legend);
 
   const tableDiv = document.createElement('div');
@@ -329,7 +328,7 @@ document.getElementById('buscador').addEventListener('keypress', function(e) {
 
 document.addEventListener('click', async (event) => {
   const icon = event.target.closest('.bi-list-ol');
-  if (!icon) return;
+  if (!icon || icon.classList.contains('legend-icon')) return;
 
   const compId = icon.dataset.compId;
   const categoryName = icon.dataset.categoryName;

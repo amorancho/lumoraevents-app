@@ -51,7 +51,7 @@ async function loadCompetitionAndDancers() {
 
 function showVotesModal(dancer, mode = "details") {
   document.getElementById('detailsModalLabel').textContent =
-    mode === "details" ? `Votes for ${dancer.name}` : `Vote for ${dancer.name}`;
+    mode === "details" ? `${translations["votes_for"]} ${dancer.name}` : `${translations["vote_for"]} ${dancer.name}`;
 
   criteriaContainer.innerHTML = '';
 
@@ -93,17 +93,17 @@ function showVotesModal(dancer, mode = "details") {
 
   // Footer → limpiar primero
   const footer = modal._element.querySelector('.modal-footer');
-  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>`;
+  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${translations["close"]}</button>`;
 
   if (mode === "vote") {
 
     const sendBtn = document.createElement('button');
     sendBtn.className = "btn btn-primary btn-sm";
-    sendBtn.textContent = "Send votes";
+    sendBtn.textContent = translations["send_votes"];
   
     const noShowBtn = document.createElement('button');
     noShowBtn.className = "btn btn-warning btn-sm me-auto";
-    noShowBtn.textContent = "No show";
+    noShowBtn.textContent = translations["no_show"];
   
     // --- función auxiliar para enviar votos ---
     async function sendVotes(scores) {
@@ -166,7 +166,7 @@ function showVotesModal(dancer, mode = "details") {
           alertDiv.className = "alert alert-danger alert-dismissible fade show mt-3";
           alertDiv.role = "alert";
           alertDiv.innerHTML = `
-            You must fill in all criteria before sending the votes.
+            ${translations["alert_criteria"]}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           `;
           criteriaContainer.appendChild(alertDiv);
@@ -187,15 +187,15 @@ function showVotesModal(dancer, mode = "details") {
           <div class="modal-dialog">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title">Confirm No Show</h5>
+                <h5 class="modal-title">${translations["confirm_no_show_title"]}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                <p>This action will set all criteria scores to 0 for this dancer. Are you sure you want to continue?</p>
+                <p>${translations["confirm_no_show_text"]}</p>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" id="confirmNoShowBtn">Confirm</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${translations["cancel"]}</button>
+                <button type="button" class="btn btn-danger" id="confirmNoShowBtn">${translations["confirm"]}</button>
               </div>
             </div>
           </div>
@@ -256,7 +256,7 @@ function showVotesModal(dancer, mode = "details") {
 
 function setVoteButtonsDisabled(disabled) {
   document.querySelectorAll('button.btn-primary').forEach(btn => {
-    if (btn.textContent.trim() === 'Vote') {
+    if (btn.textContent.trim() === translations["vote"]) {
       btn.disabled = disabled;
     }
   });
@@ -327,13 +327,13 @@ function renderDancersTable(dancers, compStatus) {
     if (d.status === 'Completed') {
       const btnDetails = document.createElement('button');
       btnDetails.className = 'btn btn-sm btn-secondary';
-      btnDetails.textContent = 'Details';
+      btnDetails.textContent = translations['details'];
       btnDetails.addEventListener('click', () => showVotesModal(d, "details"));
       tdActions.appendChild(btnDetails);
     } else if (d.status === 'Pending' && compStatus === 'OPE') {
       const btnVote = document.createElement('button');
       btnVote.className = 'btn btn-sm btn-primary';
-      btnVote.textContent = 'Vote';
+      btnVote.textContent = translations['vote'];
       btnVote.addEventListener('click', () => showVotesModal(d, "vote"));
       tdActions.appendChild(btnVote);
     }
@@ -366,7 +366,7 @@ async function loadCategoriesAndStyles() {
 }
 
 function populateCategorySelect(data, categorySelect) {
-  categorySelect.innerHTML = '<option selected disabled>Select a category</option>';
+  categorySelect.innerHTML = '<option selected disabled data-i18n="select_category">Select a category</option>';
   data.forEach(item => {
     const option = document.createElement('option');
     option.value = item.category.id;
@@ -377,7 +377,7 @@ function populateCategorySelect(data, categorySelect) {
 
 function populateStyleSelect(selectedCategoryId, data, styleSelect) {
   const categoryData = data.find(item => item.category.id == selectedCategoryId);
-  styleSelect.innerHTML = '<option selected disabled>Select a style</option>';
+  styleSelect.innerHTML = '<option selected disabled data-i18n="select_style">Select a style</option>';
   if (categoryData) {
     categoryData.styles.forEach(style => {
       const option = document.createElement('option');

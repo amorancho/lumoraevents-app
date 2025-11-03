@@ -197,6 +197,8 @@ async function changeLanguage(lang, page = null) {
     renderData(window.participantsData);
   } else if (pageName === 'schedule') {
     renderSchedule(window.scheData);
+  } else if (pageName === 'voting') {
+    loadCompetitionAndDancers();
   }
 }
 
