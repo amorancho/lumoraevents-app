@@ -309,12 +309,14 @@ function renderDancersTable(dancers, compStatus) {
     tdStatus.innerHTML = `
       <span class="badge 
         ${d.status === 'Pending' 
-            ? 'bg-warning' 
-            : d.status === 'Incompatible' 
-              ? 'bg-danger' 
-              : d.status === 'Max Judges Voted'
-                ? 'bg-danger'
-              : 'bg-success'}">
+          ? 'bg-warning' 
+          : d.status === 'Incompatible' 
+            ? 'bg-danger' 
+            : d.status === 'Max Judges Voted'
+              ? 'bg-danger'
+              : d.status === 'No Show'
+                ? 'bg-noshown'
+                : 'bg-success'}">
         ${d.status}
       </span>
     `;
