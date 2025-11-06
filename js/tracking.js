@@ -182,9 +182,10 @@ function renderCompetitions(competitions) {
 
           let ind = `${comp.id}-${d.dancer_id}-${v.judge.id}`; // ID de la fila para localizarla en reset
 
-          if (v.status === 'Completed') {
+          if (['Completed', 'No Show'].includes(v.status)) {
 
             let params = `${comp.category_id}, ${comp.style_id}, ${v.judge.id}, ${d.dancer_id}, '${ind}', '${d.dancer_name}', '${v.judge.name}'`;
+            let showEye = v.status === 'Completed';
             
             return `
               <td class="text-center" id="row-${ind}">
@@ -192,7 +193,8 @@ function renderCompetitions(competitions) {
                   <!-- Ver detalles (izquierda) -->
                   <button class="btn btn-link text-primary p-0" 
                     onclick="showVoteDetails(${params})" 
-                    title="Ver detalles">
+                    title="Ver detalles"
+                    style="visibility: ${showEye ? 'visible' : 'hidden'};">
                     <i class="bi bi-eye"></i>
                   </button>
 
