@@ -95,7 +95,7 @@ function renderEvents() {
       ? `<span class="text-success fw-bold ">✓</span>`
       : `<span class="text-danger fw-bold">✗</span>`;
 
-    const trialIcon = event.visible == 1
+    const trialIcon = event.trial == 1
       ? `<span class="text-success fw-bold ">✓</span>`
       : '';
 
