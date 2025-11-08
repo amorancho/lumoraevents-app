@@ -63,7 +63,7 @@
 
   </header>
   
-  <div class="container-fluid container-container-fluid py-4 px-5">
+  <div id="mainContainer" class="container-fluid container-container-fluid py-4 px-5">     
 
     <ul class="nav nav-tabs mb-3" id="mainTabs" role="tablist">
       <li class="nav-item" role="presentation">
@@ -91,8 +91,10 @@
               <i class="bi bi-people-fill me-2"></i> Eventos
             </h5>
             <span id="count-events" class="badge bg-secondary rounded-pill">0</span>
+
+            
           </div>
-      
+
           <div class="card-body p-2">
             <div class="table-responsive">
               <table class="table table-hover mb-0">
@@ -168,10 +170,12 @@
         </div>
       </div>      
     </div>
+
+    
     
   </div>
   
-  <!-- Modal Crear/Editar -->
+  <!-- Modal Crear/Editar Cliente -->
   <div class="modal fade" id="clientModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -228,7 +232,7 @@
     </div>
   </div>
 
-  <!-- Modal eliminar -->
+  <!-- Modal eliminar Cliente -->
   <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -246,6 +250,247 @@
       </div>
     </div>
   </div>
+
+  <!-- Modal Crear/Editar Evento -->
+  <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><span class="fw-bold text-primary" id="eventModalTitle">Create Event</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <form id="eventForm" data-action="create">
+            <input type="hidden" id="eventId">
+
+            <div class="row g-3">
+
+              <div class="col-md-3">
+                <label class="form-label">Code</label>
+                <input type="text" class="form-control" id="code" maxlength="50" required>
+              </div>
+
+              <!--div class="col-md-5">
+                <label class="form-label">Nombre</label>
+                <input type="text" class="form-control" id="name" maxlength="100" required>
+              </div-->
+
+              <div class="col-md-6 d-flex align-items-end">
+                <div class="w-100">
+                  <label for="name" class="form-label" data-i18n="prop_event_name">Event Name</label>
+                  <div class="input-group">
+                    <input type="text" class="form-control" id="name">
+
+                    <!-- Switch: Evento visible -->
+                    <span class="input-group-text bg-light">
+                      <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="visible">
+                        <label class="form-check-label small ms-1" for="visible">Visible</label>
+                      </div>
+                    </span>
+
+                    <!-- Switch: Evento de prueba -->
+                    <span class="input-group-text bg-light">
+                      <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="trial">
+                        <label class="form-check-label small ms-1" for="trial">Trial</label>
+                      </div>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Estado</label>
+                <select id="status" class="form-select">
+                  <option value="OPE">Opened</option>
+                  <option value="CLO">Closed</option>
+                  <option value="FIN">Finished</option>
+                </select>
+              </div>
+                        
+              <div class="col-md-2">
+                <label class="form-label">Fecha inicio</label>
+                <input type="date" class="form-control" id="start">
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label">Fecha fin</label>
+                <input type="date" class="form-control" id="end">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Cliente</label>
+                <select id="clientSelect" class="form-select">
+                  <option value="">Seleccionar cliente...</option>
+                  <!-- Opciones pobladas dinámicamente -->
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Password</label>
+                <input type="number" min="0" max="200000" class="form-control" id="password">
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label">Idioma</label>
+                <select id="language" class="form-select">
+                  <option value="en">EN</option>
+                  <option value="es">ES</option>
+                </select>
+              </div>  
+
+              <!-- URL y Logo + preview -->
+              <div class="col-12">
+                <hr>
+              </div>
+
+              <div class="col-12">
+                <div class="row g-3 align-items-center">
+
+                  <div class="col-md-9">
+                    <div class="mb-3">
+                      <label for="eventurl" class="form-label">Event Page URL</label>
+                      <input type="text" class="form-control" id="eventurl" placeholder="https://..." oninput="updateUrlPreview()">
+                      <div id="urlPreview" class="mt-2 d-none">
+                        <a href="#" target="_blank" id="urlPreviewLink" class="text-primary text-decoration-none small">
+                          <i class="bi bi-link-45deg me-1"></i><span id="urlPreviewText"></span>
+                        </a>
+                      </div>
+                    </div>
+
+                    <div class="mb-3">
+                      <label for="eventlogo" class="form-label">Event Logo URL</label>
+                      <input type="text" class="form-control" id="eventlogo" placeholder="https://..." oninput="updateLogoPreview()">
+                      
+                    </div>
+                  </div>
+
+                  <div class="col-md-3 text-center">
+                    <img id="previewLogo" class="mt-2 d-none border rounded" style="max-height:150px;">
+                  </div>
+
+                </div>
+              </div>
+
+              <!-- Switches -->
+              <div class="col-md-12">
+                <div class="row">
+                  
+                  <div class="col-md-3">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="visible_judges">
+                      <label class="form-check-label" for="visible_judges">Menú Jueces Visible</label>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="visible_participants">
+                      <label class="form-check-label" for="visible_participants">Participantes visibles</label>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="visible_schedule">
+                      <label class="form-check-label" for="visible_schedule">Horario visible</label>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="visible_results">
+                      <label class="form-check-label" for="visible_results">Resultados visibles</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Configuración adicional -->
+              <div class="col-12">
+                <hr>
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label">Min Styles</label>
+                <input type="number" class="form-control" id="min_styles" min="0">
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label">AutoRefresh (min)</label>
+                <input type="number" class="form-control" id="autorefresh_minutes" min="0">
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label">Judges to vote</label>
+                <input type="number" class="form-control" id="judges_to_vote" min="0">
+              </div>
+
+              <div class="col-md-3">
+                <label for="category_class_type" class="form-label" data-i18n="prop_class_type">Tipo Clasificación Categoría</label>
+                <select id="category_class_type" class="form-select">
+                  <option value="NO" data-i18n="no_cat_class">Sin Clasificación</option>
+                  <option value="NUM_MEDALS" data-i18n="num_medals">Por Número Medallas Estilos</option>
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">License</label>
+                <select id="license" class="form-select">
+                  <option value="small">small</option>
+                  <option value="medium">medium</option>
+                  <option value="large">large</option>
+                </select>
+              </div>
+
+            </div>
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveEventBtn">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Duplicar evento -->
+  <div class="modal fade" id="duplicateModal" tabindex="-1" aria-labelledby="duplicateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="duplicateModalLabel">Duplicar evento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <p>¿Qué información quieres copiar?</p>
+
+          <div class="row g-2 align-items-center">
+            <div class="col-auto">
+              <label for="duplicateType" class="form-label mb-0">Tipo de copia:</label>
+            </div>
+            <div class="col">
+              <select id="duplicateType" class="form-select">
+                <option value="CAB">Sólo cabecera</option>
+                <option value="DMA">Con Datos Maestros</option>
+                <option value="JBC">Con Jueces, Bailarinas y Competiciones</option>
+                <option value="COM">Copia Completa (con votaciones)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirmDuplicateBtn">Duplicar</button>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+
+  <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;"></div>
 
   <footer class="container-fluid bg-dark text-white py-4 mt-auto">
 
