@@ -85,7 +85,7 @@ function renderSchedule(data) {
         items.forEach((item, itemIndex) => {
             const card = document.createElement('div');
             card.className = 'card mb-3 border border-secondary-subtle rounded-3 shadow-none';
-            card.innerHTML = `
+            /*card.innerHTML = `
                 <div class="card-body">
                 <div class="row text-center align-items-center">
                     <div class="col-6 col-md-3 mb-2 mb-md-0">
@@ -106,6 +106,33 @@ function renderSchedule(data) {
                     </div>
                     <div class="col-4 col-md-2">
                         <p class="mb-1 fw-semibold">${translations["dancers"]}</p>
+                        <span class="badge bg-secondary">${item.dancers}</span>
+                    </div>
+                </div>
+                </div>
+            `;*/
+
+            card.innerHTML = `
+                <div class="card-body">
+                <div class="row text-center align-items-center">
+                    <div class="col-6 col-md-3 mb-2 mb-md-0">
+                        <p class="mb-1 fw-semibold">Category</p>
+                        <span class="badge bg-primary">${item.category}</span>
+                    </div>
+                    <div class="col-6 col-md-3 mb-2 mb-md-0">
+                        <p class="mb-1 fw-semibold">Style</p>
+                        <span class="badge bg-primary">${item.style}</span>
+                    </div>
+                    <div class="col-4 col-md-2 mb-2 mb-md-0">
+                        <p class="mb-1 fw-semibold">Time</p>
+                        <span>${item.time}</span>
+                    </div>
+                    <div class="col-4 col-md-2 mb-2 mb-md-0">
+                        <p class="mb-1 fw-semibold">Status</p>
+                        ${getStatusBadge(item.status)}
+                    </div>
+                    <div class="col-4 col-md-2">
+                        <p class="mb-1 fw-semibold">Dancers</p>
                         <span class="badge bg-secondary">${item.dancers}</span>
                     </div>
                 </div>
@@ -133,7 +160,7 @@ function renderSchedule(data) {
                                     data-bs-toggle="collapse" data-bs-target="#collapse-${subId}" 
                                     aria-expanded="false" aria-controls="collapse-${subId}">
                             <div class="d-flex justify-content-center w-100">
-                                <strong>${translations["participants"]}</strong>
+                                <strong>Participants (starting order)</strong>
                             </div>
                             </button>
                         </h2>
@@ -146,6 +173,8 @@ function renderSchedule(data) {
                         </div>
                     </div>
                     `;
+
+                    //${translations["participants"]}
 
                     // Añadimos los bailarines a la lista
                     const list = subAccordionCol.querySelector('ul');
