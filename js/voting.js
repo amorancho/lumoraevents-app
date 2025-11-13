@@ -109,6 +109,8 @@ function showVotesModal(dancer, mode = "details") {
     async function sendVotes(scores) {
       try {
         setVoteButtonsDisabled(true);
+        const originalContent = sendBtn.innerHTML;
+        sendBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${translations["sending"]}`;    
         sendBtn.disabled = true;
         noShowBtn.disabled = true;
   
@@ -130,6 +132,7 @@ function showVotesModal(dancer, mode = "details") {
           setVoteButtonsDisabled(false);
           sendBtn.disabled = false;
           noShowBtn.disabled = false;
+          sendBtn.innerHTML = originalContent;
           return;
         }
   
@@ -139,6 +142,7 @@ function showVotesModal(dancer, mode = "details") {
       } catch (err) {
         console.error("Error sending votes", err);
         alert("Error sending votes");
+        sendBtn.innerHTML = originalContent;
       }
     }
   

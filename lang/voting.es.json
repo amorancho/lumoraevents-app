@@ -24,5 +24,6 @@
   "confirm_no_show_title": "Confirmar No Presentada",
   "confirm_no_show_text": "Esta acción establecerá todas las puntuaciones de los criterios en 0 para esta bailarina. ¿Está seguro de que desea continuar?",
   "cancel": "Cancelar",
-  "confirm": "Confirmar"
+  "confirm": "Confirmar",
+  "sending": "Enviando"
 }

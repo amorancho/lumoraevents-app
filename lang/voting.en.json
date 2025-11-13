@@ -24,5 +24,6 @@
   "confirm_no_show_title": "Confirm No Show",
   "confirm_no_show_text": "This action will set all criteria scores to 0 for this dancer. Are you sure you want to continue?",
   "cancel": "Cancel",
-  "confirm": "Confirm"
+  "confirm": "Confirm",
+  "sending": "Sending"
 }

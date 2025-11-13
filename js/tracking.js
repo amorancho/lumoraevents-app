@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const categorySelect = document.getElementById('categorySelect');
   const styleSelect = document.getElementById('styleSelect');
 
+  getCompetitionsBtn.disabled = true;
+
   //await eventReadyPromise;
   await WaitEventLoaded();
 
@@ -20,10 +22,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   categorySelect.addEventListener('change', () => {
     populateStyleSelect(categorySelect.value, data, styleSelect);
+
+    getCompetitionsBtn.disabled = !categorySelect.value;
   });
 
   getCompetitionsBtn.addEventListener('click', async () => {
-    await loadCompetitions(categorySelect.value, styleSelect.value);
+
+    const originalContent = getCompetitionsBtn.innerHTML;
+    getCompetitionsBtn.innerHTML = `
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...
+    `;
+    getCompetitionsBtn.disabled = true;
+    try {
+      await loadCompetitions(categorySelect.value, styleSelect.value);
+    } finally {
+      // Restaurar contenido original
+      getCompetitionsBtn.innerHTML = originalContent;
+      getCompetitionsBtn.disabled = !categorySelect.value; // volver a habilitar si hay categoría
+    }
   });
 
 });
