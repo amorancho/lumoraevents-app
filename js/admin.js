@@ -381,6 +381,9 @@ function openEditEventModal(eventObj) {
   document.getElementById('visible_schedule').checked = (Number(eventObj.visible_schedule) === 1);
   document.getElementById('visible_results').checked = (Number(eventObj.visible_results) === 1);
   document.getElementById('has_penalties').checked = (Number(eventObj.has_penalties) === 1);
+  document.getElementById('notice_text').value = eventObj.notice_text;
+  document.getElementById('notice_active').checked = (Number(eventObj.notice_active) === 1);
+  document.getElementById('notice_type').value = eventObj.notice_type;
 
   // cliente (asegurar poblado)
   populateClientSelect();
@@ -422,7 +425,10 @@ async function saveEvent() {
     visible_participants: document.getElementById('visible_participants').checked ? 1 : 0,
     visible_schedule: document.getElementById('visible_schedule').checked ? 1 : 0,
     visible_results: document.getElementById('visible_results').checked ? 1 : 0,
-    has_penalties: document.getElementById('has_penalties').checked ? 1 : 0
+    has_penalties: document.getElementById('has_penalties').checked ? 1 : 0,
+    notice_text: document.getElementById('notice_text').value.trim(),
+    notice_active: document.getElementById('notice_active').checked ? 1 : 0,
+    notice_type: document.getElementById('notice_type').value
   };
 
   try {

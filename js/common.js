@@ -122,7 +122,10 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         visibleParticipants: data.visible_participants,
         visibleSchedule: data.visible_schedule,
         visibleResults: data.visible_results,
-        has_penalties: data.has_penalties === 1
+        has_penalties: data.has_penalties === 1,
+        notice_text: data.notice_text,
+        notice_active: data.notice_active === 1,
+        notice_type: data.notice_type
       };
 
     }

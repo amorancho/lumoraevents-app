@@ -15,6 +15,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await WaitEventLoaded();
 
+    if (getEvent().notice_active && getEvent().notice_text.trim() !== '') {
+        const noticePanel = document.getElementById('noticePanel');
+        const noticeInnerPannel = document.getElementById('notice_type');
+        noticeInnerPannel.classList.add(`alert-${getEvent().notice_type === 'IMP' ? 'warning' : 'success'}`);
+        const noticeTextDiv = document.getElementById('notice_text');
+        noticeTextDiv.innerText = getEvent().notice_text;
+        noticePanel.style.display = 'block';
+    }
+
     updateElementProperty('event-logo', 'src', getEvent().eventLogo);
 
     updateElementProperty('configUrl', 'href', `?eventId=${eventId}`, false);

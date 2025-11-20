@@ -125,6 +125,7 @@
                 </div>
               </div>
 
+              <!-- Visibilidad -->
               <div class="card shadow-sm border-0 mt-4">
                 <div class="card-header bg-secondary text-white fw-semibold">
                   <i class="bi bi-eye me-2"></i><span data-i18n="prop_visibility">Visibility</span>
@@ -162,6 +163,43 @@
                     </div>
 
                   </div>
+                </div>
+              </div>
+
+              <!-- Avisos -->
+              <div class="card shadow-sm border-0 mt-4">
+                <div class="card-header bg-secondary text-white fw-semibold">
+                  <i class="bi bi-eye me-2"></i><span data-i18n="notices">Avisos</span>
+                </div>
+                <div class="card-body">
+                  <div class="row gx-2 gy-1 align-items-end">
+
+                  <!-- 2. Select con label -->
+                  <div class="col-md-2">
+                    <select class="form-select" id="notice_type">
+                      <option value="INF">Info</option>
+                      <option value="IMP">Importante</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-10 d-flex align-items-end">
+
+                    <div class="input-group">
+                      
+                      <input type="text" class="form-control" id="notice_text" placeholder="Texto del aviso">
+
+                      <span class="input-group-text bg-light">
+                        <div class="form-check form-switch mb-0">
+                          <input class="form-check-input" type="checkbox" id="notice_active">
+                          <label class="form-check-label small ms-1" for="notice_active">Activo</label>
+                        </div>
+                      </span>
+
+                    </div>
+          
+                  </div>
+
+                </div>
                 </div>
               </div>
              
