@@ -34,6 +34,7 @@ function loadAll() {
     loadTable("categories");
     loadTable("styles");
     loadTable("criteria");
+    loadTable("penalties");
 }
 
 async function loadTable(table) {

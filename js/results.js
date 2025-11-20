@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
   await WaitEventLoaded();
 
+  if (!getEvent().visibleResults) {
+    alert('Esta página no es visible en estos momentos');
+    window.location.href = 'home.html?eventId='+eventId;
+    return;
+  }
+
   const categorySelect = document.getElementById('categorySelect');
   const refreshBtn = document.getElementById('refreshBtn');
   const categoriaBadge = document.getElementById('categoriaBadge');

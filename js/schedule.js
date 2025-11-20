@@ -18,6 +18,12 @@ async function waitForTranslations(timeout = 5000) {
 document.addEventListener('DOMContentLoaded', async () => {
     await WaitEventLoaded();
 
+    if (!getEvent().visibleSchedule) {
+        alert('Esta página no es visible en estos momentos');
+        window.location.href = 'home.html?eventId='+eventId;
+        return;
+    }
+
     await waitForTranslations();
 
     loadSchedule();

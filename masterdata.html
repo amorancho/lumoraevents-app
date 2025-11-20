@@ -78,7 +78,7 @@
 
     <div class="row g-4">
       <!-- Category -->
-      <div class="col-12 col-lg-4">
+      <div class="col-12 col-lg-3">
         <div class="card shadow-sm bg-light" id="category-card">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
@@ -95,7 +95,7 @@
       </div>
 
       <!-- Style -->
-      <div class="col-12 col-lg-4">
+      <div class="col-12 col-lg-3">
         <div class="card shadow-sm bg-light" id="style-card">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
@@ -112,7 +112,7 @@
       </div>
 
       <!-- Criteria -->
-      <div class="col-12 col-lg-4">
+      <div class="col-12 col-lg-3">
         <div class="card shadow-sm bg-light" id="criteria-card">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
@@ -127,8 +127,24 @@
           </div>
         </div>
       </div>
-    </div>
 
+      <!-- Penalizaciones -->
+      <div class="col-12 col-lg-3" id="penalty">
+        <div class="card shadow-sm bg-light" id="penalty-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0" data-i18n="penalties">Penalties</h5>
+              <span id="count-penalties" class="badge bg-secondary rounded-pill">0</span>
+            </div>
+            <div class="input-group mb-3 mt-4">
+              <input type="text" id="input-penalties" class="form-control" placeholder="New Penalty" data-i18n-placeholder="new_penalty" maxlength="40" />
+              <button class="btn btn-primary" onclick="addEntry('penalties')" data-i18n="add">Add</button>
+            </div>
+            <ul class="list-group" id="list-penalties"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 

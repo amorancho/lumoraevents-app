@@ -8,7 +8,7 @@ const eventId = getEventIdFromUrl();
 
 const originalFetch = window.fetch;
 
-window.fetch = function(url, options = {}) {
+window.fetch = function (url, options = {}) {
   const lang = localStorage.getItem('lang') || 'es';
 
   // obtenemos el role del usuario
@@ -57,9 +57,9 @@ function getEventIdFromUrl() {
       return value;
     }
   }
-  
 
-  if (pageName !== 'index' && pageName !== 'admin') {    
+
+  if (pageName !== 'index' && pageName !== 'admin') {
     window.location.href = 'index.html';
   }
   return null;
@@ -135,6 +135,18 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
 // Ejecutar al cargar el DOM
 document.addEventListener('DOMContentLoaded', async () => {
 
+  const user = getUserFromToken();
+
+  // console.log(`Usuario: ${user ? user.username : 'Invitado'}, Rol: ${user ? user.role : 'guest'}, EventId: ${user ? user.eventId : 'No Event'}`);
+  // console.log('eventId', eventId);
+
+  if (eventId && user && user.eventId !== eventId && user.role !== 'admin') {
+    console.warn('El usuario no tiene permiso para este evento. Redirigiendo a la página principal.');
+    alert('No tienes permiso para acceder a este evento');
+    window.location.href = 'index.html';
+    return;
+  }
+
   // Cargar el modal de mensajes
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   document.documentElement.setAttribute('lang', savedLang);
@@ -182,7 +194,7 @@ function applyTranslations() {
 
 async function changeLanguage(lang, page = null) {
   localStorage.setItem('lang', lang);
-  document.documentElement.setAttribute('lang', lang); 
+  document.documentElement.setAttribute('lang', lang);
   updateFlag(lang);
   //const currentPage = page || window.location.pathname.split("/").pop().split(".")[0] || "index";
   await loadTranslations(lang, pageName);
@@ -215,32 +227,32 @@ function updateFlag(lang) {
 }
 
 function showMessageModal(message, title = "Mensaje") {
-    // Establece el título y el cuerpo del modal
-    document.getElementById('messageModalLabel').textContent = title;
-    document.getElementById('messageModalBody').textContent = message;
+  // Establece el título y el cuerpo del modal
+  document.getElementById('messageModalLabel').textContent = title;
+  document.getElementById('messageModalBody').textContent = message;
 
-    // Muestra el modal (requiere Bootstrap 5)
-    const modal = new bootstrap.Modal(document.getElementById('messageModal'));
-    modal.show();
-  }
+  // Muestra el modal (requiere Bootstrap 5)
+  const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+  modal.show();
+}
 
 async function WaitEventLoaded() {
   try {
     await eventReadyPromise;
   } catch (error) {
-      console.error('Evento no encontrado:', error);
+    console.error('Evento no encontrado:', error);
 
-      // Mostrar mensaje
-      const body = document.body;
-      body.innerHTML = `<div style="text-align:center; margin-top:50px;">
+    // Mostrar mensaje
+    const body = document.body;
+    body.innerHTML = `<div style="text-align:center; margin-top:50px;">
                           <h2>No se ha encontrado el evento</h2>
                           <p>Redirigiendo a la página principal...</p>
                       </div>`;
 
-      // Redirigir después de 2 segundos
-      setTimeout(() => {
+    // Redirigir después de 2 segundos
+    setTimeout(() => {
       window.location.href = 'index.html';
-      }, 2000);
+    }, 2000);
   }
 }
 
