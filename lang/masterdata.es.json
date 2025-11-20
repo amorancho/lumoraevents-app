@@ -11,8 +11,10 @@
   "categories": "Categorías",
   "styles": "Estilos",
   "criteria": "Criterios",
+  "penalties": "Penalizaciones",
   "add": "Añadir",
   "new_category": "Nueva Categoría",
   "new_style": "Nuevo Estilo",
-  "new_criteria": "Nuevo Criterio"
+  "new_criteria": "Nuevo Criterio",
+  "new_penalty": "Nueva Penalización"
 }

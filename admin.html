@@ -346,6 +346,42 @@
                 <hr>
               </div>
 
+              <div class="col-12 mb-2">
+                <h5 class="mb-1">Avisos</h5> <!-- Título de la sección -->
+              </div>
+
+              <div class="row gx-3 gy-1 align-items-end">
+
+                <!-- 2. Select con label -->
+                <div class="col-md-2">
+                  <select class="form-select" id="notice_type">
+                    <option value="info">Info</option>
+                    <option value="important">Importante</option>
+                  </select>
+                </div>
+
+                <div class="col-md-10 d-flex align-items-end">
+
+                  <div class="input-group">
+                    <input type="text" class="form-control" id="notice_text" placeholder="Texto del aviso">
+
+                    <span class="input-group-text bg-light">
+                      <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="notice_text">
+                        <label class="form-check-label small ms-1" for="notice_text">Activo</label>
+                      </div>
+                    </span>
+
+                  </div>
+         
+                </div>
+
+              </div>
+
+              <div class="col-12">
+                <hr>
+              </div>
+
               <div class="col-12">
                 <div class="row g-3 align-items-center">
 
@@ -402,6 +438,19 @@
                       <label class="form-check-label" for="visible_results">Resultados visibles</label>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div class="col-md-12">
+                <div class="row">
+                  
+                  <div class="col-md-3">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="has_penalties">
+                      <label class="form-check-label" for="has_penalties">Tiene penalizaciones</label>
+                    </div>
+                  </div>
+                  
                 </div>
               </div>
 

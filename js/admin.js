@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
 
-  loadClients();
-  loadEvents();
+  await loadClients();
+  await loadEvents();
 
   const authBtn = document.getElementById("auth-btn");
 
@@ -380,6 +380,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('visible_participants').checked = (Number(eventObj.visible_participants) === 1);
   document.getElementById('visible_schedule').checked = (Number(eventObj.visible_schedule) === 1);
   document.getElementById('visible_results').checked = (Number(eventObj.visible_results) === 1);
+  document.getElementById('has_penalties').checked = (Number(eventObj.has_penalties) === 1);
 
   // cliente (asegurar poblado)
   populateClientSelect();
@@ -420,7 +421,8 @@ async function saveEvent() {
     visible_judges: document.getElementById('visible_judges').checked ? 1 : 0,
     visible_participants: document.getElementById('visible_participants').checked ? 1 : 0,
     visible_schedule: document.getElementById('visible_schedule').checked ? 1 : 0,
-    visible_results: document.getElementById('visible_results').checked ? 1 : 0
+    visible_results: document.getElementById('visible_results').checked ? 1 : 0,
+    has_penalties: document.getElementById('has_penalties').checked ? 1 : 0
   };
 
   try {

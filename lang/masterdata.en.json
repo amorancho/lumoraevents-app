@@ -11,8 +11,10 @@
   "categories": "Categories",
   "styles": "Styles",
   "criteria": "Criteria",
+  "penalties": "Penalties",
   "add": "Add",
   "new_category": "New Category",
   "new_style": "New Style",
-  "new_criteria": "New Criteria"
+  "new_criteria": "New Criteria",
+  "new_penalty": "New Penalty"
 }

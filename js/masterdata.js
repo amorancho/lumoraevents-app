@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     //await eventReadyPromise;
     await WaitEventLoaded();
 
+    setPenaltysVisibility();
+
     updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
     updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
     updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
@@ -29,6 +31,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     loadAll();
 });
+
+function setPenaltysVisibility() {
+    const hasPenalties = getEvent().has_penalties;
+    const penaltyBox = document.getElementById('penalty_box');
+    
+    // Si tiene penalizaciones, la clase col-lg-3, si no tiene, col-lg-4
+    const sizeClass = hasPenalties ? 'col-lg-3' : 'col-lg-4';
+    document.getElementById('category_box').className = `col-12 ${sizeClass}`;
+    document.getElementById('style_box').className = `col-12 ${sizeClass}`;
+    document.getElementById('criteria_box').className = `col-12 ${sizeClass}`;
+    document.getElementById('penalty_box').className = `col-12 ${sizeClass}`;
+
+    if (hasPenalties) {
+        penaltyBox.style.display = 'block';
+    } else {
+        penaltyBox.style.display = 'none';
+    }
+}
 
 function loadAll() {
     loadTable("categories");
