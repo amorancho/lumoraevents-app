@@ -124,6 +124,12 @@ function renderEvents() {
       <td>${licenseBadge}</td>     
       <td class="text-center">
         <div class="btn-group">
+          <button type="button" 
+                  class="btn btn-outline-success btn-sm btn-open-event" 
+                  title="Abrir Evento"
+                  data-url="home.html?eventId=${event.code}">
+            <i class="bi bi-box-arrow-in-right"></i>
+          </button>
           <button type="button" class="btn btn-outline-dark btn-sm btn-duplicate-event" title="Duplicate">
             <i class="bi bi-files"></i>
           </button>
@@ -217,6 +223,12 @@ document.addEventListener("click", async (event) => {
 
   const editBtn = event.target.closest(".btn-edit-client");
   const deleteBtn = event.target.closest(".btn-delete-client");
+  const openBtn = event.target.closest(".btn-open-event");
+
+  if (openBtn) {
+    const url = event.target.closest(".btn-open-event").dataset.url;
+    window.open(url, "_blank");  // o window.location.href = url
+  }
 
   if (editBtn) {
     const tr = editBtn.closest("tr");
