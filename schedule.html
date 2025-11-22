@@ -14,9 +14,22 @@
 
     
   <div id="header"></div>
-  
-  <div id="scheduleContainer" class="container my-4"></div>
-    
+
+  <div class="container my-4">
+
+    <div id="noticePanel" class="mb-4" style="display: none;">
+      <div class="alert d-flex flex-column text-center alert-dismissible fade show" role="alert" id="notice_type">       
+        <div id="notice_text">
+          El festival ha dado comienzo. Si modifica estos datos puede provocar inconsistencias en los datos.
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    </div>
+
+    <div id="scheduleContainer"></div>
+
+  </div>
+
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
