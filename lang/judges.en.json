@@ -23,6 +23,7 @@
   "col_acciones": "Actions",
   "send_welcome_email": "Send Welcome Email",
   "reset_password": "Reset Access PIN",
+  "welcome_status": "Welcome Email Status",
   "welcome_sended": "Welcome Email Send Date",
   "not_sent": "Not sent",
   "delete_confirm": "Delete Confirm",

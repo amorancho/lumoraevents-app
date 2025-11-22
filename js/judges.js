@@ -69,7 +69,7 @@ function initJudgeManagement() {
       document.getElementById('judgeUsername').value = judge.username;
       document.getElementById('judgeLanguage').value = judge.language;
 
-      setWelcomeDate(judge.welcomesended);
+      setWelcomeInfo(judge);
       
       document.querySelector('#editModal .modal-title span').textContent = translations['edit_judge'];
 
@@ -125,7 +125,7 @@ function initJudgeManagement() {
     const inputEmail = document.getElementById('judgeEmail');
     const inputMaster = document.getElementById('judgeMaster');
     const inputUsername = document.getElementById('judgeUsername');
-    const inputWelcomeSended = document.getElementById('judgeWelcomeSended');
+    //const inputWelcomeSended = document.getElementById('judgeWelcomeSended');
     const inputLanguage = document.getElementById('judgeLanguage');
 
     const judgeData = {
@@ -133,7 +133,7 @@ function initJudgeManagement() {
       email: inputEmail.value.trim() || null,
       ismaster: inputMaster.checked ? 1 : 0,
       username: inputUsername.value.trim() || null,
-      welcomesended: inputWelcomeSended.value || null,
+      //welcomesended: inputWelcomeSended.value || null,
       language: inputLanguage.value,
       event_id: getEvent().id
     };
@@ -205,8 +205,8 @@ function initJudgeManagement() {
   
       const data = await response.json();
   
-      // Actualiza fecha en el formulario
-      setWelcomeDate(data.welcomesended);
+      // Actualiza estado y fecha en el formulario
+      setWelcomeInfo(data);
   
     } catch (err) {
       console.error(err);
@@ -334,14 +334,17 @@ function renderJudges() {
       btnDisabled = 'disabled';
     }
 
+    const { badgeClass, badgeLabel, badgeTooltip } = getWelcomeEmailBadge(judge);
+    const badgeTooltipAttr = badgeTooltip ? `data-bs-toggle="tooltip" data-bs-placement="top" title="${badgeTooltip}"` : '';
+
     row.innerHTML = `
       <td>${judge.name}</td>
       <td>${judge.email}</td>
       <td class="align-middle text-center text-success">
         ${Number(judge.ismaster) === 1 ? '✓' : ''}
       </td>
-      <td class="align-middle text-center text-success">
-        ${judge.welcomesended ? '✓' : ''}
+      <td class="align-middle text-center">
+        <span class="badge ${badgeClass}" ${badgeTooltipAttr}>${badgeLabel}</span>
       </td>
       <td>${judge.username}</td>      
       <td class="text-center align-middle">
@@ -369,30 +372,39 @@ function renderJudges() {
   } else {
     document.getElementById('emptyState').classList.add('d-none');
   }
+
+  document.querySelectorAll('#judgesTable [data-bs-toggle="tooltip"]').forEach(el => {
+    new bootstrap.Tooltip(el);
+  });
 }
 
-function setWelcomeDate(dateValue) {
-  
-  const displayField = document.getElementById('judgeWelcomeSendedDisplay');
+function setWelcomeInfo(judgeData = {}) {
+  const statusField = document.getElementById('judgeWelcomeStatus');
+  const sendDateField = document.getElementById('judgeWelcomeSendDate');
   const hiddenField = document.getElementById('judgeWelcomeSended');
 
-  if (!dateValue) {
-    // Si es null o vacío
-    displayField.value = translations['not_sent'];
+  if (!statusField || !sendDateField || !hiddenField) return;
+
+  const isObject = typeof judgeData === 'object' && judgeData !== null;
+  const statusCode = isObject
+    ? (judgeData.welcome_email_status ?? judgeData.status ?? null)
+    : null;
+  const stateLabel = getWelcomeStatusLabel(isObject ? statusCode : null);
+  statusField.value = stateLabel;
+
+  const sendDateValue = isObject
+    ? (judgeData.send_date || null)
+    : judgeData || null;
+
+  if (!sendDateValue) {
+    sendDateField.value = translations['not_sent'];
     hiddenField.value = '';
-  } else {
-    // Convierte la fecha a texto legible
-    const dateObj = new Date(dateValue);
-
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0'); // meses base 0
-    const year = dateObj.getFullYear();
-
-    const formatted = `${day}/${month}/${year}`;
-
-    displayField.value = formatted;
-    hiddenField.value = dateValue; // aquí guardas el valor crudo para backend
+    return;
   }
+
+  const formatted = formatSendDate(sendDateValue);
+  sendDateField.value = formatted || sendDateValue;
+  hiddenField.value = sendDateValue;
 }
 
 function showModal(message) {
@@ -408,4 +420,51 @@ function showModal(message) {
   
   modal.show();
   });
+}
+
+function getWelcomeEmailBadge(judge) {
+  const tooltipSource = judge.send_date || null;
+
+  if (judge.welcome_email_id == null) {
+    return { badgeClass: 'bg-secondary', badgeLabel: getWelcomeStatusLabel(null) };
+  }
+
+  const status = judge.welcome_email_status ?? judge.status ?? null;
+  const badgeTooltip = tooltipSource ? formatSendDate(tooltipSource) : null;
+  const badgeLabel = getWelcomeStatusLabel(status);
+
+  switch (status) {
+    case 'P':
+      return { badgeClass: 'bg-warning text-dark', badgeLabel, badgeTooltip };
+    case 'S':
+      return { badgeClass: 'bg-success', badgeLabel, badgeTooltip };
+    case 'E':
+      return { badgeClass: 'bg-danger', badgeLabel, badgeTooltip };
+    default:
+      return { badgeClass: 'bg-secondary', badgeLabel, badgeTooltip };
+  }
+}
+
+function getWelcomeStatusLabel(status) {
+  switch (status) {
+    case 'P':
+      return 'SENDING';
+    case 'S':
+      return 'SENDED';
+    case 'E':
+      return 'ERROR';
+    default:
+      return 'NOT SENT';
+  }
+}
+
+function formatSendDate(sendDate) {
+  if (!sendDate) return null;
+
+  const parsed = new Date(sendDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return sendDate;
+  }
+
+  return parsed.toLocaleString();
 }

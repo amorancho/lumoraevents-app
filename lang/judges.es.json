@@ -23,6 +23,7 @@
   "col_acciones": "Acciones",
   "send_welcome_email": "Enviar Email de Bienvenida",
   "reset_password": "Restablecer PIN de Acceso",
+  "welcome_status": "Estado del Email de Bienvenida",
   "welcome_sended": "Fecha de Envío de Bienvenida",
   "not_sent": "No enviado",
   "delete_confirm": "Confirmar Eliminación",
