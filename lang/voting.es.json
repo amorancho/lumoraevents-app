@@ -25,5 +25,6 @@
   "confirm_no_show_text": "Esta acción establecerá todas las puntuaciones de los criterios en 0 para esta bailarina. ¿Está seguro de que desea continuar?",
   "cancel": "Cancelar",
   "confirm": "Confirmar",
-  "sending": "Enviando"
+  "sending": "Enviando",
+  "confirm_outlier_scores": "Algunas puntuaciones están muy por encima o por debajo del promedio. ¿Está seguro de que desea enviar estas puntuaciones?"
 }

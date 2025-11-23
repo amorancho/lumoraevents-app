@@ -25,5 +25,6 @@
   "confirm_no_show_text": "This action will set all criteria scores to 0 for this dancer. Are you sure you want to continue?",
   "cancel": "Cancel",
   "confirm": "Confirm",
-  "sending": "Sending"
+  "sending": "Sending",
+  "confirm_outlier_scores": "Some scores are significantly above or below average. Are you sure you want to send these scores?"
 }

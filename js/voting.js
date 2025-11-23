@@ -188,6 +188,23 @@ function showVotesModal(dancer, mode = "details") {
   
       const existingAlert = document.getElementById("voteErrorAlert");
       if (existingAlert) existingAlert.remove();
+
+      // Analizamos si algún valor está lejos de la media (por ejemplo, si la media es 8 y se pone un 2)
+      const scoreValues = scores.map(s => s.score);
+      const avg = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length;
+      const threshold = 3; // umbral de desviación
+      const outliers = scores.filter(s => Math.abs(s.score - avg) >= threshold);
+
+      if (outliers.length > 0) {
+        let outlierNames = outliers.map(o => {
+          const crit = criteriaList.find(c => c.id === o.criteria_id);
+          return crit ? crit.name : 'Unknown';
+        }).join(', ');
+
+        if (!confirm(`${translations["confirm_outlier_scores"]}\n\n${outlierNames}`)) {
+          return; // cancelar envío
+        }
+      }
   
       await sendVotes(scores);
     });
