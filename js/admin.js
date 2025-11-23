@@ -97,7 +97,10 @@ function renderEvents() {
         licenseBadge = `<span class="badge bg-info text-dark">MEDIUM</span>`;
         break;
       case 'large':
-        licenseBadge = `<span class="badge bg-orange text-white" style="background-color: orange;">LARGE</span>`;
+        licenseBadge = `<span class="badge bg-success text-white" style="background-color: orange;">LARGE</span>`;
+        break;
+      case 'unlimited':
+        licenseBadge = `<span class="badge bg-dark text-white" style="background-color: orange;">UNLIMITED</span>`;
         break;
       default:
         licenseBadge = `<span class="badge bg-secondary">${event.license}</span>`;

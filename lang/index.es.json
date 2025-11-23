@@ -1,4 +1,7 @@
 {
   "home_title": "Eventos",
-  "go_to_event": "Ir al Evento"
+  "go_to_event": "Ir al Evento",
+  "proximamente": "Próximamente",
+  "en_curso": "En curso",
+  "finalizado": "Finalizado"
 }

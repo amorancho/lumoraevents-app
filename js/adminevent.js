@@ -121,9 +121,14 @@ async function loadEventData(eventId) {
           text: translations["license_medium_text"]
         },
         large: {
-          icon: "bi-stars",
+          icon: "bi-people-fill",
           name: "Large",
           text: translations["license_large_text"]
+        },
+        unlimited: {
+          icon: "bi-stars",
+          name: "Unlimited",
+          text: translations["license_unlimited_text"]
         }
       };
 
@@ -160,11 +165,7 @@ async function saveEventData(eventId) {
     status: f('status').value,
     eventlogo: f('eventlogo').value.trim(),
     eventurl: f('eventurl').value.trim(),
-    language: f('language').value,
-    min_styles: parseInt(f('min_styles').value) || null,
-    autorefresh_minutes: parseInt(f('autorefresh_minutes').value) || null,
-    judges_to_vote: parseInt(f('judges_to_vote').value) || null,
-    category_class_type: f('category_class_type').value,
+    language: f('language').value,    
     visible_judges: f('visible_judges').checked ? 1 : 0,
     visible_participants: f('visible_participants').checked ? 1 : 0,
     visible_schedule: f('visible_schedule').checked ? 1 : 0,

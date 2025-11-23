@@ -32,7 +32,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function initJudgeManagement() {
-  const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+  const editModalElement = document.getElementById('editModal');
+  const editModal = new bootstrap.Modal(editModalElement);
+
+  if (editModalElement) {
+    editModalElement.addEventListener('hidden.bs.modal', () => hideActionFeedback());
+  }
+
+  const actionFeedbackClose = document.getElementById('actionFeedbackClose');
+  if (actionFeedbackClose) {
+    actionFeedbackClose.addEventListener('click', () => hideActionFeedback());
+  }
 
   document.getElementById('createNewJudgeBtn').addEventListener('click', function () {
     document.getElementById('editForm').dataset.action = 'create';
@@ -45,6 +55,7 @@ function initJudgeManagement() {
 
     document.getElementById('actionsCard').classList.add('d-none');
     document.getElementById('welcomeSendDiv').classList.add('d-none');
+    hideActionFeedback();
 
     editModal.show();
   });
@@ -75,6 +86,7 @@ function initJudgeManagement() {
 
       document.getElementById('actionsCard').classList.remove('d-none');
       document.getElementById('welcomeSendDiv').classList.remove('d-none');
+      hideActionFeedback();
 
       editModal.show();
 
@@ -207,14 +219,16 @@ function initJudgeManagement() {
   
       // Actualiza estado y fecha en el formulario
       setWelcomeInfo(data);
+      const successMessage = (translations && (translations['welcome_email_sent_success'] || translations['welcome_email_sent'])) || 'Welcome email sent successfully.';
+      showActionFeedback(successMessage);
   
     } catch (err) {
       console.error(err);
       showMessageModal('Error sending welcome email.');
     } finally {
       // Quitar spinner y restaurar botón
-      sendBtn.removeChild(spinner);
-      sendBtn.value = originalText;
+      spinner.remove();
+      sendBtn.innerHTML = originalText;
       sendBtn.disabled = false;
     }
   });
@@ -249,14 +263,16 @@ function initJudgeManagement() {
         throw new Error(`${translations['error_sending_email']}: ${response.statusText}`);
       }
   
+      const successMessage = (translations && (translations['reset_password_sent_success'] || translations['reset_password_sent'])) || 'Reset password email sent successfully.';
+      showActionFeedback(successMessage);
   
     } catch (err) {
       console.error(err);
       showMessageModal('Error sending welcome email.');
     } finally {
       // Quitar spinner y restaurar botón
-      sendBtn.removeChild(spinner);
-      sendBtn.value = originalText;
+      spinner.remove();
+      sendBtn.innerHTML = originalText;
       sendBtn.disabled = false;
     }
   });
@@ -467,4 +483,27 @@ function formatSendDate(sendDate) {
   }
 
   return parsed.toLocaleString();
+}
+
+function showActionFeedback(message) {
+  const panel = document.getElementById('actionFeedback');
+  const messageElement = document.getElementById('actionFeedbackText');
+  if (!panel || !messageElement) return;
+
+  messageElement.textContent = message;
+  panel.classList.remove('d-none');
+  panel.classList.add('show');
+}
+
+function hideActionFeedback() {
+  const panel = document.getElementById('actionFeedback');
+  const messageElement = document.getElementById('actionFeedbackText');
+  if (!panel) return;
+
+  if (messageElement) {
+    messageElement.textContent = '';
+  }
+
+  panel.classList.add('d-none');
+  panel.classList.remove('show');
 }
