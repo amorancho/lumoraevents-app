@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const styleSelect = document.getElementById('styleSelect');
   const competitionInfo = document.getElementById('competitionInfo');
   const dancersTableContainer = document.getElementById('dancersTableContainer');
+  const refreshBtn = document.getElementById('refreshBtn');
+
+  refreshBtn.disabled = true;
 
   const data = await loadCategoriesAndStyles();
   populateCategorySelect(data, categorySelect);
@@ -27,6 +30,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   styleSelect.addEventListener('change', () => {
     loadCompetitionAndDancers();
+    refreshBtn.disabled = false;
+  });
+
+  refreshBtn.addEventListener('click', () => {
+    styleSelect.dispatchEvent(new Event('change'));
   });
 
   await loadCriteria();
