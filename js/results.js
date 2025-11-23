@@ -222,6 +222,15 @@ async function loadClasifications(categoryId) {
 function renderResults(data) {
   const resultsContainer = document.getElementById("resultsContainer");
   resultsContainer.innerHTML = ""; // limpiar
+
+  if ((data.general.length === 0)  && (!data.styles || data.styles.length === 0)) {
+    resultsContainer.innerHTML = `
+      <div class="alert alert-info text-center">
+        ${translations["no_results"]}
+      </div>
+    `;
+    return;
+  }
   
   const row = document.createElement("div");
   row.className = "row g-4 pt-2";
