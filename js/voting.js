@@ -58,6 +58,9 @@ async function loadCompetitionAndDancers() {
 }
 
 function showVotesModal(dancer, mode = "details") {
+  const scoreType = getScoreType();
+  const scoreStep = scoreType === 'DEC' ? '0.1' : scoreType === 'MED' ? '0.5' : '1';
+  const inputMode = scoreType === 'INT' ? 'numeric' : 'decimal';
   document.getElementById('detailsModalLabel').textContent =
     mode === "details" ? `${translations["votes_for"]} ${dancer.name}` : `${translations["vote_for"]} ${dancer.name}`;
 
@@ -73,29 +76,32 @@ function showVotesModal(dancer, mode = "details") {
     if (mode === "details") {
       // Solo lectura
       if (typeof value === 'number') total += value;
+      const formattedValue = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : value;
       col.innerHTML = `
         <div class="mb-1 fw-semibold">${c.name}</div>
-        <span class="badge bg-info fs-5">${value}</span>
+        <span class="badge bg-info fs-5">${formattedValue}</span>
       `;
     } else {
       // Modo edición
-      const currentVal = typeof value === 'number' ? value : '';
+      const currentVal = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : '';
       col.innerHTML = `
         <div class="mb-1 fw-semibold">${c.name}</div>
-        <input type="tel" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'');" class="form-control form-control-lg score-input"
-               data-criteria="${c.id}" min="1" max="10" step="1" value="${currentVal}">
+        <input type="number" inputmode="${inputMode}" class="form-control form-control-lg score-input"
+               data-criteria="${c.id}" data-score-type="${scoreType}" min="1" max="10" step="${scoreStep}" value="${currentVal}">
       `;
     }
 
     criteriaContainer.appendChild(col);
+
   });
 
   // Total
   const totalCol = document.createElement('div');
   totalCol.className = 'col-12 mt-3 text-center';
+  const formattedTotal = formatScoreForDisplay(total, scoreType) || '0';
   totalCol.innerHTML = `
     <div class="fw-bold mb-1">Total</div>
-    <span id="totalScore" class="badge bg-success fs-4 px-4">${total}</span>
+    <span id="totalScore" class="badge bg-success fs-4 px-4">${formattedTotal}</span>
   `;
   criteriaContainer.appendChild(totalCol);
 
@@ -104,6 +110,23 @@ function showVotesModal(dancer, mode = "details") {
   footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${translations["close"]}</button>`;
 
   if (mode === "vote") {
+
+    const refreshTotalScore = () => {
+      let sum = 0;
+      criteriaContainer.querySelectorAll('.score-input').forEach(inp => {
+        const normalized = normalizeScoreValue(
+          inp.value,
+          scoreType,
+          Number(inp.min),
+          Number(inp.max)
+        );
+        if (normalized !== null) sum += normalized;
+      });
+      const totalEl = document.getElementById('totalScore');
+      if (totalEl) {
+        totalEl.textContent = formatScoreForDisplay(sum, scoreType) || '0';
+      }
+    };
 
     const sendBtn = document.createElement('button');
     sendBtn.className = "btn btn-primary btn-sm";
@@ -160,13 +183,20 @@ function showVotesModal(dancer, mode = "details") {
       let allFilled = true;
   
       criteriaContainer.querySelectorAll('.score-input').forEach(input => {
-        const val = input.value.trim();
-        if (val === "" || isNaN(Number(val))) {
+        const normalizedScore = normalizeScoreValue(
+          input.value,
+          scoreType,
+          Number(input.min),
+          Number(input.max)
+        );
+
+        if (normalizedScore === null) {
           allFilled = false;
         } else {
+          input.value = formatScoreForDisplay(normalizedScore, scoreType);
           scores.push({
             criteria_id: Number(input.dataset.criteria),
-            score: Number(val)
+            score: normalizedScore
           });
         }
       });
@@ -260,21 +290,29 @@ function showVotesModal(dancer, mode = "details") {
     // --- recalcular total al cambiar inputs ---
     criteriaContainer.querySelectorAll('.score-input').forEach(input => {
       input.addEventListener('input', () => {
-        let min = parseInt(input.min);
-        let max = parseInt(input.max);
-        let val = parseInt(input.value);
-  
-        if (!isNaN(val)) {
-          if (val < min) input.value = min;
-          if (val > max) input.value = max;
+        const min = Number(input.min);
+        const max = Number(input.max);
+        const val = Number(input.value);
+
+        if (!Number.isNaN(val)) {
+          if (val < min) input.value = formatScoreForDisplay(min, scoreType);
+          if (val > max) input.value = formatScoreForDisplay(max, scoreType);
         }
-  
-        let sum = 0;
-        criteriaContainer.querySelectorAll('.score-input').forEach(inp => {
-          const val = Number(inp.value);
-          if (!isNaN(val)) sum += val;
-        });
-        document.getElementById('totalScore').textContent = sum;
+
+        refreshTotalScore();
+      });
+
+      input.addEventListener('blur', () => {
+        const normalized = normalizeScoreValue(
+          input.value,
+          scoreType,
+          Number(input.min),
+          Number(input.max)
+        );
+        if (normalized !== null) {
+          input.value = formatScoreForDisplay(normalized, scoreType);
+        }
+        refreshTotalScore();
       });
     });
   }  
@@ -419,6 +457,50 @@ function populateStyleSelect(selectedCategoryId, data, styleSelect) {
     styleSelect.disabled = false;
   } else {
     styleSelect.disabled = true;
+  }
+}
+
+function getScoreType() {
+  const eventData = typeof getEvent === 'function' ? getEvent() : null;
+  const type = eventData?.score_type;
+  return type ? type.toUpperCase() : 'INT';
+}
+
+function normalizeScoreValue(rawValue, scoreType, min = 1, max = 10) {
+  if (rawValue === undefined || rawValue === null) return null;
+  const normalizedType = (scoreType || 'INT').toUpperCase();
+  const stringValue = String(rawValue).replace(',', '.').trim();
+  if (stringValue === '') return null;
+  const numericValue = Number(stringValue);
+  if (Number.isNaN(numericValue)) return null;
+
+  let value = numericValue;
+  if (typeof min === 'number') value = Math.max(value, min);
+  if (typeof max === 'number') value = Math.min(value, max);
+
+  switch (normalizedType) {
+    case 'DEC':
+      return Number((Math.round(value * 10) / 10).toFixed(1));
+    case 'MED':
+      return Number((Math.round(value * 2) / 2).toFixed(1));
+    default:
+      return Math.round(value);
+  }
+}
+
+function formatScoreForDisplay(value, scoreType) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return '';
+  const normalizedType = (scoreType || 'INT').toUpperCase();
+
+  switch (normalizedType) {
+    case 'DEC':
+      return (Math.round(value * 10) / 10).toFixed(1);
+    case 'MED': {
+      const normalized = Math.round(value * 2) / 2;
+      return Number.isInteger(normalized) ? normalized.toString() : normalized.toFixed(1);
+    }
+    default:
+      return Math.round(value).toString();
   }
 }
 

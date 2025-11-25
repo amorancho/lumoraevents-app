@@ -268,7 +268,7 @@
 
             <div class="row g-3">
 
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <label class="form-label">Code</label>
                 <input type="text" class="form-control" id="code" maxlength="50" required>
               </div>
@@ -298,12 +298,22 @@
                 </div>
               </div>
 
-              <div class="col-md-3">
+              <div class="col-md-2">
                 <label class="form-label">Estado</label>
                 <select id="status" class="form-select">
                   <option value="OPE">Opened</option>
                   <option value="CLO">Closed</option>
                   <option value="FIN">Finished</option>
+                </select>
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label">License</label>
+                <select id="license" class="form-select">
+                  <option value="small">small</option>
+                  <option value="medium">medium</option>
+                  <option value="large">large</option>
+                  <option value="unlimited">unlimited</option>
                 </select>
               </div>
                         
@@ -337,6 +347,8 @@
                   <option value="es">ES</option>
                 </select>
               </div>  
+
+              
 
               <!-- URL y Logo + preview -->
               <div class="col-12">
@@ -480,12 +492,11 @@
               </div>
 
               <div class="col-md-3">
-                <label class="form-label">License</label>
-                <select id="license" class="form-select">
-                  <option value="small">small</option>
-                  <option value="medium">medium</option>
-                  <option value="large">large</option>
-                  <option value="unlimited">unlimited</option>
+                <label class="form-label">Tipo puntuación</label>
+                <select id="score_type" class="form-select">
+                  <option value="INT">Enteros</option>
+                  <option value="DEC">Decimales (1 decimal)</option>
+                  <option value="MED">Medios (0.5)</option>
                 </select>
               </div>
 

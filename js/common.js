@@ -125,7 +125,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         has_penalties: data.has_penalties === 1,
         notice_text: data.notice_text,
         notice_active: data.notice_active === 1,
-        notice_type: data.notice_type
+        notice_type: data.notice_type,
+        score_type: data.score_type
       };
 
     }
@@ -140,9 +141,6 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
 document.addEventListener('DOMContentLoaded', async () => {
 
   const user = getUserFromToken();
-
-  // console.log(`Usuario: ${user ? user.username : 'Invitado'}, Rol: ${user ? user.role : 'guest'}, EventId: ${user ? user.eventId : 'No Event'}`);
-  // console.log('eventId', eventId);
 
   if (eventId && user && user.eventId !== eventId && user.role !== 'admin') {
     console.warn('El usuario no tiene permiso para este evento. Redirigiendo a la página principal.');

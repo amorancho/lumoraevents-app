@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <!-- DERECHA: Total Score -->
           <div class="col-auto text-center">
             <span class="badge bg-success fs-4 py-2 px-3">
-              ${Math.round(dancerData.total_score || 0)}
+              ${Number(dancerData.total_score).toFixed(1)}
             </span>
           </div>
         </div>
@@ -134,14 +134,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         judgeCard.innerHTML = `
           <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="mb-0 text-primary">${escapeHtml(vote.judge_name || 'Judge')}</h6>
-            <span class="badge bg-primary fs-6">Total: ${Math.round(totalJudge)}</span>
+            <span class="badge bg-primary fs-6">Total: ${Number(totalJudge).toFixed(1)}</span>
           </div>
           <div class="card-body">
             <div class="row">
               ${ (vote.criteria || []).map(c => `
                 <div class="col-6 col-md-4 col-lg-3 mb-2">
                   <label class="form-label mb-1">${escapeHtml(c.name || '')}</label>
-                  <input type="number" class="form-control" value="${Math.round(c.score || 0)}" readonly>
+                  <input type="number" class="form-control" value="${Number(c.score).toFixed(1)}" readonly>
                 </div>
               `).join('') }
             </div>
@@ -203,6 +203,7 @@ async function loadClasifications(categoryId) {
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/competitions/results?event_id=${getEvent().id}&category_id=${categoryId}`);
+    
     if (!response.ok) throw new Error("Network error");
     const data = await response.json();
     window.resultsData = data; // guardamos la respuesta para uso global
@@ -298,7 +299,7 @@ function renderGeneralClassification(general) {
                   🥇 ${d.num_oros || 0} &nbsp;|&nbsp; 🥈 ${d.num_platas || 0} &nbsp;|&nbsp; 🥉 ${d.num_bronces || 0}
                 </p>
                 <p class="fs-5 text-muted mb-0">
-                  <strong>${translations["total_score"]}:</strong> ${d.total_score ?? 0}
+                  <strong>${translations["total_score"]}:</strong> ${Number(d.total_score).toFixed(1)}
                 </p>
               </div>
             </div>
@@ -353,7 +354,7 @@ function renderStyleClassification(style) {
         <span class="me-2">${i+1}</span>
         <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
         <span class="me-auto">${escapeHtml(d.dancer_name)} ${i<3 ? medals[i] : ""}</span>
-        <span class="badge bg-light text-dark rounded-pill">${Math.round(d.total_score || 0)}</span>
+        <span class="badge bg-light text-dark rounded-pill">${Number(d.total_score).toFixed(1)}</span>
       </button>
     `;
   });

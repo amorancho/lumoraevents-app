@@ -387,6 +387,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('judges_to_vote').value = eventObj.judges_to_vote || '';
   document.getElementById('category_class_type').value = eventObj.category_class_type || '';
   document.getElementById('license').value = eventObj.license || 'small';
+  document.getElementById('score_type').value = eventObj.score_type;
 
   // switches -> convertir 1/0 a checkbox
   document.getElementById('visible').checked = (Number(eventObj.visible) === 1);
@@ -443,7 +444,8 @@ async function saveEvent() {
     has_penalties: document.getElementById('has_penalties').checked ? 1 : 0,
     notice_text: document.getElementById('notice_text').value.trim(),
     notice_active: document.getElementById('notice_active').checked ? 1 : 0,
-    notice_type: document.getElementById('notice_type').value
+    notice_type: document.getElementById('notice_type').value,
+    score_type: document.getElementById('score_type').value
   };
 
   try {
