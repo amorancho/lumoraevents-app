@@ -6,6 +6,29 @@ let criteriaList = [];
 
 let modal, criteriaContainer;
 
+const DEFAULT_MIN_SCORE = 1;
+const DEFAULT_MAX_SCORE = 10;
+const MOBILE_MAX_WIDTH = 768;
+
+function isMobileViewport() {
+  return window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`).matches;
+}
+
+function generateScoreOptions(scoreType, min = DEFAULT_MIN_SCORE, max = DEFAULT_MAX_SCORE) {
+  const normalizedType = (scoreType || 'INT').toUpperCase();
+  const step = normalizedType === 'DEC' ? 0.1 : normalizedType === 'MED' ? 0.5 : 1;
+  const options = [];
+  let current = min;
+
+  while (current <= max + 1e-9) {
+    const rounded = normalizedType === 'INT' ? Math.round(current) : Number(current.toFixed(1));
+    options.push(rounded);
+    current += step;
+  }
+
+  return options;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
@@ -59,73 +82,227 @@ async function loadCompetitionAndDancers() {
 
 function showVotesModal(dancer, mode = "details") {
   const scoreType = getScoreType();
+  const normalizedScoreType = (scoreType || 'INT').toUpperCase();
   const scoreStep = scoreType === 'DEC' ? '0.1' : scoreType === 'MED' ? '0.5' : '1';
   const inputMode = scoreType === 'INT' ? 'numeric' : 'decimal';
+  const useMobileLayout = mode !== "vote" || isMobileViewport() || normalizedScoreType === 'DEC';
+  const minScore = DEFAULT_MIN_SCORE;
+  const maxScore = DEFAULT_MAX_SCORE;
   document.getElementById('detailsModalLabel').textContent =
     mode === "details" ? `${translations["votes_for"]} ${dancer.name}` : `${translations["vote_for"]} ${dancer.name}`;
 
+  const dialog = modal._element.querySelector('.modal-dialog');
+  dialog.classList.remove('modal-lg', 'modal-xl', 'modal-dialog-scrollable');
+  if (!useMobileLayout && mode === "vote") {
+    dialog.classList.add('modal-xl', 'modal-dialog-scrollable');
+  }
+
+  criteriaContainer.className = useMobileLayout ? 'row g-3 text-center' : 'd-flex flex-column gap-3';
   criteriaContainer.innerHTML = '';
 
-  let total = 0;
+  const getCriteriaInput = (criteriaId) =>
+    criteriaContainer.querySelector(`.score-input[data-criteria="${criteriaId}"]`);
 
-  criteriaList.forEach(c => {
-    const value = dancer.scores?.[c.name] ?? '-';
-    const col = document.createElement('div');
-    col.className = 'col-6 text-center';
+  function refreshTotalScore() {
+    let sum = 0;
+    criteriaList.forEach(c => {
+      const input = getCriteriaInput(c.id);
+      if (!input) return;
+      const normalized = normalizeScoreValue(
+        input.value,
+        scoreType,
+        minScore,
+        maxScore
+      );
+      if (normalized !== null) sum += normalized;
+    });
+    const totalEl = document.getElementById('totalScore');
+    if (totalEl) {
+      totalEl.textContent = formatScoreForDisplay(sum, scoreType) || '0';
+    }
+  }
 
-    if (mode === "details") {
-      // Solo lectura
-      if (typeof value === 'number') total += value;
-      const formattedValue = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : value;
-      col.innerHTML = `
+  function renderTotal(initialTotal = 0) {
+    const totalCol = document.createElement('div');
+    if (useMobileLayout) {
+      totalCol.className = 'col-12 mt-3 text-center';
+      totalCol.innerHTML = `
+        <div class="fw-bold mb-1">Total</div>
+        <span id="totalScore" class="badge bg-success fs-4 px-4">${formatScoreForDisplay(initialTotal, scoreType) || '0'}</span>
+      `;
+    } else {
+      totalCol.className = 'border-top pt-3 text-center';
+      totalCol.innerHTML = `
+        <div class="fw-bold mb-1">Total</div>
+        <span id="totalScore" class="badge bg-success fs-4 px-4">${formatScoreForDisplay(initialTotal, scoreType) || '0'}</span>
+      `;
+    }
+    criteriaContainer.appendChild(totalCol);
+  }
+
+  if (useMobileLayout) {
+    let total = 0;
+
+    criteriaList.forEach(c => {
+      const value = dancer.scores?.[c.name] ?? '-';
+      const col = document.createElement('div');
+      col.className = 'col-6 text-center';
+
+      if (mode === "details") {
+        // Solo lectura
+        if (typeof value === 'number') total += value;
+        const formattedValue = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : value;
+        col.innerHTML = `
         <div class="mb-1 fw-semibold">${c.name}</div>
         <span class="badge bg-info fs-5">${formattedValue}</span>
       `;
-    } else {
-      // Modo edición
-      const currentVal = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : '';
-      col.innerHTML = `
+      } else {
+        // Modo edicion
+        const currentVal = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : '';
+        col.innerHTML = `
         <div class="mb-1 fw-semibold">${c.name}</div>
         <input type="number" inputmode="${inputMode}" class="form-control form-control-lg score-input"
-               data-criteria="${c.id}" data-score-type="${scoreType}" min="1" max="10" step="${scoreStep}" value="${currentVal}">
+               data-criteria="${c.id}" data-score-type="${scoreType}" min="${minScore}" max="${maxScore}" step="${scoreStep}" value="${currentVal}">
       `;
-    }
+      }
 
-    criteriaContainer.appendChild(col);
+      criteriaContainer.appendChild(col);
 
-  });
+    });
 
-  // Total
-  const totalCol = document.createElement('div');
-  totalCol.className = 'col-12 mt-3 text-center';
-  const formattedTotal = formatScoreForDisplay(total, scoreType) || '0';
-  totalCol.innerHTML = `
-    <div class="fw-bold mb-1">Total</div>
-    <span id="totalScore" class="badge bg-success fs-4 px-4">${formattedTotal}</span>
-  `;
-  criteriaContainer.appendChild(totalCol);
+    renderTotal(total);
+  } else {
+    const options = generateScoreOptions(scoreType, minScore, maxScore);
 
-  // Footer → limpiar primero
+    criteriaList.forEach(c => {
+      const value = dancer.scores?.[c.name];
+      const row = document.createElement('div');
+      row.className = 'row align-items-center';
+
+      const labelCol = document.createElement('div');
+      labelCol.className = 'col-12 col-md-3 mb-2 mb-md-0 fw-semibold text-md-end';
+      labelCol.textContent = c.name;
+      row.appendChild(labelCol);
+
+      const controlCol = document.createElement('div');
+      controlCol.className = 'col-12 col-md-9';
+      const currentVal = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : '';
+
+      const useButtons = options.length <= 12 || normalizedScoreType === 'MED';
+      if (useButtons) {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.className = 'score-input';
+        hiddenInput.dataset.criteria = c.id;
+        hiddenInput.dataset.scoreType = scoreType;
+        hiddenInput.dataset.min = minScore;
+        hiddenInput.dataset.max = maxScore;
+        if (currentVal) hiddenInput.value = currentVal;
+
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'd-flex flex-wrap w-100 gap-2';
+
+        options.forEach(opt => {
+          const btnId = `criteria-${c.id}-${String(opt).replace('.', '-')}`;
+          const radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.className = 'btn-check';
+          radio.name = `criteria-${c.id}`;
+          radio.id = btnId;
+          radio.value = formatScoreForDisplay(opt, scoreType);
+
+          const label = document.createElement('label');
+          const isHalfStep = normalizedScoreType === 'MED' && !Number.isInteger(opt);
+          const sizeClass = normalizedScoreType === 'INT' ? 'btn-lg' : 'btn-sm';
+          const colorClass = isHalfStep ? 'btn-outline-warning' : 'btn-outline-primary';
+          label.className = `btn ${colorClass} ${sizeClass} flex-fill`;
+          label.setAttribute('for', btnId);
+          label.textContent = formatScoreForDisplay(opt, scoreType);
+
+          if (currentVal && radio.value === currentVal) {
+            radio.checked = true;
+            hiddenInput.value = currentVal;
+          }
+
+          radio.addEventListener('change', () => {
+            hiddenInput.value = radio.value;
+            refreshTotalScore();
+          });
+
+          btnGroup.appendChild(radio);
+          btnGroup.appendChild(label);
+        });
+
+        controlCol.appendChild(hiddenInput);
+        controlCol.appendChild(btnGroup);
+      } else {
+        const select = document.createElement('select');
+        select.className = 'form-select score-input';
+        select.dataset.criteria = c.id;
+        select.dataset.scoreType = scoreType;
+        select.dataset.min = minScore;
+        select.dataset.max = maxScore;
+
+        const placeholder = translations["select_score"] || translations["select"] || '--';
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+        options.forEach(opt => {
+          const optEl = document.createElement('option');
+          const formatted = formatScoreForDisplay(opt, scoreType);
+          optEl.value = formatted;
+          optEl.textContent = formatted;
+          select.appendChild(optEl);
+        });
+
+        if (currentVal) select.value = currentVal;
+        select.addEventListener('change', refreshTotalScore);
+        controlCol.appendChild(select);
+      }
+
+      row.appendChild(controlCol);
+      criteriaContainer.appendChild(row);
+    });
+
+    renderTotal(0);
+  }
+
+  // Footer - limpiar primero
   const footer = modal._element.querySelector('.modal-footer');
   footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${translations["close"]}</button>`;
 
   if (mode === "vote") {
 
-    const refreshTotalScore = () => {
-      let sum = 0;
-      criteriaContainer.querySelectorAll('.score-input').forEach(inp => {
-        const normalized = normalizeScoreValue(
-          inp.value,
+    const collectScores = () => {
+      const scores = [];
+      let allFilled = true;
+
+      criteriaList.forEach(c => {
+        const input = getCriteriaInput(c.id);
+        if (!input) return;
+        const normalizedScore = normalizeScoreValue(
+          input.value,
           scoreType,
-          Number(inp.min),
-          Number(inp.max)
+          minScore,
+          maxScore
         );
-        if (normalized !== null) sum += normalized;
+
+        if (normalizedScore === null) {
+          allFilled = false;
+        } else {
+          if (input.tagName === 'INPUT' && input.type === 'number') {
+            input.value = formatScoreForDisplay(normalizedScore, scoreType);
+          } else if (input.tagName === 'SELECT') {
+            input.value = formatScoreForDisplay(normalizedScore, scoreType);
+          } else {
+            input.value = normalizedScore.toString();
+          }
+          scores.push({
+            criteria_id: Number(c.id),
+            score: normalizedScore
+          });
+        }
       });
-      const totalEl = document.getElementById('totalScore');
-      if (totalEl) {
-        totalEl.textContent = formatScoreForDisplay(sum, scoreType) || '0';
-      }
+
+      return { scores, allFilled };
     };
 
     const sendBtn = document.createElement('button');
@@ -136,7 +313,7 @@ function showVotesModal(dancer, mode = "details") {
     noShowBtn.className = "btn btn-warning btn-sm me-auto";
     noShowBtn.textContent = translations["no_show"];
   
-    // --- función auxiliar para enviar votos ---
+    // --- funcion auxiliar para enviar votos ---
     async function sendVotes(scores) {
       try {
         setVoteButtonsDisabled(true);
@@ -177,29 +354,9 @@ function showVotesModal(dancer, mode = "details") {
       }
     }
   
-    // --- botón normal: enviar votos manuales ---
+    // --- boton normal: enviar votos manuales ---
     sendBtn.addEventListener('click', async () => {
-      const scores = [];
-      let allFilled = true;
-  
-      criteriaContainer.querySelectorAll('.score-input').forEach(input => {
-        const normalizedScore = normalizeScoreValue(
-          input.value,
-          scoreType,
-          Number(input.min),
-          Number(input.max)
-        );
-
-        if (normalizedScore === null) {
-          allFilled = false;
-        } else {
-          input.value = formatScoreForDisplay(normalizedScore, scoreType);
-          scores.push({
-            criteria_id: Number(input.dataset.criteria),
-            score: normalizedScore
-          });
-        }
-      });
+      const { scores, allFilled } = collectScores();
   
       if (!allFilled) {
         if (!document.getElementById("voteErrorAlert")) {
@@ -219,10 +376,10 @@ function showVotesModal(dancer, mode = "details") {
       const existingAlert = document.getElementById("voteErrorAlert");
       if (existingAlert) existingAlert.remove();
 
-      // Analizamos si algún valor está lejos de la media (por ejemplo, si la media es 8 y se pone un 2)
+      // Analizamos si algun valor esta lejos de la media (por ejemplo, si la media es 8 y se pone un 2)
       const scoreValues = scores.map(s => s.score);
       const avg = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length;
-      const threshold = 3; // umbral de desviación
+      const threshold = 3; // umbral de desviacion
       const outliers = scores.filter(s => Math.abs(s.score - avg) >= threshold);
 
       if (outliers.length > 0) {
@@ -231,15 +388,17 @@ function showVotesModal(dancer, mode = "details") {
           return crit ? crit.name : 'Unknown';
         }).join(', ');
 
-        if (!confirm(`${translations["confirm_outlier_scores"]}\n\n${outlierNames}`)) {
-          return; // cancelar envío
+        if (!confirm(`${translations["confirm_outlier_scores"]}
+
+${outlierNames}`)) {
+          return; // cancelar envio
         }
       }
   
       await sendVotes(scores);
     });
   
-    // --- modal de confirmación (solo se crea si no existe aún) ---
+    // --- modal de confirmacion (solo se crea si no existe aun) ---
     if (!document.getElementById("noShowConfirmModal")) {
       document.body.insertAdjacentHTML("beforeend", `
         <div class="modal fade" id="noShowConfirmModal" tabindex="-1" aria-hidden="true">
@@ -265,12 +424,12 @@ function showVotesModal(dancer, mode = "details") {
     const noShowModal = new bootstrap.Modal(document.getElementById("noShowConfirmModal"));
     const confirmNoShowBtn = document.getElementById("confirmNoShowBtn");
   
-    // --- botón no show ---
+    // --- boton no show ---
     noShowBtn.addEventListener('click', () => {
-      // abrir modal de confirmación
+      // abrir modal de confirmacion
       noShowModal.show();
   
-      // asignar listener temporal para este bailarín
+      // asignar listener temporal para este bailarin
       confirmNoShowBtn.onclick = async () => {
         noShowModal.hide();
   
@@ -283,20 +442,18 @@ function showVotesModal(dancer, mode = "details") {
       };
     });
   
-    // Añadir botones al footer
+    // Anadir botones al footer
     footer.prepend(noShowBtn);  // a la izquierda
     footer.appendChild(sendBtn); // los actuales permanecen a la derecha
   
     // --- recalcular total al cambiar inputs ---
-    criteriaContainer.querySelectorAll('.score-input').forEach(input => {
+    criteriaContainer.querySelectorAll('input[type="number"].score-input').forEach(input => {
       input.addEventListener('input', () => {
-        const min = Number(input.min);
-        const max = Number(input.max);
         const val = Number(input.value);
 
         if (!Number.isNaN(val)) {
-          if (val < min) input.value = formatScoreForDisplay(min, scoreType);
-          if (val > max) input.value = formatScoreForDisplay(max, scoreType);
+          if (val < minScore) input.value = formatScoreForDisplay(minScore, scoreType);
+          if (val > maxScore) input.value = formatScoreForDisplay(maxScore, scoreType);
         }
 
         refreshTotalScore();
@@ -306,8 +463,8 @@ function showVotesModal(dancer, mode = "details") {
         const normalized = normalizeScoreValue(
           input.value,
           scoreType,
-          Number(input.min),
-          Number(input.max)
+          minScore,
+          maxScore
         );
         if (normalized !== null) {
           input.value = formatScoreForDisplay(normalized, scoreType);
@@ -315,12 +472,13 @@ function showVotesModal(dancer, mode = "details") {
         refreshTotalScore();
       });
     });
+
+    refreshTotalScore();
   }  
 
 
   modal.show();
 }
-
 function setVoteButtonsDisabled(disabled) {
   document.querySelectorAll('button.btn-primary').forEach(btn => {
     if (btn.textContent.trim() === translations["vote"]) {
