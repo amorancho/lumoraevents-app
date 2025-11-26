@@ -201,6 +201,9 @@ async function changeLanguage(lang, page = null) {
   //const currentPage = page || window.location.pathname.split("/").pop().split(".")[0] || "index";
   await loadTranslations(lang, pageName);
   applyTranslations();
+  if (typeof applyAvatarCopy === 'function') {
+    applyAvatarCopy();
+  }
   //updateElementProperty('screen-title', 'textContent', title);
 
   // Carga de elementos dinámicos por página

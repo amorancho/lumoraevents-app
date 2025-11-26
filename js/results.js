@@ -128,12 +128,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (Array.isArray(dancerData.votes) && dancerData.votes.length > 0) {
       dancerData.votes.forEach(vote => {
         const totalJudge = (vote.criteria || []).reduce((sum, c) => sum + (Number(c.score) || 0), 0);
+        const avatarUrl = getVoteAvatarUrl(vote);
 
         const judgeCard = document.createElement('div');
         judgeCard.className = 'card mb-3';
         judgeCard.innerHTML = `
           <div class="card-header d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 text-primary">${escapeHtml(vote.judge_name || 'Judge')}</h6>
+            <div class="d-flex align-items-center gap-2">
+              <img src="${avatarUrl}" alt="${escapeHtml(vote.judge_name || 'Judge')}" class="rounded-circle border" style="width: 34px; height: 34px; object-fit: cover;">
+              <h6 class="mb-0 text-primary">${escapeHtml(vote.judge_name || 'Judge')}</h6>
+            </div>
             <span class="badge bg-primary fs-6">Total: ${Number(totalJudge).toFixed(1)}</span>
           </div>
           <div class="card-body">
@@ -264,6 +268,16 @@ function renderResults(data) {
   row.appendChild(colStyles);
 
   resultsContainer.appendChild(row);
+}
+
+function getVoteAvatarUrl(vote) {
+  const candidate = vote?.judge_avatar || vote?.avatarUrl || vote?.judge_avatar || vote?.avatar || null;
+  const name = vote?.judge_name || 'Avatar';
+  const placeholder = typeof getAvatarPlaceholder === 'function'
+    ? getAvatarPlaceholder(name)
+    : 'https://ui-avatars.com/api/?name=Avatar&size=160&background=0D8ABC&color=fff&rounded=true';
+
+  return candidate || placeholder;
 }
 
 function renderGeneralClassification(general) {

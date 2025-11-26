@@ -150,6 +150,14 @@ function initJudgeManagement() {
       event_id: getEvent().id
     };
 
+    if (action === 'edit') {
+      const currentJudge = judges.find(j => j.id == id);
+      const avatarUrl = currentJudge?.avatar_url || currentJudge?.avatarUrl || currentJudge?.avatar || null;
+      if (avatarUrl) {
+        judgeData.avatar_url = avatarUrl;
+      }
+    }
+
     try {
       let res;
       if (action === 'create') {        
