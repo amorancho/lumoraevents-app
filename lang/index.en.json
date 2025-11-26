@@ -3,5 +3,7 @@
   "go_to_event": "Go to Event",
   "proximamente": "Upcoming",
   "en_curso": "Ongoing", 
-  "finalizado": "Finished"
+  "finalizado": "Finished",
+  "loading_events": "Loading events...",
+  "error_loading_events": "Error loading events"
 }

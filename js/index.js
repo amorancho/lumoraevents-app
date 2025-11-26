@@ -31,13 +31,28 @@ const getEventStatusInfo = (startIso, endIso) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('eventsContainer');
+
+  const showLoadingSpinner = () => {
+    container.innerHTML = `
+      <div class="d-flex justify-content-center w-100 my-5">
+        <div class="text-center">
+          <div class="spinner-border text-primary" role="status" aria-label="Loading events"></div>
+          <div class="mt-2" data-i18n="loading_events">Loading events...</div>
+        </div>
+      </div>
+    `;
+    applyTranslations();
+  };
+
+  showLoadingSpinner();
+
   fetch(`${API_BASE_URL}/api/events`)
     .then(response => {
       if (!response.ok) throw new Error(`Error fetching events: ${response.status}`);
       return response.json();
     })
     .then(data => {
-      const container = document.getElementById('eventsContainer');
       container.innerHTML = '';
       data.forEach(event => {
         const col = document.createElement('div');
@@ -72,5 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .catch(error => {
       console.error('Failed to load events:', error);
+      container.innerHTML = `<div class="alert alert-danger text-center mt-4" data-i18n="error_loading_events">Error loading events</div>`;
+      applyTranslations();
     });
 });
