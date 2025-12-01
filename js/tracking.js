@@ -182,8 +182,9 @@ function renderCompetitions(competitions) {
                   ${j.name}
                   ${j.reserve ? `<span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Judge in reserve">R</span>` : ''}
                 </th>
-              `).join('')}
+              `).join('')}              
               <th>Voted</th>
+              <th>T. Score</th>
             </tr>
           </thead>
           <tbody>
@@ -251,7 +252,9 @@ function renderCompetitions(competitions) {
         }).join('');
 
         // Asignar ID a la fila combinando competición-dancer-judge (para poder localizarla en reset)
-        tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}<td class="bg-light">${d.judges_voted}</td></tr>`;
+        tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}        
+        <td class="bg-light">${d.judges_voted}</td>
+        <td class="bg-light">${d.total_score || 0}</td></tr>`;
       });
 
       tableHTML += '</tbody></table>';

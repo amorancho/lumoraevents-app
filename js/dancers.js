@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadCategories();
   loadStyles();
   loadMasters(); 
+  loadClubs();
 
   fetchDancersFromAPI();
 
@@ -57,10 +58,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 document.addEventListener('DOMContentLoaded', function () {
 
   const editModal = new bootstrap.Modal(document.getElementById('editModal'));
-  const filter = document.getElementById('categoryFilter');
+  const filterCategory = document.getElementById('categoryFilter');
+  const filterClub = document.getElementById('clubFilter');
   const table = document.getElementById('dancersTable');
 
-  filter.addEventListener('change', () => {
+  filterCategory.addEventListener('change', () => {
+    applyFilter();
+  });
+
+  filterClub.addEventListener('change', () => {
     applyFilter();
   });
 
@@ -75,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('editCategory').selectedIndex = 0;
     document.getElementById('editMaster').selectedIndex = 0;
     document.getElementById('nationality').tomselect.setValue('');
+    document.getElementById('editClub').selectedIndex = 0;
     document.getElementById('editStyles').selectedIndex = -1; // Deseleccionar todos los estilos
     
 
@@ -103,7 +110,8 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('dancerLanguage').value = dancer.language;
       document.getElementById('editCategory').value = dancer.category_id;
       document.getElementById('editMaster').value = dancer.master_id;
-      document.getElementById('nationality').tomselect.setValue(dancer.nationality);      
+      document.getElementById('nationality').tomselect.setValue(dancer.nationality); 
+      document.getElementById('editClub').value = dancer.club_id;     
 
       const stylesOptions = document.getElementById('editStyles').options;
     
@@ -158,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const inputCategory = document.getElementById('editCategory');
     const inputMaster = document.getElementById('editMaster');
     const inputNationality = document.getElementById('nationality');
+    const inputClub = document.getElementById('editClub');
     const inputStyles = document.getElementById('editStyles');
 
     const selectedValues = Array.from(inputStyles.selectedOptions).map(option => option.value); 
@@ -171,6 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
       event_id: getEvent().id,
       email: inputEmail.value.trim().toLowerCase(),
       language: inputLanguage.value,
+      club_id: inputClub.value ? parseInt(inputClub.value, 10) : null
     };
 
     try {
@@ -234,6 +244,7 @@ function loadDancers() {
 
     const row = document.createElement('tr');
     row.dataset.id = dancer.id;
+    row.dataset.club_id = dancer.club_id;
 
     let stylesSpans = Array.isArray(dancer.styles) && dancer.styles.length > 0
       ? dancer.styles.map(style => `<span class="badge bg-warning text-dark me-1">${style.name}</span>`).join('')
@@ -360,6 +371,38 @@ async function loadMasters() {
   }
 }
 
+async function loadClubs() {
+  const clubSelect = document.getElementById('editClub');
+  clubSelect.innerHTML = ''; // Limpiar opciones anteriores
+
+  const clubFilter = document.getElementById('clubFilter');
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/clubs?event_id=${getEvent().id}`);
+    if (!response.ok) throw new Error('Error fetching clubs');
+    const clubs = await response.json();
+
+    const emptyOption1 = document.createElement('option');
+    emptyOption1.value = '';
+    emptyOption1.textContent = '';
+    clubSelect.appendChild(emptyOption1);
+
+    clubs.forEach(club => {
+      const option1 = document.createElement('option');
+      option1.value = club.id || club; // por si es string directo
+      option1.textContent = club.name || club;
+      clubSelect.appendChild(option1);
+
+      const option2 = document.createElement('option');
+      option2.value = club.id || club; // por si es string directo
+      option2.textContent = club.name || club;
+      clubFilter.appendChild(option2);
+    });
+  } catch (err) {
+    console.error('Failed to load clubs:', err);
+  }
+}
+
 async function getDancerById(id) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/dancers/${id}`);
@@ -389,12 +432,15 @@ async function deleteDancer(dancerIdToDelete) {
 }
 
 function applyFilter() {
-  const filter = document.getElementById('categoryFilter').value.toLowerCase();
+  const filterCategory = document.getElementById('categoryFilter').value.toLowerCase();
+  const filterClub = document.getElementById('clubFilter').value;
   const rows = document.querySelectorAll('#dancersTable tr');
 
   rows.forEach(row => {
     const category = row.children[1]?.textContent.trim().toLowerCase();
-    if (!filter || category === filter) {
+    const club_id = row.dataset.club_id;
+
+    if ((!filterCategory || category === filterCategory) && (!filterClub || club_id === filterClub)) {
       row.classList.remove('d-none');
     } else {
       row.classList.add('d-none');

@@ -70,11 +70,14 @@
             <h5 class="mb-0 d-flex align-items-center" data-i18n="table_title">
               <i class="bi bi-list-ul me-2"></i>Dancers
             </h5>
-            <div class="d-flex align-items-center gap-2">
-              <span id="count-dancers" class="badge bg-secondary rounded-pill me-2">0</span>
+            <div class="d-flex align-items-center gap-3">  
+              <select class="form-select form-select-sm w-auto" id="clubFilter">
+                <option value="" data-i18n="all_clubs">All Clubs</option>                
+              </select>            
               <select class="form-select form-select-sm w-auto" id="categoryFilter">
                 <option value="" data-i18n="all_categories">All Categories</option>                
               </select>
+              <span id="count-dancers" class="badge bg-secondary rounded-pill me-2">0</span>
             </div>
           </div>
           <div class="card-body p-2">
@@ -127,7 +130,7 @@
               <div class="col-md-12 mb-3">
                 <label class="form-label" data-i18n="col_name">Name</label>
                 <input type="text" class="form-control" id="dancerName">
-              </div>              
+              </div>                             
             </div>
             <div class="row">
               <div class="col-md-9 mb-3">
@@ -167,7 +170,15 @@
                 </select>
               </div>
 
-            </div>   
+            </div> 
+            <div class="row">
+              <div class="col-md-12 mb-3">
+                <label class="form-label" data-i18n="col_club">Club / Escuela</label>
+                <select class="form-select" id="editClub">
+                  <option selected disabled value=""></option>
+                </select>
+              </div>
+            </div>  
             <div class="row">
               <div class="mb-3">
                 <label class="form-label" data-i18n="sol_styles">Styles</label>

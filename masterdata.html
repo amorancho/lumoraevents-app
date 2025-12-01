@@ -56,7 +56,6 @@
       </div>
     </div>
 
-
     <!-- Panel de alerta -->
     <div id="alertPanel" class="mb-4" style="display: none;">
       <div class="alert alert-warning d-flex align-items-center" role="alert">
@@ -76,73 +75,126 @@
       </div>
     </div>
 
-    <div class="row g-4">
-      <!-- Category -->
-      <div class="col-12 col-lg-3" id="category_box">
-        <div class="card shadow-sm bg-light" id="category-card">
+    <ul class="nav nav-tabs mb-4" id="masterdataTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-general-tab" data-bs-toggle="tab" data-bs-target="#tab-general" type="button" role="tab" aria-controls="tab-general" aria-selected="true">General</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-penalties-tab" data-bs-toggle="tab" data-bs-target="#tab-penalties" type="button" role="tab" aria-controls="tab-penalties" aria-selected="true">Penalizaciones</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-observaciones-tab" data-bs-toggle="tab" data-bs-target="#tab-observaciones" type="button" role="tab" aria-controls="tab-observaciones" aria-selected="false">Observaciones</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-clubs-tab" data-bs-toggle="tab" data-bs-target="#tab-clubs" type="button" role="tab" aria-controls="tab-clubs" aria-selected="false">Clubs / Escuelas</button>
+      </li>
+    </ul>
+
+    <div class="tab-content" id="masterdataTabContent">
+      <div class="tab-pane fade show active" id="tab-general" role="tabpanel" aria-labelledby="tab-general-tab" tabindex="0">
+        <div class="row g-4">
+          <!-- Category -->
+          <div class="col-12 col-lg-4" id="category_box">
+            <div class="card shadow-sm bg-light" id="category-card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="card-title mb-0" data-i18n="categories">Category</h5>
+                  <span id="count-categories" class="badge bg-secondary rounded-pill">0</span>
+                </div>
+                <div class="input-group mb-3 mt-4">
+                  <input type="text" id="input-categories" class="form-control" placeholder="New Category" data-i18n-placeholder="new_category" maxlength="40" />
+                  <button class="btn btn-primary" onclick="addEntry('categories')" data-i18n="add">Add</button>
+                </div>
+                <ul class="list-group" id="list-categories"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Style -->
+          <div class="col-12 col-lg-4" id="style_box">
+            <div class="card shadow-sm bg-light" id="style-card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="card-title mb-0" data-i18n="styles">Styles</h5>
+                  <span id="count-styles" class="badge bg-secondary rounded-pill">0</span>
+                </div>
+                <div class="input-group mb-3 mt-4">
+                  <input type="text" id="input-styles" class="form-control" placeholder="New Style" data-i18n-placeholder="new_style" maxlength="40" />
+                  <button class="btn btn-primary" onclick="addEntry('styles')" data-i18n="add">Add</button>
+                </div>
+                <ul class="list-group" id="list-styles"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Criteria -->
+          <div class="col-12 col-lg-4" id="criteria_box">
+            <div class="card shadow-sm bg-light" id="criteria-card">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                  <h5 class="card-title mb-0" data-i18n="criteria">Criteria</h5>
+                  <span id="count-criteria" class="badge bg-secondary rounded-pill">0</span>
+                </div>
+                <div class="input-group mb-3 mt-4">
+                  <input type="text" id="input-criteria" class="form-control" placeholder="New Criteria" data-i18n-placeholder="new_criteria" maxlength="40" />
+                  <button class="btn btn-primary" onclick="addEntry('criteria')" data-i18n="add">Add</button>
+                </div>
+                <ul class="list-group" id="list-criteria"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Penalizaciones -->
+          
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="tab-penalties" role="tabpanel" aria-labelledby="tab-penalties-tab" tabindex="0">
+
+        <div class="col-12 col-lg-6" id="penalty_box">
+          <div class="card shadow-sm bg-light" id="penalty-card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0" data-i18n="penalties">Penalties</h5>
+                <span id="count-penalties" class="badge bg-secondary rounded-pill">0</span>
+              </div>
+              <div class="input-group mb-3 mt-4">
+                <input type="text" id="input-penalties" class="form-control" placeholder="New Penalty" data-i18n-placeholder="new_penalty" maxlength="40" />
+                <button class="btn btn-primary" onclick="addEntry('penalties')" data-i18n="add">Add</button>
+              </div>
+              <ul class="list-group" id="list-penalties"></ul>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tab-pane fade" id="tab-observaciones" role="tabpanel" aria-labelledby="tab-observaciones-tab" tabindex="0">
+        <div class="card shadow-sm bg-light">
           <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <h5 class="card-title mb-0" data-i18n="categories">Category</h5>
-              <span id="count-categories" class="badge bg-secondary rounded-pill">0</span>
-            </div>
-            <div class="input-group mb-3 mt-4">
-              <input type="text" id="input-categories" class="form-control" placeholder="New Category" data-i18n-placeholder="new_category" maxlength="40" />
-              <button class="btn btn-primary" onclick="addEntry('categories')" data-i18n="add">Add</button>
-            </div>
-            <ul class="list-group" id="list-categories"></ul>
+            <p class="mb-0 text-muted">Pendiente de contenido.</p>
           </div>
         </div>
       </div>
 
-      <!-- Style -->
-      <div class="col-12 col-lg-3" id="style_box">
-        <div class="card shadow-sm bg-light" id="style-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <h5 class="card-title mb-0" data-i18n="styles">Styles</h5>
-              <span id="count-styles" class="badge bg-secondary rounded-pill">0</span>
-            </div>
-            <div class="input-group mb-3 mt-4">
-              <input type="text" id="input-styles" class="form-control" placeholder="New Style" data-i18n-placeholder="new_style" maxlength="40" />
-              <button class="btn btn-primary" onclick="addEntry('styles')" data-i18n="add">Add</button>
-            </div>
-            <ul class="list-group" id="list-styles"></ul>
-          </div>
-        </div>
-      </div>
+      <div class="tab-pane fade" id="tab-clubs" role="tabpanel" aria-labelledby="tab-clubs-tab" tabindex="0">
 
-      <!-- Criteria -->
-      <div class="col-12 col-lg-3" id="criteria_box">
-        <div class="card shadow-sm bg-light" id="criteria-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <h5 class="card-title mb-0" data-i18n="criteria">Criteria</h5>
-              <span id="count-criteria" class="badge bg-secondary rounded-pill">0</span>
+        <div class="col-12 col-lg-4" id="clubs_box">
+          <div class="card shadow-sm bg-light" id="club-card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0" data-i18n="clubs">Clubs / Escuelas</h5>
+                <span id="count-clubs" class="badge bg-secondary rounded-pill">0</span>
+              </div>
+              <div class="input-group mb-3 mt-4">
+                <input type="text" id="input-clubs" class="form-control" placeholder="Nuevo club/escuela" data-i18n-placeholder="new_club" maxlength="40" />
+                <button class="btn btn-primary" onclick="addEntry('clubs')" data-i18n="add">Add</button>
+              </div>
+              <ul class="list-group" id="list-clubs"></ul>
             </div>
-            <div class="input-group mb-3 mt-4">
-              <input type="text" id="input-criteria" class="form-control" placeholder="New Criteria" data-i18n-placeholder="new_criteria" maxlength="40" />
-              <button class="btn btn-primary" onclick="addEntry('criteria')" data-i18n="add">Add</button>
-            </div>
-            <ul class="list-group" id="list-criteria"></ul>
           </div>
         </div>
-      </div>
 
-      <!-- Penalizaciones -->
-      <div class="col-12 col-lg-3" id="penalty_box">
-        <div class="card shadow-sm bg-light" id="penalty-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-              <h5 class="card-title mb-0" data-i18n="penalties">Penalties</h5>
-              <span id="count-penalties" class="badge bg-secondary rounded-pill">0</span>
-            </div>
-            <div class="input-group mb-3 mt-4">
-              <input type="text" id="input-penalties" class="form-control" placeholder="New Penalty" data-i18n-placeholder="new_penalty" maxlength="40" />
-              <button class="btn btn-primary" onclick="addEntry('penalties')" data-i18n="add">Add</button>
-            </div>
-            <ul class="list-group" id="list-penalties"></ul>
-          </div>
-        </div>
       </div>
     </div>
 

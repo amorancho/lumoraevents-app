@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     //await eventReadyPromise;
     await WaitEventLoaded();
 
-    setPenaltysVisibility();
+    //setPenaltysVisibility();
 
     updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
     updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
@@ -55,6 +55,7 @@ function loadAll() {
     loadTable("styles");
     loadTable("criteria");
     loadTable("penalties");
+    loadTable("clubs");
 }
 
 async function loadTable(table) {
@@ -88,7 +89,7 @@ function renderTable(table, fullData) {
         const leftDiv = document.createElement("div");
         leftDiv.className = "d-flex align-items-center gap-2";
 
-        if (getEvent().status !== 'completed') {
+        if ((getEvent().status !== 'completed') && (table !== 'clubs')) {
 
             const dragHandle = document.createElement("i");
             dragHandle.className = "bi bi-grip-vertical text-muted drag-handle";
