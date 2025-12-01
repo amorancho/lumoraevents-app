@@ -83,29 +83,9 @@ function loadCompetitions() {
     let statusText = convertStatus[comp.status];
     let colorJudges;
 
-    if (comp.judges.length < comp.judge_number) {
-      colorJudges = 'danger';
-    } else if (comp.judges.length > comp.judge_number) {
-      colorJudges = 'success';
-    } else {
-      colorJudges = 'primary';
-    }
-
-    const fechaLocal = new Date(comp.estimated_start);
-
-    // --- Construimos texto del tooltip ---
-    let faltan = comp.judge_number - comp.judges.length;
-    let reservas = comp.judges.length > comp.judge_number 
-                    ? comp.judges.length - comp.judge_number 
-                    : 0;
-
     let tooltipText = `
-      Total asignados: ${comp.judges.length}<br>
-      Deben votar: ${comp.judge_number}<br>
-      ${faltan > 0 ? `Faltan: ${faltan}<br>` : ''}
-      ${reservas > 0 ? `Reservas: ${reservas}` : ''}
+      Total assigned: ${comp.judges.length}<br>
     `.trim();
-
     const isFinished = comp.status === 'FIN';
     const isOpen = comp.status === 'OPE';
     const isClosed = comp.status === 'CLO';
@@ -154,12 +134,14 @@ function loadCompetitions() {
         }
       </td>
       <td>
-        <span class="badge bg-${colorJudges}" 
-              data-bs-toggle="tooltip" 
-              data-bs-placement="top" 
-              data-bs-html="true"
-              title="${tooltipText}">
-              ${comp.judge_number}
+        <span class="badge bg-primary">${comp.judges.filter(j => !j.reserve).length}</span>
+        <span class="mx-1">/</span>
+
+        <span class="badge bg-warning"
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title="Jueces reserva">
+          ${comp.judges.filter(j => j.reserve).length}
         </span>
       </td>
       <td>
@@ -354,7 +336,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modalTitleStyle').textContent = competition.style_name;
         document.getElementById('editStartTime').value = toDatetimeLocalFormat(competition.estimated_start_form);
         document.getElementById('editStatus').value = competition.status;
-        document.getElementById('editJudgeNumber').value = competition.judge_number;
 
         const judges = competition.judges || [];
 
@@ -416,7 +397,6 @@ document.addEventListener('DOMContentLoaded', () => {
         status: inputStatus.value,
         judges: inputJudges,
         judge_reserve: inputReserveJudge ? (inputReserveJudge.value || null) : null,
-        judge_number: parseInt(document.getElementById('editJudgeNumber').value, 10) || 1,
         event_id: getEvent().id
       }
 
