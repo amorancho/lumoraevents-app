@@ -57,6 +57,9 @@ async function loadCompetitions(categoryId, styleId) {
     }
     const competitions = await response.json();
     renderCompetitions(competitions);
+
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
   } catch (error) {
     console.error('Error fetching competitions:', error);
   }
@@ -111,7 +114,7 @@ function renderCompetitions(competitions) {
           </div>
           <div class="col-6 col-md-2">
             <p class="mb-1 fw-semibold">Estimated Time</p>
-            <p>${comp.estimated_start_form ?? '-'}</p>
+            <p>${comp.estimated_start_form ?? '<span class="badge bg-dark">NOT DEFINED</span>'}</p>
           </div>
           <div class="col-6 col-md-2">
             <p class="mb-1 fw-semibold">Status</p>
@@ -131,8 +134,18 @@ function renderCompetitions(competitions) {
           <div class="col-12 col-md-4">
               <div class="row text-center">
                 <div class="col-4">
-                  <p class="mb-1 fw-semibold"># Judges</p>
-                  <p><span class="badge bg-primary">${comp.judge_number}</span></p>
+                  <p class="mb-1 fw-semibold">Judges</p>
+                  <p>
+                    <span class="badge bg-primary">${comp.judge_number}</span>
+                    <span class="mx-1">/</span>
+
+                    <span class="badge bg-warning"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="Jueces reserva">
+                      ${comp.judge_number_reserve}
+                    </span>
+                  </p>
                 </div>
                 <div class="col-4">
                   <p class="mb-1 fw-semibold">Dancers</p>
@@ -164,7 +177,12 @@ function renderCompetitions(competitions) {
           <thead class="table-light">
             <tr>
               <th>Dancer</th>
-              ${comp.judges.map(j => `<th class="text-center">${j.name}</th>`).join('')}
+              ${comp.judges.map(j => `
+                <th class="text-center">
+                  ${j.name}
+                  ${j.reserve ? `<span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Judge in reserve">R</span>` : ''}
+                </th>
+              `).join('')}
               <th>Voted</th>
             </tr>
           </thead>

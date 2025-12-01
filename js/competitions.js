@@ -137,9 +137,6 @@ function loadCompetitions() {
       `;
     }
 
-    
-
-
     row.innerHTML = `
       <td><span class="badge bg-info fs-6">${comp.category_name}</span></td>
       <td><span class="badge bg-warning text-dark fs-6">${comp.style_name}</span></td>
@@ -147,7 +144,14 @@ function loadCompetitions() {
       <td data-status><span class="badge bg-${colorBg}">${statusText}</span></td>
       <td>
         <i class="bi bi-people me-1 text-muted"></i>
-        ${comp.judges.map(j => j.name).join(', ')}
+        ${comp.judges
+          .map(j => 
+            j.reserve
+              ? `${j.name} <span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Judge in reserve">R</span>`
+              : j.name
+          )
+          .join(', ')
+        }
       </td>
       <td>
         <span class="badge bg-${colorJudges}" 
@@ -355,12 +359,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const judges = competition.judges || [];
 
         const judgeOptions = document.getElementById('editJudges').options;
+        const reserveSelect = document.getElementById('editJudgeReserve');
         
         const judgeIds = judges.map(j => String(j.id)); // ids como strings para comparar
 
         Array.from(judgeOptions).forEach(opt => {
           opt.selected = judgeIds.includes(opt.value);
         });
+
+        if (reserveSelect) {
+          const reserveJudge = judges.find(j => j.reserve);
+          reserveSelect.value = reserveJudge ? String(reserveJudge.id) : '';
+        }
 
         editModal.show();
       } else if (event.target.closest('.btn-delete-competition')) {
@@ -397,6 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
       inputEstimatedStart = document.getElementById('editStartTime');
       inputStatus = document.getElementById('editStatus');
       inputJudges = Array.from(document.getElementById('editJudges').selectedOptions).map(opt => opt.value);
+      const inputReserveJudge = document.getElementById('editJudgeReserve');
 
       const competitionData = {
         category_id: categoryId,
@@ -404,6 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
         estimated_start: inputEstimatedStart.value,
         status: inputStatus.value,
         judges: inputJudges,
+        judge_reserve: inputReserveJudge ? (inputReserveJudge.value || null) : null,
         judge_number: parseInt(document.getElementById('editJudgeNumber').value, 10) || 1,
         event_id: getEvent().id
       }
@@ -549,7 +561,11 @@ async function loadStyles() {
 
 async function loadMasters() {
   const masterSelect = document.getElementById('editJudges');
+  const reserveSelect = document.getElementById('editJudgeReserve');
   masterSelect.innerHTML = ''; // Limpiar opciones anteriores
+  if (reserveSelect) {
+    reserveSelect.innerHTML = '<option value=\"\">Ninguno</option>';
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/judges?event_id=${getEvent().id}`);
@@ -561,6 +577,13 @@ async function loadMasters() {
       option.value = master.id;
       option.textContent = master.name;
       masterSelect.appendChild(option);
+
+      if (reserveSelect) {
+        const reserveOption = document.createElement('option');
+        reserveOption.value = master.id;
+        reserveOption.textContent = master.name;
+        reserveSelect.appendChild(reserveOption);
+      }
     });
   } catch (err) {
     console.error('Failed to load masters:', err);

@@ -74,6 +74,15 @@ async function loadCompetitionAndDancers() {
 
   const data = await fetchVoting(category, style);
   renderCompetitionInfo(data.competition);
+
+  // Si data.competition.judge_reserve es true, mostrar texto indicando que es juez reserva
+  const judgeReserveInfo = document.getElementById('judgeReserveInfo');
+  if (data.competition.judge_reserve) {
+    judgeReserveInfo.style.display = 'block';
+  } else {
+    judgeReserveInfo.style.display = 'none';
+  }
+
   renderDancersTable(data.dancers, data.competition.status);
 
   competitionInfo.style.display = 'block';
@@ -533,15 +542,17 @@ function renderDancersTable(dancers, compStatus) {
     tdStatus.className = 'text-center';
     tdStatus.innerHTML = `
       <span class="badge 
-        ${d.status === 'Pending' 
-          ? 'bg-warning' 
-          : d.status === 'Incompatible' 
-            ? 'bg-danger' 
+        ${d.status === 'Pending'
+          ? 'bg-warning'
+          : d.status === 'Incompatible'
+            ? 'bg-danger'
             : d.status === 'Max Judges Voted'
               ? 'bg-danger'
               : d.status === 'No Show'
                 ? 'bg-noshown'
-                : 'bg-success'}">
+                : d.status === 'Not Applicable'
+                  ? 'bg-secondary'
+                  : 'bg-success'}">
         ${d.status}
       </span>
     `;
@@ -670,7 +681,7 @@ function renderCompetitionInfo(competition) {
   document.getElementById('compStyle').innerHTML = `<span class="badge bg-secondary">${competition.style_name}</span>`;
 
   // Hora estimada
-  document.getElementById('compTime').textContent = competition.estimated_start_form;
+  document.getElementById('compTime').innerHTML = competition.estimated_start_form || '<span class="badge bg-dark">NOT DEFINED</span>';
 
   // Estado
   let statusClass = 'bg-secondary';
@@ -692,9 +703,22 @@ function renderCompetitionInfo(competition) {
   document.getElementById('compStatus').innerHTML = `<span class="badge ${statusClass}">${statusText}</span>`;
 
   // Número de jueces
-  document.getElementById('compNumJudges').innerHTML = `<span class="badge bg-primary">${competition.judge_number}</span>`;
+  document.getElementById('compNumJudges').innerHTML = 
+    `<p>
+      <span class="badge bg-primary">${competition.judge_number}</span>
+      <span class="mx-1">/</span>
+      <span class="badge bg-warning"
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="Jueces reserva">
+                      ${competition.judge_number_reserve}
+                    </span>
+    </p>`;
 
   // Número de bailarinas
   document.getElementById('compDancers').innerHTML = `<span class="badge bg-primary">${competition.num_dancers}</span>`;
   document.getElementById('compDancersPend').innerHTML = `<span class="badge bg-warning">${competition.dancersPending}</span>`;
+
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+  tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
 }
