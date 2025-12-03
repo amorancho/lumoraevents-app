@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateElementProperty('participantsUrl', 'href', `?eventId=${eventId}`, false);
     updateElementProperty('scheduleUrl', 'href', `?eventId=${eventId}`, false);
     updateElementProperty('resultsUrl', 'href', `?eventId=${eventId}`, false);
+    updateElementProperty('statisticsUrl', 'href', `?eventId=${eventId}`, false);
 
     const principalContainer = document.getElementById('principalContainer');
     const hiddenMessage = document.getElementById('eventHiddenMessage');
@@ -40,6 +41,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const participantsCol = document.getElementById("col-participantsUrl");
     const scheduleCol = document.getElementById("col-scheduleUrl");
     const resultsCol = document.getElementById("col-resultsUrl");
+    const statisticsCol = document.getElementById("col-statisticsUrl");
 
     const user = getUserFromToken();
 
@@ -50,6 +52,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         participantsCol.classList.remove("d-none");
         scheduleCol.classList.remove("d-none");
         resultsCol.classList.remove("d-none");
+        statisticsCol.classList.remove("d-none");
 
     } else if ((getEvent().visible)) {
         
@@ -88,7 +91,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             resultsCol.classList.remove("d-none");
         }
 
-        
+        console.log("Visible statistics:", getEvent().visibleStatistics);
+
+        if (getEvent().visibleStatistics == 0) {
+            statisticsCol.remove();
+        } else {
+            statisticsCol.classList.remove("d-none");
+        }
 
     } else {
         // Mostrar mensaje de evento oculto
