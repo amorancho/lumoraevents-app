@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);
   updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
+  initQrModal();
+  initTooltips();
+
   const toggleVisible = document.getElementById('visible');
 
   toggleVisible.addEventListener('change', async () => {
@@ -75,6 +78,72 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   
 });
+
+function initTooltips() {
+  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+  tooltipTriggerList.forEach((tooltipTriggerEl) => {
+    new bootstrap.Tooltip(tooltipTriggerEl);
+  });
+}
+
+function initQrModal() {
+  const qrBtn = document.getElementById('qrBtn');
+  const modalEl = document.getElementById('qrModal');
+  const qrImage = document.getElementById('qrImage');
+  const downloadBtn = document.getElementById('downloadQrBtn');
+
+  if (!qrBtn || !modalEl || !qrImage || !downloadBtn) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+
+  downloadBtn.addEventListener('click', () => {
+    const dataUrl = downloadBtn.dataset.qrDataUrl;
+    const filename = downloadBtn.dataset.qrFilename;
+    if (!dataUrl) return;
+    downloadDataUrl(dataUrl, filename || 'qr.png');
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    qrImage.removeAttribute('src');
+    downloadBtn.disabled = true;
+    delete downloadBtn.dataset.qrDataUrl;
+    delete downloadBtn.dataset.qrFilename;
+  });
+
+  qrBtn.addEventListener('click', async () => {
+    qrImage.removeAttribute('src');
+    downloadBtn.disabled = true;
+    delete downloadBtn.dataset.qrDataUrl;
+    delete downloadBtn.dataset.qrFilename;
+
+    modal.show();
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}/qr?width=300`);
+      if (!res.ok) throw new Error('Error loading QR');
+      const data = await res.json();
+
+      if (!data?.dataUrl) throw new Error('Invalid QR response');
+
+      qrImage.src = data.dataUrl;
+      downloadBtn.dataset.qrDataUrl = data.dataUrl;
+      downloadBtn.dataset.qrFilename = `${data.eventId ?? getEvent().id}_qr.png`;
+      downloadBtn.disabled = false;
+    } catch (err) {
+      console.error('Error loading QR:', err);
+      showMessageModal('Error loading QR', 'Error');
+    }
+  });
+}
+
+function downloadDataUrl(dataUrl, filename) {
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
 
 async function loadEventData(eventId) {
   try {

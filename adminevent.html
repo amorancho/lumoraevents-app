@@ -60,7 +60,10 @@
 
               <div class="col-md-4">
                 <label for="code" class="form-label" data-i18n="prop_code">Code</label>
-                <input type="text" class="form-control" id="code" disabled>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="code" disabled>
+                  <button class="btn btn-warning" type="button" id="qrBtn" data-bs-toggle="tooltip" data-bs-placement="top" title="Muestra el QR del evento para compartir el enlace">QR</button>
+                </div>
               </div>
 
               <div class="col-md-8 d-flex align-items-end">
@@ -274,6 +277,20 @@
         <div class="modal-footer">
           <button type="button" id="visibilityCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
           <button type="button" id="visibilityConfirmBtn" class="btn btn-primary">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-body text-center">
+          <img id="qrImage" class="img-fluid mb-3" alt="QR">
+          <button type="button" class="btn btn-primary w-100" id="downloadQrBtn" disabled>Download QR</button>
+        </div>
+        <div class="modal-footer justify-content-center">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         </div>
       </div>
     </div>
