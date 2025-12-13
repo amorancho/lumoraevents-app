@@ -13,6 +13,29 @@
       background-color: #6f42c1; /* morado Bootstrap */
       color: white;
     }
+
+    .btn-comments {
+      background-color: #f97316;
+      border-color: #f97316;
+      color: #fff;
+    }
+
+    .btn-comments:hover {
+      background-color: #ea580c;
+      border-color: #ea580c;
+      color: #fff;
+    }
+
+    .btn-outline-comments {
+      color: #f97316;
+      border-color: #f97316;
+    }
+
+    .btn-outline-comments:hover {
+      background-color: #f97316;
+      border-color: #f97316;
+      color: #fff;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -94,6 +117,7 @@
               <th data-i18n="col_dancer">Dancer</th>
               <th class="text-center" data-i18n="col_status">Status</th>
               <th class="text-center" data-i18n="col_action">Action</th>
+              <th class="text-center">Comments</th>
             </tr>
           </thead>
           <tbody id="dancersTableBody">
@@ -114,6 +138,22 @@
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="commentsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-body">
+              <label for="commentsTextarea" class="form-label fw-semibold">Comments</label>
+              <textarea id="commentsTextarea" class="form-control" rows="5" placeholder="Add comments..."></textarea>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-danger" id="clearCommentsBtn">Clear</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" id="saveCommentsBtn">Save</button>
             </div>
           </div>
         </div>

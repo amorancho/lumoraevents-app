@@ -5,6 +5,8 @@ const allowedRoles = ["admin", "judge"];
 let criteriaList = [];
 
 let modal, criteriaContainer;
+let commentsModal, commentsTextarea, saveCommentsBtn, clearCommentsBtn;
+let commentsContext = { competitionId: null, dancerId: null };
 
 const DEFAULT_MIN_SCORE = 1;
 const DEFAULT_MAX_SCORE = 10;
@@ -65,7 +67,72 @@ document.addEventListener('DOMContentLoaded', async () => {
   const modalEl = document.getElementById('detailsModal');
   modal = new bootstrap.Modal(modalEl);
   criteriaContainer = document.getElementById('criteriaContainer');
+
+  initCommentsModal();
 });
+
+function initCommentsModal() {
+  const modalEl = document.getElementById('commentsModal');
+  commentsTextarea = document.getElementById('commentsTextarea');
+  saveCommentsBtn = document.getElementById('saveCommentsBtn');
+  clearCommentsBtn = document.getElementById('clearCommentsBtn');
+
+  if (!modalEl || !commentsTextarea || !saveCommentsBtn || !clearCommentsBtn) return;
+
+  commentsModal = new bootstrap.Modal(modalEl);
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    commentsTextarea.value = '';
+    commentsContext = { competitionId: null, dancerId: null };
+    setCommentsButtonsDisabled(false);
+  });
+
+  saveCommentsBtn.addEventListener('click', async () => {
+    if (!commentsContext.competitionId || !commentsContext.dancerId) return;
+    await upsertComments(commentsContext.competitionId, commentsContext.dancerId, commentsTextarea.value);
+  });
+
+  clearCommentsBtn.addEventListener('click', async () => {
+    if (!commentsContext.competitionId || !commentsContext.dancerId) return;
+    await upsertComments(commentsContext.competitionId, commentsContext.dancerId, '');
+  });
+}
+
+function setCommentsButtonsDisabled(disabled) {
+  if (saveCommentsBtn) saveCommentsBtn.disabled = disabled;
+  if (clearCommentsBtn) clearCommentsBtn.disabled = disabled;
+}
+
+async function upsertComments(competitionId, dancerId, comments) {
+  try {
+    setCommentsButtonsDisabled(true);
+
+    const res = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}/comments`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_id: getEvent().id,
+        judge_id: getUserId(),
+        dancer_id: dancerId,
+        comments: comments ?? ''
+      })
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      showMessageModal(errData.error || 'Error saving comments', 'Error');
+      setCommentsButtonsDisabled(false);
+      return;
+    }
+
+    commentsModal?.hide();
+    await loadCompetitionAndDancers();
+  } catch (err) {
+    console.error('Error saving comments', err);
+    showMessageModal('Error saving comments', 'Error');
+    setCommentsButtonsDisabled(false);
+  }
+}
 
 async function loadCompetitionAndDancers() {
   const category = categorySelect.value;
@@ -577,6 +644,28 @@ function renderDancersTable(dancers, compStatus) {
     }
 
     tr.appendChild(tdActions);
+
+    // Columna Comments (última)
+    const tdComments = document.createElement('td');
+    tdComments.className = 'text-center';
+
+    const hasComments = typeof d.comments === 'string' && d.comments.trim().length > 0;
+    if (d.status === 'Completed') {
+      const btnComments = document.createElement('button');
+      btnComments.className = `btn btn-sm ${hasComments ? 'btn-comments' : 'btn-outline-comments'}`;
+      btnComments.textContent = 'Comments';
+      btnComments.addEventListener('click', () => {
+        if (!commentsModal) return;
+        commentsContext = { competitionId: d.competition_id, dancerId: d.id };
+        commentsTextarea.value = d.comments || '';
+        commentsModal.show();
+      });
+      tdComments.appendChild(btnComments);
+    } else {
+      tdComments.textContent = '-';
+    }
+
+    tr.appendChild(tdComments);
 
     dancersTableBody.appendChild(tr);
   });
