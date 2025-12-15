@@ -4,6 +4,9 @@ const allowedRoles = ["admin", "judge"];
 
 let criteriaList = [];
 
+let criteriaColumnsVisible = false;
+const CRITERIA_COL_VIS_STORAGE_PREFIX = 'lumora.voting.criteriaColumnsVisible';
+
 let modal, criteriaContainer;
 let commentsModal, commentsTextarea, saveCommentsBtn, clearCommentsBtn;
 let commentsContext = { competitionId: null, dancerId: null };
@@ -38,13 +41,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
   await WaitEventLoaded();
 
+  criteriaColumnsVisible = loadCriteriaColumnsVisibility();
+
   const categorySelect = document.getElementById('categorySelect');
   const styleSelect = document.getElementById('styleSelect');
   const competitionInfo = document.getElementById('competitionInfo');
   const dancersTableContainer = document.getElementById('dancersTableContainer');
   const refreshBtn = document.getElementById('refreshBtn');
+  const toggleCriteriaBtn = document.getElementById('toggleCriteriaBtn');
 
   refreshBtn.disabled = true;
+
+  if (toggleCriteriaBtn) {
+    toggleCriteriaBtn.addEventListener('click', () => {
+      setCriteriaColumnsVisibility(!criteriaColumnsVisible, { persist: true });
+    });
+  }
 
   const data = await loadCategoriesAndStyles();
   populateCategorySelect(data, categorySelect);
@@ -63,6 +75,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   await loadCriteria();
+  syncCriteriaToggleButtonState();
 
   const modalEl = document.getElementById('detailsModal');
   modal = new bootstrap.Modal(modalEl);
@@ -70,6 +83,90 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initCommentsModal();
 });
+
+function getCriteriaColumnsVisibilityStorageKey() {
+  const eventId = typeof getEvent === 'function' ? (getEvent()?.id ?? 'no_event') : 'no_event';
+  const userId = typeof getUserId === 'function' ? (getUserId() ?? 'no_user') : 'no_user';
+  return `${CRITERIA_COL_VIS_STORAGE_PREFIX}:${eventId}:${userId}`;
+}
+
+function loadCriteriaColumnsVisibility() {
+  try {
+    const raw = localStorage.getItem(getCriteriaColumnsVisibilityStorageKey());
+    if (raw === null) return false;
+    return raw === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function saveCriteriaColumnsVisibility(visible) {
+  try {
+    localStorage.setItem(getCriteriaColumnsVisibilityStorageKey(), String(Boolean(visible)));
+  } catch {
+    // ignore
+  }
+}
+
+function syncCriteriaToggleButtonState() {
+  const toggleCriteriaBtn = document.getElementById('toggleCriteriaBtn');
+  if (toggleCriteriaBtn) {
+    toggleCriteriaBtn.disabled = !(Array.isArray(criteriaList) && criteriaList.length > 0);
+  }
+  setCriteriaColumnsVisibility(criteriaColumnsVisible, { persist: false });
+  syncCommentsColumnPresentation();
+}
+
+function setCriteriaColumnsVisibility(visible, { persist = false } = {}) {
+  criteriaColumnsVisible = Boolean(visible);
+
+  const dancersTableContainer = document.getElementById('dancersTableContainer');
+  if (dancersTableContainer) {
+    dancersTableContainer.classList.toggle('dancers-table-expanded', criteriaColumnsVisible);
+    dancersTableContainer.classList.toggle('dancers-table-collapsed', !criteriaColumnsVisible);
+  }
+
+  document.querySelectorAll('#dancersTableContainer .criteria-col').forEach(el => {
+    el.classList.toggle('d-none', !criteriaColumnsVisible);
+  });
+
+  syncCommentsColumnPresentation();
+
+  const toggleCriteriaBtnText = document.getElementById('toggleCriteriaBtnText');
+  const toggleCriteriaBtn = document.getElementById('toggleCriteriaBtn');
+  const labelKey = criteriaColumnsVisible ? 'hide_scores_table' : 'show_scores_table';
+  const fallback = criteriaColumnsVisible ? 'Hide scores' : 'Show scores';
+  if (toggleCriteriaBtnText) toggleCriteriaBtnText.textContent = translations?.[labelKey] || fallback;
+  if (toggleCriteriaBtn) toggleCriteriaBtn.setAttribute('aria-pressed', criteriaColumnsVisible ? 'true' : 'false');
+
+  if (persist) saveCriteriaColumnsVisibility(criteriaColumnsVisible);
+}
+
+function syncCommentsColumnPresentation() {
+  const commentsLabel = translations?.comments || 'Comments';
+
+  const commentsHeader = document.querySelector('#dancersTableHeadRow th[data-col="comments"]');
+  if (commentsHeader) {
+    if (criteriaColumnsVisible) {
+      commentsHeader.innerHTML = `<i class="bi bi-chat-dots" title="${commentsLabel}" aria-label="${commentsLabel}"></i>`;
+    } else {
+      commentsHeader.textContent = commentsLabel;
+    }
+  }
+
+  document.querySelectorAll('#dancersTableContainer [data-role="comments-btn"]').forEach(btn => {
+    const hasComments = btn.dataset.hasComments === 'true';
+    if (criteriaColumnsVisible) {
+      btn.innerHTML = `<i class="bi ${hasComments ? 'bi-chat-dots-fill' : 'bi-chat-dots'}" aria-hidden="true"></i>`;
+      btn.setAttribute('aria-label', commentsLabel);
+      btn.setAttribute('title', commentsLabel);
+    } else {
+      btn.textContent = commentsLabel;
+      btn.removeAttribute('title');
+      btn.setAttribute('aria-label', commentsLabel);
+    }
+  });
+}
 
 function initCommentsModal() {
   const modalEl = document.getElementById('commentsModal');
@@ -567,9 +664,13 @@ function setVoteButtonsDisabled(disabled) {
 async function loadCriteria() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/criteria?event_id=${getEvent().id}`);
-    criteriaList = await res.json();
+    const loaded = await res.json();
+    criteriaList = Array.isArray(loaded)
+      ? loaded.sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0))
+      : [];
   } catch (err) {
     console.error('Error loading criteria', err);
+    criteriaList = [];
   }
 }
 
@@ -585,7 +686,9 @@ async function fetchVoting(category, style) {
 }
 
 function renderDancersTable(dancers, compStatus) {
+  renderDancersTableHeader();
   dancersTableBody.innerHTML = ''; // limpiar
+  syncCriteriaToggleButtonState();
 
   dancers.forEach(d => {
     const tr = document.createElement('tr');
@@ -653,7 +756,9 @@ function renderDancersTable(dancers, compStatus) {
     if (d.status === 'Completed') {
       const btnComments = document.createElement('button');
       btnComments.className = `btn btn-sm ${hasComments ? 'btn-comments' : 'btn-outline-comments'}`;
-      btnComments.textContent = 'Comments';
+      btnComments.dataset.role = 'comments-btn';
+      btnComments.dataset.hasComments = hasComments ? 'true' : 'false';
+      btnComments.textContent = translations?.comments || 'Comments';
       btnComments.addEventListener('click', () => {
         if (!commentsModal) return;
         commentsContext = { competitionId: d.competition_id, dancerId: d.id };
@@ -667,8 +772,86 @@ function renderDancersTable(dancers, compStatus) {
 
     tr.appendChild(tdComments);
 
+    const scoreType = getScoreType();
+
+    criteriaList.forEach(c => {
+      const tdCriteria = document.createElement('td');
+      tdCriteria.className = 'text-center small criteria-col';
+      tdCriteria.dataset.criteriaId = c.id;
+
+      const rawScore = d?.scores?.[c.name];
+      const scoreNumber = typeof rawScore === 'number' ? rawScore : rawScore == null ? null : Number(rawScore);
+      tdCriteria.textContent =
+        scoreNumber === null || Number.isNaN(scoreNumber)
+          ? '-'
+          : (formatScoreForDisplay(scoreNumber, scoreType) || '-');
+
+      tr.appendChild(tdCriteria);
+    });
+
+    const tdTotal = document.createElement('td');
+    tdTotal.className = 'text-center fw-semibold criteria-col';
+    const totalNumber = typeof d.totalScore === 'number' ? d.totalScore : d.totalScore == null ? null : Number(d.totalScore);
+    tdTotal.textContent =
+      totalNumber === null || Number.isNaN(totalNumber)
+        ? '-'
+        : (formatScoreForDisplay(totalNumber, scoreType) || '-');
+    tr.appendChild(tdTotal);
+
     dancersTableBody.appendChild(tr);
   });
+
+  setCriteriaColumnsVisibility(criteriaColumnsVisible, { persist: false });
+}
+
+function renderDancersTableHeader() {
+  const headRow = document.getElementById('dancersTableHeadRow');
+  if (!headRow) return;
+
+  const th = (text, className = '') => {
+    const el = document.createElement('th');
+    el.scope = 'col';
+    if (className) el.className = className;
+    el.textContent = text;
+    return el;
+  };
+
+  headRow.innerHTML = '';
+  headRow.appendChild(th(translations?.col_dancer || 'Dancer'));
+
+  headRow.appendChild(th(translations?.col_status || 'Status', 'text-center'));
+  headRow.appendChild(th(translations?.col_action || 'Action', 'text-center'));
+  {
+    const el = th(translations?.comments || 'Comments', 'text-center');
+    el.dataset.col = 'comments';
+    headRow.appendChild(el);
+  }
+
+  criteriaList.forEach(c => {
+    const el = document.createElement('th');
+    el.scope = 'col';
+    el.className = 'text-center small criteria-col';
+    el.dataset.criteriaId = c.id;
+
+    const label = document.createElement('span');
+    label.className = 'criteria-header-text';
+    label.title = c.name;
+    label.textContent = c.name;
+    el.appendChild(label);
+    headRow.appendChild(el);
+  });
+
+  {
+    const el = document.createElement('th');
+    el.scope = 'col';
+    el.className = 'text-center criteria-col';
+    const label = document.createElement('span');
+    label.className = 'criteria-header-text';
+    label.title = translations?.total || 'Total';
+    label.textContent = translations?.total || 'Total';
+    el.appendChild(label);
+    headRow.appendChild(el);
+  }
 }
 
 

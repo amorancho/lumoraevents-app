@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
   initQrModal();
-  initTooltips();
+  //initTooltips();
 
   const toggleVisible = document.getElementById('visible');
 

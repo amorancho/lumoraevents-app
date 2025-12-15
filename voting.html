@@ -36,6 +36,28 @@
       border-color: #f97316;
       color: #fff;
     }
+
+    #dancersTableContainer.dancers-table-collapsed {
+      max-width: 700px;
+    }
+
+    #dancersTableContainer.dancers-table-expanded {
+      max-width: 100%;
+    }
+
+    .criteria-col {
+      width: 70px;
+      min-width: 70px;
+      max-width: 70px;
+      white-space: nowrap;
+    }
+
+    .criteria-header-text {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -110,15 +132,16 @@
       </div>
 
       <!-- Tabla de bailarinas -->
-      <div class="table-responsive mx-auto" id="dancersTableContainer" style="max-width: 700px; display:none;">
+      <div class="table-responsive mx-auto dancers-table-collapsed" id="dancersTableContainer" style="display:none;">
+        <div class="d-flex justify-content-center mb-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary opacity-75" id="toggleCriteriaBtn">
+            <i class="bi bi-layout-three-columns me-1"></i>
+            <span id="toggleCriteriaBtnText">Show scores</span>
+          </button>
+        </div>
         <table class="table table-bordered align-middle text-center">
           <thead class="table-light">
-            <tr>
-              <th data-i18n="col_dancer">Dancer</th>
-              <th class="text-center" data-i18n="col_status">Status</th>
-              <th class="text-center" data-i18n="col_action">Action</th>
-              <th class="text-center">Comments</th>
-            </tr>
+            <tr id="dancersTableHeadRow"></tr>
           </thead>
           <tbody id="dancersTableBody">
             <!-- Bailarinas se cargarán aquí dinámicamente -->
