@@ -168,7 +168,12 @@ function buildVotesDetailCard(results, personalData) {
           <i class="bi bi-card-list fs-5"></i>
           <span class="fw-semibold">Detalle de las votaciones</span>
         </span>
-        <span class="badge bg-light text-primary fw-semibold">${styles.length} styles</span>
+        <span class="d-flex align-items-center gap-2">
+          <span class="badge bg-light text-primary fw-semibold">${styles.length} styles</span>
+          <span class="d-inline-flex align-items-center justify-content-center rounded-pill bg-white bg-opacity-25" style="width:32px;height:32px;">
+            <i class="bi bi-chevron-down" id="${collapseId}Icon" aria-hidden="true"></i>
+          </span>
+        </span>
       </button>
       <div id="${collapseId}" class="collapse">
         <div class="card-body p-0">
@@ -185,6 +190,19 @@ function buildVotesDetailCard(results, personalData) {
   wrap.style.overflowX = 'auto';
   wrap.style.webkitOverflowScrolling = 'touch';
   wrap.appendChild(buildVotesDetailTable(styles, criteria, dancerId));
+
+  const collapseEl = card.querySelector(`#${collapseId}`);
+  const iconEl = card.querySelector(`#${collapseId}Icon`);
+  if (collapseEl && iconEl) {
+    collapseEl.addEventListener('show.bs.collapse', () => {
+      iconEl.classList.remove('bi-chevron-down');
+      iconEl.classList.add('bi-chevron-up');
+    });
+    collapseEl.addEventListener('hide.bs.collapse', () => {
+      iconEl.classList.remove('bi-chevron-up');
+      iconEl.classList.add('bi-chevron-down');
+    });
+  }
 
   return card;
 }
