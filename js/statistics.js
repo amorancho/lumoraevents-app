@@ -77,6 +77,10 @@ function renderStats(data) {
     fragment.appendChild(buildPersonalCard(data.personalData));
   }
 
+  if (Array.isArray(data.results?.styles) && data.results.styles.length > 0) {
+    fragment.appendChild(buildVotesDetailCard(data.results, data.personalData));
+  }
+
   if (Array.isArray(data.styleStats) && data.styleStats.length > 0) {
     fragment.appendChild(buildStylesCard(data.styleStats));
   }
@@ -123,6 +127,341 @@ function buildPersonalCard(personalData) {
   `;
 
   return card;
+}
+
+function buildVotesDetailCard(results, personalData) {
+  const styles = Array.isArray(results?.styles) ? results.styles : [];
+  const dancerId = personalData?.id ?? null;
+
+  const card = document.createElement('div');
+  card.className = 'col-12 col-lg-10';
+
+  if (!styles.length) {
+    card.innerHTML = `
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white d-flex align-items-center gap-2">
+          <i class="bi bi-table text-primary"></i>
+          <span class="fw-semibold">Detalle de las votaciones</span>
+        </div>
+        <div class="card-body">
+          <div class="text-muted">No hay detalle de votaciones disponible.</div>
+        </div>
+      </div>
+    `;
+    return card;
+  }
+
+  const { criteria } = buildVotesSchema(styles, dancerId);
+  const collapseId = 'votesDetailCollapse';
+
+  card.innerHTML = `
+    <div class="card shadow border-0 overflow-hidden">
+      <button
+        class="btn btn-primary bg-gradient text-white text-start d-flex align-items-center justify-content-between gap-3 px-4 py-3"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#${collapseId}"
+        aria-expanded="false"
+        aria-controls="${collapseId}"
+      >
+        <span class="d-flex align-items-center gap-2">
+          <i class="bi bi-card-list fs-5"></i>
+          <span class="fw-semibold">Detalle de las votaciones</span>
+        </span>
+        <span class="badge bg-light text-primary fw-semibold">${styles.length} styles</span>
+      </button>
+      <div id="${collapseId}" class="collapse">
+        <div class="card-body p-0">
+          <div class="p-3 p-md-4">
+            <div class="table-responsive" id="votesDetailTableWrap"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const wrap = card.querySelector('#votesDetailTableWrap');
+  // Ensure horizontal scroll works smoothly on touch devices.
+  wrap.style.overflowX = 'auto';
+  wrap.style.webkitOverflowScrolling = 'touch';
+  wrap.appendChild(buildVotesDetailTable(styles, criteria, dancerId));
+
+  return card;
+}
+
+function buildVotesSchema(styles, dancerId) {
+  const criteria = [];
+  const criteriaSet = new Set();
+
+  styles.forEach((style) => {
+    const classification = pickClassification(style?.clasification, dancerId);
+    const votes = Array.isArray(classification?.votes) ? classification.votes : [];
+
+    votes.forEach((vote) => {
+      const voteCriteria = Array.isArray(vote?.criteria) ? vote.criteria : [];
+      voteCriteria.forEach((c) => {
+        const critName = (c?.name || '').trim();
+        if (!critName) return;
+        if (!criteriaSet.has(critName)) {
+          criteriaSet.add(critName);
+          criteria.push(critName);
+        }
+      });
+    });
+  });
+
+  return { criteria };
+}
+
+function buildVotesDetailTable(styles, criteria, dancerId) {
+  const table = document.createElement('table');
+  table.className = 'table table-sm table-bordered table-hover align-middle mb-0 small';
+  table.style.tableLayout = 'fixed';
+  table.style.width = '100%';
+
+  const critList = Array.isArray(criteria) && criteria.length ? criteria : ['Score'];
+
+  const isMobile = typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(max-width: 576px)').matches
+    : false;
+  const isSmallWidth = typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(max-width: 768px)').matches
+    : false;
+
+  // Keep Style/Judge fixed; scroll horizontally over scores.
+  const stickyStyle = true;
+  const stickyJudge = true;
+
+  const colgroup = document.createElement('colgroup');
+  const styleColWidthPx = isSmallWidth
+    ? computeStyleColumnWidth(styles)
+    : 160;
+  const judgeColWidthPx = computeJudgeColumnWidth(styles, dancerId, isSmallWidth);
+  const valueColWidthPx = isMobile ? 96 : 105;
+
+  // Keep Style/Judge compact; make criteria equal-width.
+  colgroup.appendChild(createCol(`${styleColWidthPx}px`)); // style
+  colgroup.appendChild(createCol(`${judgeColWidthPx}px`)); // judge
+  critList.forEach(() => colgroup.appendChild(createCol(`${valueColWidthPx}px`)));
+  colgroup.appendChild(createCol(`${valueColWidthPx}px`)); // total
+
+  table.appendChild(colgroup);
+  table.style.minWidth = `${styleColWidthPx + judgeColWidthPx + valueColWidthPx * (critList.length + 1)}px`;
+
+  const thead = document.createElement('thead');
+  thead.className = 'table-light';
+
+  const header = document.createElement('tr');
+  const thStyle = document.createElement('th');
+  thStyle.scope = 'col';
+  thStyle.className = 'text-start';
+  thStyle.textContent = 'Style';
+  if (stickyStyle) makeStickyCell(thStyle, 0, 3, '#f8f9fa');
+  header.appendChild(thStyle);
+
+  const thJudge = document.createElement('th');
+  thJudge.scope = 'col';
+  thJudge.className = 'text-center';
+  thJudge.textContent = 'Judge';
+  if (stickyJudge) makeStickyCell(thJudge, styleColWidthPx, 3, '#f8f9fa');
+  header.appendChild(thJudge);
+
+  critList.forEach((critName) => {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.className = 'text-center small';
+    th.textContent = critName;
+    header.appendChild(th);
+  });
+
+  const thTotal = document.createElement('th');
+  thTotal.scope = 'col';
+  thTotal.className = 'text-center';
+  thTotal.textContent = 'Total';
+  header.appendChild(thTotal);
+
+  thead.appendChild(header);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  styles.forEach((style) => {
+    const styleName = style?.style_name ?? '-';
+
+    const classification = pickClassification(style?.clasification, dancerId);
+    const styleTotal = classification?.total_score ?? null;
+    const votes = Array.isArray(classification?.votes) ? classification.votes : [];
+
+    const effectiveVotes = votes.length
+      ? votes
+      : [{ judge_name: '-', criteria: [] }];
+
+    const rowSpan = effectiveVotes.length;
+
+    effectiveVotes.forEach((vote, index) => {
+      const tr = document.createElement('tr');
+
+      if (index === 0) {
+        const tdStyle = document.createElement('td');
+        tdStyle.className = 'text-start';
+        tdStyle.rowSpan = rowSpan;
+        const maxNameWidth = Math.max(60, styleColWidthPx - 20);
+        tdStyle.innerHTML = `
+          <div class="fw-semibold text-truncate" style="max-width:${maxNameWidth}px" title="${escapeHtml(styleName)}">${escapeHtml(styleName)}</div>
+          ${styleTotal != null ? `<div class="mt-1"><span class="badge bg-primary-subtle text-primary fw-semibold">Total ${escapeHtml(styleTotal)}</span></div>` : ''}
+        `;
+        tdStyle.style.verticalAlign = 'top';
+        tdStyle.classList.add('bg-body-secondary');
+        if (isMobile) {
+          tdStyle.style.padding = '0.35rem';
+          //tdStyle.style.fontSize = '0.75rem';
+          tdStyle.style.lineHeight = '1.1';
+          tdStyle.style.wordBreak = 'break-word';
+        }
+        if (stickyStyle) makeStickyCell(tdStyle, 0, 2, 'var(--bs-secondary-bg)');
+        tr.appendChild(tdStyle);
+        tr.classList.add('border-top', 'border-2');
+      }
+
+      const judgeName = (vote?.judge_name || '-').trim() || '-';
+      const tdJudge = document.createElement('td');
+      tdJudge.className = 'text-center';
+      tdJudge.textContent = judgeName;
+      tdJudge.title = judgeName;
+      tdJudge.style.whiteSpace = 'nowrap';
+      tdJudge.style.overflow = 'hidden';
+      tdJudge.style.textOverflow = 'ellipsis';
+      if (isMobile) {
+        tdJudge.style.padding = '0.35rem';
+        //tdJudge.style.fontSize = '0.75rem';
+        tdJudge.style.lineHeight = '1.1';
+        tdJudge.style.wordBreak = 'break-word';
+      }
+      if (stickyJudge) makeStickyCell(tdJudge, styleColWidthPx, 1, '#fff');
+      tr.appendChild(tdJudge);
+
+      const criteriaMap = new Map();
+      const voteCriteria = Array.isArray(vote?.criteria) ? vote.criteria : [];
+      voteCriteria.forEach((c) => {
+        const critName = (c?.name || '').trim();
+        if (!critName) return;
+        criteriaMap.set(critName, c?.score ?? '-');
+      });
+
+      critList.forEach((critName) => {
+        const td = document.createElement('td');
+        td.className = 'text-center';
+        const score = criteriaMap.has(critName) ? criteriaMap.get(critName) : null;
+        td.innerHTML = renderScore(score);
+        tr.appendChild(td);
+      });
+
+      const judgeTotal = vote?.total_score ?? sumNumericScores(voteCriteria);
+      const tdTotal = document.createElement('td');
+      tdTotal.className = 'text-center fw-semibold';
+      tdTotal.innerHTML = renderTotalScore(judgeTotal);
+      tr.appendChild(tdTotal);
+
+      tbody.appendChild(tr);
+    });
+  });
+
+  table.appendChild(tbody);
+  return table;
+}
+
+function createCol(width) {
+  const col = document.createElement('col');
+  if (width) col.style.width = width;
+  return col;
+}
+
+function computeJudgeColumnWidth(styles, dancerId, isSmallWidth) {
+  const min = isSmallWidth ? 90 : 100;
+  const max = isSmallWidth ? 140 : 170;
+
+  let maxChars = 5;
+  styles.forEach((style) => {
+    const classification = pickClassification(style?.clasification, dancerId);
+    const votes = Array.isArray(classification?.votes) ? classification.votes : [];
+    votes.forEach((vote) => {
+      const name = (vote?.judge_name || '').trim();
+      if (name.length > maxChars) maxChars = name.length;
+    });
+  });
+
+  // Rough estimate: ~7px per char + padding.
+  const estimated = Math.round(maxChars * 7 + 34);
+  return clampToRange(estimated, min, max);
+}
+
+function computeStyleColumnWidth(styles) {
+  const min = 95;
+  const max = 175;
+
+  let maxChars = 5;
+  styles.forEach((style) => {
+    const name = String(style?.style_name ?? '').trim();
+    if (name.length > maxChars) maxChars = name.length;
+  });
+
+  // Rough estimate: ~7px per char + padding.
+  const estimated = Math.round(maxChars * 7 + 28);
+  return clampToRange(estimated, min, max);
+}
+
+function makeStickyCell(cell, leftPx, zIndex, bg) {
+  cell.style.position = 'sticky';
+  cell.style.left = `${leftPx}px`;
+  cell.style.zIndex = String(zIndex);
+  cell.style.background = bg;
+}
+
+function renderScore(value) {
+  if (value == null || value === '-' || value === '') {
+    return `<span class="text-muted">-</span>`;
+  }
+  if (typeof value === 'number' || /^\s*\d+(\.\d+)?\s*$/.test(String(value))) {
+    return `<span class="badge bg-dark-subtle text-dark fw-semibold">${escapeHtml(value)}</span>`;
+  }
+  return `<span class="fw-semibold">${escapeHtml(value)}</span>`;
+}
+
+function renderTotalScore(value) {
+  if (value == null || value === '-' || value === '') {
+    return `<span class="text-muted">-</span>`;
+  }
+  return `<span class="badge bg-warning text-dark fw-bold px-2 py-1">${escapeHtml(value)}</span>`;
+}
+
+function sumNumericScores(criteria) {
+  const list = Array.isArray(criteria) ? criteria : [];
+  let sum = 0;
+  let count = 0;
+  list.forEach((c) => {
+    const n = Number(c?.score);
+    if (Number.isFinite(n)) {
+      sum += n;
+      count += 1;
+    }
+  });
+  return count ? sum : '-';
+}
+
+function pickClassification(clasification, dancerId) {
+  const list = Array.isArray(clasification) ? clasification : [];
+  if (!list.length) return null;
+  if (dancerId == null) return list[0];
+  return list.find((c) => String(c?.dancer_id) === String(dancerId)) || list[0];
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 function buildCriteriaCard(criteria) {
