@@ -29,9 +29,10 @@
   "license_large_text": "Máximo de 100 bailarinas",
   "license_unlimited_text": "Bailarinas ilimitadas",
   "license": "Licencia",
-  "visible_judges": "Menú Jueces Visible",
-  "visible_participants": "Menú Participantes Visible",
-  "visible_schedule": "Menú Programación Visible",
-  "visible_results": "Menú Resultados Visible",
+  "visible_judges": "Menú Jueces",
+  "visible_participants": "Menú Participantes",
+  "visible_schedule": "Menú Programación",
+  "visible_results": "Menú Resultados",
+  "visible_statistics": "Menú Estadísticas",
   "notices": "Avisos"
 }

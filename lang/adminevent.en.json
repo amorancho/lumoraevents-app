@@ -29,9 +29,10 @@
   "license_large_text": "Maximum of 100 dancers",
   "license_unlimited_text": "Unlimited dancers",
   "license": "License",
-  "visible_judges": "Menú Judges Visible",
-  "visible_participants": "Menú Participants Visible",
-  "visible_schedule": "Menú Schedule Visible",
-  "visible_results": "Menú Results Visible",
+  "visible_judges": "Menú Judges",
+  "visible_participants": "Menú Participants",
+  "visible_schedule": "Menú Schedule",
+  "visible_results": "Menú Results",
+  "visible_statistics": "Menú Statistics",
   "notices": "Notices"
 }

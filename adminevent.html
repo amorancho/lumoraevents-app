@@ -53,7 +53,12 @@
             <div class="me-2" data-i18n="card_title">
               <i class="bi bi-gear me-2"></i>Event Information
             </div>
-            <div id="licenseInfo" class="fw-normal fst-italic text-truncate" style="min-width: 0;"></div>
+            <div class="d-flex align-items-center gap-2 ms-auto" style="min-width: 0;">
+              <button type="button" class="btn btn-light btn-sm fw-semibold text-nowrap" id="exportEventBtn" data-i18n="export_event">
+                <i class="bi bi-download me-1"></i>Export
+              </button>
+              <div id="licenseInfo" class="fw-normal fst-italic text-truncate" style="min-width: 0;"></div>
+            </div>
           </div>
           <div class="card-body">
             <form id="eventForm" class="row g-3">
@@ -134,8 +139,8 @@
                   <i class="bi bi-eye me-2"></i><span data-i18n="prop_visibility">Visibility</span>
                 </div>
                 <div class="card-body">
-                  <div class="row g-3">                    
 
+                  <!--div class="row g-3">                    
                     <div class="col-12 mt-3">
                       <div class="row">
                         <div class="col-md-3">
@@ -164,8 +169,54 @@
                         </div>
                       </div>
                     </div>
+                  </div-->
+                  <div class="row row-cols-1 row-cols-md-5 g-3">
+                    <div class="col">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="visible_judges">
+                        <label class="form-check-label" data-i18n="visible_judges">
+                          Menú Jueces
+                        </label>
+                      </div>
+                    </div>
 
+                    <div class="col">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="visible_participants">
+                        <label class="form-check-label" data-i18n="visible_participants">
+                          Menú Participantes
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="col">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="visible_schedule">
+                        <label class="form-check-label" data-i18n="visible_schedule">
+                          Menú Programación
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="col">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="visible_results">
+                        <label class="form-check-label" data-i18n="visible_results">
+                          Menú Resultados
+                        </label>
+                      </div>
+                    </div>
+
+                    <div class="col">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="visible_statistics">
+                        <label class="form-check-label" data-i18n="visible_statistics">
+                          Menú Estadísticas
+                        </label>
+                      </div>
+                    </div>
                   </div>
+
                 </div>
               </div>
 
@@ -291,6 +342,27 @@
         </div>
         <div class="modal-footer justify-content-center">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="exportEventModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="export_event_title">Export event</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2" data-i18n="export_event_confirm">Are you sure you want to export this event?</p>
+          <div class="text-muted small" data-i18n="export_event_info">
+            This will generate a ZIP with the event data. It may take a few seconds.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="exportEventConfirmBtn" data-i18n="confirm">Yes, export</button>
         </div>
       </div>
     </div>

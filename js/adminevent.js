@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
 
   initQrModal();
+  initExportEventModal();
   //initTooltips();
 
   const toggleVisible = document.getElementById('visible');
@@ -78,6 +79,102 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   
 });
+
+function initExportEventModal() {
+  const exportBtn = document.getElementById('exportEventBtn');
+  const modalEl = document.getElementById('exportEventModal');
+  const confirmBtn = document.getElementById('exportEventConfirmBtn');
+
+  if (!exportBtn || !modalEl || !confirmBtn) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+
+  exportBtn.addEventListener('click', () => {
+    if (exportBtn.disabled) return;
+    modal.show();
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    confirmBtn.disabled = true;
+    modal.hide();
+
+    setButtonLoading(exportBtn, true, 'Exporting...');
+
+    try {
+      const id = getEvent()?.id;
+      if (!id) throw new Error('Event not loaded');
+
+      const res = await fetch(`${API_BASE_URL}/api/events/${id}/planb`, { method: 'GET' });
+      if (!res.ok) {
+        let message = 'Error exporting event';
+        try {
+          const data = await res.json();
+          message = data?.error || data?.message || message;
+        } catch {
+          // ignore json parse errors for non-json bodies
+        }
+        throw new Error(message);
+      }
+
+      const blob = await res.blob();
+      const filename = makeExportFilename(getEvent());
+
+      downloadBlob(blob, filename);
+    } catch (err) {
+      console.error('Export error:', err);
+      showMessageModal(err?.message || 'Error exporting event', 'Error');
+    } finally {
+      setButtonLoading(exportBtn, false);
+      confirmBtn.disabled = false;
+    }
+  });
+}
+
+function setButtonLoading(button, isLoading, loadingText = 'Loading...') {
+  if (!button) return;
+
+  if (isLoading) {
+    if (!button.dataset.originalHtml) button.dataset.originalHtml = button.innerHTML;
+    button.innerHTML = `
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span>${loadingText}</span>
+    `;
+    button.disabled = true;
+    return;
+  }
+
+  if (button.dataset.originalHtml) {
+    button.innerHTML = button.dataset.originalHtml;
+    delete button.dataset.originalHtml;
+  }
+  button.disabled = false;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename || 'download.zip';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function makeExportFilename(event) {
+  const baseName = (event?.name || 'Event').trim();
+  const safeBase = sanitizeFilename(baseName) || 'Event';
+  return `${safeBase} - Export.zip`;
+}
+
+function sanitizeFilename(name) {
+  return String(name)
+    .replace(/[\\/:*?"<>|]/g, '-') // windows forbidden chars
+    .replace(/[\u0000-\u001F\u007F]/g, '') // control chars
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 function initTooltips() {
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -174,6 +271,7 @@ async function loadEventData(eventId) {
     if (f('visible_participants')) f('visible_participants').checked = data.visible_participants == 1; 
     if (f('visible_schedule')) f('visible_schedule').checked = data.visible_schedule == 1; 
     if (f('visible_results')) f('visible_results').checked = data.visible_results == 1;
+    if (f('visible_statistics')) f('visible_statistics').checked = data.visible_statistics == 1;
     if (f('notice_active')) f('notice_active').checked = data.notice_active == 1;
 
     const licenseInfo = document.getElementById("licenseInfo");
@@ -239,6 +337,7 @@ async function saveEventData(eventId) {
     visible_participants: f('visible_participants').checked ? 1 : 0,
     visible_schedule: f('visible_schedule').checked ? 1 : 0,
     visible_results: f('visible_results').checked ? 1 : 0,
+    visible_statistics: f('visible_statistics').checked ? 1 : 0,
     notice_text: f('notice_text').value.trim(),
     notice_active: f('notice_active').checked ? 1 : 0,
     notice_type: f('notice_type').value

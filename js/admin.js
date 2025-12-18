@@ -396,6 +396,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('visible_participants').checked = (Number(eventObj.visible_participants) === 1);
   document.getElementById('visible_schedule').checked = (Number(eventObj.visible_schedule) === 1);
   document.getElementById('visible_results').checked = (Number(eventObj.visible_results) === 1);
+  document.getElementById('visible_statistics').checked = (Number(eventObj.visible_statistics) === 1);
   document.getElementById('has_penalties').checked = (Number(eventObj.has_penalties) === 1);
   document.getElementById('notice_text').value = eventObj.notice_text;
   document.getElementById('notice_active').checked = (Number(eventObj.notice_active) === 1);
@@ -441,6 +442,7 @@ async function saveEvent() {
     visible_participants: document.getElementById('visible_participants').checked ? 1 : 0,
     visible_schedule: document.getElementById('visible_schedule').checked ? 1 : 0,
     visible_results: document.getElementById('visible_results').checked ? 1 : 0,
+    visible_statistics: document.getElementById('visible_statistics').checked ? 1 : 0,
     has_penalties: document.getElementById('has_penalties').checked ? 1 : 0,
     notice_text: document.getElementById('notice_text').value.trim(),
     notice_active: document.getElementById('notice_active').checked ? 1 : 0,

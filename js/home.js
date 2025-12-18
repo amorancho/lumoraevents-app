@@ -91,8 +91,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             resultsCol.classList.remove("d-none");
         }
 
-        console.log("Visible statistics:", getEvent().visibleStatistics);
-
         if (getEvent().visibleStatistics == 0) {
             statisticsCol.remove();
         } else {
