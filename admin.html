@@ -511,8 +511,12 @@
                 <hr>
               </div>
 
-              <div class="col-md-3">
-                <label class="form-label">Estado Envío Bienvenida</label>
+              <div class="col-12 mb-2">
+                <h5 class="mb-1">Email de Bienvenida</h5>
+              </div>
+
+              <div class="col-md-2">
+                <label class="form-label">Estado Envío</label>
                 <div>
                 <span class="badge bg-warning" id="welcome_status">NO ENVIADO</span>
                 </div>
@@ -523,7 +527,12 @@
                 <input type="text" class="form-control bg-light" id="WelcomeSendDate" readonly>
               </div>
 
-              <div class="col-md-3">
+              <div class="col-md-5">
+                <label class="form-label d-block">Destinatario</label>
+                <input type="text" class="form-control bg-light" id="organizer_info" readonly>
+              </div>
+
+              <div class="col-md-2 d-flex flex-column justify-content-center">
                 <label class="form-label invisible d-block">Acción</label>
                 <button type="button" class="btn btn-sm btn-warning"
                   id="sendWelcome"
@@ -534,7 +543,7 @@
                   Enviar Bienvenida
                 </button>
               </div>
-
+              
             </div>
           </form>
         </div>

@@ -422,6 +422,8 @@ function openEditEventModal(eventObj) {
   populateClientSelect();
   document.getElementById('clientSelect').value = eventObj.client_id || '';
 
+  eventObj.organizer_info = eventObj.contact_person + ' <' + eventObj.email + '>';
+
   // mostrar previews si corresponde
   updateLogoPreview();
   updateUrlPreview();
@@ -711,6 +713,7 @@ function setEventWelcomeInfo(eventObj) {
   const statusBadge = document.getElementById('welcome_status');
   const sendDateField = document.getElementById('WelcomeSendDate');
   const sendBtn = document.getElementById('sendWelcome');
+  const OrgInfo = document.getElementById('organizer_info');
 
   if (!statusBadge || !sendDateField || !sendBtn) return;
 
@@ -718,7 +721,8 @@ function setEventWelcomeInfo(eventObj) {
     id: null,
     welcome_email_id: null,
     email_status: null,
-    email_send_date: null
+    email_send_date: null,
+    organizer_info: null
   };
 
   const { badgeClass, badgeLabel, badgeTooltip } = getWelcomeEmailBadge(normalized);
@@ -739,6 +743,8 @@ function setEventWelcomeInfo(eventObj) {
 
   sendBtn.dataset.eventId = normalized.id ? String(normalized.id) : '';
   sendBtn.disabled = !(normalized.id && normalized.welcome_email_id == null);
+
+  OrgInfo.value = normalized.organizer_info;
 }
 
 async function sendEventWelcomeEmail() {
