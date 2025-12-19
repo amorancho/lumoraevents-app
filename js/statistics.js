@@ -5,7 +5,7 @@ const dancerCodeInput = () => document.getElementById('dancerCode');
 
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
-  renderEmptyState();
+  //renderEmptyState();
 
   const form = document.getElementById('statsForm');
   if (form) {
@@ -42,7 +42,7 @@ async function handleStatsSubmit(event) {
     renderStats(data);
   } catch (error) {
     console.error('Error obteniendo estadisticas:', error);
-    renderEmptyState();
+    //renderEmptyState();
     showAlert('danger', error.message || 'No se pudieron cargar las estadísticas.');
   } finally {
     setLoading(false);
@@ -67,7 +67,7 @@ function renderStats(data) {
   container.innerHTML = '';
 
   if (!data) {
-    renderEmptyState();
+    //renderEmptyState();
     return;
   }
 
@@ -94,7 +94,7 @@ function renderStats(data) {
   }
 
   if (!fragment.childNodes.length) {
-    renderEmptyState();
+    //renderEmptyState();
     showAlert('warning', 'No hay datos de estadísticas para este código.');
     return;
   }

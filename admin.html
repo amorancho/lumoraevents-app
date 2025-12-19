@@ -112,6 +112,7 @@
                     <th>Visible</th>
                     <th>Trial</th>                    
                     <th>Licencia</th>
+                    <th class="text-center">Bienvenida</th>
                     <th class="text-center">Acciones</th>
                   </tr>
                 </thead>
@@ -504,6 +505,34 @@
                   <option value="DEC">Decimales (1 decimal)</option>
                   <option value="MED">Medios (0.5)</option>
                 </select>
+              </div>
+
+              <div class="col-12">
+                <hr>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Estado Envío Bienvenida</label>
+                <div>
+                <span class="badge bg-warning" id="welcome_status">NO ENVIADO</span>
+                </div>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label" data-i18n="welcome_sended">Fecha Envío Bienvenida</label>
+                <input type="text" class="form-control bg-light" id="WelcomeSendDate" readonly>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label invisible d-block">Acción</label>
+                <button type="button" class="btn btn-sm btn-warning"
+                  id="sendWelcome"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  title="Enviar email de bienvenida a Organizador"
+                  data-i18n="welcome_send">
+                  Enviar Bienvenida
+                </button>
               </div>
 
             </div>

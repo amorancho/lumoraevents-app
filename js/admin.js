@@ -39,6 +39,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     await saveEvent();
   });
 
+  const sendWelcomeBtn = document.getElementById('sendWelcome');
+  if (sendWelcomeBtn) {
+    sendWelcomeBtn.addEventListener('click', async () => {
+      await sendEventWelcomeEmail();
+    });
+  }
+
 });
 
 async function loadEvents() {
@@ -106,6 +113,11 @@ function renderEvents() {
         licenseBadge = `<span class="badge bg-secondary">${event.license}</span>`;
     }
 
+    const { badgeClass, badgeLabel, badgeTooltip } = getWelcomeEmailBadge(event);
+    const badgeTooltipAttr = badgeTooltip
+      ? `data-bs-toggle="tooltip" data-bs-placement="top" title="${badgeTooltip}"`
+      : '';
+
     const visibleIcon = event.visible == 1
       ? `<span class="text-success fw-bold ">✓</span>`
       : `<span class="text-danger fw-bold">✗</span>`;
@@ -124,7 +136,10 @@ function renderEvents() {
       <td>${event.client_name}</td>
       <td>${visibleIcon}</td>
       <td>${trialIcon}</td>
-      <td>${licenseBadge}</td>     
+      <td>${licenseBadge}</td>
+      <td class="align-middle text-center">
+        <span class="badge ${badgeClass}" ${badgeTooltipAttr}>${badgeLabel}</span>
+      </td>
       <td class="text-center">
         <div class="btn-group">
           <button type="button" 
@@ -353,6 +368,7 @@ function openCreateEventModal() {
   form.removeAttribute('data-id');
   document.getElementById('eventId').value = '';
   form.reset();
+  setEventWelcomeInfo(null);
 
   // Asegurarse que el select de clientes está poblado
   populateClientSelect();
@@ -409,6 +425,7 @@ function openEditEventModal(eventObj) {
   // mostrar previews si corresponde
   updateLogoPreview();
   updateUrlPreview();
+  setEventWelcomeInfo(eventObj);
 
   document.getElementById('eventModalTitle').textContent = 'Editar Evento';
   eventModal.show();
@@ -637,5 +654,141 @@ function updateUrlPreview() {
     previewDiv.classList.remove('d-none');
   } else {
     previewDiv.classList.add('d-none');
+  }
+}
+
+function getWelcomeEmailBadge(eventObj) {
+  const sendDate = eventObj?.email_send_date ?? eventObj?.send_date ?? null;
+
+  if (eventObj?.welcome_email_id == null) {
+    return { badgeClass: 'bg-secondary', badgeLabel: getWelcomeStatusLabel(null) };
+  }
+
+  const status = eventObj?.email_status ?? eventObj?.welcome_email_status ?? null;
+  const badgeTooltip = sendDate ? formatSendDate(sendDate) : null;
+  const badgeLabel = getWelcomeStatusLabel(status);
+
+  switch (status) {
+    case 'P':
+      return { badgeClass: 'bg-warning text-dark', badgeLabel, badgeTooltip };
+    case 'S':
+      return { badgeClass: 'bg-success', badgeLabel, badgeTooltip };
+    case 'E':
+      return { badgeClass: 'bg-danger', badgeLabel, badgeTooltip };
+    default:
+      return { badgeClass: 'bg-secondary', badgeLabel, badgeTooltip };
+  }
+}
+
+function getWelcomeStatusLabel(status) {
+  switch (status) {
+    case 'P':
+    case 'SENDING':
+      return 'SENDING';
+    case 'S':
+    case 'SENDED':
+      return 'SENDED';
+    case 'E':
+    case 'ERROR':
+      return 'ERROR';
+    default:
+      return 'NOT SENT';
+  }
+}
+
+function formatSendDate(sendDate) {
+  if (!sendDate) return null;
+
+  const parsed = new Date(sendDate);
+  if (Number.isNaN(parsed.getTime())) {
+    return sendDate;
+  }
+
+  return parsed.toLocaleString();
+}
+
+function setEventWelcomeInfo(eventObj) {
+  const statusBadge = document.getElementById('welcome_status');
+  const sendDateField = document.getElementById('WelcomeSendDate');
+  const sendBtn = document.getElementById('sendWelcome');
+
+  if (!statusBadge || !sendDateField || !sendBtn) return;
+
+  const normalized = eventObj || {
+    id: null,
+    welcome_email_id: null,
+    email_status: null,
+    email_send_date: null
+  };
+
+  const { badgeClass, badgeLabel, badgeTooltip } = getWelcomeEmailBadge(normalized);
+
+  statusBadge.className = `badge ${badgeClass}`;
+  statusBadge.textContent = badgeLabel;
+
+  if (badgeTooltip) {
+    statusBadge.setAttribute('data-bs-toggle', 'tooltip');
+    statusBadge.setAttribute('data-bs-placement', 'top');
+    statusBadge.setAttribute('title', badgeTooltip);
+  } else {
+    statusBadge.removeAttribute('title');
+  }
+
+  const sendDate = normalized.email_send_date ?? normalized.send_date ?? null;
+  sendDateField.value = sendDate ? formatSendDate(sendDate) : getWelcomeStatusLabel(null);
+
+  sendBtn.dataset.eventId = normalized.id ? String(normalized.id) : '';
+  sendBtn.disabled = !(normalized.id && normalized.welcome_email_id == null);
+}
+
+async function sendEventWelcomeEmail() {
+  const sendBtn = document.getElementById('sendWelcome');
+  const eventId = sendBtn?.dataset?.eventId;
+
+  if (!sendBtn || !eventId) {
+    showMessageModal('No event selected.', 'Error');
+    return;
+  }
+
+  const originalText = sendBtn.innerHTML;
+  sendBtn.disabled = true;
+
+  const spinner = document.createElement('span');
+  spinner.className = 'spinner-border spinner-border-sm ms-2';
+  spinner.setAttribute('role', 'status');
+  spinner.setAttribute('aria-hidden', 'true');
+  sendBtn.appendChild(spinner);
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/send-welcome-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: 'Error sending welcome email' }));
+      showMessageModal(err.error || 'Error sending welcome email', 'Error');
+      return;
+    }
+
+    const data = await response.json().catch(() => ({}));
+    const current = events.find(e => String(e.id) === String(eventId)) || { id: eventId };
+    const merged = { ...current, ...data };
+
+    const idx = events.findIndex(e => String(e.id) === String(eventId));
+    if (idx >= 0) events[idx] = merged;
+
+    setEventWelcomeInfo(merged);
+    await loadEvents();
+
+  } catch (err) {
+    console.error(err);
+    showMessageModal('Error sending welcome email', 'Error');
+  } finally {
+    spinner.remove();
+    sendBtn.innerHTML = originalText;
+
+    const current = events.find(e => String(e.id) === String(eventId)) || { id: eventId };
+    setEventWelcomeInfo(current);
   }
 }
