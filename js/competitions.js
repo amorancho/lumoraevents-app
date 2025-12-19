@@ -55,6 +55,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault(); // evita recarga/redirección
     });
   }
+
+  await loadTranslations(savedLang, pageName);
+  applyTranslations();
 });
 
 async function fetchCompetitionsFromAPI() {

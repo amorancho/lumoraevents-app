@@ -53,6 +53,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   fetchDancersFromAPI();
 
+  await loadTranslations(savedLang, pageName);
+  applyTranslations();
+
 });
 
 document.addEventListener('DOMContentLoaded', function () {

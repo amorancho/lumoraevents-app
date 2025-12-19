@@ -164,6 +164,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     votingModal.show();
   });
 
+  await loadTranslations(savedLang, pageName);
+  applyTranslations();
+
 }); // end DOMContentLoaded
 
 // ---- Helpers y funciones originales adaptadas ----

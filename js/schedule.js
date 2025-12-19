@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     await waitForTranslations();
 
     loadSchedule();
+
+    await loadTranslations(savedLang, pageName);
+    applyTranslations();
 });
 
 async function loadSchedule() {

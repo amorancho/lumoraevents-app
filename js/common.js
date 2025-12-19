@@ -154,8 +154,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   document.documentElement.setAttribute('lang', savedLang);
 
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
+  //await loadTranslations(savedLang, pageName);
+  //applyTranslations();
 
   // Esperamos a que los datos del evento estén listos
   try {

@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (form) {
     form.addEventListener('submit', handleStatsSubmit);
   }
+
+  await loadTranslations(savedLang, pageName);
+  applyTranslations();
 });
 
 function renderEmptyState() {

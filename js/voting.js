@@ -82,6 +82,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   criteriaContainer = document.getElementById('criteriaContainer');
 
   initCommentsModal();
+
+  await loadTranslations(savedLang, pageName);
+  applyTranslations();
 });
 
 function getCriteriaColumnsVisibilityStorageKey() {

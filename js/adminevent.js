@@ -77,6 +77,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Ejecutar cada vez que cambie el select
   categorySelect.addEventListener('change', updateMinStylesState);
 
+  await loadTranslations(savedLang, pageName);
+  applyTranslations();
   
 });
 

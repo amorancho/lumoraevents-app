@@ -21,7 +21,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       noticePanel.style.display = 'block';
   }
 
-  loadParticipants();  
+  loadParticipants(); 
+  
+  await loadTranslations(savedLang, pageName);
+  applyTranslations();
 });
 
 async function loadParticipants() {

@@ -42,6 +42,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  await loadTranslations(savedLang, pageName);
+  applyTranslations();
+
 });
 
 
