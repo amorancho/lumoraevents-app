@@ -1,19 +1,5 @@
 let lang;
 
-async function waitForTranslations(timeout = 5000) {
-  const start = Date.now();
-
-  while (!translations) {
-    // salir si pasaron más de 5 segundos
-    if (Date.now() - start > timeout) {
-      break;
-    }
-
-    // esperar 100 ms antes de volver a comprobar
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-}
 
 document.addEventListener('DOMContentLoaded', async () => {
     await WaitEventLoaded();
@@ -33,12 +19,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         noticePanel.style.display = 'block';
     }
 
-    await waitForTranslations();
+    await ensureTranslationsReady();
 
     loadSchedule();
-
-    await loadTranslations(savedLang, pageName);
-    applyTranslations();
 });
 
 async function loadSchedule() {
@@ -107,23 +90,23 @@ function renderSchedule(data) {
                 <div class="card-body">
                 <div class="row text-center align-items-center">
                     <div class="col-6 col-md-3 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">${translations["category"]}</p>
+                        <p class="mb-1 fw-semibold">${t('category')}</p>
                         <span class="badge bg-primary">${item.category}</span>
                     </div>
                     <div class="col-6 col-md-3 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">${translations["style"]}</p>
+                        <p class="mb-1 fw-semibold">${t('style')}</p>
                         <span class="badge bg-primary">${item.style}</span>
                     </div>
                     <div class="col-4 col-md-2 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">${translations["time"]}</p>
+                        <p class="mb-1 fw-semibold">${t('time')}</p>
                         <span>${item.time}</span>
                     </div>
                     <div class="col-4 col-md-2 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">${translations["status"]}</p>
+                        <p class="mb-1 fw-semibold">${t('status')}</p>
                         ${getStatusBadge(item.status)}
                     </div>
                     <div class="col-4 col-md-2">
-                        <p class="mb-1 fw-semibold">${translations["dancers"]}</p>
+                        <p class="mb-1 fw-semibold">${t('dancers')}</p>
                         <span class="badge bg-secondary">${item.dancers}</span>
                     </div>
                 </div>
@@ -134,23 +117,23 @@ function renderSchedule(data) {
                 <div class="card-body">
                 <div class="row text-center align-items-center">
                     <div class="col-6 col-md-3 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">Category</p>
+                        <p class="mb-1 fw-semibold">${t('category', 'Category')}</p>
                         <span class="badge bg-primary">${item.category}</span>
                     </div>
                     <div class="col-6 col-md-3 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">Style</p>
+                        <p class="mb-1 fw-semibold">${t('style', 'Style')}</p>
                         <span class="badge bg-primary">${item.style}</span>
                     </div>
                     <div class="col-4 col-md-2 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">Time</p>
+                        <p class="mb-1 fw-semibold">${t('time', 'Time')}</p>
                         <span>${item.time}</span>
                     </div>
                     <div class="col-4 col-md-2 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">Status</p>
+                        <p class="mb-1 fw-semibold">${t('status', 'Status')}</p>
                         ${getStatusBadge(item.status)}
                     </div>
                     <div class="col-4 col-md-2">
-                        <p class="mb-1 fw-semibold">Dancers</p>
+                        <p class="mb-1 fw-semibold">${t('dancers', 'Dancers')}</p>
                         <span class="badge bg-secondary">${item.dancers}</span>
                     </div>
                 </div>
@@ -192,7 +175,7 @@ function renderSchedule(data) {
                     </div>
                     `;
 
-                    //${translations["participants"]}
+                    //${t('participants')}
 
                     // Añadimos los bailarines a la lista
                     const list = subAccordionCol.querySelector('ul');
@@ -252,3 +235,4 @@ function getStatusBadge(status) {
 
     return `<span class="badge ${badgeClass}">${text}</span>`;
 }
+

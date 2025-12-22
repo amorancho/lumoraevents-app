@@ -34,9 +34,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const detailsContainer = document.getElementById('votingDetailsContainer');
   if (votingModalEl) votingModal = new bootstrap.Modal(votingModalEl);
 
-  // Cargar categorías y preparar eventos
-  loadCategories();
-
   categorySelect.addEventListener('change', async (e) => {
     const categoryId = e.target.value;
     if (categoryId) {
@@ -151,21 +148,23 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     } else {
       const noVotes = document.createElement('p');
-      noVotes.textContent = translations["no_voting_details"];
+      noVotes.textContent = t('no_voting_details');
       detailsContainer.appendChild(noVotes);
     }
 
     // Título modal fijo
     const titleSpan = votingModalEl.querySelector('.modal-title span');
     if (titleSpan) {
-      titleSpan.textContent = translations["voting_details"];
+      titleSpan.textContent = t('voting_details');
     }
 
     votingModal.show();
   });
 
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
+  await ensureTranslationsReady();
+
+  // Cargar categorias y preparar eventos
+  loadCategories();
 
 }); // end DOMContentLoaded
 
@@ -184,7 +183,7 @@ async function loadCategories() {
 
 function populateCategorySelect(categories) {  
   const categorySelect = document.getElementById('categorySelect');
-  categorySelect.innerHTML = `<option selected disabled>${translations["select_category"]}</option>`;
+  categorySelect.innerHTML = `<option selected disabled>${t('select_category')}</option>`;
   categories.forEach(category => {
     const option = document.createElement('option');
     option.value = category.id;
@@ -202,7 +201,7 @@ async function loadClasifications(categoryId) {
   refreshBtn.disabled = true;
   categorySelect.disabled = true;
   const originalBtnText = refreshBtn.innerHTML;
-  refreshBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> ${translations["loading"]}`;
+  refreshBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> ${t('loading')}`;
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/competitions/results?event_id=${getEvent().id}&category_id=${categoryId}`);
@@ -230,7 +229,7 @@ function renderResults(data) {
   if ((data.general.length === 0)  && (!data.styles || data.styles.length === 0)) {
     resultsContainer.innerHTML = `
       <div class="alert alert-info text-center">
-        ${translations["no_results"]}
+        ${t('no_results')}
       </div>
     `;
     return;
@@ -273,15 +272,15 @@ function renderGeneralClassification(general) {
   if (!general || general.length === 0) {
     return `
       <div class="list-group shadow-sm border-primary border-2 h-100">
-        <div class="list-group-item active bg-primary fs-5 text-center">${translations["general_classification"]}</div>
-        <div class="list-group-item text-center text-muted">${translations["no_results"]}</div>
+        <div class="list-group-item active bg-primary fs-5 text-center">${t('general_classification')}</div>
+        <div class="list-group-item text-center text-muted">${t('no_results')}</div>
       </div>
     `;
   }
 
   let html = `
     <div class="list-group shadow-sm border-primary border-2 h-100">
-      <div class="list-group-item active bg-primary fs-5 text-center">${translations["general_classification"]}</div>
+      <div class="list-group-item active bg-primary fs-5 text-center">${t('general_classification')}</div>
   `;
 
   general.forEach((d, i) => {
@@ -292,7 +291,7 @@ function renderGeneralClassification(general) {
         <div class="row my-2">
           <div class="col-12${i === 0 ? "" : " col-6"}">
             <div class="card border-${colors[i]} shadow text-center">
-              <div class="card-header bg-${colors[i]} text-${i === 2 ? "dark" : "white"} fs-4">${medals[i]} ${i+1}º ${translations["place"]}</div>
+              <div class="card-header bg-${colors[i]} text-${i === 2 ? "dark" : "white"} fs-4">${medals[i]} ${i+1}º ${t('place')}</div>
               <div class="card-body">
                 <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
                   <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" width="24" height="24" alt="${d.dancer_nationality}">
@@ -302,7 +301,7 @@ function renderGeneralClassification(general) {
                   🥇 ${d.num_oros || 0} &nbsp;|&nbsp; 🥈 ${d.num_platas || 0} &nbsp;|&nbsp; 🥉 ${d.num_bronces || 0}
                 </p>
                 <p class="fs-5 text-muted mb-0">
-                  <strong>${translations["total_score"]}:</strong> ${Number(d.total_score).toFixed(1)}
+                  <strong>${t('total_score')}:</strong> ${Number(d.total_score).toFixed(1)}
                 </p>
               </div>
             </div>
@@ -316,7 +315,7 @@ function renderGeneralClassification(general) {
           <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
           <span class="me-auto dancer-result">${escapeHtml(d.dancer_name)}</span>
           <span class="mx-2 text-muted small">
-            (${translations["total_score"]}: ${d.total_score ?? 0})
+            (${t('total_score')}: ${d.total_score ?? 0})
           </span>
           <span class="badge bg-light text-dark rounded-pill">
             🥇 ${d.num_oros || 0} | 🥈 ${d.num_platas || 0} | 🥉 ${d.num_bronces || 0}
@@ -336,7 +335,7 @@ function renderStyleClassification(style) {
     return `
       <div class="list-group shadow-sm style-block" data-style-id="${style?.style_id || ''}">
         <div class="list-group-item active bg-secondary fs-5 text-center">${escapeHtml(style?.style_name || "Unknown Style")}</div>
-        <div class="list-group-item text-center text-muted">${translations["no_results"]}</div>
+        <div class="list-group-item text-center text-muted">${t('no_results')}</div>
       </div>
     `;
   }
@@ -376,3 +375,4 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+

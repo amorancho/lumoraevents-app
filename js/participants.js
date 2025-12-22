@@ -21,10 +21,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       noticePanel.style.display = 'block';
   }
 
+  await ensureTranslationsReady();
   loadParticipants(); 
-  
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
 });
 
 async function loadParticipants() {
@@ -144,7 +142,7 @@ function createCategoryItem(category, categoryData, index) {
   const title = document.createElement('h4'); 
   const titleText = document.createElement('span'); 
   titleText.className = 'badge bg-warning'; 
-  titleText.textContent = `${translations["total_participants"]}: ${categoryData.participants.length}`; 
+  titleText.textContent = `${t('total_participants')}: ${categoryData.participants.length}`; 
   title.appendChild(titleText);
 
   const controlsDiv = document.createElement('div');
@@ -155,13 +153,13 @@ function createCategoryItem(category, categoryData, index) {
   const btnSchedule = document.createElement('button');
   btnSchedule.type = 'button';
   btnSchedule.className = 'btn btn-primary';
-  btnSchedule.innerHTML = `<i class="bi bi-calendar-week me-2"></i>${translations["style_schedule"]}`;
+  btnSchedule.innerHTML = `<i class="bi bi-calendar-week me-2"></i>${t('style_schedule')}`;
   controlsDiv.appendChild(btnSchedule);
 
   btnSchedule.addEventListener('click', () => {
     // Título del modal
     const modalTitle = document.getElementById('styleScheduleLabel');
-    modalTitle.textContent = `${translations["style_schedule"]} - ${category}`;
+    modalTitle.textContent = `${t('style_schedule')} - ${category}`;
 
     // Cuerpo del modal: tabla
     const tbodyModal = document.querySelector('#styleScheduleModal tbody');
@@ -178,7 +176,7 @@ function createCategoryItem(category, categoryData, index) {
       if (style.start && style.start.toLowerCase() !== 'null') {
         tdStart.innerHTML = `<i class="bi bi-clock me-1"></i>${style.start}`;
       } else {
-        tdStart.innerHTML = `<span class="text-muted">${translations["not_defined"]}</span>`; // Aquí el texto si no hay hora
+        tdStart.innerHTML = `<span class="text-muted">${t('not_defined')}</span>`; // Aquí el texto si no hay hora
       }
       tr.appendChild(tdStart);
 
@@ -194,7 +192,7 @@ function createCategoryItem(category, categoryData, index) {
   // Leyenda con icono y texto explicativo
   const legend = document.createElement('small');
   legend.className = 'text-muted';
-  legend.innerHTML = `<i class="bi bi-list-ol text-primary me-1 legend-icon"></i>${translations["icon_legend"]}`;
+  legend.innerHTML = `<i class="bi bi-list-ol text-primary me-1 legend-icon"></i>${t('icon_legend')}`;
   controlsDiv.appendChild(legend);
 
   const tableDiv = document.createElement('div');
@@ -208,7 +206,7 @@ function createCategoryItem(category, categoryData, index) {
 
   const thParticipant = document.createElement('th');
   thParticipant.className = 'text-center';
-  thParticipant.textContent = translations["participant"];
+  thParticipant.textContent = t('participant');
   headerRow.appendChild(thParticipant);
 
   categoryData.styles.forEach(style => {
@@ -225,7 +223,7 @@ function createCategoryItem(category, categoryData, index) {
         const icon = document.createElement('i');
         icon.className = 'bi bi-list-ol ms-2 text-primary';
         icon.style.cursor = 'pointer';
-        icon.title = translations["participants_by_style"];
+        icon.title = t('participants_by_style');
         icon.dataset.compId = style.competition_id; // Se usará en el fetch
         icon.dataset.start = style.start;
         icon.dataset.categoryName = category;
@@ -235,7 +233,7 @@ function createCategoryItem(category, categoryData, index) {
         // Badge rojo "No Competition"
         const badge = document.createElement('span');
         badge.className = 'badge bg-danger d-block mt-1';
-        badge.textContent = translations["no_competition"];
+        badge.textContent = t('no_competition');
         th.appendChild(badge);
     }
 
@@ -272,7 +270,7 @@ function createCategoryItem(category, categoryData, index) {
     // Badge derecha
     const badge = document.createElement('span');
     badge.className = 'badge bg-info me-2';
-    badge.textContent = `${participant.styles.length} ${translations["styles"]}`;
+    badge.textContent = `${participant.styles.length} ${t('styles')}`;
 
     tdParticipant.appendChild(leftDiv);
     tdParticipant.appendChild(badge);
@@ -355,14 +353,14 @@ document.addEventListener('click', async (event) => {
   const eventId = getEvent().id; // tu función existente
 
   const modalTitle = document.getElementById('styleDancersModalLabel');
-  modalTitle.textContent = `${translations["competition"]}: ${categoryName} / ${styleName}`;
+  modalTitle.textContent = `${t('competition')}: ${categoryName} / ${styleName}`;
 
   // Mostrar hora de inicio (si existe en el dataset)
   const estimatedStartEl = document.getElementById('estimatedStart');
   if (startTime && startTime != 'null') {
     estimatedStartEl.textContent = startTime;
   } else {
-    estimatedStartEl.textContent = translations["not_defined"];
+    estimatedStartEl.textContent = t('not_defined');
   }
 
   const list = document.getElementById('styleDancersList');
@@ -393,4 +391,5 @@ document.addEventListener('click', async (event) => {
     list.innerHTML = '<li class="list-group-item text-danger">Error loading dancers</li>';
   }
 });
+
 

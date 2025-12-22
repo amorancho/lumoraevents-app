@@ -16,10 +16,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateElementProperty('competitionsUrl', 'href', `?eventId=${eventId}`, false);
   updateElementProperty('trackingUrl', 'href', `?eventId=${eventId}`, false);
 
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
-
 });
+
 
 
 

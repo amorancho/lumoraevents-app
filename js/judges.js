@@ -25,13 +25,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('input, button').forEach(el => el.disabled = true);
   }
 
+  await ensureTranslationsReady();
   initJudgeManagement();
 
   const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
   tooltipTriggerList.forEach(el => new bootstrap.Tooltip(el));
 
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
 });
 
 function initJudgeManagement() {
@@ -54,7 +53,7 @@ function initJudgeManagement() {
     document.getElementById('judgeMaster').checked = false;
     document.getElementById('judgeUsername').value = '';
     document.getElementById('judgeLanguage').value = getEvent().language;
-    document.querySelector('#editModal .modal-title span').textContent = translations['create_judge'];
+    document.querySelector('#editModal .modal-title span').textContent = t('create_judge');
 
     document.getElementById('actionsCard').classList.add('d-none');
     document.getElementById('welcomeSendDiv').classList.add('d-none');
@@ -85,7 +84,7 @@ function initJudgeManagement() {
 
       setWelcomeInfo(judge);
       
-      document.querySelector('#editModal .modal-title span').textContent = translations['edit_judge'];
+      document.querySelector('#editModal .modal-title span').textContent = t('edit_judge');
 
       document.getElementById('actionsCard').classList.remove('d-none');
       document.getElementById('welcomeSendDiv').classList.remove('d-none');
@@ -100,7 +99,7 @@ function initJudgeManagement() {
       const judge = judges.find(d => d.id == id);
 
       const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-      document.getElementById('deleteModalMessage').innerHTML = `${translations['delete_question']} <strong>${judge.name}</strong>?`;
+      document.getElementById('deleteModalMessage').innerHTML = `${t('delete_question')} <strong>${judge.name}</strong>?`;
       
       deleteModal.show();
 
@@ -131,7 +130,7 @@ function initJudgeManagement() {
     const saveBtn = document.getElementById('saveEditBtn');
     if (saveBtn.disabled) return; // prevención extra por si acaso
     saveBtn.disabled = true;
-    saveBtn.textContent = translations['guardando'];
+    saveBtn.textContent = t('guardando');
 
     const action = document.getElementById('editForm').dataset.action;
     const id = document.getElementById('editForm').dataset.id;
@@ -184,7 +183,7 @@ function initJudgeManagement() {
       showMessageModal('Unexpected error saving judge', 'Error');
     } finally {
       saveBtn.disabled = false;
-      saveBtn.textContent = translations['save'];
+      saveBtn.textContent = t('save');
     }
   });
 
@@ -215,14 +214,14 @@ function initJudgeManagement() {
       });
   
       if (!response.ok) {
-        throw new Error(`${translations['error_sending_email']}: ${response.statusText}`);
+        throw new Error(`${t('error_sending_email')}: ${response.statusText}`);
       }
   
       const data = await response.json();
   
       // Actualiza estado y fecha en el formulario
       setWelcomeInfo(data);
-      const successMessage = (translations && (translations['welcome_email_sent_success'] || translations['welcome_email_sent'])) || 'Welcome email sent successfully.';
+      const successMessage = t('welcome_email_sent_success', t('welcome_email_sent', 'Welcome email sent successfully.'));
       showActionFeedback(successMessage);
   
     } catch (err) {
@@ -263,10 +262,10 @@ function initJudgeManagement() {
       });
   
       if (!response.ok) {
-        throw new Error(`${translations['error_sending_email']}: ${response.statusText}`);
+        throw new Error(`${t('error_sending_email')}: ${response.statusText}`);
       }
   
-      const successMessage = (translations && (translations['reset_password_sent_success'] || translations['reset_password_sent'])) || 'Reset password email sent successfully.';
+      const successMessage = t('reset_password_sent_success', t('reset_password_sent', 'Reset password email sent successfully.'));
       showActionFeedback(successMessage);
   
     } catch (err) {
@@ -282,7 +281,7 @@ function initJudgeManagement() {
 
   document.getElementById('sendWelcomeAll').addEventListener('click', async () => {
 
-    const confirmed = await showModal(translations['confirm_send_email_to_all']);
+    const confirmed = await showModal(t('confirm_send_email_to_all'));
 
     if (!confirmed) return;
 
@@ -290,7 +289,7 @@ function initJudgeManagement() {
     const originalText = btn.innerHTML;
   
     // Mostrar spinner y deshabilitar botón
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${translations['enviando']}`;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${t('enviando')}`;
     btn.disabled = true;
   
     try {
@@ -416,7 +415,7 @@ function setWelcomeInfo(judgeData = {}) {
     : judgeData || null;
 
   if (!sendDateValue) {
-    sendDateField.value = translations['not_sent'];
+    sendDateField.value = t('not_sent');
     hiddenField.value = '';
     return;
   }
@@ -510,3 +509,4 @@ function hideActionFeedback() {
   panel.classList.add('d-none');
   panel.classList.remove('show');
 }
+

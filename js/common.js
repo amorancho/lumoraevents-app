@@ -24,6 +24,15 @@ window.fetch = function (url, options = {}) {
   return originalFetch(url, options);
 };
 
+const translationsReady = loadTranslations(savedLang, pageName);
+window.translationsReady = translationsReady;
+
+async function ensureTranslationsReady() {
+  if (window.translationsReady) {
+    await window.translationsReady;
+  }
+}
+
 let eventObj = null;
 let eventReadyPromise = null;
 
@@ -154,14 +163,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   document.documentElement.setAttribute('lang', savedLang);
 
-  //await loadTranslations(savedLang, pageName);
-  //applyTranslations();
+  await ensureTranslationsReady();
+  applyTranslations();
 
   // Esperamos a que los datos del evento estén listos
   try {
     await eventReadyPromise;
     if (pageName !== 'index' && pageName !== 'admin') {
-      generateHeader(() => { setPageTitleAndLang(translations['title'], savedLang); });
+      generateHeader(() => {
+        setPageTitleAndLang(t('title'), savedLang);
+        applyTranslations();
+      });
       generateFooter();
     }
   } catch (err) {
@@ -180,6 +192,21 @@ async function loadTranslations(lang, page) {
     console.error(`Error cargando traducciones para ${page}.${lang}:`, error);
   }
 }
+
+function t(key, fallback) {
+  if (translations && Object.prototype.hasOwnProperty.call(translations, key)) {
+    const value = translations[key];
+    if (value !== undefined && value !== null) {
+      return value;
+    }
+  }
+  if (fallback !== undefined) {
+    return fallback;
+  }
+  return key;
+}
+
+window.t = t;
 
 function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -200,7 +227,8 @@ async function changeLanguage(lang, page = null) {
   document.documentElement.setAttribute('lang', lang);
   updateFlag(lang);
   //const currentPage = page || window.location.pathname.split("/").pop().split(".")[0] || "index";
-  await loadTranslations(lang, pageName);
+  window.translationsReady = loadTranslations(lang, pageName);
+  await window.translationsReady;
   applyTranslations();
 
   //updateElementProperty('screen-title', 'textContent', title);
@@ -262,3 +290,4 @@ async function WaitEventLoaded() {
 
 // 5. Hacer la función global para usarla desde cualquier script inline o externo
 window.showMessageModal = showMessageModal;
+

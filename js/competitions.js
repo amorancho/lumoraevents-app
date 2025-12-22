@@ -56,8 +56,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
 });
 
 async function fetchCompetitionsFromAPI() {
@@ -612,3 +610,4 @@ function applyCategoryFilter() {
   const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
   document.getElementById('emptyState')?.classList.toggle('d-none', visibleRows.length > 0);
 }
+

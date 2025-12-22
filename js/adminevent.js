@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  await ensureTranslationsReady();
   await loadEventData(eventId);
 
   document.getElementById('saveEventBtn').addEventListener('click', async () => {
@@ -77,8 +78,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Ejecutar cada vez que cambie el select
   categorySelect.addEventListener('change', updateMinStylesState);
 
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
   
 });
 
@@ -282,22 +281,22 @@ async function loadEventData(eventId) {
         small: {
           icon: "bi-person",
           name: "Small",
-          text: translations["license_small_text"]
+          text: t('license_small_text')
         },
         medium: {
           icon: "bi-people",
           name: "Medium",
-          text: translations["license_medium_text"]
+          text: t('license_medium_text')
         },
         large: {
           icon: "bi-people-fill",
           name: "Large",
-          text: translations["license_large_text"]
+          text: t('license_large_text')
         },
         unlimited: {
           icon: "bi-stars",
           name: "Unlimited",
-          text: translations["license_unlimited_text"]
+          text: t('license_unlimited_text')
         }
       };
 
@@ -306,7 +305,7 @@ async function loadEventData(eventId) {
         licenseInfo.innerHTML = `
           <span class="badge bg-warning text-dark px-3 py-2 fs-6">
             <i class="bi ${license.icon} me-1"></i>
-            <span data-i18n="license">${translations["license"]}</span> <strong>${license.name}</strong> — 
+            <span data-i18n="license">${t('license')}</span> <strong>${license.name}</strong> — 
             <span data-i18n="license_${data.license}_text">${license.text}</span>
           </span>
 
@@ -435,3 +434,4 @@ function showVisibilityModal(message, showCheckbox = false) {
     modal.show();
   });
 }
+

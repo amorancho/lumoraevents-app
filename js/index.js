@@ -30,8 +30,10 @@ const getEventStatusInfo = (startIso, endIso) => {
   return { label: 'en_curso', badgeClass: 'badge bg-warning text-dark' };
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('eventsContainer');
+
+  await ensureTranslationsReady();
 
   const showLoadingSpinner = () => {
     container.innerHTML = `
@@ -91,3 +93,4 @@ document.addEventListener('DOMContentLoaded', () => {
       applyTranslations();
     });
 });
+

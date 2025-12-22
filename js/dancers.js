@@ -51,10 +51,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadMasters(); 
   loadClubs();
 
+  await ensureTranslationsReady();
   fetchDancersFromAPI();
-
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
 
 });
 
@@ -89,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
 
     // Cambiar el título del modal si lo deseas
-    document.querySelector('#editModal .modal-title span').textContent = translations['create_dancer'];
+    document.querySelector('#editModal .modal-title span').textContent = t('create_dancer');
 
     editModal.show();
   });
@@ -122,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
         opt.selected = dancer.styles.some(style => style.id == opt.value);
       });
 
-      document.querySelector('#editModal .modal-title span').textContent = translations['edit_dancer'];
+      document.querySelector('#editModal .modal-title span').textContent = t('edit_dancer');
 
       editModal.show();
 
@@ -136,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       dancerIdToDelete = id;
 
-      const message = `${translations['delete_question']} <strong>${dancer.name}</strong>?`;
+      const message = `${t('delete_question')} <strong>${dancer.name}</strong>?`;
       document.getElementById('deleteModalMessage').innerHTML = message;
 
       const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -158,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (saveBtn.disabled) return; // prevención extra por si acaso
 
     saveBtn.disabled = true;  
-    saveBtn.textContent = translations['guardando']; // feedback opcional al usuario
+    saveBtn.textContent = t('guardando'); // feedback opcional al usuario
 
     const action = document.getElementById('editForm').dataset.action;
     const id = document.getElementById('editForm').dataset.id;
@@ -217,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
       console.error(err);
     } finally {
       saveBtn.disabled = false;
-      saveBtn.textContent = translations['save'];
+      saveBtn.textContent = t('save');
     }
   });
          
@@ -251,7 +249,7 @@ function loadDancers() {
 
     let stylesSpans = Array.isArray(dancer.styles) && dancer.styles.length > 0
       ? dancer.styles.map(style => `<span class="badge bg-warning text-dark me-1">${style.name}</span>`).join('')
-      : `<span class="badge bg-secondary" data-i18n="no_styles">${translations['no_styles']}</span>`;
+      : `<span class="badge bg-secondary" data-i18n="no_styles">${t('no_styles')}</span>`;
 
     row.innerHTML = `
       <td class="align-middle">
@@ -454,3 +452,4 @@ function applyFilter() {
   const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
   document.getElementById('emptyState').classList.toggle('d-none', visibleRows.length > 0);
 }
+

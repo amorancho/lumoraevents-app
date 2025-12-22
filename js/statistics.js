@@ -12,8 +12,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     form.addEventListener('submit', handleStatsSubmit);
   }
 
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
 });
 
 function renderEmptyState() {
@@ -681,3 +679,4 @@ function setLoading(isLoading) {
     btn.innerHTML = `<i class="bi bi-graph-up-arrow me-2"></i>Get Stats`;
   }
 }
+

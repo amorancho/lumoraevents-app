@@ -31,8 +31,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     loadAll();
 
-    await loadTranslations(savedLang, pageName);
-    applyTranslations();
 });
 
 function setPenaltysVisibility() {
@@ -216,3 +214,4 @@ function makeSortable(table) {
         }
     });
 }
+

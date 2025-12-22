@@ -42,9 +42,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
-
 });
 
 
@@ -412,3 +409,4 @@ function populateStyleSelect(selectedCategoryId, data, styleSelect) {
     styleSelect.disabled = true;
   }
 }
+

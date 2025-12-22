@@ -103,7 +103,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         hiddenMessage.classList.remove('d-none');
     }
 
-    await loadTranslations(savedLang, pageName);
-    applyTranslations();
-    
 });
+

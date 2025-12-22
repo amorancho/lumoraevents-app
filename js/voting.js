@@ -58,8 +58,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  await ensureTranslationsReady();
+
   const data = await loadCategoriesAndStyles();
   populateCategorySelect(data, categorySelect);
+  applyTranslations();
 
   categorySelect.addEventListener('change', () => {
     populateStyleSelect(categorySelect.value, data, styleSelect);
@@ -83,8 +86,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initCommentsModal();
 
-  await loadTranslations(savedLang, pageName);
-  applyTranslations();
 });
 
 function getCriteriaColumnsVisibilityStorageKey() {
@@ -139,14 +140,14 @@ function setCriteriaColumnsVisibility(visible, { persist = false } = {}) {
   const toggleCriteriaBtn = document.getElementById('toggleCriteriaBtn');
   const labelKey = criteriaColumnsVisible ? 'hide_scores_table' : 'show_scores_table';
   const fallback = criteriaColumnsVisible ? 'Hide scores' : 'Show scores';
-  if (toggleCriteriaBtnText) toggleCriteriaBtnText.textContent = translations?.[labelKey] || fallback;
+  if (toggleCriteriaBtnText) toggleCriteriaBtnText.textContent = t(labelKey, fallback);
   if (toggleCriteriaBtn) toggleCriteriaBtn.setAttribute('aria-pressed', criteriaColumnsVisible ? 'true' : 'false');
 
   if (persist) saveCriteriaColumnsVisibility(criteriaColumnsVisible);
 }
 
 function syncCommentsColumnPresentation() {
-  const commentsLabel = translations?.comments || 'Comments';
+  const commentsLabel = t('comments', 'Comments');
 
   const commentsHeader = document.querySelector('#dancersTableHeadRow th[data-col="comments"]');
   if (commentsHeader) {
@@ -265,7 +266,7 @@ function showVotesModal(dancer, mode = "details") {
   const minScore = DEFAULT_MIN_SCORE;
   const maxScore = DEFAULT_MAX_SCORE;
   document.getElementById('detailsModalLabel').textContent =
-    mode === "details" ? `${translations["votes_for"]} ${dancer.name}` : `${translations["vote_for"]} ${dancer.name}`;
+    mode === "details" ? `${t('votes_for')} ${dancer.name}` : `${t('vote_for')} ${dancer.name}`;
 
   const dialog = modal._element.querySelector('.modal-dialog');
   dialog.classList.remove('modal-lg', 'modal-xl', 'modal-dialog-scrollable');
@@ -419,7 +420,7 @@ function showVotesModal(dancer, mode = "details") {
         select.dataset.min = minScore;
         select.dataset.max = maxScore;
 
-        const placeholder = translations["select_score"] || translations["select"] || '--';
+        const placeholder = t('select_score', t('select', '--'));
         select.innerHTML = `<option value="">${placeholder}</option>`;
         options.forEach(opt => {
           const optEl = document.createElement('option');
@@ -443,7 +444,7 @@ function showVotesModal(dancer, mode = "details") {
 
   // Footer - limpiar primero
   const footer = modal._element.querySelector('.modal-footer');
-  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${translations["close"]}</button>`;
+  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${t('close')}</button>`;
 
   if (mode === "vote") {
 
@@ -483,18 +484,18 @@ function showVotesModal(dancer, mode = "details") {
 
     const sendBtn = document.createElement('button');
     sendBtn.className = "btn btn-primary btn-sm";
-    sendBtn.textContent = translations["send_votes"];
+    sendBtn.textContent = t('send_votes');
   
     const noShowBtn = document.createElement('button');
     noShowBtn.className = "btn btn-warning btn-sm me-auto";
-    noShowBtn.textContent = translations["no_show"];
+    noShowBtn.textContent = t('no_show');
   
     // --- funcion auxiliar para enviar votos ---
     async function sendVotes(scores) {
       try {
         setVoteButtonsDisabled(true);
         const originalContent = sendBtn.innerHTML;
-        sendBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${translations["sending"]}`;    
+        sendBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${t('sending')}`;    
         sendBtn.disabled = true;
         noShowBtn.disabled = true;
   
@@ -541,7 +542,7 @@ function showVotesModal(dancer, mode = "details") {
           alertDiv.className = "alert alert-danger alert-dismissible fade show mt-3";
           alertDiv.role = "alert";
           alertDiv.innerHTML = `
-            ${translations["alert_criteria"]}
+            ${t('alert_criteria')}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
           `;
           criteriaContainer.appendChild(alertDiv);
@@ -564,7 +565,7 @@ function showVotesModal(dancer, mode = "details") {
           return crit ? crit.name : 'Unknown';
         }).join(', ');
 
-        if (!confirm(`${translations["confirm_outlier_scores"]}
+        if (!confirm(`${t('confirm_outlier_scores')}
 
 ${outlierNames}`)) {
           return; // cancelar envio
@@ -581,15 +582,15 @@ ${outlierNames}`)) {
           <div class="modal-dialog">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title">${translations["confirm_no_show_title"]}</h5>
+                <h5 class="modal-title">${t('confirm_no_show_title')}</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                <p>${translations["confirm_no_show_text"]}</p>
+                <p>${t('confirm_no_show_text')}</p>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${translations["cancel"]}</button>
-                <button type="button" class="btn btn-danger" id="confirmNoShowBtn">${translations["confirm"]}</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t('cancel')}</button>
+                <button type="button" class="btn btn-danger" id="confirmNoShowBtn">${t('confirm')}</button>
               </div>
             </div>
           </div>
@@ -657,7 +658,7 @@ ${outlierNames}`)) {
 }
 function setVoteButtonsDisabled(disabled) {
   document.querySelectorAll('button.btn-primary').forEach(btn => {
-    if (btn.textContent.trim() === translations["vote"]) {
+    if (btn.textContent.trim() === t('vote')) {
       btn.disabled = disabled;
     }
   });
@@ -738,13 +739,13 @@ function renderDancersTable(dancers, compStatus) {
     if (d.status === 'Completed') {
       const btnDetails = document.createElement('button');
       btnDetails.className = 'btn btn-sm btn-secondary';
-      btnDetails.textContent = translations['details'];
+      btnDetails.textContent = t('details');
       btnDetails.addEventListener('click', () => showVotesModal(d, "details"));
       tdActions.appendChild(btnDetails);
     } else if (d.status === 'Pending' && compStatus === 'OPE') {
       const btnVote = document.createElement('button');
       btnVote.className = 'btn btn-sm btn-primary';
-      btnVote.textContent = translations['vote'];
+      btnVote.textContent = t('vote');
       btnVote.addEventListener('click', () => showVotesModal(d, "vote"));
       tdActions.appendChild(btnVote);
     }
@@ -761,7 +762,7 @@ function renderDancersTable(dancers, compStatus) {
       btnComments.className = `btn btn-sm ${hasComments ? 'btn-comments' : 'btn-outline-comments'}`;
       btnComments.dataset.role = 'comments-btn';
       btnComments.dataset.hasComments = hasComments ? 'true' : 'false';
-      btnComments.textContent = translations?.comments || 'Comments';
+      btnComments.textContent = t('comments', 'Comments');
       btnComments.addEventListener('click', () => {
         if (!commentsModal) return;
         commentsContext = { competitionId: d.competition_id, dancerId: d.id };
@@ -820,12 +821,12 @@ function renderDancersTableHeader() {
   };
 
   headRow.innerHTML = '';
-  headRow.appendChild(th(translations?.col_dancer || 'Dancer'));
+  headRow.appendChild(th(t('col_dancer', 'Dancer')));
 
-  headRow.appendChild(th(translations?.col_status || 'Status', 'text-center'));
-  headRow.appendChild(th(translations?.col_action || 'Action', 'text-center'));
+  headRow.appendChild(th(t('col_status', 'Status'), 'text-center'));
+  headRow.appendChild(th(t('col_action', 'Action'), 'text-center'));
   {
-    const el = th(translations?.comments || 'Comments', 'text-center');
+    const el = th(t('comments', 'Comments'), 'text-center');
     el.dataset.col = 'comments';
     headRow.appendChild(el);
   }
@@ -850,8 +851,8 @@ function renderDancersTableHeader() {
     el.className = 'text-center criteria-col';
     const label = document.createElement('span');
     label.className = 'criteria-header-text';
-    label.title = translations?.total || 'Total';
-    label.textContent = translations?.total || 'Total';
+    label.title = t('total', 'Total');
+    label.textContent = t('total', 'Total');
     el.appendChild(label);
     headRow.appendChild(el);
   }
@@ -902,6 +903,7 @@ function populateStyleSelect(selectedCategoryId, data, styleSelect) {
   } else {
     styleSelect.disabled = true;
   }
+  applyTranslations();
 }
 
 function getScoreType() {
@@ -997,3 +999,4 @@ function renderCompetitionInfo(competition) {
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
 }
+
