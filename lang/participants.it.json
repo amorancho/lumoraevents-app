@@ -1,0 +1,22 @@
+{
+  "title": "Partecipanti",
+  "categories": "Categorie",
+  "styles": "Stili",
+  "participants": "Partecipanti",
+  "search": "Cerca",
+  "clear": "Pulisci",
+  "dancer_styles": "Ballerine dello stile",
+  "stimated_start": "Inizio Stimato: ",
+  "close": "Chiudi",
+  "search_placeholder": "Cerca partecipante per nome o cognome",
+  "total_participants": "Totale Partecipanti",
+  "participant": "Partecipante",
+  "participants_by_style": "Visualizza le ballerine di questo stile",
+  "no_competition": "Senza Competizione",
+  "competition": "Competizione",
+  "not_defined": "Non Definita",
+  "icon_legend": "Clicca su questa icona di ogni stile per vedere l'ordine delle ballerine.",
+  "style_schedule": "Orario degli Stili",
+  "col_style": "Stile",
+  "col_start": "Ora Stimata di Inizio"
+}

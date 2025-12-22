@@ -1,0 +1,13 @@
+{
+  "title": "Bem-vindo",
+  "org_access": "Acesso Organizadores",
+  "jud_access": "Acesso Jurados",
+  "par_access": "Participantes",
+  "sch_access": "Programação",
+  "res_access": "Resultados",
+  "org_access_sub": "Painel exclusivo para a configuração do evento.",
+  "jud_access_sub": "Painel exclusivo para o júri do evento.",
+  "par_access_sub": "Explore as participantes do evento.",
+  "sch_access_sub": "Programação do Evento.",
+  "res_access_sub": "Visualize as classificações e as votações."
+}

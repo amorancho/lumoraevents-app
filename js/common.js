@@ -249,12 +249,27 @@ async function changeLanguage(lang, page = null) {
 function updateFlag(lang) {
   const flagMap = {
     es: 'https://flagcdn.com/24x18/es.png',
-    en: 'https://flagcdn.com/24x18/gb.png'
+    en: 'https://flagcdn.com/24x18/gb.png',
+    it: 'https://flagcdn.com/24x18/it.png',
+    pt: 'https://flagcdn.com/24x18/pt.png',
+    fr: 'https://flagcdn.com/24x18/fr.png'
   };
   const flag = document.getElementById('current-flag');
   if (flag) {
-    flag.src = flagMap[lang];
-    flag.alt = lang === 'es' ? 'EspaÃ±ol' : 'English';
+    flag.src = flagMap[lang] || flagMap.es;
+    if (lang === 'es') {
+      flag.alt = 'Español';
+    } else if (lang === 'en') {
+      flag.alt = 'English';
+    } else if (lang === 'it') {
+      flag.alt = 'Italiano';
+    } else if (lang === 'pt') {
+      flag.alt = 'Português';
+    } else if (lang === 'fr') {
+      flag.alt = 'Français';
+    } else {
+      flag.alt = lang;
+    }
   }
 }
 
@@ -290,4 +305,5 @@ async function WaitEventLoaded() {
 
 // 5. Hacer la funciÃ³n global para usarla desde cualquier script inline o externo
 window.showMessageModal = showMessageModal;
+
 

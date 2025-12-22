@@ -1,0 +1,13 @@
+{
+  "title": "Benvenuto",
+  "org_access": "Accesso Organizzatori",
+  "jud_access": "Accesso Giudici",
+  "par_access": "Partecipanti",
+  "sch_access": "Programmazione",
+  "res_access": "Risultati",
+  "org_access_sub": "Pannello esclusivo per la configurazione dell'evento.",
+  "jud_access_sub": "Pannello esclusivo per la giuria dell'evento.",
+  "par_access_sub": "Esplora le partecipanti dell'evento.",
+  "sch_access_sub": "Programmazione dell'Evento.",
+  "res_access_sub": "Visualizza le classifiche e le votazioni."
+}

@@ -1,0 +1,9 @@
+{
+  "home_title": "Événements",
+  "go_to_event": "Aller à l'Événement",
+  "proximamente": "Bientôt",
+  "en_curso": "En cours",
+  "finalizado": "Terminé",
+  "loading_events": "Chargement des événements...",
+  "error_loading_events": "Erreur lors du chargement des événements"
+}

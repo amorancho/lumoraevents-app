@@ -1,0 +1,20 @@
+{
+  "title": "Dati Principali dell'Evento",
+  "menu_config": "⚙️ Configurazione Evento",
+  "menu_general": "⚙️ Config. Generale",
+  "menu_master": "🌐 Dati Principali",
+  "menu_judges": "⚖️ Giudici",
+  "menu_dancers": "💃 Ballerine",
+  "menu_competitions": "🚀 Competizioni",
+  "alert_start_event": "Il festival è iniziato. La modifica di questi dati potrebbe causare incoerenze.",
+  "alert_end_event": "Il festival è terminato. Non è possibile modificare i dati.",
+  "categories": "Categorie",
+  "styles": "Stili",
+  "criteria": "Criteri",
+  "penalties": "Penalità",
+  "add": "Aggiungi",
+  "new_category": "Nuova Categoria",
+  "new_style": "Nuovo Stile",
+  "new_criteria": "Nuovo Criterio",
+  "new_penalty": "Nuova Penalità"
+}

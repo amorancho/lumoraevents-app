@@ -1,0 +1,15 @@
+{
+  "title": "Résultats",
+  "refresh": "Actualiser",
+  "auto_refresh": "Actualisation automatique",
+  "info_click_dancer": "Cliquez sur une danseuse pour voir plus de détails",
+  "voting_details": "Détails du vote",
+  "cerrar": "Fermer",
+  "select_category": "Sélectionner une Catégorie",
+  "loading": "Chargement...",
+  "no_results": "Aucun résultat disponible",
+  "general_classification": "Classement Général",
+  "place": "Classement",
+  "total_score": "Score Total",
+  "no_voting_details": "Aucun détail de vote disponible pour cette danseuse dans ce style."
+}

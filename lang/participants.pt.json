@@ -1,0 +1,22 @@
+{
+  "title": "Participantes",
+  "categories": "Categorias",
+  "styles": "Estilos",
+  "participants": "Participantes",
+  "search": "Pesquisar",
+  "clear": "Limpar",
+  "dancer_styles": "Bailarinas do estilo",
+  "stimated_start": "Início Estimado: ",
+  "close": "Fechar",
+  "search_placeholder": "Pesquisar participante por nome ou apelido",
+  "total_participants": "Total de Participantes",
+  "participant": "Participante",
+  "participants_by_style": "Ver bailarinas deste estilo",
+  "no_competition": "Sem Competição",
+  "competition": "Competição",
+  "not_defined": "Não Definida",
+  "icon_legend": "Clique neste ícone de cada estilo para ver a ordem das bailarinas.",
+  "style_schedule": "Horário dos Estilos",
+  "col_style": "Estilo",
+  "col_start": "Hora Estimada de Início"
+}
