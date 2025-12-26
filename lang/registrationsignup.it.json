@@ -1,0 +1,22 @@
+{
+  "title": "Registrazione",
+  "signup_title": "Crea account scuola",
+  "signup_subtitle": "Completa il modulo per richiedere l accesso.",
+  "signup_notice": "Dopo la creazione, riceverai le credenziali via email nei prossimi minuti.",
+  "field_name": "Nome",
+  "field_username": "Username",
+  "field_language": "Lingua",
+  "field_email": "Email",
+  "field_city": "Citta",
+  "field_country": "Paese",
+  "field_phone": "Telefono",
+  "field_representative": "Rappresentante",
+  "cancel": "Annulla",
+  "signup_submit": "Crea account",
+  "saving": "Salvataggio...",
+  "signup_api_missing": "API di registrazione non configurata.",
+  "signup_error_generic": "Errore durante la creazione dell account.",
+  "signup_success": "Account creato. Controlla la tua email per le credenziali.",
+  "error_title": "Errore",
+  "success_title": "Successo"
+}

@@ -1,0 +1,11 @@
+{
+  "title": "Espace inscription",
+  "registrationhome_heading": "Inscription des ecoles",
+  "registrationhome_sub": "Connectez-vous pour gerer vos inscriptions ou creer un nouveau compte.",
+  "registrationhome_login_title": "Se connecter",
+  "registrationhome_login_sub": "Accedez avec votre compte ecole.",
+  "registrationhome_login_btn": "Aller au login",
+  "registrationhome_signup_title": "Creer un compte",
+  "registrationhome_signup_sub": "Nouvelle ecole? Commencez votre inscription.",
+  "registrationhome_signup_btn": "Creer un compte"
+}

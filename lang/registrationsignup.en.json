@@ -1,0 +1,22 @@
+{
+  "title": "Registration signup",
+  "signup_title": "Create school account",
+  "signup_subtitle": "Complete the form to request access.",
+  "signup_notice": "After creating the account, you will receive your access credentials by email in the next few minutes.",
+  "field_name": "Name",
+  "field_username": "Username",
+  "field_language": "Language",
+  "field_email": "Email",
+  "field_city": "City",
+  "field_country": "Country",
+  "field_phone": "Phone",
+  "field_representative": "Representative",
+  "cancel": "Cancel",
+  "signup_submit": "Create account",
+  "saving": "Saving...",
+  "signup_api_missing": "Signup API not configured.",
+  "signup_error_generic": "Error creating the account.",
+  "signup_success": "Account created. Check your email for credentials.",
+  "error_title": "Error",
+  "success_title": "Success"
+}

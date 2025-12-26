@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon32.png" type="image/png">
+  <title data-i18n="title">Registration Signup - LumoraEvents</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+  <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+  
+  <div id="header"></div>  
+  <main class="flex-grow-1">
+    <div class="container py-5">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
+          <div class="card shadow-sm">
+            <div class="card-body p-4">
+              <div class="text-center mb-4">
+                <h1 class="h4 mb-2" data-i18n="signup_title">Create school account</h1>
+                <p class="text-muted mb-0" data-i18n="signup_subtitle">Complete the form to request access.</p>
+              </div>
+
+              <div class="alert alert-info" role="alert" data-i18n="signup_notice">
+                After creating the account, you will receive your access credentials by email in the next few minutes.
+              </div>
+
+              <form id="signupForm" novalidate>
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" for="signupName" data-i18n="field_name">Name</label>
+                    <input type="text" class="form-control" id="signupName" required>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" for="signupUsername" data-i18n="field_username">Username</label>
+                    <div class="input-group">
+                      <span class="input-group-text">sch_</span>
+                      <input type="text" class="form-control" id="signupUsername" required>
+                    </div>
+                  </div>
+                  <div class="col-12 col-md-8">
+                    <label class="form-label" for="signupEmail" data-i18n="field_email">Email</label>
+                    <input type="email" class="form-control" id="signupEmail" required>
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <label class="form-label" for="signupLanguage" data-i18n="field_language">Language</label>
+                    <select class="form-select" id="signupLanguage">
+                      <option value="es">ES</option>
+                      <option value="en">EN</option>
+                      <option value="it">IT</option>
+                      <option value="pt">PT</option>
+                      <option value="fr">FR</option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" for="signupCity" data-i18n="field_city">City</label>
+                    <input type="text" class="form-control" id="signupCity" required>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" for="signupCountry" data-i18n="field_country">Country</label>
+                    <select id="signupCountry" class="form-select" required>
+                      <option value=""></option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" for="signupPhone" data-i18n="field_phone">Phone</label>
+                    <input type="text" class="form-control" id="signupPhone" required>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" for="signupRepresentative" data-i18n="field_representative">Representative</label>
+                    <input type="text" class="form-control" id="signupRepresentative" required>
+                  </div>
+                </div>
+
+                <div class="d-flex flex-column flex-md-row gap-2 justify-content-end mt-4">
+                  <a id="cancelLink" class="btn btn-outline-secondary" href="registrationhome.html" data-i18n="cancel">Cancel</a>
+                  <button type="submit" class="btn btn-primary" id="signupSubmit" data-i18n="signup_submit">Create account</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/footer.js"></script>
+  <script src="js/common.js"></script>
+  <script src="utils/countries.js"></script>
+  <script src="js/registrationsignup.js"></script>
+
+</body></html>

@@ -1,0 +1,22 @@
+{
+  "title": "Registo",
+  "signup_title": "Criar conta da escola",
+  "signup_subtitle": "Preencha o formulario para solicitar acesso.",
+  "signup_notice": "Depois de criar a conta, recebera as credenciais por email nos proximos minutos.",
+  "field_name": "Nome",
+  "field_username": "Utilizador",
+  "field_language": "Idioma",
+  "field_email": "Email",
+  "field_city": "Cidade",
+  "field_country": "Pais",
+  "field_phone": "Telefone",
+  "field_representative": "Representante",
+  "cancel": "Cancelar",
+  "signup_submit": "Criar conta",
+  "saving": "A guardar...",
+  "signup_api_missing": "API de registo nao configurada.",
+  "signup_error_generic": "Erro ao criar a conta.",
+  "signup_success": "Conta criada. Verifique o email para as credenciais.",
+  "error_title": "Erro",
+  "success_title": "Sucesso"
+}

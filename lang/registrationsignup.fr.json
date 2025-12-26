@@ -1,0 +1,22 @@
+{
+  "title": "Inscription",
+  "signup_title": "Creer un compte ecole",
+  "signup_subtitle": "Remplissez le formulaire pour demander l acces.",
+  "signup_notice": "Apres la creation, vous recevrez vos identifiants par email dans quelques minutes.",
+  "field_name": "Nom",
+  "field_username": "Utilisateur",
+  "field_language": "Langue",
+  "field_email": "Email",
+  "field_city": "Ville",
+  "field_country": "Pays",
+  "field_phone": "Telephone",
+  "field_representative": "Representant",
+  "cancel": "Annuler",
+  "signup_submit": "Creer un compte",
+  "saving": "Enregistrement...",
+  "signup_api_missing": "API d inscription non configuree.",
+  "signup_error_generic": "Erreur lors de la creation du compte.",
+  "signup_success": "Compte cree. Verifiez votre email pour les identifiants.",
+  "error_title": "Erreur",
+  "success_title": "Succes"
+}

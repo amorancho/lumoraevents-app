@@ -5,9 +5,11 @@
   "par_access": "Partecipanti",
   "sch_access": "Programmazione",
   "res_access": "Risultati",
+  "reg_access": "Registrazione Partecipanti",
   "org_access_sub": "Pannello esclusivo per la configurazione dell'evento.",
   "jud_access_sub": "Pannello esclusivo per la giuria dell'evento.",
   "par_access_sub": "Esplora le partecipanti dell'evento.",
   "sch_access_sub": "Programmazione dell'Evento.",
-  "res_access_sub": "Visualizza le classifiche e le votazioni."
+  "res_access_sub": "Visualizza le classifiche e le votazioni.",
+  "reg_access_sub": "Area di Registrazione Partecipanti."
 }

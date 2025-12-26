@@ -1,0 +1,11 @@
+{
+  "title": "Registration area",
+  "registrationhome_heading": "School registration",
+  "registrationhome_sub": "Sign in to manage your registrations or create a new account.",
+  "registrationhome_login_title": "Sign in",
+  "registrationhome_login_sub": "Access with your school account.",
+  "registrationhome_login_btn": "Go to login",
+  "registrationhome_signup_title": "Create account",
+  "registrationhome_signup_sub": "New school? Start your registration.",
+  "registrationhome_signup_btn": "Create account"
+}

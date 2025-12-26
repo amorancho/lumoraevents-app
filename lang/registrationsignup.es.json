@@ -1,0 +1,22 @@
+{
+  "title": "Alta de inscripcion",
+  "signup_title": "Crear cuenta de escuela",
+  "signup_subtitle": "Completa el formulario para solicitar acceso.",
+  "signup_notice": "Tras crear la cuenta, recibiras por email tus credenciales en los proximos minutos.",
+  "field_name": "Nombre",
+  "field_username": "Usuario",
+  "field_language": "Idioma",
+  "field_email": "Email",
+  "field_city": "Ciudad",
+  "field_country": "Pais",
+  "field_phone": "Telefono",
+  "field_representative": "Representante",
+  "cancel": "Cancelar",
+  "signup_submit": "Crear cuenta",
+  "saving": "Guardando...",
+  "signup_api_missing": "La API de alta no esta configurada.",
+  "signup_error_generic": "Error al crear la cuenta.",
+  "signup_success": "Cuenta creada. Revisa tu email para las credenciales.",
+  "error_title": "Error",
+  "success_title": "Ok"
+}

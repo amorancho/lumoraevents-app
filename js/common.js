@@ -136,7 +136,10 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         notice_text: data.notice_text,
         notice_active: data.notice_active === 1,
         notice_type: data.notice_type,
-        score_type: data.score_type
+        score_type: data.score_type,
+        hasRegistration: data.has_registrations === 1,
+        registrationStart: data.registration_start,
+        registrationEnd: data.registration_end
       };
 
     }
@@ -258,15 +261,15 @@ function updateFlag(lang) {
   if (flag) {
     flag.src = flagMap[lang] || flagMap.es;
     if (lang === 'es') {
-      flag.alt = 'Español';
+      flag.alt = 'Espaï¿½ol';
     } else if (lang === 'en') {
       flag.alt = 'English';
     } else if (lang === 'it') {
       flag.alt = 'Italiano';
     } else if (lang === 'pt') {
-      flag.alt = 'Português';
+      flag.alt = 'Portuguï¿½s';
     } else if (lang === 'fr') {
-      flag.alt = 'Français';
+      flag.alt = 'Franï¿½ais';
     } else {
       flag.alt = lang;
     }

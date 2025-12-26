@@ -32,6 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateElementProperty('scheduleUrl', 'href', `?eventId=${eventId}`, false);
     updateElementProperty('resultsUrl', 'href', `?eventId=${eventId}`, false);
     updateElementProperty('statisticsUrl', 'href', `?eventId=${eventId}`, false);
+    updateElementProperty('registrationUrl', 'href', `?eventId=${eventId}`, false);
 
     const principalContainer = document.getElementById('principalContainer');
     const hiddenMessage = document.getElementById('eventHiddenMessage');
@@ -42,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const scheduleCol = document.getElementById("col-scheduleUrl");
     const resultsCol = document.getElementById("col-resultsUrl");
     const statisticsCol = document.getElementById("col-statisticsUrl");
+    const registrationCol = document.getElementById("col-registrationUrl");
 
     const user = getUserFromToken();
 
@@ -53,6 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         scheduleCol.classList.remove("d-none");
         resultsCol.classList.remove("d-none");
         statisticsCol.classList.remove("d-none");
+        registrationCol.classList.remove("d-none");
 
     } else if ((getEvent().visible)) {
         
@@ -95,6 +98,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             statisticsCol.remove();
         } else {
             statisticsCol.classList.remove("d-none");
+        }
+
+        if ((getEvent().hasRegistration == 0) || (new Date() < new Date(getEvent().registrationStart)) || (new Date() > new Date(getEvent().registrationEnd)) ) {
+            registrationCol.remove();
+        } else {
+            registrationCol.classList.remove("d-none");
         }
 
     } else {
