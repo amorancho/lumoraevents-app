@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await ensureTranslationsReady();
 
   const user = getUserFromToken();
+
   if (user && (user.role === 'admin' || ((user.role === 'organizer' || user.role === 'school') && user.eventId === eventId))) {
     window.location.href = `registration.html?eventId=${encodeURIComponent(eventId)}`;
     return;

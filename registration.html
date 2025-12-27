@@ -7,12 +7,120 @@
   <title>Registration - LumoraEvents</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
   
   <div id="header"></div>  
-  
+  <main class="flex-grow-1">
+    <div class="container py-4">
+      <div class="row">
+        <div class="col-12">
+          <ul class="nav nav-tabs mb-3" id="registrationTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="school-tab" data-bs-toggle="tab" data-bs-target="#school" type="button" role="tab" aria-controls="school" aria-selected="true" data-i18n="registration_tab_school">Datos de la Escuela</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants" type="button" role="tab" aria-controls="participants" aria-selected="false" data-i18n="registration_tab_participants">Participantes</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="competitions-tab" data-bs-toggle="tab" data-bs-target="#competitions" type="button" role="tab" aria-controls="competitions" aria-selected="false" data-i18n="registration_tab_competitions">Inscripciones en competiciones</button>
+            </li>
+          </ul>
+
+          <div class="tab-content" id="registrationTabsContent">
+            <div class="tab-pane fade show active" id="school" role="tabpanel" aria-labelledby="school-tab">
+              <div class="card shadow-sm">
+                <div class="card-body p-4">
+                  <form id="schoolForm" novalidate>
+                    <div class="row g-3">
+                      <div class="col-12 col-md-5">
+                        <label class="form-label" for="schoolName" data-i18n="field_name">Nombre</label>
+                        <input type="text" class="form-control" id="schoolName" required>
+                      </div>                      
+                      <div class="col-12 col-md-5">
+                        <label class="form-label" for="schoolEmail" data-i18n="field_email">Email</label>
+                        <input type="email" class="form-control bg-light" id="schoolEmail" readonly>
+                      </div>
+                      <div class="col-12 col-md-2">
+                        <label class="form-label" for="schoolLanguage" data-i18n="field_language">Idioma</label>
+                        <select class="form-select" id="schoolLanguage">
+                          <option value="es">ES</option>
+                          <option value="en">EN</option>
+                          <option value="it">IT</option>
+                          <option value="pt">PT</option>
+                          <option value="fr">FR</option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label" for="schoolCity" data-i18n="field_city">Ciudad</label>
+                        <input type="text" class="form-control" id="schoolCity" required>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label" for="schoolCountry" data-i18n="field_country">Pais</label>
+                        <select id="schoolCountry" class="form-select" required>
+                          <option value=""></option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label" for="schoolPhone" data-i18n="field_phone">Telefono</label>
+                        <input type="text" class="form-control" id="schoolPhone" required>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label" for="schoolRepresentative" data-i18n="field_representative">Representante</label>
+                        <input type="text" class="form-control" id="schoolRepresentative" required>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label" for="schoolUsername" data-i18n="field_username">Usuario</label>
+                        <div class="input-group">
+                          <input type="text" class="form-control bg-light" id="schoolUsername" readonly>
+                        </div>
+                      </div>
+                      <div class="col-12 col-md-6">
+                        <label class="form-label" for="schoolPassword" data-i18n="field_password">Password</label>
+                        <div class="input-group">
+                          <input type="password" class="form-control bg-light" id="schoolPassword">
+                          <button type="button" class="btn btn-outline-secondary" id="toggleSchoolPassword" aria-label="Mostrar password">
+                            <i class="bi bi-eye"></i>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div id="schoolSaveAlert" class="alert alert-success mt-3 d-none" role="alert" data-i18n="registration_school_saved">
+                      Datos actualizados correctamente.
+                    </div>
+
+                    <div class="d-flex flex-column flex-md-row gap-2 justify-content-center mt-4">
+                      <button type="submit" class="btn btn-primary" id="schoolSaveBtn" data-i18n="save">Guardar</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="participants" role="tabpanel" aria-labelledby="participants-tab">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h2 class="h5" data-i18n="registration_participants_title">Participantes</h2>
+                  <p class="text-muted mb-0" data-i18n="registration_participants_desc">Gestiona los participantes que asistirán al evento.</p>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="competitions" role="tabpanel" aria-labelledby="competitions-tab">
+              <div class="card shadow-sm">
+                <div class="card-body">
+                  <h2 class="h5" data-i18n="registration_competitions_title">Inscripciones en competiciones</h2>
+                  <p class="text-muted mb-0" data-i18n="registration_competitions_desc">Asigna participantes a las competiciones disponibles.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
 
   <div id="footer"></div>
 
@@ -22,6 +130,7 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js"></script>
+  <script src="utils/countries.js"></script>
   <script src="js/registration.js"></script>
 
 </body></html>
