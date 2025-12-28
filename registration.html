@@ -102,9 +102,37 @@
             </div>
             <div class="tab-pane fade" id="participants" role="tabpanel" aria-labelledby="participants-tab">
               <div class="card shadow-sm">
-                <div class="card-body">
-                  <h2 class="h5" data-i18n="registration_participants_title">Participantes</h2>
-                  <p class="text-muted mb-0" data-i18n="registration_participants_desc">Gestiona los participantes que asistirán al evento.</p>
+                <div class="card-body p-4">
+                  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
+                    <button type="button" class="btn btn-primary" id="addParticipantBtn">
+                      <i class="bi bi-person-plus me-2"></i>
+                      <span data-i18n="registration_participants_add">Alta participantes</span>
+                    </button>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="text-muted" data-i18n="registration_participants_total">Total participantes</span>
+                      <span class="badge bg-secondary" id="participantsCount">0</span>
+                    </div>
+                  </div>
+
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th data-i18n="registration_participants_name">Nombre</th>
+                          <th data-i18n="registration_participants_gender">Genero</th>
+                          <th data-i18n="registration_participants_birth">Fecha nacimiento</th>
+                          <th data-i18n="registration_participants_age">Edad</th>
+                          <th data-i18n="registration_participants_country">Pais</th>
+                          <th class="text-center" data-i18n="registration_participants_actions">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="participantsTable"></tbody>
+                    </table>
+                  </div>
+
+                  <div id="participantsEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_participants_empty">
+                    No hay participantes creados.
+                  </div>
                 </div>
               </div>
             </div>
@@ -122,6 +150,68 @@
     </div>
   </main>
 
+  <div class="modal fade" id="participantModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><span class="fw-bold text-primary" id="participantModalTitle" data-i18n="registration_participants_modal_create">Alta participantes</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="participantForm" data-mode="create" novalidate>
+            <input type="hidden" id="participantId">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="participantName" data-i18n="registration_participants_name">Nombre</label>
+                <input type="text" class="form-control" id="participantName" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="participantDob" data-i18n="registration_participants_birth">Fecha nacimiento</label>
+                <input type="date" class="form-control" id="participantDob" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="participantGender" data-i18n="registration_participants_gender">Genero</label>
+                <select id="participantGender" class="form-select" required>
+                  <option value="M" data-i18n="gender_male">Male</option>
+                  <option value="F" data-i18n="gender_female">Female</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="participantCountry" data-i18n="registration_participants_country">Pais</label>
+                <select id="participantCountry" class="form-select" required>
+                  <option value=""></option>
+                </select>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer flex-column flex-md-row gap-2">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-outline-primary" id="participantSaveAddBtn" data-i18n="registration_participants_save_add">Guardar y crear otro</button>
+          <button type="button" class="btn btn-primary" id="participantSaveBtn" data-i18n="registration_participants_save_close">Guardar y cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="deleteParticipantModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="registration_participants_delete_title">Eliminar participante</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteParticipantMessage">Seguro que deseas eliminar este participante?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteParticipantBtn" data-i18n="delete">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -134,3 +224,5 @@
   <script src="js/registration.js"></script>
 
 </body></html>
+
+
