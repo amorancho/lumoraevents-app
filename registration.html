@@ -138,9 +138,38 @@
             </div>
             <div class="tab-pane fade" id="competitions" role="tabpanel" aria-labelledby="competitions-tab">
               <div class="card shadow-sm">
-                <div class="card-body">
-                  <h2 class="h5" data-i18n="registration_competitions_title">Inscripciones en competiciones</h2>
-                  <p class="text-muted mb-0" data-i18n="registration_competitions_desc">Asigna participantes a las competiciones disponibles.</p>
+                <div class="card-body p-4">
+                  <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
+                    <button type="button" class="btn btn-primary" id="createRegistrationBtn">
+                      <i class="bi bi-plus-circle me-2"></i>
+                      <span data-i18n="registration_competitions_add">Crear inscripcion</span>
+                    </button>
+                    <div class="d-flex align-items-center gap-2 ms-sm-auto">
+                      <span class="text-muted" data-i18n="registration_competitions_total">Total inscripciones</span>
+                      <span class="badge bg-secondary" id="registrationsCount">0</span>
+                    </div>
+                  </div>
+
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th data-i18n="registration_competitions_table_choreography">Coreografia</th>
+                          <th data-i18n="registration_competitions_table_choreographer">Coreografo</th>
+                          <th data-i18n="registration_competitions_table_category">Categoria</th>
+                          <th data-i18n="registration_competitions_table_style">Estilo</th>
+                          <th data-i18n="registration_competitions_table_status">Estado</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_participants">Participantes</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_actions">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="registrationsTable"></tbody>
+                    </table>
+                  </div>
+
+                  <div id="registrationsEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_competitions_empty">
+                    No hay inscripciones creadas.
+                  </div>
                 </div>
               </div>
             </div>
@@ -212,6 +241,107 @@
     </div>
   </div>
 
+  <div class="modal fade" id="registrationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fw-bold text-primary" id="registrationModalTitle" data-i18n="registration_competitions_modal_create">Crear inscripcion</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="registrationForm" data-mode="create" novalidate>
+            <input type="hidden" id="registrationId">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="choreographyName" data-i18n="registration_competitions_choreography_name">Nombre coreografia</label>
+                <input type="text" class="form-control" id="choreographyName" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="choreographerName" data-i18n="registration_competitions_choreographer">Coreografo</label>
+                <input type="text" class="form-control" id="choreographerName" required>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="registrationCategory" data-i18n="registration_competitions_category">Categoria</label>
+                <select id="registrationCategory" class="form-select" required>
+                  <option value=""></option>
+                </select>
+                <div class="form-text" id="categoryRuleInfo"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="registrationStyle" data-i18n="registration_competitions_style">Estilo</label>
+                <select id="registrationStyle" class="form-select" required>
+                  <option value=""></option>
+                </select>
+              </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="d-flex flex-column flex-md-row align-items-md-end gap-3">
+              <div class="flex-grow-1">
+                <label class="form-label" for="registrationParticipantSelect" data-i18n="registration_competitions_participant_search">Buscar participante</label>
+                <select id="registrationParticipantSelect" class="form-select">
+                  <option value=""></option>
+                </select>
+              </div>
+              <button type="button" class="btn btn-outline-primary" id="addRegistrationMemberBtn">
+                <i class="bi bi-person-plus me-2"></i>
+                <span data-i18n="registration_competitions_add_member">Anadir</span>
+              </button>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between mt-3">
+              <span class="text-muted" data-i18n="registration_competitions_members_total">Total miembros</span>
+              <span class="badge bg-secondary" id="registrationMembersCount">0</span>
+            </div>
+
+            <div class="table-responsive mt-2">
+              <table class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th data-i18n="registration_competitions_member_name">Nombre</th>
+                    <th data-i18n="registration_competitions_member_birth">Nacimiento</th>
+                    <th data-i18n="registration_competitions_member_age">Edad</th>
+                    <th class="text-center" data-i18n="registration_competitions_member_actions">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="registrationMembersTable"></tbody>
+              </table>
+            </div>
+
+            <div id="registrationMembersEmpty" class="text-center text-muted py-3 d-none" data-i18n="registration_competitions_members_empty">
+              No hay miembros anadidos.
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer flex-column flex-md-row gap-2">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="registrationSaveBtn" data-i18n="save">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="deleteRegistrationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="registration_competitions_delete_title">Eliminar inscripcion</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteRegistrationMessage">Seguro que deseas eliminar esta inscripcion?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteRegistrationBtn" data-i18n="delete">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -222,6 +352,7 @@
   <script src="js/common.js"></script>
   <script src="utils/countries.js"></script>
   <script src="js/registration.js"></script>
+  <script src="js/registration-competitions.js"></script>
 
 </body></html>
 

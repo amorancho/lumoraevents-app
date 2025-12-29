@@ -1,6 +1,11 @@
 const registrationState = {
   school: null,
-  participants: []
+  participants: [],
+  registrations: [],
+  registrationConfig: {
+    categories: [],
+    styles: []
+  }
 };
 
 let schoolLoadPromise = null;
@@ -11,6 +16,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupRegistrationTabs();
   initSchoolTab();
   initParticipantsTab();
+  initCompetitionsTab();
 });
 
 function setupRegistrationTabs() {
