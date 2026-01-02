@@ -5,8 +5,10 @@
   const createBtn = document.getElementById('createRegistrationBtn');
   const modalEl = document.getElementById('registrationModal');
   const deleteModalEl = document.getElementById('deleteRegistrationModal');
+  const membersModalEl = document.getElementById('registrationMembersModal');
+  const confirmModalEl = document.getElementById('confirmRegistrationModal');
 
-  if (!tableBody || !modalEl || !deleteModalEl) {
+  if (!tableBody || !modalEl || !deleteModalEl || !membersModalEl || !confirmModalEl) {
     return;
   }
 
@@ -29,14 +31,25 @@
     membersTable: document.getElementById('registrationMembersTable'),
     membersCount: document.getElementById('registrationMembersCount'),
     membersEmpty: document.getElementById('registrationMembersEmpty'),
+    membersSaveBtn: document.getElementById('registrationMembersSaveBtn'),
+    membersRuleInfo: document.getElementById('registrationMembersRuleInfo'),
+    membersChoreo: document.getElementById('registrationMembersChoreo'),
+    membersCategory: document.getElementById('registrationMembersCategory'),
+    membersStyle: document.getElementById('registrationMembersStyle'),
     saveBtn: document.getElementById('registrationSaveBtn'),
+    membersForm: document.getElementById('registrationMembersForm'),
+    membersId: document.getElementById('registrationMembersId'),
     modalTitle: document.getElementById('registrationModalTitle'),
     deleteMessage: document.getElementById('deleteRegistrationMessage'),
-    confirmDeleteBtn: document.getElementById('confirmDeleteRegistrationBtn')
+    confirmDeleteBtn: document.getElementById('confirmDeleteRegistrationBtn'),
+    confirmMessage: document.getElementById('confirmRegistrationMessage'),
+    confirmRegistrationBtn: document.getElementById('confirmRegistrationBtn')
   };
 
   const registrationModal = new bootstrap.Modal(modalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
+  const registrationMembersModal = new bootstrap.Modal(membersModalEl);
+  const confirmModal = new bootstrap.Modal(confirmModalEl);
 
   const registrationEndpoints = {
     config: '/api/registrations/config',
@@ -44,7 +57,9 @@
     registerChoreography: '/api/registrations/choreographies',
     registration: '/api/registrations/choreographies',
     members: (id) => `/api/registrations/choreographies/${id}/members`,
-    detail: (id) => `/api/registrations/${id}`
+    detail: (id) => `/api/registrations/${id}`,
+    confirm: (id) => `/api/registrations/choreographies/${id}/confirm`,
+    desconfirm: (id) => `/api/registrations/choreographies/${id}/desconfirm`
   };
 
   let participantSelect = null;
@@ -53,10 +68,16 @@
   let styleById = new Map();
   let selectedMembers = [];
   let registrationToDelete = null;
+  let registrationToConfirm = null;
+  let confirmAction = 'confirm';
+  let membersRegistration = null;
+  let membersCategoryId = null;
+  const saveBtnLabel = elements.saveBtn ? elements.saveBtn.textContent : '';
+  const membersSaveBtnLabel = elements.membersSaveBtn ? elements.membersSaveBtn.textContent : '';
 
   const getEventIdValue = () => {
     const eventObj = getEvent();
-    return eventObj?.id || registrationState.school?.event_id;
+    return eventObj.id;
   };
 
   const safeJson = async (res) => {
@@ -76,6 +97,11 @@
     const categoryId = elements.category ? elements.category.value : '';
     if (!categoryId) return null;
     return categoryById.get(`${categoryId}`) || null;
+  };
+
+  const getMembersCategory = () => {
+    if (!membersCategoryId) return null;
+    return categoryById.get(`${membersCategoryId}`) || null;
   };
 
   const isIndividualCategory = (category) => {
@@ -113,7 +139,7 @@
 
   const updateMemberControls = () => {
     if (!elements.addMemberBtn) return;
-    const category = getSelectedCategory();
+    const category = getMembersCategory();
     if (!category || !registrationState.participants.length) {
       elements.addMemberBtn.disabled = true;
       return;
@@ -145,12 +171,17 @@
     const deleteTitle = t('delete', 'Delete');
 
     selectedMembers.forEach(member => {
+
       const row = document.createElement('tr');
       row.dataset.id = member.id;
 
       const nameCell = document.createElement('td');
       nameCell.textContent = member.name || '';
       row.appendChild(nameCell);
+
+      const genderCell = document.createElement('td');
+      genderCell.textContent = member.gender;
+      row.appendChild(genderCell);
 
       const dobValue = getDateOnlyValue(member.date_of_birth);
       const dobCell = document.createElement('td');
@@ -305,14 +336,14 @@
     if (!Array.isArray(members)) return [];
     return members.map(member => {
       if (member && typeof member === 'object') {
-        const memberId = member.id ?? member.participant_id ?? member.member_id;
+        const memberId = member.id;
         const fallback = memberId ? participantsById.get(`${memberId}`) : null;
         return {
           ...fallback,
           ...member,
-          id: memberId ?? fallback?.id ?? member.id,
-          name: member.name ?? member.participant_name ?? fallback?.name ?? `${memberId ?? ''}`.trim(),
-          date_of_birth: member.date_of_birth ?? member.birth ?? member.dob ?? fallback?.date_of_birth
+          id: memberId,
+          name: member.name,
+          date_of_birth: member.date_of_birth
         };
       }
       const fallback = participantsById.get(`${member}`);
@@ -351,15 +382,26 @@
     return [];
   };
 
-  const resetForm = () => {
+  const resetChoreoForm = () => {
     if (form) form.classList.remove('was-validated');
     if (elements.id) elements.id.value = '';
     if (elements.choreographyName) elements.choreographyName.value = '';
     if (elements.choreographer) elements.choreographer.value = '';
     if (elements.category) elements.category.value = '';
     if (elements.style) elements.style.value = '';
-    selectedMembers = [];
     updateCategoryInfo();
+  };
+
+  const resetMembersState = () => {
+    if (elements.membersForm) elements.membersForm.classList.remove('was-validated');
+    if (elements.membersId) elements.membersId.value = '';
+    selectedMembers = [];
+    membersRegistration = null;
+    membersCategoryId = null;
+    if (elements.membersRuleInfo) elements.membersRuleInfo.textContent = '';
+    if (elements.membersChoreo) elements.membersChoreo.textContent = '-';
+    if (elements.membersCategory) elements.membersCategory.textContent = '-';
+    if (elements.membersStyle) elements.membersStyle.textContent = '-';
     renderMembersTable();
     refreshParticipantSelect();
   };
@@ -377,7 +419,7 @@
     }
 
     if (elements.saveBtn) {
-      elements.saveBtn.textContent = t('save', 'Guardar');
+      elements.saveBtn.textContent = saveBtnLabel;
     }
 
     try {
@@ -390,13 +432,13 @@
     }
 
     if (mode === 'create') {
-      resetForm();
+      resetChoreoForm();
       registrationModal.show();
       return;
     }
 
     if (!registration) {
-      resetForm();
+      resetChoreoForm();
       registrationModal.show();
       return;
     }
@@ -407,12 +449,78 @@
     elements.category.value = registration.reg_category_id;
     elements.style.value = registration.reg_style_id;
 
-
-    selectedMembers = await resolveRegistrationMembers(registration);
     updateCategoryInfo();
+    registrationModal.show();
+  };
+
+  const openMembersModal = async (registration) => {
+    if (!registration) return;
+
+    try {
+      await loadRegistrationConfig();
+      await ensureParticipantsLoaded();
+      refreshParticipantSelect();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_competitions_load_error', 'Error loading registrations.'), t('error_title', 'Error'));
+      return;
+    }
+
+    resetMembersState();
+    membersRegistration = registration;
+    const rawCategoryId = registration.reg_category_id
+      || registration.category_id
+      || registration.reg_category?.id
+      || registration.reg_category;
+    membersCategoryId = rawCategoryId ? `${rawCategoryId}` : null;
+    if (elements.membersId) {
+      elements.membersId.value = registration.id || '';
+    }
+
+    updateMembersRuleInfo();
+    updateMembersChoreoInfo(registration);
+    selectedMembers = await resolveRegistrationMembers(registration);
     renderMembersTable();
     refreshParticipantSelect();
-    registrationModal.show();
+    registrationMembersModal.show();
+  };
+
+  const updateMembersChoreoInfo = (registration) => {
+    if (!registration) return;
+    if (elements.membersChoreo) {
+      elements.membersChoreo.textContent = registration.name || registration.choreography || '-';
+    }
+    const category = getMembersCategory();
+    if (elements.membersCategory) {
+      elements.membersCategory.textContent = category?.name || registration.category_name || '-';
+    }
+    const styleName = styleById.get(`${registration.reg_style_id}`)?.name || registration.style_name || registration.style;
+    if (elements.membersStyle) {
+      elements.membersStyle.textContent = styleName || '-';
+    }
+  };
+  const updateMembersRuleInfo = () => {
+    if (!elements.membersRuleInfo) return;
+    const category = getMembersCategory();
+    if (!category) {
+      elements.membersRuleInfo.textContent = '';
+      return;
+    }
+
+    const minLabel = t('registration_competitions_rule_min', 'Min');
+    const maxLabel = t('registration_competitions_rule_max', 'Max');
+    const minPar = normalizeNumber(category.min_par);
+    const maxPar = normalizeNumber(category.max_par);
+
+    let info = `${minLabel}: ${minPar ?? '-'} | ${maxLabel}: ${maxPar ?? '-'}`;
+
+    const minYears = normalizeNumber(category.min_years);
+    const maxYears = normalizeNumber(category.max_years);
+    if (minYears !== null || maxYears !== null) {
+      const ageLabel = t('registration_competitions_rule_age', 'Edad');
+      info += ` | ${ageLabel}: ${minYears ?? '-'}-${maxYears ?? '-'}`;
+    }
+
+    elements.membersRuleInfo.textContent = info;
   };
   /*
   const getParticipantsCount = (registration) => {
@@ -453,10 +561,13 @@
 
     const editTitle = t('edit', 'Edit');
     const deleteTitle = t('delete', 'Delete');
+    const confirmTitle = t('registration_competitions_confirm', 'Confirmar');
+    const cancelConfirmTitle = t('registration_competitions_cancel_confirm', 'Cancelar confirmacion');
 
     registrations.forEach(registration => {
       const row = document.createElement('tr');
       row.dataset.id = registration.id;
+      const isPending = `${registration.status}` === 'PEN';
 
       const nameCell = document.createElement('td');
       const nameWrapper = document.createElement('div');
@@ -502,7 +613,30 @@
       editBtn.dataset.id = registration.id;
       editBtn.title = editTitle;
       editBtn.setAttribute('aria-label', editTitle);
+      editBtn.disabled = isPending;
       editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+
+      const membersBtn = document.createElement('button');
+      membersBtn.type = 'button';
+      membersBtn.className = 'btn btn-outline-secondary btn-sm btn-members-registration';
+      membersBtn.dataset.id = registration.id;
+      membersBtn.title = t('registration_competitions_members_title', 'Gestion de miembros');
+      membersBtn.setAttribute('aria-label', membersBtn.title);
+      membersBtn.disabled = isPending;
+      membersBtn.innerHTML = '<i class="bi bi-people"></i>';
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      confirmBtn.className = isPending
+        ? 'btn btn-outline-warning btn-sm btn-confirm-registration'
+        : 'btn btn-outline-success btn-sm btn-confirm-registration';
+      confirmBtn.dataset.id = registration.id;
+      confirmBtn.title = isPending ? cancelConfirmTitle : confirmTitle;
+      confirmBtn.setAttribute('aria-label', confirmBtn.title);
+      confirmBtn.dataset.action = isPending ? 'cancel' : 'confirm';
+      confirmBtn.innerHTML = isPending
+        ? '<i class="bi bi-x-circle"></i>'
+        : '<i class="bi bi-check-circle"></i>';
 
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
@@ -513,6 +647,8 @@
       deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
 
       actionGroup.appendChild(editBtn);
+      actionGroup.appendChild(membersBtn);
+      actionGroup.appendChild(confirmBtn);
       actionGroup.appendChild(deleteBtn);
       actionsCell.appendChild(actionGroup);
       row.appendChild(actionsCell);
@@ -559,7 +695,7 @@
   };
 
   const addMember = () => {
-    const category = getSelectedCategory();
+    const category = getMembersCategory();
     if (!category) {
       showMessageModal(
         t('registration_competitions_category_required_error', 'Selecciona una categoria.'),
@@ -645,16 +781,20 @@
       return false;
     }
 
-    const minPar = normalizeNumber(category.min_par);
-    const maxPar = normalizeNumber(category.max_par);
-    if (minPar !== null && selectedMembers.length < minPar) {
-      const message = formatTemplate(
-        t('registration_competitions_member_limit_error', 'El numero de miembros debe estar entre {min} y {max}.'),
-        { min: category.min_par ?? '-', max: category.max_par ?? '-' }
+    return true;
+  };
+
+  const validateMembersSelection = () => {
+    const category = getMembersCategory();
+    if (!category) {
+      showMessageModal(
+        t('registration_competitions_category_required_error', 'Selecciona una categoria.'),
+        t('error_title', 'Error')
       );
-      showMessageModal(message, t('error_title', 'Error'));
       return false;
     }
+
+    const maxPar = normalizeNumber(category.max_par);
     if (maxPar !== null && selectedMembers.length > maxPar) {
       const message = formatTemplate(
         t('registration_competitions_member_limit_error', 'El numero de miembros debe estar entre {min} y {max}.'),
@@ -683,6 +823,7 @@
   };
 
   const saveRegistrationMembers = async (registrationId, members, isEdit) => {
+
     const eventIdValue = getEventIdValue();
     const payload = {
       registration_id: registrationId,
@@ -703,6 +844,49 @@
       const errData = await safeJson(res);
       const message = errData?.error || t('registration_competitions_save_error', 'Error saving registration.');
       throw new Error(message);
+    }
+  };
+
+  const updateRegistrationStatus = (registrationId, status) => {
+    const registration = registrationState.registrations.find(item => `${item.id}` === `${registrationId}`);
+    if (!registration) return;
+    registration.status = status;
+    renderRegistrations();
+  };
+
+  const confirmRegistration = async (registrationId) => {
+    const url = `${API_BASE_URL}${registrationEndpoints.confirm(registrationId)}`;
+    try {
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) {
+        const data = await safeJson(res);
+        const message = data?.error || t('registration_competitions_confirm_error', 'Error al confirmar la inscripcion.');
+        throw new Error(message);
+      }
+      updateRegistrationStatus(registrationId, 'PEN');
+      return true;
+    } catch (err) {
+      confirmModal.hide();
+      showMessageModal(err.message || t('registration_competitions_confirm_error', 'Error al confirmar la inscripcion.'), t('error_title', 'Error'));
+      return false;
+    }
+  };
+
+  const cancelConfirmation = async (registrationId) => {
+    const url = `${API_BASE_URL}${registrationEndpoints.desconfirm(registrationId)}`;
+    try {
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) {
+        const data = await safeJson(res);
+        const message = data?.error || t('registration_competitions_cancel_confirm_error', 'Error al cancelar la confirmacion.');
+        throw new Error(message);
+      }
+      updateRegistrationStatus(registrationId, 'CRE');
+      return true;
+    } catch (err) {
+      confirmModal.hide();
+      showMessageModal(err.message || t('registration_competitions_cancel_confirm_error', 'Error al cancelar la confirmacion.'), t('error_title', 'Error'));
+      return false;
     }
   };
 
@@ -756,14 +940,43 @@
         throw new Error(t('registration_competitions_save_error', 'Error saving registration.'));
       }
 
-      await saveRegistrationMembers(savedId, selectedMembers, isEdit);
       registrationModal.hide();
+      await loadRegistrations();
     } catch (err) {
       showMessageModal(err.message || t('registration_competitions_save_error', 'Error saving registration.'), t('error_title', 'Error'));
     } finally {
       if (elements.saveBtn) {
         elements.saveBtn.disabled = false;
-        elements.saveBtn.textContent = t('save', 'Guardar');
+        elements.saveBtn.textContent = saveBtnLabel;
+      }
+    }
+  };
+
+  const saveMembers = async () => {
+    if (!validateMembersSelection()) {
+      return;
+    }
+
+    const registrationId = elements.membersId ? elements.membersId.value : '';
+    if (!registrationId) {
+      return;
+    }
+
+    if (elements.membersSaveBtn) {
+      elements.membersSaveBtn.disabled = true;
+      elements.membersSaveBtn.textContent = t('saving', 'Guardando...');
+    }
+
+    try {
+      await saveRegistrationMembers(registrationId, selectedMembers, true);
+      registrationMembersModal.hide();
+      await loadRegistrations();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_competitions_save_error', 'Error saving registration.'), t('error_title', 'Error'));
+    } finally {
+      if (elements.membersSaveBtn) {
+        elements.membersSaveBtn.disabled = false;
+        elements.membersSaveBtn.textContent = membersSaveBtnLabel;
       }
     }
   };
@@ -810,7 +1023,6 @@
   if (elements.category) {
     elements.category.addEventListener('change', () => {
       updateCategoryInfo();
-      updateMemberControls();
     });
   }
 
@@ -830,12 +1042,18 @@
     elements.saveBtn.addEventListener('click', saveRegistration);
   }
 
+  if (elements.membersSaveBtn) {
+    elements.membersSaveBtn.addEventListener('click', saveMembers);
+  }
+
   if (createBtn) {
     createBtn.addEventListener('click', () => openRegistrationModal('create'));
   }
 
   tableBody.addEventListener('click', (event) => {
     const editBtn = event.target.closest('.btn-edit-registration');
+    const membersBtn = event.target.closest('.btn-members-registration');
+    const confirmBtn = event.target.closest('.btn-confirm-registration');
     const deleteBtn = event.target.closest('.btn-delete-registration');
 
     if (editBtn) {
@@ -845,13 +1063,47 @@
       return;
     }
 
+    if (membersBtn) {
+      const id = membersBtn.dataset.id;
+      const registration = registrationState.registrations.find(item => `${item.id}` === `${id}`);
+      openMembersModal(registration || null);
+      return;
+    }
+
+    if (confirmBtn) {
+      const id = confirmBtn.dataset.id;
+      if (!id) return;
+      const registration = registrationState.registrations.find(item => `${item.id}` === `${id}`);
+      if (!registration) return;
+      registrationToConfirm = registration;
+      confirmAction = confirmBtn.dataset.action === 'cancel' ? 'cancel' : 'confirm';
+      if (elements.confirmMessage) {
+        if (confirmAction === 'cancel') {
+          const question = t('registration_competitions_cancel_confirm_question', 'Seguro que deseas cancelar la confirmacion de');
+          const name = registration.choreography_name || registration.choreography || registration.name || '';
+          elements.confirmMessage.innerHTML = `${question} <strong>${name}</strong>?`;
+        } else {
+          const question = t('registration_competitions_confirm_question', 'Seguro que deseas confirmar la inscripcion de');
+          const name = registration.choreography_name || registration.choreography || registration.name || '';
+          elements.confirmMessage.innerHTML = `${question} <strong>${name}</strong>?`;
+        }
+      }
+      if (elements.confirmRegistrationBtn) {
+        elements.confirmRegistrationBtn.textContent = confirmAction === 'cancel'
+          ? t('registration_competitions_cancel_confirm', 'Cancelar confirmacion')
+          : t('registration_competitions_confirm', 'Confirmar');
+      }
+      confirmModal.show();
+      return;
+    }
+
     if (deleteBtn) {
       const id = deleteBtn.dataset.id;
       const registration = registrationState.registrations.find(item => `${item.id}` === `${id}`);
       if (!registration) return;
       registrationToDelete = registration;
       if (elements.deleteMessage) {
-        const name = registration.choreography_name || registration.choreography || registration.name || '';
+        const name = registration.name;
         elements.deleteMessage.innerHTML = `${t('registration_competitions_delete_question', 'Seguro que deseas eliminar la inscripcion de')} <strong>${name}</strong>?`;
       }
       deleteModal.show();
@@ -862,8 +1114,31 @@
     elements.confirmDeleteBtn.addEventListener('click', deleteRegistration);
   }
 
+  if (elements.confirmRegistrationBtn) {
+    elements.confirmRegistrationBtn.addEventListener('click', async () => {
+      if (!registrationToConfirm) return;
+      elements.confirmRegistrationBtn.disabled = true;
+      const originalText = elements.confirmRegistrationBtn.textContent;
+      elements.confirmRegistrationBtn.textContent = t('saving', 'Guardando...');
+      const registrationId = registrationToConfirm.id;
+      const success = confirmAction === 'cancel'
+        ? await cancelConfirmation(registrationId)
+        : await confirmRegistration(registrationId);
+      elements.confirmRegistrationBtn.disabled = false;
+      elements.confirmRegistrationBtn.textContent = originalText;
+      if (success) {
+        confirmModal.hide();
+      }
+      registrationToConfirm = null;
+    });
+  }
+
   modalEl.addEventListener('hidden.bs.modal', () => {
     loadRegistrations();
+  });
+
+  membersModalEl.addEventListener('hidden.bs.modal', () => {
+    resetMembersState();
   });
 
   Promise.resolve()

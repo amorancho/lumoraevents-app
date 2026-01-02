@@ -10,6 +10,14 @@
   <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
+  <style>
+    .members-modal .modal-dialog {
+      height: calc(100vh - 2rem);
+    }
+    .members-modal .modal-content {
+      height: 100%;
+    }
+  </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
   
@@ -278,7 +286,43 @@
             </div>
 
             <hr class="my-4">
+          </form>
+        </div>
+        <div class="modal-footer flex-column flex-md-row gap-2">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="registrationSaveBtn">Guardar coreografia</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <div class="modal fade members-modal" id="registrationMembersModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fw-bold text-primary" data-i18n="registration_competitions_members_title">Gestion de miembros</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="registrationMembersForm" novalidate>
+            <input type="hidden" id="registrationMembersId">
+            <div class="row g-2 mb-2">
+              <div class="col-12 col-md-4">
+                <div class="text-muted small" data-i18n="registration_competitions_member_choreo_label">Coreografia</div>
+                <div class="fw-semibold" id="registrationMembersChoreo">-</div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="text-muted small" data-i18n="registration_competitions_member_category_label">Categoria</div>
+                <div class="fw-semibold" id="registrationMembersCategory">-</div>
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="text-muted small" data-i18n="registration_competitions_member_style_label">Estilo</div>
+                <div class="fw-semibold" id="registrationMembersStyle">-</div>
+              </div>
+            </div>
+            <div class="form-text mb-2" id="registrationMembersRuleInfo"></div>
             <div class="d-flex flex-column flex-md-row align-items-md-end gap-3">
               <div class="flex-grow-1">
                 <label class="form-label" for="registrationParticipantSelect" data-i18n="registration_competitions_participant_search">Buscar participante</label>
@@ -302,6 +346,7 @@
                 <thead class="table-light">
                   <tr>
                     <th data-i18n="registration_competitions_member_name">Nombre</th>
+                    <th data-i18n="registration_competitions_member_gender">Genero</th>
                     <th data-i18n="registration_competitions_member_birth">Nacimiento</th>
                     <th data-i18n="registration_competitions_member_age">Edad</th>
                     <th class="text-center" data-i18n="registration_competitions_member_actions">Acciones</th>
@@ -318,7 +363,9 @@
         </div>
         <div class="modal-footer flex-column flex-md-row gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="registrationSaveBtn" data-i18n="save">Guardar</button>
+          <button type="button" class="btn btn-primary" id="registrationMembersSaveBtn">
+            Guardar miembros
+          </button>
         </div>
       </div>
     </div>
@@ -337,6 +384,24 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteRegistrationBtn" data-i18n="delete">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="confirmRegistrationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="registration_competitions_confirm_title">Confirmar inscripcion</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="confirmRegistrationMessage">Seguro que deseas confirmar esta inscripcion?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-success" id="confirmRegistrationBtn" data-i18n="confirm">Confirmar</button>
         </div>
       </div>
     </div>
