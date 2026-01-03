@@ -23,8 +23,8 @@
   "col_acciones": "Acciones",
   "send_welcome_email": "Enviar Email de Bienvenida",
   "reset_password": "Restablecer PIN de Acceso",
-  "welcome_status": "Estado del Email de Bienvenida",
-  "welcome_sended": "Fecha de Envío de Bienvenida",
+  "welcome_status": "Estado Email Bienvenida",
+  "welcome_sended": "Fecha Envío Bienvenida",
   "not_sent": "No enviado",
   "delete_confirm": "Confirmar Eliminación",
   "delete_question": "¿Estás seguro de que deseas eliminar el juez",
@@ -34,5 +34,9 @@
   "guardando": "Guardando...",
   "error_sending_email": "Error al enviar el email",
   "confirm_send_email_to_all": "¿Estás seguro de que deseas enviar el email de bienvenida a todos los jueces que aún no lo han recibido?",
-  "enviando": "Enviando..."
+  "enviando": "Enviando...",
+  "email_status_sent": "ENVIADO",
+  "email_status_error": "ERROR",
+  "email_status_sending": "ENVIANDO",
+  "email_status_not_sent": "NO ENVIADO"
 }

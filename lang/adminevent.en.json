@@ -34,5 +34,9 @@
   "visible_schedule": "Menú Schedule",
   "visible_results": "Menú Results",
   "visible_statistics": "Menú Statistics",
-  "notices": "Notices"
+  "notices": "Notices",
+  "notice_text_placeholder": "Notice text",
+  "notice_active": "Active",
+  "notice_type_info": "Info",
+  "notice_type_important": "Important"
 }

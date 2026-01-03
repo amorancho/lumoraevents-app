@@ -466,13 +466,13 @@ function getWelcomeEmailBadge(judge) {
 function getWelcomeStatusLabel(status) {
   switch (status) {
     case 'P':
-      return 'SENDING';
+      return t('email_status_sending');
     case 'S':
-      return 'SENDED';
+      return t('email_status_sent');
     case 'E':
-      return 'ERROR';
+      return t('email_status_error');
     default:
-      return 'NOT SENT';
+      return t('email_status_not_sent');
   }
 }
 

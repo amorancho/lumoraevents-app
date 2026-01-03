@@ -21,10 +21,10 @@
   "no_judges_alert_subt": "Crie os seus primeiros jurados usando o formulário acima.",
   "col_language": "Idioma",
   "col_acciones": "Ações",
-  "send_welcome_email": "Enviar Email de Boas-vindas",
+  "send_welcome_email": "Enviar Email Boas-vindas",
   "reset_password": "Repor PIN de Acesso",
-  "welcome_status": "Estado do Email de Boas-vindas",
-  "welcome_sended": "Data de Envio das Boas-vindas",
+  "welcome_status": "Estado Email Boas-vindas",
+  "welcome_sended": "Data Envio Boas-vindas",
   "not_sent": "Não enviado",
   "delete_confirm": "Confirmar Eliminação",
   "delete_question": "Tem certeza de que deseja eliminar o jurado",
@@ -34,5 +34,9 @@
   "guardando": "A guardar...",
   "error_sending_email": "Erro ao enviar o email",
   "confirm_send_email_to_all": "Tem certeza de que deseja enviar o email de boas-vindas a todos os jurados que ainda não o receberam?",
-  "enviando": "A enviar..."
+  "enviando": "A enviar...",
+  "email_status_sent": "ENVIADO",
+  "email_status_error": "ERRO",
+  "email_status_sending": "ENVIANDO",
+  "email_status_not_sent": "NÃO ENVIADO"
 }

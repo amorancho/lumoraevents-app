@@ -34,5 +34,9 @@
   "guardando": "Saving...",
   "error_sending_email": "Error sending email",
   "confirm_send_email_to_all": "Are you sure you want to send the welcome email to all judges who have not received it?",
-  "sending": "Sending..."
+  "sending": "Sending...",
+  "email_status_sent": "SENT",
+  "email_status_error": "ERROR",
+  "email_status_sending": "SENDING",
+  "email_status_not_sent": "NOT SENT"
 }

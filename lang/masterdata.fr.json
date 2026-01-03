@@ -12,9 +12,17 @@
   "styles": "Styles",
   "criteria": "Critères",
   "penalties": "Pénalités",
+  "clubs": "Clubs / Écoles",
   "add": "Ajouter",
+  "delete": "Supprimer",
+  "from": "de",
   "new_category": "Nouvelle Catégorie",
   "new_style": "Nouveau Style",
   "new_criteria": "Nouveau Critère",
-  "new_penalty": "Nouvelle Pénalité"
+  "new_penalty": "Nouvelle Pénalité",
+  "new_club": "Nouveau Club / École",
+  "tab_general": "Général",
+  "tab_penalties": "Pénalités",
+  "tab_observaciones": "Observations",
+  "tab_clubs": "Clubs / Écoles"
 }

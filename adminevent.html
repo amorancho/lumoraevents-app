@@ -234,8 +234,8 @@
                   <!-- 2. Select con label -->
                   <div class="col-md-2">
                     <select class="form-select" id="notice_type">
-                      <option value="INF">Info</option>
-                      <option value="IMP">Importante</option>
+                      <option value="INF" data-i18n="notice_type_info">Info</option>
+                      <option value="IMP" data-i18n="notice_type_important">Importante</option>
                     </select>
                   </div>
 
@@ -243,12 +243,12 @@
 
                     <div class="input-group">
                       
-                      <input type="text" class="form-control" id="notice_text" placeholder="Texto del aviso">
+                      <input type="text" class="form-control" id="notice_text" placeholder="Texto del aviso" data-i18n-placeholder="notice_text_placeholder">
 
                       <span class="input-group-text bg-light">
                         <div class="form-check form-switch mb-0">
                           <input class="form-check-input" type="checkbox" id="notice_active">
-                          <label class="form-check-label small ms-1" for="notice_active">Activo</label>
+                          <label class="form-check-label small ms-1" for="notice_active" data-i18n="notice_active">Activo</label>
                         </div>
                       </span>
 

@@ -34,5 +34,9 @@
   "visible_schedule": "Menu Programme",
   "visible_results": "Menu Résultats",
   "visible_statistics": "Menu Statistiques",
-  "notices": "Avis"
+  "notices": "Avis",
+  "notice_text_placeholder": "Texte de l'avis",
+  "notice_active": "Actif",
+  "notice_type_info": "Info",
+  "notice_type_important": "Important"
 }

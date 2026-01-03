@@ -114,7 +114,7 @@ function renderTable(table, fullData) {
             btn.innerHTML = '<i class="bi bi-trash"></i>';
 
             btn.onclick = async () => {
-                const confirmed = await showModal(`Delete "${item.name}" from ${table}?`);
+                const confirmed = await showModal(`${t('delete')} "${item.name}" ${t('from')} <strong>${t(table)}</strong>?`);
                 if (confirmed) {
                     try {
                         const res = await fetch(`${API_BASE_URL}/api/${table}/${item.id}`, { method: "DELETE" });
@@ -174,7 +174,7 @@ async function addEntry(table) {
 function showModal(message) {
     return new Promise((resolve) => {
         const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-        document.getElementById('deleteModalMessage').textContent = message;
+        document.getElementById('deleteModalMessage').innerHTML = message;
     
         const confirmBtn = document.getElementById('confirmDeleteBtn');
         confirmBtn.onclick = () => {

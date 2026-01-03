@@ -1,5 +1,5 @@
 const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
-const savedLang = localStorage.getItem('lang') || 'es';
+const savedLang = localStorage.getItem('lang') || 'en';
 let translations = {};
 
 updateFlag(savedLang);
