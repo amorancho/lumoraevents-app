@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         noticePanel.style.display = 'block';
     }
 
-    await ensureTranslationsReady();
+    //await ensureTranslationsReady();
 
     loadSchedule();
 });
@@ -86,32 +86,6 @@ function renderSchedule(data) {
         items.forEach((item, itemIndex) => {
             const card = document.createElement('div');
             card.className = 'card mb-3 border border-secondary-subtle rounded-3 shadow-none';
-            /*card.innerHTML = `
-                <div class="card-body">
-                <div class="row text-center align-items-center">
-                    <div class="col-6 col-md-3 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">${t('category')}</p>
-                        <span class="badge bg-primary">${item.category}</span>
-                    </div>
-                    <div class="col-6 col-md-3 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">${t('style')}</p>
-                        <span class="badge bg-primary">${item.style}</span>
-                    </div>
-                    <div class="col-4 col-md-2 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">${t('time')}</p>
-                        <span>${item.time}</span>
-                    </div>
-                    <div class="col-4 col-md-2 mb-2 mb-md-0">
-                        <p class="mb-1 fw-semibold">${t('status')}</p>
-                        ${getStatusBadge(item.status)}
-                    </div>
-                    <div class="col-4 col-md-2">
-                        <p class="mb-1 fw-semibold">${t('dancers')}</p>
-                        <span class="badge bg-secondary">${item.dancers}</span>
-                    </div>
-                </div>
-                </div>
-            `;*/
 
             card.innerHTML = `
                 <div class="card-body">
@@ -161,7 +135,7 @@ function renderSchedule(data) {
                                     data-bs-toggle="collapse" data-bs-target="#collapse-${subId}" 
                                     aria-expanded="false" aria-controls="collapse-${subId}">
                             <div class="d-flex justify-content-center w-100">
-                                <strong>Participants (starting order)</strong>
+                                <strong>${t('participants')}</strong>
                             </div>
                             </button>
                         </h2>
@@ -217,6 +191,12 @@ function formatDate(dateStr) {
 
     if (lang === 'es') {
         locale = 'es-ES';
+    } else if (lang === 'it') {
+        locale = 'it-IT';
+    } else if (lang === 'pt') {
+        locale = 'pt-PT';
+    } else if (lang === 'fr') {
+        locale = 'fr-FR';
     } else {
         locale = 'en-GB';
     }

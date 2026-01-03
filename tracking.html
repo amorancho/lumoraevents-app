@@ -24,23 +24,23 @@
       <div class="row g-3 justify-content-center mb-4">
         <!-- Category -->
         <div class="col-12 col-sm-8 col-md-5 col-lg-4">
-          <label for="categorySelect" class="form-label fw-semibold">Category</label>
+          <label for="categorySelect" class="form-label fw-semibold" data-i18n="category">Category</label>
           <select class="form-select" id="categorySelect">
-            <option selected disabled>Select a category</option>
+            <option selected data-i18n="select_category" disabled>Select a category</option>
           </select>
         </div>
 
         <!-- Style -->
         <div class="col-12 col-sm-8 col-md-5 col-lg-4">
-          <label for="styleSelect" class="form-label fw-semibold">Style (optional)</label>
+          <label for="styleSelect" class="form-label fw-semibold" data-i18n="style_optional">Style (optional)</label>
           <select class="form-select" id="styleSelect" disabled>
-            <option selected value="">All styles</option>
+            <option selected data-i18n="all_styles" value="">All styles</option>
           </select>
         </div>
 
         <!-- Button -->
         <div class="col-12 col-sm-8 col-md-3 col-lg-2 d-flex align-items-end">
-          <button class="btn btn-primary w-100" id="getCompetitionsBtn" type="button">Get Competitions</button>
+          <button class="btn btn-primary w-100" id="getCompetitionsBtn" type="button" data-i18n="get_competitions">Get Competitions</button>
         </div>
       </div>
 
@@ -52,7 +52,7 @@
       <div class="modal-dialog modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Detalles de votación</h5>
+            <h5 class="modal-title" data-i18n="voting_details">Detalles de votación</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
           </div>
           <div class="modal-body">
@@ -67,14 +67,14 @@
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title" id="detailsModalLabel">Votes</h5>
+            <h5 class="modal-title" id="detailsModalLabel" data-i18n="votes">Votes</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <div class="row g-3 text-center" id="criteriaContainer"></div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
           </div>
         </div>
       </div>
@@ -86,15 +86,15 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Clear Voting Confirm</h5>
+          <h5 class="modal-title" data-i18n="clear_confirm_title">Clear Voting Confirm</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p id="deleteModalMessage">Are you sure you want to clear this voting?</p>
+          <p id="deleteModalMessage" data-i18n="clear_confirm_text">Are you sure you want to clear this voting?</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Confirm</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn" data-i18n="confirm">Confirm</button>
         </div>
       </div>
     </div>

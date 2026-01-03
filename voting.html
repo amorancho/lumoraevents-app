@@ -80,7 +80,7 @@
         </div>
         
         <div class="col-md-1">
-          <button class="btn btn-primary" id="refreshBtn" disabled>Refresh</button>
+          <button class="btn btn-primary" id="refreshBtn" data-i18n="refresh" disabled>Refresh</button>
         </div>
       </div>
 
@@ -126,7 +126,7 @@
         </div>
       </div>
 
-      <div class="alert alert-info text-center" id="judgeReserveInfo" style="display:none;">
+      <div class="alert alert-info text-center" id="judgeReserveInfo" style="display:none;" data-i18n="reserve_alert">
         <i class="bi bi-info-circle-fill me-2"></i>
         You are a reserve judge. You can only vote for dancers who have a judge as their coach.
       </div>
@@ -170,13 +170,13 @@
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-body">
-              <label for="commentsTextarea" class="form-label fw-semibold">Comments</label>
-              <textarea id="commentsTextarea" class="form-control" rows="5" placeholder="Add comments..."></textarea>
+              <label for="commentsTextarea" class="form-label fw-semibold" data-i18n="comments">Comments</label>
+              <textarea id="commentsTextarea" class="form-control" rows="5" placeholder="Add comments..." data-i18n-placeholder="add_comments"></textarea>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-outline-danger" id="clearCommentsBtn">Clear</button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-primary" id="saveCommentsBtn">Save</button>
+              <button type="button" class="btn btn-outline-danger" id="clearCommentsBtn" data-i18n="clear">Clear</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+              <button type="button" class="btn btn-primary" id="saveCommentsBtn" data-i18n="save">Save</button>
             </div>
           </div>
         </div>

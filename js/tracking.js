@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const originalContent = getCompetitionsBtn.innerHTML;
     getCompetitionsBtn.innerHTML = `
-      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${t('loading')}
     `;
     getCompetitionsBtn.disabled = true;
     try {
@@ -77,7 +77,7 @@ function renderCompetitions(competitions) {
   if (!competitions || competitions.length === 0) {
     container.innerHTML = `
       <div class="alert alert-warning text-center my-4">
-        No se han encontrado competiciones para esta categoría.
+        ${t('no_competitions_found')}
       </div>
     `;
     return;
@@ -105,19 +105,19 @@ function renderCompetitions(competitions) {
       <div class="card-body">
         <div class="row text-center">
           <div class="col-6 col-md-2">
-            <p class="mb-1 fw-semibold">Category</p>
+            <p class="mb-1 fw-semibold">${t('category')}</p>
             <p><span class="badge bg-secondary">${comp.category_name}</span></p>
           </div>
           <div class="col-6 col-md-2">
-            <p class="mb-1 fw-semibold">Style</p>
+            <p class="mb-1 fw-semibold">${t('style')}</p>
             <p><span class="badge bg-secondary">${comp.style_name}</span></p>
           </div>
           <div class="col-6 col-md-2">
-            <p class="mb-1 fw-semibold">Estimated Time</p>
-            <p>${comp.estimated_start_form ?? '<span class="badge bg-dark">NOT DEFINED</span>'}</p>
+            <p class="mb-1 fw-semibold">${t('stimated_time')}</p>
+            <p>${comp.estimated_start_form ?? '<span class="badge bg-dark">' + t('not_defined') + '</span>'}</p>
           </div>
           <div class="col-6 col-md-2">
-            <p class="mb-1 fw-semibold">Status</p>
+            <p class="mb-1 fw-semibold">${t('status')}</p>
             <p>
               <span class="badge bg-${
                 comp.status === 'OPE'
@@ -134,7 +134,7 @@ function renderCompetitions(competitions) {
           <div class="col-12 col-md-4">
               <div class="row text-center">
                 <div class="col-4">
-                  <p class="mb-1 fw-semibold">Judges</p>
+                  <p class="mb-1 fw-semibold">${t('judges')}</p>
                   <p>
                     <span class="badge bg-primary">${comp.judge_number}</span>
                     <span class="mx-1">/</span>
@@ -142,17 +142,17 @@ function renderCompetitions(competitions) {
                     <span class="badge bg-warning"
                           data-bs-toggle="tooltip"
                           data-bs-placement="top"
-                          title="Jueces reserva">
+                          title="${t('reserve_judges')}">
                       ${comp.judge_number_reserve}
                     </span>
                   </p>
                 </div>
                 <div class="col-4">
-                  <p class="mb-1 fw-semibold">Dancers</p>
+                  <p class="mb-1 fw-semibold">${t('dancers')}</p>
                   <p><span class="badge bg-primary">${comp.num_dancers}</span></p>
                 </div>
                 <div class="col-4">
-                  <p class="mb-1 fw-semibold">Pending</p>
+                  <p class="mb-1 fw-semibold">${t('pending')}</p>
                   <p><span class="badge bg-warning">${comp.dancers.filter(d => d.votes.some(v => v.status === 'Pending')).length}</span></p>
                 </div>
               </div>
@@ -166,7 +166,7 @@ function renderCompetitions(competitions) {
     if (!comp.judges.length || !comp.dancers.length) {
       const alertDiv = document.createElement('div');
       alertDiv.className = 'alert alert-info text-center';
-      alertDiv.textContent = 'No hay jueces o bailarinas registrados en esta competición.';
+      alertDiv.textContent = t('no_data');
       container.appendChild(alertDiv);
     } else {
       const tableContainer = document.createElement('div');
@@ -180,11 +180,11 @@ function renderCompetitions(competitions) {
               ${comp.judges.map(j => `
                 <th class="text-center">
                   ${j.name}
-                  ${j.reserve ? `<span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Judge in reserve">R</span>` : ''}
+                  ${j.reserve ? `<span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="${t('judge_in_reserve')}">R</span>` : ''}
                 </th>
               `).join('')}              
-              <th>Voted</th>
-              <th>T. Score</th>
+              <th>${t('voted')}</th>
+              <th>${t('total')}</th>
             </tr>
           </thead>
           <tbody>
@@ -228,7 +228,7 @@ function renderCompetitions(competitions) {
                   <!-- Ver detalles (izquierda) -->
                   <button class="btn btn-link text-primary p-0" 
                     onclick="showVoteDetails(${params})" 
-                    title="Ver detalles"
+                    title="${t('ver_detalles')}"
                     style="visibility: ${showEye ? 'visible' : 'hidden'};">
                     <i class="bi bi-eye"></i>
                   </button>
@@ -239,7 +239,7 @@ function renderCompetitions(competitions) {
                   <!-- Reiniciar voto (derecha) -->
                   <button class="btn btn-link text-danger p-0" 
                     onclick="resetVote(${params})" 
-                    title="Reiniciar voto" ${btnDisabled}>
+                    title="${t('reiniciar_voto')}" ${btnDisabled}>
                     <i class="bi bi-arrow-counterclockwise"></i>
                   </button>
                 </div>
@@ -273,7 +273,7 @@ function renderCompetitions(competitions) {
 }
 
 async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
-  document.getElementById('detailsModalLabel').textContent = `Judge: ${judgeName} / Dancer: ${dancerName}`;
+  document.getElementById('detailsModalLabel').textContent = `${t('judge')}: ${judgeName} / ${t('dancer')}: ${dancerName}`;
 
   criteriaContainer.innerHTML = '';
 
@@ -308,7 +308,7 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
   const totalCol = document.createElement('div');
   totalCol.className = 'col-12 mt-3 text-center';
   totalCol.innerHTML = `
-    <div class="fw-bold mb-1">Total</div>
+    <div class="fw-bold mb-1">${t('total')}</div>
     <span id="totalScore" class="badge bg-success fs-4 px-4">${total}</span>
   `;
   criteriaContainer.appendChild(totalCol);
@@ -318,7 +318,7 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
 
   // Footer → limpiar primero
   const footer = modal._element.querySelector('.modal-footer');
-  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>`;
+  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${t('close')}</button>`;
 
   
   modal.show();
@@ -326,7 +326,7 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
 
 async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
 
-  const confirmed = await showModal(`¿Seguro que quieres reiniciar el voto del juez "${judgeName}" a la bailarina "${dancerName}"?`);
+  const confirmed = await showModal(`${t('confirm_reset_1')} "${judgeName}" ${t('confirm_reset_2')} "${dancerName}"?`);
 
   if (!confirmed) return;
 
@@ -385,7 +385,7 @@ async function loadCategoriesAndStyles() {
 }
 
 function populateCategorySelect(data, categorySelect) {
-  categorySelect.innerHTML = '<option selected disabled>Select a category</option>';
+  categorySelect.innerHTML = `<option selected disabled>${t('select_category')}</option>`;
   data.forEach(item => {
     const option = document.createElement('option');
     option.value = item.category.id;
@@ -396,7 +396,7 @@ function populateCategorySelect(data, categorySelect) {
 
 function populateStyleSelect(selectedCategoryId, data, styleSelect) {
   const categoryData = data.find(item => item.category.id == selectedCategoryId);
-  styleSelect.innerHTML = '<option selected value="">All styles</option>';
+  styleSelect.innerHTML = `<option selected value="">${t('all_styles')}</option>`;
   if (categoryData) {
     categoryData.styles.forEach(style => {
       const option = document.createElement('option');

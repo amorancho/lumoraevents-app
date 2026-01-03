@@ -111,7 +111,7 @@ function loadCompetitions() {
       statusBtn = `
         <button type="button" 
                 class="btn btn-outline-${isOpen ? 'warning' : 'success'} btn-sm btn-toggle-status"
-                title="${isOpen ? 'Close competition' : 'Open competition'}"
+                title="${isOpen ? t('close_competition') : t('open_competition')}"
                 data-action="${isOpen ? 'close' : 'open'}" ${btnDisabled}>
             <i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'}"></i>
         </button>
@@ -128,7 +128,7 @@ function loadCompetitions() {
         ${comp.judges
           .map(j => 
             j.reserve
-              ? `${j.name} <span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="Judge in reserve">R</span>`
+              ? `${j.name} <span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="${t('judge_in_reserve')}">R</span>`
               : j.name
           )
           .join(', ')
@@ -141,7 +141,7 @@ function loadCompetitions() {
         <span class="badge bg-warning"
               data-bs-toggle="tooltip"
               data-bs-placement="top"
-              title="Jueces reserva">
+              title="${t('reserve_judges')}">
           ${comp.judges.filter(j => j.reserve).length}
         </span>
       </td>
@@ -151,13 +151,13 @@ function loadCompetitions() {
       <td class="text-center">
         <div class="btn-group" role="group">
             ${statusBtn}
-            <button type="button" class="btn btn-outline-secondary btn-sm btn-dancers-order" title="Dancers Order" data-bs-toggle="modal" data-bs-target="#dancersOrderModal" ${btnDisabled}>
+            <button type="button" class="btn btn-outline-secondary btn-sm btn-dancers-order" title="${t('dancers_order_modal_title')}" data-bs-toggle="modal" data-bs-target="#dancersOrderModal" ${btnDisabled}>
                 <i class="bi bi-list-ol"></i>
             </button>
-            <button type="button" class="btn btn-outline-primary btn-sm btn-edit-competition" title="Edit" ${btnDisabled}>
+            <button type="button" class="btn btn-outline-primary btn-sm btn-edit-competition" title="${t('edit')}" ${btnDisabled}>
                 <i class="bi bi-pencil"></i>
             </button>
-            <button type="button" class="btn btn-outline-danger btn-sm btn-delete-competition" title="Delete" ${btnDisabled}>
+            <button type="button" class="btn btn-outline-danger btn-sm btn-delete-competition" title="${t('delete')}" ${btnDisabled}>
                 <i class="bi bi-trash"></i>
             </button>
         </div>
@@ -218,7 +218,7 @@ function loadCompetitions() {
 
         // Actualizamos el botón
         btn.dataset.action = newStatus === 'OPEN' ? 'close' : 'open';
-        btn.title = newStatus === 'OPEN' ? 'Close competition' : 'Open competition';
+        btn.title = newStatus === 'OPEN' ? t('close_competition') : t('open_competition');
         btn.querySelector('i').className = newStatus === 'OPEN' ? 'bi bi-lock' : 'bi bi-unlock';
 
 
@@ -287,7 +287,7 @@ async function addCompt() {
       addBtn.textContent = "Add Competition";
     }
   } else {
-    showMessageModal('Select Category and Style to create a competition', 'Error');
+    showMessageModal(t('error_create_competition'), 'Error');
   }
 }
 
@@ -364,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const competition = competitions.find(c => c.id == competitionId);
 
         if (competition) {
-          const message = `Are you sure you want to delete the competition for <strong>${competition.category_name} - ${competition.style_name}</strong>?`;
+          const message = `${t('confirm_delete_competition')} <strong>${competition.category_name} - ${competition.style_name}</strong>?`;
           document.getElementById('deleteModalMessage').innerHTML = message;
 
           const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -545,7 +545,7 @@ async function loadMasters() {
   const reserveSelect = document.getElementById('editJudgeReserve');
   masterSelect.innerHTML = ''; // Limpiar opciones anteriores
   if (reserveSelect) {
-    reserveSelect.innerHTML = '<option value=\"\">Ninguno</option>';
+    reserveSelect.innerHTML = `<option value=\"\">${t('ninguno')}</option>`;
   }
 
   try {

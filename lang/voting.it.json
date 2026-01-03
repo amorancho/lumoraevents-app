@@ -30,5 +30,10 @@
   "cancel": "Annulla",
   "confirm": "Conferma",
   "sending": "Invio in corso",
-  "confirm_outlier_scores": "Alcuni punteggi sono molto superiori o inferiori alla media. Sei sicuro di voler inviare questi punteggi?"
+  "confirm_outlier_scores": "Alcuni punteggi sono molto superiori o inferiori alla media. Sei sicuro di voler inviare questi punteggi?",
+  "refresh": "Aggiorna",
+  "reserve_alert": "Sei un giudice di riserva. Puoi votare solo per le ballerine che hanno un giudice come allenatore.",
+  "add_comments": "Aggiungi commenti...",
+  "clear": "Pulisci",
+  "save": "Salva"
 }

@@ -5,5 +5,6 @@
   "time": "Heure",
   "status": "Statut",
   "dancers": "Danseuses",
-  "participants": "Participants (ordre de passage)"
+  "participants": "Participants (ordre de passage)",
+  "info_notice_text": "Le festival a commencé. La modification de ces données peut entraîner des incohérences."
 }

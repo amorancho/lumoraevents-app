@@ -30,5 +30,10 @@
   "cancel": "Cancel",
   "confirm": "Confirm",
   "sending": "Sending",
-  "confirm_outlier_scores": "Some scores are significantly above or below average. Are you sure you want to send these scores?"
+  "confirm_outlier_scores": "Some scores are significantly above or below average. Are you sure you want to send these scores?",
+  "refresh": "Refresh",
+  "reserve_alert": "You are a reserve judge. You can only vote for dancers who have a judge as their coach.",
+  "add_comments": "Add comments...",
+  "clear": "Clear",
+  "save": "Save"
 }

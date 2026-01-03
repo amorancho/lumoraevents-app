@@ -30,5 +30,10 @@
   "cancel": "Cancelar",
   "confirm": "Confirmar",
   "sending": "Enviando",
-  "confirm_outlier_scores": "Algunas puntuaciones están muy por encima o por debajo del promedio. ¿Está seguro de que desea enviar estas puntuaciones?"
+  "confirm_outlier_scores": "Algunas puntuaciones están muy por encima o por debajo del promedio. ¿Está seguro de que desea enviar estas puntuaciones?",
+  "refresh": "Actualizar",
+  "reserve_alert": "Eres un juez suplente. Solo puedes votar por bailarinas que tengan un juez como su maestro.",
+  "add_comments": "Agregar comentarios...",
+  "clear": "Limpiar",
+  "save": "Guardar"
 }

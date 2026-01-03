@@ -5,5 +5,6 @@
   "time": "Ora",
   "status": "Stato",
   "dancers": "Ballerine",
-  "participants": "Partecipanti (ordine di uscita)"
+  "participants": "Partecipanti (ordine di uscita)",
+  "info_notice_text": "Il festival è iniziato. La modifica di questi dati può causare incongruenze."
 }

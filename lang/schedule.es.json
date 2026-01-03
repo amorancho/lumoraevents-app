@@ -5,5 +5,6 @@
     "time": "Hora",
     "status": "Estado",
     "dancers": "Bailarinas",
-    "participants": "Participantes (orden de salida)"
+    "participants": "Participantes (orden de salida)",
+    "info_notice_text": "El festival ha dado comienzo. Si modifica estos datos puede provocar inconsistencias en los datos."
 }

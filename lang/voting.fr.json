@@ -30,5 +30,10 @@
   "cancel": "Annuler",
   "confirm": "Confirmer",
   "sending": "Envoi en cours",
-  "confirm_outlier_scores": "Certaines notes sont très supérieures ou inférieures à la moyenne. Êtes-vous sûr de vouloir envoyer ces notes ?"
+  "confirm_outlier_scores": "Certaines notes sont très supérieures ou inférieures à la moyenne. Êtes-vous sûr de vouloir envoyer ces notes ?",
+  "refresh": "Rafraîchir",
+  "reserve_alert": "Vous êtes un juge de réserve. Vous ne pouvez voter que pour les danseuses ayant un juge comme coach.",
+  "add_comments": "Ajouter des commentaires...",
+  "clear": "Effacer",
+  "save": "Enregistrer"
 }
