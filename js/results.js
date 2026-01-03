@@ -238,6 +238,8 @@ function renderResults(data) {
   const row = document.createElement("div");
   row.className = "row g-4 pt-2";
 
+  let colStylesClass = 'col-12';
+
   // Si hay clasificación general, generamos columna
   if (getEvent().catClassification != 'NO') {
 
@@ -246,11 +248,13 @@ function renderResults(data) {
     colGeneral.className = "col-12 col-lg-4";
     colGeneral.innerHTML = renderGeneralClassification(data.general || []);
     row.appendChild(colGeneral);
+
+    colStylesClass = colStylesClass + ' col-lg-8';
   }
 
   // === STYLES CLASSIFICATIONS ===
   const colStyles = document.createElement("div");
-  colStyles.className = "col-12 col-lg-8";
+  colStyles.className = colStylesClass;
 
   const stylesRow = document.createElement("div");
   stylesRow.className = "row g-4";
