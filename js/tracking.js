@@ -285,6 +285,7 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
   }
 
   const data = await res.json();
+
   // Filtramos dancerId de data.dancers
   data.dancers = data.dancers.find(d => d.id === dancerId);
   if (!data.dancers) throw new Error('No se han encontrado datos de la bailarina');
@@ -309,7 +310,7 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
   totalCol.className = 'col-12 mt-3 text-center';
   totalCol.innerHTML = `
     <div class="fw-bold mb-1">${t('total')}</div>
-    <span id="totalScore" class="badge bg-success fs-4 px-4">${total}</span>
+    <span id="totalScore" class="badge bg-success fs-4 px-4">${data.dancers.totalScore}</span>
   `;
   criteriaContainer.appendChild(totalCol);
 
