@@ -1,3 +1,19 @@
 {
-    "title": "Estadísticas"
+    "title": "Estadísticas",
+    "enter_dancer_code": "Introduce el código de la bailarina",
+    "get_stats": "Ver estadísticas",
+    "valid_code": "Introduce un código válido para continuar.",
+    "loading": "Cargando...",
+    "no_stats_info": "No hay datos de estadísticas para este código.",
+    "detalles": "Detalle de las votaciones",
+    "no_detalles": "No hay detalle de votaciones disponible.",
+    "style": "Estilo",
+    "judge": "Juez",
+    "total": "Total",
+    "comments": "Comentarios",
+    "styles": "Estilos",
+    "judges": "Jueces",
+    "criteria": "Criterios",
+    "average": "Media",
+    "others": "Otros"
 }

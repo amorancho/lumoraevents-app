@@ -5,7 +5,6 @@ const dancerCodeInput = () => document.getElementById('dancerCode');
 
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
-  //renderEmptyState();
 
   const form = document.getElementById('statsForm');
   if (form) {
@@ -14,26 +13,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 });
 
-function renderEmptyState() {
-  const container = statsContainer();
-  if (!container) return;
-  container.innerHTML = `
-    <div class="col-12 col-lg-8">
-      <div class="alert alert-info d-flex align-items-center mb-0" role="alert">
-        <i class="bi bi-info-circle me-2 fs-5"></i>
-        <div>Introduce un código de bailarina y pulsa "Get Stats" para ver sus estadísticas.</div>
-      </div>
-    </div>
-  `;
-}
-
 async function handleStatsSubmit(event) {
   event.preventDefault();
   const code = dancerCodeInput()?.value.trim();
   clearAlert();
 
   if (!code) {
-    showAlert('warning', 'Introduce un código válido para continuar.');
+    showAlert('warning', t('valid_code'));
     return;
   }
 
@@ -42,8 +28,6 @@ async function handleStatsSubmit(event) {
     const data = await fetchStats(code);
     renderStats(data);
   } catch (error) {
-    console.error('Error obteniendo estadisticas:', error);
-    //renderEmptyState();
     showAlert('danger', error.message || 'No se pudieron cargar las estadísticas.');
   } finally {
     setLoading(false);
@@ -68,7 +52,6 @@ function renderStats(data) {
   container.innerHTML = '';
 
   if (!data) {
-    //renderEmptyState();
     return;
   }
 
@@ -95,8 +78,7 @@ function renderStats(data) {
   }
 
   if (!fragment.childNodes.length) {
-    //renderEmptyState();
-    showAlert('warning', 'No hay datos de estadísticas para este código.');
+    showAlert('warning', t('no_stats_info'));
     return;
   }
 
@@ -142,10 +124,10 @@ function buildVotesDetailCard(results, personalData) {
       <div class="card shadow-sm border-0">
         <div class="card-header bg-white d-flex align-items-center gap-2">
           <i class="bi bi-table text-primary"></i>
-          <span class="fw-semibold">Detalle de las votaciones</span>
+          <span class="fw-semibold">${t('detalles')}</span>
         </div>
         <div class="card-body">
-          <div class="text-muted">No hay detalle de votaciones disponible.</div>
+          <div class="text-muted">${t('no_detalles')}</div>
         </div>
       </div>
     `;
@@ -167,7 +149,7 @@ function buildVotesDetailCard(results, personalData) {
       >
         <span class="d-flex align-items-center gap-2">
           <i class="bi bi-card-list fs-5"></i>
-          <span class="fw-semibold">Detalle de las votaciones</span>
+          <span class="fw-semibold">${t('detalles')}</span>
         </span>
         <span class="d-flex align-items-center gap-2">
           <span class="badge bg-light text-primary fw-semibold">${styles.length} styles</span>
@@ -273,15 +255,15 @@ function buildVotesDetailTable(styles, criteria, dancerId) {
   const header = document.createElement('tr');
   const thStyle = document.createElement('th');
   thStyle.scope = 'col';
-  thStyle.className = 'text-start';
-  thStyle.textContent = 'Style';
+  thStyle.className = 'text-center';
+  thStyle.textContent = t('style');
   if (stickyStyle) makeStickyCell(thStyle, 0, 3, '#f8f9fa');
   header.appendChild(thStyle);
 
   const thJudge = document.createElement('th');
   thJudge.scope = 'col';
   thJudge.className = 'text-center';
-  thJudge.textContent = 'Judge';
+  thJudge.textContent = t('judge');
   if (stickyJudge) makeStickyCell(thJudge, styleColWidthPx, 3, '#f8f9fa');
   header.appendChild(thJudge);
 
@@ -296,7 +278,7 @@ function buildVotesDetailTable(styles, criteria, dancerId) {
   const thTotal = document.createElement('th');
   thTotal.scope = 'col';
   thTotal.className = 'text-center';
-  thTotal.textContent = 'Total';
+  thTotal.textContent = t('total');
   header.appendChild(thTotal);
 
   thead.appendChild(header);
@@ -327,7 +309,7 @@ function buildVotesDetailTable(styles, criteria, dancerId) {
         const maxNameWidth = Math.max(60, styleColWidthPx - 20);
         tdStyle.innerHTML = `
           <div class="fw-semibold text-truncate" style="max-width:${maxNameWidth}px" title="${escapeHtml(styleName)}">${escapeHtml(styleName)}</div>
-          ${styleTotal != null ? `<div class="mt-1"><span class="badge bg-primary-subtle text-primary fw-semibold">Total ${escapeHtml(styleTotal)}</span></div>` : ''}
+          ${styleTotal != null ? `<div class="mt-1"><span class="badge bg-primary-subtle text-primary fw-semibold">${t('total')} ${escapeHtml(styleTotal)}</span></div>` : ''}
         `;
         tdStyle.style.verticalAlign = 'top';
         tdStyle.classList.add('bg-body-secondary');
@@ -490,7 +472,7 @@ function buildCriteriaCard(criteria) {
     <div class="card shadow-sm h-100">
       <div class="card-header bg-white d-flex align-items-center gap-2">
         <i class="bi bi-sliders2-vertical text-primary"></i>
-        <span class="fw-semibold">Criteria</span>
+        <span class="fw-semibold">${t('criteria')}</span>
       </div>
       <div class="card-body">
         <div class="d-flex flex-column gap-3" id="criteriaList"></div>
@@ -523,8 +505,8 @@ function buildCriterionRow(item) {
       </div>
       ${diffBadge(diff)}
     </div>
-    ${progressBlock('Average', avg, 'primary')}
-    ${progressBlock('Others', others, 'secondary')}
+    ${progressBlock(t('average'), avg, 'primary')}
+    ${progressBlock(t('others'), others, 'secondary')}
   `;
   return row;
 }
@@ -536,7 +518,7 @@ function buildJudgesCard(judges) {
     <div class="card shadow-sm h-100">
       <div class="card-header bg-white d-flex align-items-center gap-2">
         <i class="bi bi-people text-primary"></i>
-        <span class="fw-semibold">Judges</span>
+        <span class="fw-semibold">${t('judges')}</span>
       </div>
       <div class="card-body">
         <div class="d-flex flex-column gap-3" id="judgesList"></div>
@@ -569,8 +551,8 @@ function buildJudgeRow(judge) {
       </div>
       ${diffBadge(diff)}
     </div>
-    ${progressBlock('Average', avg, 'primary')}
-    ${progressBlock('Others', others, 'secondary')}
+    ${progressBlock(t('average'), avg, 'primary')}
+    ${progressBlock(t('others'), others, 'secondary')}
   `;
   return row;
 }
@@ -582,7 +564,7 @@ function buildStylesCard(styles) {
     <div class="card shadow-sm h-100">
       <div class="card-header bg-white d-flex align-items-center gap-2">
         <i class="bi bi-music-note-beamed text-primary"></i>
-        <span class="fw-semibold">Styles</span>
+        <span class="fw-semibold">${t('styles')}</span>
       </div>
       <div class="card-body">
         <div class="d-flex flex-column gap-3" id="stylesList"></div>
@@ -617,8 +599,8 @@ function buildStyleRow(style) {
         <div class="text-muted small mb-0">Min ${min.toFixed(1)} - Max ${max.toFixed(1)}</div>
         ${diffBadge(diff)}
       </div>
-      <div class="mb-2">${progressBlock('Average', avg, 'primary')}</div>
-      <div>${progressBlock('Others', others, 'secondary')}</div>
+      <div class="mb-2">${progressBlock(t('average'), avg, 'primary')}</div>
+      <div>${progressBlock(t('others'), others, 'secondary')}</div>
     </div>
   `;
   return col;
@@ -643,7 +625,7 @@ function diffBadge(diff) {
   const positive = diff >= 0;
   const badgeClass = positive ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger';
   const icon = positive ? 'bi-arrow-up-right' : 'bi-arrow-down-right';
-  const label = `${positive ? '+' : ''}${diff.toFixed(2)} vs others`;
+  const label = `${positive ? '+' : ''}${diff.toFixed(2)} vs ${t('others')}`;
   return `<span class="badge ${badgeClass} d-inline-flex align-items-center gap-1"><i class="bi ${icon}"></i>${label}</span>`;
 }
 
@@ -673,10 +655,10 @@ function setLoading(isLoading) {
   if (!btn) return;
   if (isLoading) {
     btn.disabled = true;
-    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Loading...`;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${t('loading')}`;
   } else {
     btn.disabled = false;
-    btn.innerHTML = `<i class="bi bi-graph-up-arrow me-2"></i>Get Stats`;
+    btn.innerHTML = `<i class="bi bi-graph-up-arrow me-2"></i>${t('get_stats')}`;
   }
 }
 
