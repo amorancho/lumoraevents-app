@@ -289,7 +289,8 @@ function showVotesModal(dancer, mode = "details") {
         input.value,
         scoreType,
         minScore,
-        maxScore
+        maxScore,
+        { clamp: false }
       );
       if (normalized !== null) sum += normalized;
     });
@@ -339,7 +340,7 @@ function showVotesModal(dancer, mode = "details") {
         col.innerHTML = `
         <div class="mb-1 fw-semibold">${c.name}</div>
         <input type="number" inputmode="${inputMode}" class="form-control form-control-lg score-input"
-               data-criteria="${c.id}" data-score-type="${scoreType}" min="${minScore}" max="${maxScore}" step="${scoreStep}" value="${currentVal}">
+               data-criteria="${c.id}" data-score-type="${scoreType}" step="${scoreStep}" value="${currentVal}">
       `;
       }
 
@@ -451,6 +452,7 @@ function showVotesModal(dancer, mode = "details") {
     const collectScores = () => {
       const scores = [];
       let allFilled = true;
+      const outOfRange = [];
 
       criteriaList.forEach(c => {
         const input = getCriteriaInput(c.id);
@@ -459,11 +461,14 @@ function showVotesModal(dancer, mode = "details") {
           input.value,
           scoreType,
           minScore,
-          maxScore
+          maxScore,
+          { clamp: false }
         );
 
         if (normalizedScore === null) {
           allFilled = false;
+        } else if (!isScoreInRange(normalizedScore, minScore, maxScore)) {
+          outOfRange.push(c.name);
         } else {
           if (input.tagName === 'INPUT' && input.type === 'number') {
             input.value = formatScoreForDisplay(normalizedScore, scoreType);
@@ -479,7 +484,22 @@ function showVotesModal(dancer, mode = "details") {
         }
       });
 
-      return { scores, allFilled };
+      return { scores, allFilled, outOfRange };
+    };
+
+    const setVoteAlert = (message) => {
+      let alertDiv = document.getElementById("voteErrorAlert");
+      if (!alertDiv) {
+        alertDiv = document.createElement("div");
+        alertDiv.id = "voteErrorAlert";
+        alertDiv.className = "alert alert-danger alert-dismissible fade show mt-3";
+        alertDiv.role = "alert";
+        criteriaContainer.appendChild(alertDiv);
+      }
+      alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      `;
     };
 
     const sendBtn = document.createElement('button');
@@ -531,22 +551,50 @@ function showVotesModal(dancer, mode = "details") {
       }
     }
   
+    // --- modal de confirmacion (solo se crea si no existe aun) ---
+    if (!document.getElementById("outlierConfirmModal")) {
+      document.body.insertAdjacentHTML("beforeend", `
+        <div class="modal fade" id="outlierConfirmModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">${t('confirm', 'Confirm')}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p id="outlierConfirmMessage">${t('confirm_outlier_scores')}</p>
+                <p id="outlierConfirmList" class="mb-0 fw-semibold"></p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t('cancel')}</button>
+                <button type="button" class="btn btn-primary" id="confirmOutlierBtn">${t('confirm')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    const outlierModal = new bootstrap.Modal(document.getElementById("outlierConfirmModal"));
+    const confirmOutlierBtn = document.getElementById("confirmOutlierBtn");
+    const outlierMessageEl = document.getElementById("outlierConfirmMessage");
+    const outlierListEl = document.getElementById("outlierConfirmList");
+
     // --- boton normal: enviar votos manuales ---
     sendBtn.addEventListener('click', async () => {
-      const { scores, allFilled } = collectScores();
+      const { scores, allFilled, outOfRange } = collectScores();
   
       if (!allFilled) {
-        if (!document.getElementById("voteErrorAlert")) {
-          const alertDiv = document.createElement("div");
-          alertDiv.id = "voteErrorAlert";
-          alertDiv.className = "alert alert-danger alert-dismissible fade show mt-3";
-          alertDiv.role = "alert";
-          alertDiv.innerHTML = `
-            ${t('alert_criteria')}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          `;
-          criteriaContainer.appendChild(alertDiv);
-        }
+        setVoteAlert(t('alert_criteria'));
+        return;
+      }
+
+      if (outOfRange.length > 0) {
+        const message = t(
+          'alert_criteria_range',
+          `Las puntuaciones deben estar entre ${minScore} y ${maxScore}.`
+        );
+        setVoteAlert(message);
         return;
       }
   
@@ -565,11 +613,18 @@ function showVotesModal(dancer, mode = "details") {
           return crit ? crit.name : 'Unknown';
         }).join(', ');
 
-        if (!confirm(`${t('confirm_outlier_scores')}
-
-${outlierNames}`)) {
-          return; // cancelar envio
+        if (outlierMessageEl) {
+          outlierMessageEl.textContent = t('confirm_outlier_scores');
         }
+        if (outlierListEl) {
+          outlierListEl.textContent = outlierNames;
+        }
+        confirmOutlierBtn.onclick = async () => {
+          outlierModal.hide();
+          await sendVotes(scores);
+        };
+        outlierModal.show();
+        return;
       }
   
       await sendVotes(scores);
@@ -625,23 +680,15 @@ ${outlierNames}`)) {
   
     // --- recalcular total al cambiar inputs ---
     criteriaContainer.querySelectorAll('input[type="number"].score-input').forEach(input => {
-      input.addEventListener('input', () => {
-        const val = Number(input.value);
-
-        if (!Number.isNaN(val)) {
-          if (val < minScore) input.value = formatScoreForDisplay(minScore, scoreType);
-          if (val > maxScore) input.value = formatScoreForDisplay(maxScore, scoreType);
-        }
-
-        refreshTotalScore();
-      });
+      input.addEventListener('input', refreshTotalScore);
 
       input.addEventListener('blur', () => {
         const normalized = normalizeScoreValue(
           input.value,
           scoreType,
           minScore,
-          maxScore
+          maxScore,
+          { clamp: false }
         );
         if (normalized !== null) {
           input.value = formatScoreForDisplay(normalized, scoreType);
@@ -912,7 +959,7 @@ function getScoreType() {
   return type ? type.toUpperCase() : 'INT';
 }
 
-function normalizeScoreValue(rawValue, scoreType, min = 1, max = 10) {
+function normalizeScoreValue(rawValue, scoreType, min = 1, max = 10, { clamp = true } = {}) {
   if (rawValue === undefined || rawValue === null) return null;
   const normalizedType = (scoreType || 'INT').toUpperCase();
   const stringValue = String(rawValue).replace(',', '.').trim();
@@ -921,8 +968,10 @@ function normalizeScoreValue(rawValue, scoreType, min = 1, max = 10) {
   if (Number.isNaN(numericValue)) return null;
 
   let value = numericValue;
-  if (typeof min === 'number') value = Math.max(value, min);
-  if (typeof max === 'number') value = Math.min(value, max);
+  if (clamp) {
+    if (typeof min === 'number') value = Math.max(value, min);
+    if (typeof max === 'number') value = Math.min(value, max);
+  }
 
   switch (normalizedType) {
     case 'DEC':
@@ -932,6 +981,13 @@ function normalizeScoreValue(rawValue, scoreType, min = 1, max = 10) {
     default:
       return Math.round(value);
   }
+}
+
+function isScoreInRange(value, min = 1, max = 10) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return false;
+  if (typeof min === 'number' && value < min) return false;
+  if (typeof max === 'number' && value > max) return false;
+  return true;
 }
 
 function formatScoreForDisplay(value, scoreType) {
