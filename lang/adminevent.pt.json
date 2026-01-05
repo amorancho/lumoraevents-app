@@ -38,5 +38,6 @@
   "notice_text_placeholder": "Texto do aviso",
   "notice_active": "Ativo",
   "notice_type_info": "Info",
-  "notice_type_important": "Importante"
+  "notice_type_important": "Importante",
+  "qr_tooltip": "Mostrar o QR do evento para partilhar o link"
 }

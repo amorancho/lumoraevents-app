@@ -223,6 +223,11 @@ function applyTranslations() {
     const key = el.dataset.i18nPlaceholder;
     if (translations[key]) el.placeholder = translations[key];
   });
+
+  document.querySelectorAll("[data-i18n-title]").forEach(el => {
+    const key = el.dataset.i18nTitle;
+    if (translations[key]) el.title = translations[key];
+  });
 }
 
 async function changeLanguage(lang, page = null) {

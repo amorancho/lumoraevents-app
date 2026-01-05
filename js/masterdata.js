@@ -121,7 +121,7 @@ function renderTable(table, fullData) {
                         const data = await res.json();
 
                         if (!res.ok) {
-                            showMessageModal(data.error || 'Unknown error', 'Error eliminando el item');
+                            showMessageModal(data.error || 'Unknown error', t('error_deleting'));
                             return;
                         }
                         loadTable(table);

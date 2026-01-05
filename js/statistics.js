@@ -325,13 +325,34 @@ function buildVotesDetailTable(styles, criteria, dancerId) {
       }
 
       const judgeName = (vote?.judge_name || '-').trim() || '-';
+      const commentText = typeof vote?.comments === 'string' ? vote.comments.trim() : '';
       const tdJudge = document.createElement('td');
-      tdJudge.className = 'text-center';
-      tdJudge.textContent = judgeName;
+      tdJudge.className = 'text-start';
       tdJudge.title = judgeName;
       tdJudge.style.whiteSpace = 'nowrap';
       tdJudge.style.overflow = 'hidden';
       tdJudge.style.textOverflow = 'ellipsis';
+      const judgeWrap = document.createElement('div');
+      judgeWrap.className = 'd-flex align-items-center gap-2';
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'text-truncate';
+      nameSpan.style.minWidth = '0';
+      nameSpan.style.flex = '1 1 auto';
+      nameSpan.textContent = judgeName;
+      judgeWrap.appendChild(nameSpan);
+      if (commentText) {
+        const commentBtn = document.createElement('button');
+        commentBtn.type = 'button';
+        commentBtn.className = 'btn btn-link p-0 text-warning ms-auto';
+        commentBtn.innerHTML = '<i class="bi bi-chat-dots-fill" aria-hidden="true"></i>';
+        commentBtn.setAttribute('aria-label', t('comments'));
+        commentBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          showVoteComment(commentText, judgeName, styleName);
+        });
+        judgeWrap.appendChild(commentBtn);
+      }
+      tdJudge.appendChild(judgeWrap);
       if (isMobile) {
         tdJudge.style.padding = '0.35rem';
         //tdJudge.style.fontSize = '0.75rem';
@@ -369,6 +390,58 @@ function buildVotesDetailTable(styles, criteria, dancerId) {
 
   table.appendChild(tbody);
   return table;
+}
+
+let commentsModalInstance = null;
+let commentsModalTitleEl = null;
+let commentsModalBodyEl = null;
+
+function ensureCommentsModal() {
+  if (commentsModalInstance) return commentsModalInstance;
+  if (!document.getElementById('voteCommentsModal')) {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="modal fade" id="voteCommentsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="voteCommentsModalLabel">${t('comments')}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="voteCommentsModalBody"></div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t('close', 'Close')}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+  const modalEl = document.getElementById('voteCommentsModal');
+  commentsModalTitleEl = document.getElementById('voteCommentsModalLabel');
+  commentsModalBodyEl = document.getElementById('voteCommentsModalBody');
+  commentsModalInstance = new bootstrap.Modal(modalEl);
+  return commentsModalInstance;
+}
+
+function showVoteComment(commentText, judgeName, styleName) {
+  const modal = ensureCommentsModal();
+  if (commentsModalTitleEl) {
+    commentsModalTitleEl.textContent = t('comments');
+  }
+  if (commentsModalBodyEl) {
+    const judgeLine = judgeName && judgeName !== '-'
+      ? `<div class="small mb-1"><span class="text-muted">${t('judge')}:</span> <strong>${escapeHtml(judgeName)}</strong></div>`
+      : '';
+    const styleLine = styleName && styleName !== '-'
+      ? `<div class="small mb-2"><span class="text-muted">${t('style')}:</span> <strong>${escapeHtml(styleName)}</strong></div>`
+      : '';
+    commentsModalBodyEl.innerHTML = `
+      ${judgeLine}
+      ${styleLine}
+      <div class="border-top pt-2">${escapeHtml(commentText)}</div>
+    `;
+  }
+  modal.show();
 }
 
 function createCol(width) {

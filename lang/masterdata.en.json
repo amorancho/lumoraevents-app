@@ -24,5 +24,6 @@
   "tab_general": "General",
   "tab_penalties": "Penalties",
   "tab_observaciones": "Observations",
-  "tab_clubs": "Clubs / Schools"
+  "tab_clubs": "Clubs / Schools",
+  "error_deleting": "Error deleting the item."
 }

@@ -38,5 +38,6 @@
   "notice_text_placeholder": "Texte de l'avis",
   "notice_active": "Actif",
   "notice_type_info": "Info",
-  "notice_type_important": "Important"
+  "notice_type_important": "Important",
+  "qr_tooltip": "Afficher le QR de l'evenement pour partager le lien"
 }
