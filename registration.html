@@ -28,10 +28,16 @@
         <div class="col-12">
           <ul class="nav nav-tabs mb-3" id="registrationTabs" role="tablist">
             <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="school-tab" data-bs-toggle="tab" data-bs-target="#school" type="button" role="tab" aria-controls="school" aria-selected="true" data-i18n="registration_tab_school">Datos de la Escuela</button>
+              <button class="nav-link active" id="schools-tab" data-bs-toggle="tab" data-bs-target="#schools" type="button" role="tab" aria-controls="schools" aria-selected="true" data-i18n="registration_tab_schools">Escuelas</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="school-tab" data-bs-toggle="tab" data-bs-target="#school" type="button" role="tab" aria-controls="school" aria-selected="false" data-i18n="registration_tab_school">Datos de la Escuela</button>
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants" type="button" role="tab" aria-controls="participants" aria-selected="false" data-i18n="registration_tab_participants">Participantes</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="org-registrations-tab" data-bs-toggle="tab" data-bs-target="#org-registrations" type="button" role="tab" aria-controls="org-registrations" aria-selected="false" data-i18n="registration_tab_org_registrations">Inscripciones</button>
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link" id="competitions-tab" data-bs-toggle="tab" data-bs-target="#competitions" type="button" role="tab" aria-controls="competitions" aria-selected="false" data-i18n="registration_tab_competitions">Inscripciones en competiciones</button>
@@ -116,7 +122,24 @@
                       <i class="bi bi-person-plus me-2"></i>
                       <span data-i18n="registration_participants_add">Alta participantes</span>
                     </button>
-                    <div class="d-flex align-items-center gap-2">
+                  </div>
+                  <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
+                    <form id="participantsFilters" class="row g-3 align-items-end flex-grow-1">
+                      <div class="col-12 col-md-4">
+                        <label class="form-label" for="participantsFilterSchool" data-i18n="participants_filter_school">Escuela</label>
+                        <select id="participantsFilterSchool" class="form-select">
+                          <option value=""></option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label class="form-label" for="participantsFilterName" data-i18n="participants_filter_name">Nombre</label>
+                        <input type="text" class="form-control" id="participantsFilterName" data-i18n-placeholder="participants_filter_name_placeholder" placeholder="Buscar...">
+                      </div>
+                      <div class="col-12 col-md-3">
+                        <button type="button" class="btn btn-outline-secondary w-100" id="participantsFilterClear" data-i18n="clear_filters">Limpiar</button>
+                      </div>
+                    </form>
+                    <div class="d-flex align-items-center gap-2 ms-lg-auto">
                       <span class="text-muted" data-i18n="registration_participants_total">Total participantes</span>
                       <span class="badge bg-secondary" id="participantsCount">0</span>
                     </div>
@@ -140,6 +163,68 @@
 
                   <div id="participantsEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_participants_empty">
                     No hay participantes creados.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="org-registrations" role="tabpanel" aria-labelledby="org-registrations-tab">
+              <div class="card shadow-sm">
+                <div class="card-body p-4">
+                  <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
+                    <form id="orgRegistrationsFilters" class="row g-3 align-items-end flex-grow-1">
+                      <div class="col-12 col-md-3">
+                        <label class="form-label" for="orgRegistrationsFilterSchool" data-i18n="org_registrations_filter_school">Escuela</label>
+                        <select id="orgRegistrationsFilterSchool" class="form-select">
+                          <option value=""></option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-2">
+                        <label class="form-label" for="orgRegistrationsFilterStatus" data-i18n="org_registrations_filter_status">Estado</label>
+                        <select id="orgRegistrationsFilterStatus" class="form-select">
+                          <option value=""></option>
+                          <option value="CRE">En creación</option>
+                          <option value="PEN">Pendiente de Validación</option>
+                          <option value="VAL">Validada</option>
+                          <option value="REJ">Rechazada</option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-3">
+                        <label class="form-label" for="orgRegistrationsFilterCategory" data-i18n="org_registrations_filter_category">Categoria</label>
+                        <select id="orgRegistrationsFilterCategory" class="form-select">
+                          <option value=""></option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-2">
+                        <label class="form-label" for="orgRegistrationsFilterStyle" data-i18n="org_registrations_filter_style">Estilo</label>
+                        <select id="orgRegistrationsFilterStyle" class="form-select">
+                          <option value=""></option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-2">
+                        <button type="button" class="btn btn-outline-secondary w-100" id="orgRegistrationsFilterClear" data-i18n="clear_filters">Limpiar</button>
+                      </div>
+                    </form>
+                  </div>
+
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th data-i18n="org_registrations_table_school">Escuela</th>
+                          <th data-i18n="org_registrations_table_choreo">Choreo</th>
+                          <th data-i18n="org_registrations_table_category">Categoria</th>
+                          <th data-i18n="org_registrations_table_style">Estilo</th>
+                          <th data-i18n="org_registrations_table_status">Estado</th>
+                          <th class="text-center" data-i18n="org_registrations_table_participants"># Participantes</th>
+                          <th class="text-center" data-i18n="org_registrations_table_actions">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="orgRegistrationsTable"></tbody>
+                    </table>
+                  </div>
+
+                  <div id="orgRegistrationsEmpty" class="text-center text-muted py-4 d-none" data-i18n="org_registrations_empty">
+                    No hay inscripciones disponibles.
                   </div>
                 </div>
               </div>
@@ -177,6 +262,53 @@
 
                   <div id="registrationsEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_competitions_empty">
                     No hay inscripciones creadas.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="schools" role="tabpanel" aria-labelledby="schools-tab">
+              <div class="card shadow-sm">
+                <div class="card-body p-4">
+                  <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3">
+                    <form id="schoolsFilters" class="row g-3 align-items-end flex-grow-1">
+                      <div class="col-12 col-md-3">
+                      <label class="form-label" for="schoolsFilterName" data-i18n="schools_filter_name">Nombre</label>
+                      <input type="text" class="form-control" id="schoolsFilterName" data-i18n-placeholder="schools_filter_name_placeholder" placeholder="Buscar...">
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label class="form-label" for="schoolsFilterCountry" data-i18n="schools_filter_country">Pais</label>
+                        <select id="schoolsFilterCountry" class="form-select">
+                          <option value=""></option>
+                        </select>
+                      </div>
+                      <div class="col-12 col-md-2">
+                        <button type="button" class="btn btn-outline-secondary w-100" id="schoolsFilterClear" data-i18n="clear_filters">Limpiar</button>
+                      </div>
+                    </form>
+                    <div class="d-flex align-items-center gap-2 ms-lg-auto">
+                      <span class="text-muted" data-i18n="schools_total">Total escuelas</span>
+                      <span class="badge bg-secondary" id="schoolsCount">0</span>
+                    </div>
+                  </div>
+
+                  <div class="table-responsive mt-3">
+                    <table class="table table-hover align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th data-i18n="schools_table_name">Nombre</th>
+                          <th data-i18n="schools_table_country">Pais</th>
+                          <th data-i18n="schools_table_representative">Representante</th>
+                          <th class="text-center" data-i18n="schools_table_participants"># de participantes</th>
+                          <th class="text-center" data-i18n="schools_table_choreos"># de choreos</th>
+                          <th class="text-center" data-i18n="schools_table_actions">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="schoolsTable"></tbody>
+                    </table>
+                  </div>
+
+                  <div id="schoolsEmpty" class="text-center text-muted py-4 d-none" data-i18n="schools_empty">
+                    No hay escuelas disponibles.
                   </div>
                 </div>
               </div>
@@ -407,6 +539,54 @@
     </div>
   </div>
 
+  <div class="modal fade" id="schoolDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="schools_detail_title">Detalle de la escuela</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="schoolDetailsForm">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="schoolDetailName" data-i18n="field_name">Nombre</label>
+                <input type="text" class="form-control bg-light" id="schoolDetailName" readonly>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="schoolDetailEmail" data-i18n="field_email">Email</label>
+                <input type="text" class="form-control bg-light" id="schoolDetailEmail" readonly>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="schoolDetailLanguage" data-i18n="field_language">Idioma</label>
+                <input type="text" class="form-control bg-light" id="schoolDetailLanguage" readonly>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="schoolDetailCity" data-i18n="field_city">Ciudad</label>
+                <input type="text" class="form-control bg-light" id="schoolDetailCity" readonly>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="schoolDetailCountry" data-i18n="field_country">Pais</label>
+                <input type="text" class="form-control bg-light" id="schoolDetailCountry" readonly>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="schoolDetailPhone" data-i18n="field_phone">Telefono</label>
+                <input type="text" class="form-control bg-light" id="schoolDetailPhone" readonly>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="schoolDetailRepresentative" data-i18n="field_representative">Representante</label>
+                <input type="text" class="form-control bg-light" id="schoolDetailRepresentative" readonly>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -420,5 +600,3 @@
   <script src="js/registration-competitions.js"></script>
 
 </body></html>
-
-

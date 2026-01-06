@@ -2,6 +2,8 @@ const registrationState = {
   school: null,
   participants: [],
   registrations: [],
+  organizerRegistrations: [],
+  schools: [],
   registrationConfig: {
     categories: [],
     styles: []
@@ -13,10 +15,19 @@ let schoolLoadPromise = null;
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
   await ensureTranslationsReady();
+  const user = getUserFromToken();
+  const role = user?.role?.toLowerCase() || 'guest';
+  setRoleTabVisibility(role);
   setupRegistrationTabs();
-  initSchoolTab();
-  initParticipantsTab();
-  initCompetitionsTab();
+  if (role === 'school') {
+    initSchoolTab();
+    initCompetitionsTab();
+  }
+  initParticipantsTab(role);
+  if (role === 'organizer') {
+    initSchoolsTab();
+    initOrganizerRegistrationsTab();
+  }
 });
 
 function setupRegistrationTabs() {
@@ -28,7 +39,7 @@ function setupRegistrationTabs() {
   const hash = window.location.hash.replace('#', '');
   if (hash) {
     const targetButton = document.querySelector(`#registrationTabs button[data-bs-target="#${hash}"]`);
-    if (targetButton) {
+    if (targetButton && !isTabHidden(targetButton)) {
       bootstrap.Tab.getOrCreateInstance(targetButton).show();
     }
   }
@@ -41,6 +52,61 @@ function setupRegistrationTabs() {
       }
     });
   });
+}
+
+function isTabHidden(button) {
+  const parent = button?.closest('.nav-item');
+  return parent ? parent.classList.contains('d-none') : true;
+}
+
+function setRoleTabVisibility(role) {
+  const tabConfig = [
+    { roles: ['organizer'], buttonId: 'schools-tab', paneId: 'schools' },
+    { roles: ['school'], buttonId: 'school-tab', paneId: 'school' },
+    { roles: ['school', 'organizer'], buttonId: 'participants-tab', paneId: 'participants' },
+    { roles: ['organizer'], buttonId: 'org-registrations-tab', paneId: 'org-registrations' },
+    { roles: ['school'], buttonId: 'competitions-tab', paneId: 'competitions' }
+  ];
+
+  tabConfig.forEach(({ roles, buttonId, paneId }) => {
+    const button = document.getElementById(buttonId);
+    const pane = document.getElementById(paneId);
+    const shouldShow = roles.includes(role);
+
+    if (button) {
+      const navItem = button.closest('.nav-item');
+      if (navItem) {
+        navItem.classList.toggle('d-none', !shouldShow);
+      }
+      button.classList.toggle('active', false);
+    }
+
+    if (pane) {
+      pane.classList.toggle('d-none', !shouldShow);
+      pane.classList.remove('show', 'active');
+    }
+  });
+
+  let preferredButton = null;
+  if (role === 'organizer') {
+    preferredButton = document.getElementById('schools-tab');
+  } else if (role === 'school') {
+    preferredButton = document.getElementById('school-tab');
+  }
+
+  if (preferredButton && !isTabHidden(preferredButton)) {
+    bootstrap.Tab.getOrCreateInstance(preferredButton).show();
+    return;
+  }
+
+  const firstVisibleButton = Array.from(document.querySelectorAll('#registrationTabs .nav-item'))
+    .filter(item => !item.classList.contains('d-none'))
+    .map(item => item.querySelector('button'))
+    .find(Boolean);
+
+  if (firstVisibleButton) {
+    bootstrap.Tab.getOrCreateInstance(firstVisibleButton).show();
+  }
 }
 
 async function fetchSchoolRecord(userId) {
@@ -222,11 +288,16 @@ function initSchoolTab() {
   loadSchool();
 }
 
-function initParticipantsTab() {
+function initParticipantsTab(role) {
   const tableBody = document.getElementById('participantsTable');
   const countEl = document.getElementById('participantsCount');
   const emptyEl = document.getElementById('participantsEmpty');
   const addBtn = document.getElementById('addParticipantBtn');
+  const actionsHeader = document.querySelector('th[data-i18n="registration_participants_actions"]');
+  const filtersForm = document.getElementById('participantsFilters');
+  const filterSchool = document.getElementById('participantsFilterSchool');
+  const filterName = document.getElementById('participantsFilterName');
+  const filterClear = document.getElementById('participantsFilterClear');
   const modalEl = document.getElementById('participantModal');
   const deleteModalEl = document.getElementById('deleteParticipantModal');
 
@@ -238,6 +309,25 @@ function initParticipantsTab() {
   if (!user || !user.id) {
     showMessageModal(t('registration_school_no_user', 'No user found.'), t('error_title', 'Error'));
     return;
+  }
+
+  const allowEdit = role === 'school';
+  const showSchoolColumn = role === 'organizer';
+  if (!allowEdit) {
+    if (addBtn) addBtn.classList.add('d-none');
+    if (actionsHeader) actionsHeader.classList.add('d-none');
+  }
+  if (!showSchoolColumn && filtersForm) {
+    filtersForm.classList.add('d-none');
+  }
+  if (showSchoolColumn) {
+    const headRow = tableBody.closest('table')?.querySelector('thead tr');
+    if (headRow) {
+      const schoolHeader = document.createElement('th');
+      schoolHeader.setAttribute('data-i18n', 'registration_participants_school');
+      schoolHeader.textContent = t('registration_participants_school', 'Escuela');
+      headRow.insertBefore(schoolHeader, actionsHeader || null);
+    }
   }
 
   const form = document.getElementById('participantForm');
@@ -354,12 +444,13 @@ function initParticipantsTab() {
     const participants = Array.isArray(registrationState.participants)
       ? registrationState.participants
       : [];
+    const filtered = applyParticipantFilters(participants);
 
     if (countEl) {
-      countEl.textContent = `${participants.length}`;
+      countEl.textContent = `${filtered.length}`;
     }
 
-    if (!participants.length) {
+    if (!filtered.length) {
       if (emptyEl) emptyEl.classList.remove('d-none');
       return;
     }
@@ -373,7 +464,7 @@ function initParticipantsTab() {
     const editTitle = t('edit', 'Edit');
     const deleteTitle = t('delete', 'Delete');
 
-    participants.forEach(participant => {
+    filtered.forEach(participant => {
       const row = document.createElement('tr');
       row.dataset.id = participant.id;
 
@@ -398,32 +489,40 @@ function initParticipantsTab() {
       countryCell.textContent = getCountryName(participant.country, countryMap) || '-';
       row.appendChild(countryCell);
 
-      const actionsCell = document.createElement('td');
-      actionsCell.className = 'text-center';
-      const actionGroup = document.createElement('div');
-      actionGroup.className = 'btn-group';
-      actionGroup.setAttribute('role', 'group');
+      if (showSchoolColumn) {
+        const schoolCell = document.createElement('td');
+        schoolCell.textContent = participant.school_name || participant.school || '-';
+        row.appendChild(schoolCell);
+      }
 
-      const editBtn = document.createElement('button');
-      editBtn.type = 'button';
-      editBtn.className = 'btn btn-outline-primary btn-sm btn-edit-participant';
-      editBtn.dataset.id = participant.id;
-      editBtn.title = editTitle;
-      editBtn.setAttribute('aria-label', editTitle);
-      editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+      if (allowEdit) {
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'text-center';
+        const actionGroup = document.createElement('div');
+        actionGroup.className = 'btn-group';
+        actionGroup.setAttribute('role', 'group');
 
-      const deleteBtn = document.createElement('button');
-      deleteBtn.type = 'button';
-      deleteBtn.className = 'btn btn-outline-danger btn-sm btn-delete-participant';
-      deleteBtn.dataset.id = participant.id;
-      deleteBtn.title = deleteTitle;
-      deleteBtn.setAttribute('aria-label', deleteTitle);
-      deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn btn-outline-primary btn-sm btn-edit-participant';
+        editBtn.dataset.id = participant.id;
+        editBtn.title = editTitle;
+        editBtn.setAttribute('aria-label', editTitle);
+        editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
 
-      actionGroup.appendChild(editBtn);
-      actionGroup.appendChild(deleteBtn);
-      actionsCell.appendChild(actionGroup);
-      row.appendChild(actionsCell);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn btn-outline-danger btn-sm btn-delete-participant';
+        deleteBtn.dataset.id = participant.id;
+        deleteBtn.title = deleteTitle;
+        deleteBtn.setAttribute('aria-label', deleteTitle);
+        deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+
+        actionGroup.appendChild(editBtn);
+        actionGroup.appendChild(deleteBtn);
+        actionsCell.appendChild(actionGroup);
+        row.appendChild(actionsCell);
+      }
 
       tableBody.appendChild(row);
     });
@@ -433,7 +532,7 @@ function initParticipantsTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 6;
+    cell.colSpan = (allowEdit ? 6 : 5) + (showSchoolColumn ? 1 : 0);
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -445,7 +544,9 @@ function initParticipantsTab() {
   const loadParticipants = async () => {
     try {
       const params = new URLSearchParams();
-      params.set('school_id', user.id);
+      if (role === 'school') {
+        params.set('school_id', user.id);
+      }
 
       const eventObj = getEvent();
       if (eventObj && eventObj.id) {
@@ -466,6 +567,55 @@ function initParticipantsTab() {
       renderParticipants();
     } catch (err) {
       showParticipantsError(err.message || t('registration_participants_load_error', 'Error loading participants.'));
+    }
+  };
+
+  const applyParticipantFilters = (participants) => {
+    if (!showSchoolColumn) {
+      return participants;
+    }
+    const schoolValue = filterSchool ? filterSchool.value : '';
+    const nameValue = filterName ? filterName.value.trim().toLowerCase() : '';
+
+    return participants.filter(participant => {
+      const matchesName = !nameValue || (participant?.name || '').toLowerCase().includes(nameValue);
+      if (!schoolValue) {
+        return matchesName;
+      }
+      const participantSchoolId = participant?.school_id ?? participant?.school?.id;
+      const matchesSchool = `${participantSchoolId || ''}` === `${schoolValue}`;
+      return matchesName && matchesSchool;
+    });
+  };
+
+  const loadParticipantSchools = async () => {
+    if (!showSchoolColumn || !filterSchool) {
+      return;
+    }
+    try {
+      const params = new URLSearchParams();
+      const eventObj = getEvent();
+      if (eventObj && eventObj.id) {
+        params.set('event_id', eventObj.id);
+      }
+      const url = params.toString()
+        ? `${API_BASE_URL}/api/schools?${params.toString()}`
+        : `${API_BASE_URL}/api/schools`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(t('schools_load_error', 'Error loading schools.'));
+      }
+      const data = await res.json();
+      const schools = Array.isArray(data) ? data : [];
+      filterSchool.innerHTML = '<option value=""></option>';
+      schools.forEach(school => {
+        const option = document.createElement('option');
+        option.value = school.id;
+        option.textContent = school?.name || school?.school_name || '-';
+        filterSchool.appendChild(option);
+      });
+    } catch (err) {
+      // keep filters but skip blocking participants load
     }
   };
 
@@ -600,19 +750,20 @@ function initParticipantsTab() {
     }
   };
 
-  if (addBtn) {
+  if (addBtn && allowEdit) {
     addBtn.addEventListener('click', () => openParticipantModal('create'));
   }
 
-  if (elements.saveBtn) {
+  if (elements.saveBtn && allowEdit) {
     elements.saveBtn.addEventListener('click', () => saveParticipant(true));
   }
 
-  if (elements.saveAddBtn) {
+  if (elements.saveAddBtn && allowEdit) {
     elements.saveAddBtn.addEventListener('click', () => saveParticipant(false));
   }
 
   tableBody.addEventListener('click', (event) => {
+    if (!allowEdit) return;
     const editBtn = event.target.closest('.btn-edit-participant');
     const deleteBtn = event.target.closest('.btn-delete-participant');
 
@@ -637,14 +788,36 @@ function initParticipantsTab() {
     }
   });
 
-  if (elements.confirmDeleteBtn) {
+  if (elements.confirmDeleteBtn && allowEdit) {
     elements.confirmDeleteBtn.addEventListener('click', deleteParticipant);
   }
 
-  modalEl.addEventListener('hidden.bs.modal', () => {
-    loadParticipants();
-  });
+  if (allowEdit) {
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      loadParticipants();
+    });
+  }
 
+  if (filtersForm) {
+    filtersForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+    });
+  }
+  if (filterName) {
+    filterName.addEventListener('input', renderParticipants);
+  }
+  if (filterSchool) {
+    filterSchool.addEventListener('change', renderParticipants);
+  }
+  if (filterClear) {
+    filterClear.addEventListener('click', () => {
+      if (filterName) filterName.value = '';
+      if (filterSchool) filterSchool.value = '';
+      renderParticipants();
+    });
+  }
+
+  loadParticipantSchools();
   loadParticipants();
 }
 
@@ -682,4 +855,746 @@ function getCountryName(code, countryMap) {
     return countryMap.get(code);
   }
   return code;
+}
+
+function initSchoolsTab() {
+  const filterForm = document.getElementById('schoolsFilters');
+  const tableBody = document.getElementById('schoolsTable');
+  const emptyEl = document.getElementById('schoolsEmpty');
+  const countEl = document.getElementById('schoolsCount');
+  const filterName = document.getElementById('schoolsFilterName');
+  const filterCountry = document.getElementById('schoolsFilterCountry');
+  const filterClear = document.getElementById('schoolsFilterClear');
+  const modalEl = document.getElementById('schoolDetailsModal');
+
+  if (!filterForm || !tableBody || !filterName || !filterCountry || !modalEl) {
+    return;
+  }
+
+  const countryMap = Array.isArray(countries)
+    ? new Map(countries.map(c => [c.code, c.name]))
+    : new Map();
+
+  if (Array.isArray(countries)) {
+    countries.forEach(c => {
+      const option = document.createElement('option');
+      option.value = c.code;
+      option.textContent = `${c.code} - ${c.name}`;
+      filterCountry.appendChild(option);
+    });
+  }
+
+  const detailModal = new bootstrap.Modal(modalEl);
+  const detailElements = {
+    name: document.getElementById('schoolDetailName'),
+    email: document.getElementById('schoolDetailEmail'),
+    language: document.getElementById('schoolDetailLanguage'),
+    city: document.getElementById('schoolDetailCity'),
+    country: document.getElementById('schoolDetailCountry'),
+    phone: document.getElementById('schoolDetailPhone'),
+    representative: document.getElementById('schoolDetailRepresentative')
+  };
+
+  const applyFilters = () => {
+    const nameValue = filterName.value.trim().toLowerCase();
+    const countryValue = filterCountry.value;
+
+    const filtered = registrationState.schools.filter(school => {
+      const schoolName = (school?.name || school?.school_name || '').toLowerCase();
+      const matchesName = !nameValue || schoolName.includes(nameValue);
+      const matchesCountry = !countryValue || `${school?.country || ''}` === countryValue;
+      return matchesName && matchesCountry;
+    });
+
+    renderSchools(filtered);
+    if (countEl) {
+      countEl.textContent = `${filtered.length}`;
+    }
+  };
+
+  const renderSchools = (schools) => {
+    tableBody.innerHTML = '';
+
+    if (!schools.length) {
+      if (emptyEl) emptyEl.classList.remove('d-none');
+      return;
+    }
+
+    if (emptyEl) emptyEl.classList.add('d-none');
+
+    const detailLabel = t('schools_action_detail', 'Detalle');
+
+    schools.forEach(school => {
+      const row = document.createElement('tr');
+      row.dataset.id = school.id;
+
+      const nameCell = document.createElement('td');
+      nameCell.textContent = school?.name || school?.school_name || '-';
+      row.appendChild(nameCell);
+
+      const countryCell = document.createElement('td');
+      countryCell.textContent = getCountryName(school?.country, countryMap) || '-';
+      row.appendChild(countryCell);
+
+      const repCell = document.createElement('td');
+      repCell.textContent = school?.representative || '-';
+      row.appendChild(repCell);
+
+      const participantsCell = document.createElement('td');
+      participantsCell.className = 'text-center';
+      participantsCell.textContent = school.num_participants;
+      row.appendChild(participantsCell);
+
+      const choreosCell = document.createElement('td');
+      choreosCell.className = 'text-center';
+      choreosCell.textContent = school.num_choreos;
+      row.appendChild(choreosCell);
+
+      const actionsCell = document.createElement('td');
+      actionsCell.className = 'text-center';
+      const detailBtn = document.createElement('button');
+      detailBtn.type = 'button';
+      detailBtn.className = 'btn btn-outline-primary btn-sm btn-school-detail';
+      detailBtn.dataset.id = school.id;
+      detailBtn.textContent = detailLabel;
+      actionsCell.appendChild(detailBtn);
+      row.appendChild(actionsCell);
+
+      tableBody.appendChild(row);
+    });
+  };
+
+  const showSchoolsError = (message) => {
+    tableBody.innerHTML = '';
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 6;
+    cell.className = 'text-danger';
+    cell.textContent = message;
+    row.appendChild(cell);
+    tableBody.appendChild(row);
+    if (emptyEl) emptyEl.classList.add('d-none');
+    if (countEl) countEl.textContent = '0';
+  };
+
+  const loadSchools = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/schools?event_id=${getEvent().id}`);
+      if (!res.ok) {
+        throw new Error(t('schools_load_error', 'Error loading schools.'));
+      }
+
+      const data = await res.json();
+      registrationState.schools = Array.isArray(data) ? data : [];
+      applyFilters();
+    } catch (err) {
+      showSchoolsError(err.message || t('schools_load_error', 'Error loading schools.'));
+    }
+  };
+
+  const openSchoolDetails = (school) => {
+    if (detailElements.name) detailElements.name.value = school?.name || school?.school_name || '';
+    if (detailElements.email) detailElements.email.value = school?.email || '';
+    if (detailElements.language) detailElements.language.value = school?.language || '';
+    if (detailElements.city) detailElements.city.value = school?.city || '';
+    if (detailElements.country) {
+      detailElements.country.value = getCountryName(school?.country, countryMap) || school?.country || '';
+    }
+    if (detailElements.phone) detailElements.phone.value = school?.phone || '';
+    if (detailElements.representative) detailElements.representative.value = school?.representative || '';
+    detailModal.show();
+  };
+
+  filterName.addEventListener('input', applyFilters);
+  filterCountry.addEventListener('change', applyFilters);
+  if (filterClear) {
+    filterClear.addEventListener('click', () => {
+      filterName.value = '';
+      filterCountry.value = '';
+      applyFilters();
+    });
+  }
+
+  tableBody.addEventListener('click', (event) => {
+    const detailBtn = event.target.closest('.btn-school-detail');
+    if (!detailBtn) return;
+    const school = registrationState.schools.find(item => `${item.id}` === `${detailBtn.dataset.id}`);
+    if (school) {
+      openSchoolDetails(school);
+    }
+  });
+
+  filterForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+  });
+
+  loadSchools();
+}
+
+function initOrganizerRegistrationsTab() {
+  const tableBody = document.getElementById('orgRegistrationsTable');
+  const emptyEl = document.getElementById('orgRegistrationsEmpty');
+  const filterForm = document.getElementById('orgRegistrationsFilters');
+  const filterSchool = document.getElementById('orgRegistrationsFilterSchool');
+  const filterStatus = document.getElementById('orgRegistrationsFilterStatus');
+  const filterCategory = document.getElementById('orgRegistrationsFilterCategory');
+  const filterStyle = document.getElementById('orgRegistrationsFilterStyle');
+  const filterClear = document.getElementById('orgRegistrationsFilterClear');
+  const modalEl = document.getElementById('registrationModal');
+  const membersModalEl = document.getElementById('registrationMembersModal');
+
+  if (!tableBody || !emptyEl || !filterForm || !filterSchool || !filterStatus || !filterCategory || !filterStyle || !modalEl || !membersModalEl) {
+    return;
+  }
+
+  const registrationEndpoints = {
+    config: '/api/registrations/config',
+    list: '/api/registrations/choreographies'
+  };
+
+  const form = document.getElementById('registrationForm');
+  const modalElements = {
+    id: document.getElementById('registrationId'),
+    choreographyName: document.getElementById('choreographyName'),
+    choreographer: document.getElementById('choreographerName'),
+    category: document.getElementById('registrationCategory'),
+    style: document.getElementById('registrationStyle'),
+    modalTitle: document.getElementById('registrationModalTitle'),
+    saveBtn: document.getElementById('registrationSaveBtn')
+  };
+  const registrationModal = new bootstrap.Modal(modalEl);
+  const membersModal = new bootstrap.Modal(membersModalEl);
+
+  const membersElements = {
+    table: document.getElementById('registrationMembersTable'),
+    count: document.getElementById('registrationMembersCount'),
+    empty: document.getElementById('registrationMembersEmpty'),
+    ruleInfo: document.getElementById('registrationMembersRuleInfo'),
+    choreo: document.getElementById('registrationMembersChoreo'),
+    category: document.getElementById('registrationMembersCategory'),
+    style: document.getElementById('registrationMembersStyle'),
+    participantSelect: document.getElementById('registrationParticipantSelect'),
+    addMemberBtn: document.getElementById('addRegistrationMemberBtn'),
+    saveBtn: document.getElementById('registrationMembersSaveBtn'),
+    actionsHeader: document.querySelector('#registrationMembersModal th[data-i18n="registration_competitions_member_actions"]')
+  };
+
+  let categoryById = new Map();
+  let styleById = new Map();
+
+  const populateSelect = (selectEl, items) => {
+    if (!selectEl) return;
+    selectEl.innerHTML = '<option value=""></option>';
+    items.forEach(item => {
+      const option = document.createElement('option');
+      option.value = item.id ?? item.value ?? '';
+      option.textContent = item.name ?? item.label ?? '';
+      selectEl.appendChild(option);
+    });
+  };
+
+  const loadRegistrationConfig = async () => {
+    if (registrationState.registrationConfig.categories.length || registrationState.registrationConfig.styles.length) {
+      categoryById = new Map(registrationState.registrationConfig.categories.map(item => [`${item.id}`, item]));
+      styleById = new Map(registrationState.registrationConfig.styles.map(item => [`${item.id}`, item]));
+      populateSelect(filterCategory, registrationState.registrationConfig.categories);
+      populateSelect(filterStyle, registrationState.registrationConfig.styles);
+      populateSelect(modalElements.category, registrationState.registrationConfig.categories);
+      populateSelect(modalElements.style, registrationState.registrationConfig.styles);
+      return;
+    }
+
+    const params = new URLSearchParams();
+    const eventObj = getEvent();
+    if (eventObj?.id) {
+      params.set('event_id', eventObj.id);
+    }
+
+    const url = params.toString()
+      ? `${API_BASE_URL}${registrationEndpoints.config}?${params.toString()}`
+      : `${API_BASE_URL}${registrationEndpoints.config}`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(t('org_registrations_load_error', 'Error loading registrations.'));
+    }
+
+    const data = await res.json();
+    const categories = Array.isArray(data?.categories) ? data.categories : [];
+    const styles = Array.isArray(data?.styles) ? data.styles : [];
+
+    registrationState.registrationConfig = { categories, styles };
+    categoryById = new Map(categories.map(item => [`${item.id}`, item]));
+    styleById = new Map(styles.map(item => [`${item.id}`, item]));
+    populateSelect(filterCategory, categories);
+    populateSelect(filterStyle, styles);
+    populateSelect(modalElements.category, categories);
+    populateSelect(modalElements.style, styles);
+  };
+
+  const loadSchools = async () => {
+    try {
+      const params = new URLSearchParams();
+      const eventObj = getEvent();
+      if (eventObj?.id) {
+        params.set('event_id', eventObj.id);
+      }
+      const url = params.toString()
+        ? `${API_BASE_URL}/api/schools?${params.toString()}`
+        : `${API_BASE_URL}/api/schools`;
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(t('schools_load_error', 'Error loading schools.'));
+      }
+      const data = await res.json();
+      const schools = Array.isArray(data) ? data : [];
+      filterSchool.innerHTML = '<option value=""></option>';
+      schools.forEach(school => {
+        const option = document.createElement('option');
+        option.value = school.id;
+        option.textContent = school?.name || school?.school_name || '-';
+        filterSchool.appendChild(option);
+      });
+    } catch (err) {
+      // keep filters but allow list to load
+    }
+  };
+
+  const normalizeNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const getParticipantsCount = (registration) => {
+    if (!registration) return 0;
+    const count = registration.participants_count ?? registration.members_count ?? registration.member_count ?? registration.num_participants;
+    if (count !== undefined && count !== null) return Number(count) || 0;
+    if (Array.isArray(registration.members)) return registration.members.length;
+    if (Array.isArray(registration.participants)) return registration.participants.length;
+    return 0;
+  };
+
+  const formatStatusInfo = (status) => {
+    const statusMap = {
+      CRE: { label: t('registration_status_creation', 'En creacion'), color: 'primary' },
+      PEN: { label: t('registration_status_pending', 'Pendiente validar'), color: 'warning' },
+      VAL: { label: t('registration_status_validated', 'Validada'), color: 'success' },
+      REJ: { label: t('registration_status_rejected', 'Rechazada'), color: 'danger' }
+    };
+    return statusMap[status] || { label: status || '-', color: 'secondary' };
+  };
+
+  const applyFilters = () => {
+    const schoolValue = filterSchool.value;
+    const statusValue = filterStatus.value;
+    const categoryValue = filterCategory.value;
+    const styleValue = filterStyle.value;
+
+    return registrationState.organizerRegistrations.filter(registration => {
+      const schoolId = registration?.school_id ?? registration?.school?.id;
+      if (schoolValue && `${schoolId || ''}` !== `${schoolValue}`) return false;
+      if (statusValue && `${registration?.status || ''}` !== `${statusValue}`) return false;
+      const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id;
+      if (categoryValue && `${categoryId || ''}` !== `${categoryValue}`) return false;
+      const styleId = registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id;
+      if (styleValue && `${styleId || ''}` !== `${styleValue}`) return false;
+      return true;
+    });
+  };
+
+  const setMembersViewMode = (isViewOnly) => {
+    const controlsRow = membersElements.participantSelect?.closest('.d-flex');
+    if (controlsRow) {
+      controlsRow.classList.toggle('d-none', isViewOnly);
+    }
+    if (membersElements.saveBtn) {
+      membersElements.saveBtn.classList.toggle('d-none', isViewOnly);
+    }
+    if (membersElements.actionsHeader) {
+      membersElements.actionsHeader.classList.toggle('d-none', isViewOnly);
+    }
+  };
+
+  const renderMembersTable = (members) => {
+    if (!membersElements.table) return;
+    membersElements.table.innerHTML = '';
+
+    if (membersElements.count) {
+      membersElements.count.textContent = `${members.length}`;
+    }
+
+    if (!members.length) {
+      if (membersElements.empty) membersElements.empty.classList.remove('d-none');
+      return;
+    }
+
+    if (membersElements.empty) membersElements.empty.classList.add('d-none');
+
+    members.forEach(member => {
+      const row = document.createElement('tr');
+      row.dataset.id = member.id;
+
+      const nameCell = document.createElement('td');
+      nameCell.textContent = member.name || '';
+      row.appendChild(nameCell);
+
+      const genderCell = document.createElement('td');
+      genderCell.textContent = member.gender || '-';
+      row.appendChild(genderCell);
+
+      const dobValue = getDateOnlyValue(member.date_of_birth);
+      const dobCell = document.createElement('td');
+      dobCell.textContent = dobValue || '-';
+      row.appendChild(dobCell);
+
+      const ageCell = document.createElement('td');
+      ageCell.textContent = `${calculateAge(dobValue)}`;
+      row.appendChild(ageCell);
+
+      membersElements.table.appendChild(row);
+    });
+  };
+
+  const updateMembersRuleInfo = (category) => {
+    if (!membersElements.ruleInfo) return;
+    if (!category) {
+      membersElements.ruleInfo.textContent = '';
+      return;
+    }
+
+    const minLabel = t('registration_competitions_rule_min', 'Min');
+    const maxLabel = t('registration_competitions_rule_max', 'Max');
+    const minPar = normalizeNumber(category.min_par);
+    const maxPar = normalizeNumber(category.max_par);
+
+    let info = `${minLabel}: ${minPar ?? '-'} | ${maxLabel}: ${maxPar ?? '-'}`;
+
+    const minYears = normalizeNumber(category.min_years);
+    const maxYears = normalizeNumber(category.max_years);
+    if (minYears !== null || maxYears !== null) {
+      const ageLabel = t('registration_competitions_rule_age', 'Edad');
+      info += ` | ${ageLabel}: ${minYears ?? '-'}-${maxYears ?? '-'}`;
+    }
+
+    membersElements.ruleInfo.textContent = info;
+  };
+
+  const fetchRegistrationDetails = async (registrationId) => {
+    const params = new URLSearchParams();
+    const eventObj = getEvent();
+    if (eventObj?.id) {
+      params.set('event_id', eventObj.id);
+    }
+
+    const url = params.toString()
+      ? `${API_BASE_URL}/api/registrations/${registrationId}?${params.toString()}`
+      : `${API_BASE_URL}/api/registrations/${registrationId}`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      return null;
+    }
+    try {
+      return await res.json();
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const normalizeMembers = (members) => {
+    if (!Array.isArray(members)) return [];
+    return members.map(member => {
+      if (member && typeof member === 'object') {
+        const memberId = member.id ?? member.participant_id ?? member.member_id;
+        return {
+          ...member,
+          id: memberId,
+          name: member.name || member.participant_name || `#${memberId ?? ''}`,
+          date_of_birth: member.date_of_birth || member.birth_date || member.dob
+        };
+      }
+      return { id: member, name: `#${member}` };
+    }).filter(Boolean);
+  };
+
+  const openMembersModal = async (registration) => {
+    if (!registration) return;
+
+    try {
+      await loadRegistrationConfig();
+    } catch (err) {
+      showMessageModal(err.message || t('org_registrations_load_error', 'Error loading registrations.'), t('error_title', 'Error'));
+      return;
+    }
+
+    const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+    const category = categoryById.get(`${categoryId}`) || null;
+    const styleId = registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
+    const styleName = registration.style_name || styleById.get(`${styleId}`)?.name || '-';
+
+    if (membersElements.choreo) {
+      membersElements.choreo.textContent = registration.name || registration.choreography || '-';
+    }
+    if (membersElements.category) {
+      membersElements.category.textContent = category?.name || registration.category_name || '-';
+    }
+    if (membersElements.style) {
+      membersElements.style.textContent = styleName || '-';
+    }
+    updateMembersRuleInfo(category);
+
+    let members = [];
+    if (Array.isArray(registration.members)) {
+      members = normalizeMembers(registration.members);
+    } else {
+      const details = await fetchRegistrationDetails(registration.id);
+      if (details && Array.isArray(details.members)) {
+        members = normalizeMembers(details.members);
+      }
+    }
+
+    membersModalEl.dataset.viewOnly = 'true';
+    setMembersViewMode(true);
+    renderMembersTable(members);
+    membersModal.show();
+  };
+
+  const setModalViewMode = (isViewOnly) => {
+    const textInputs = [modalElements.choreographyName, modalElements.choreographer];
+    const selects = [modalElements.category, modalElements.style];
+
+    textInputs.forEach(input => {
+      if (!input) return;
+      if (isViewOnly) {
+        input.setAttribute('readonly', 'readonly');
+        input.classList.add('bg-light');
+      } else {
+        input.removeAttribute('readonly');
+        input.classList.remove('bg-light');
+      }
+    });
+
+    selects.forEach(select => {
+      if (!select) return;
+      select.disabled = isViewOnly;
+      select.classList.toggle('bg-light', isViewOnly);
+    });
+
+    if (modalElements.saveBtn) {
+      modalElements.saveBtn.classList.toggle('d-none', isViewOnly);
+    }
+  };
+
+  const openRegistrationDetails = async (registration) => {
+    if (!registration || !form) return;
+
+    try {
+      await loadRegistrationConfig();
+    } catch (err) {
+      showMessageModal(err.message || t('org_registrations_load_error', 'Error loading registrations.'), t('error_title', 'Error'));
+      return;
+    }
+
+    if (modalElements.modalTitle) {
+      modalElements.modalTitle.textContent = t('org_registrations_details_title', 'Detalle inscripcion');
+    }
+
+    if (modalElements.id) modalElements.id.value = registration.id || '';
+    if (modalElements.choreographyName) modalElements.choreographyName.value = registration.name || registration.choreography || '';
+    if (modalElements.choreographer) modalElements.choreographer.value = registration.choreographer || '';
+
+    const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+    const styleId = registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
+    if (modalElements.category) modalElements.category.value = categoryId ? `${categoryId}` : '';
+    if (modalElements.style) modalElements.style.value = styleId ? `${styleId}` : '';
+
+    modalEl.dataset.viewOnly = 'true';
+    setModalViewMode(true);
+    registrationModal.show();
+  };
+
+  const renderRegistrations = () => {
+    tableBody.innerHTML = '';
+    const registrations = applyFilters();
+
+    if (!registrations.length) {
+      emptyEl.classList.remove('d-none');
+      return;
+    }
+
+    emptyEl.classList.add('d-none');
+
+    const detailsLabel = t('org_registrations_action_details', 'Detalles');
+    const validateLabel = t('org_registrations_action_validate', 'Validar');
+    const rejectLabel = t('org_registrations_action_reject', 'Rechazar');
+    const membersLabel = t('org_registrations_action_members', 'Participantes');
+
+    registrations.forEach(registration => {
+      const row = document.createElement('tr');
+      row.dataset.id = registration.id;
+
+      const schoolCell = document.createElement('td');
+      schoolCell.textContent = registration.school_name || registration.school?.name || '-';
+      row.appendChild(schoolCell);
+
+      const nameCell = document.createElement('td');
+      nameCell.textContent = registration.name || registration.choreography || '-';
+      row.appendChild(nameCell);
+
+      const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+      const categoryName = registration.category_name || categoryById.get(`${categoryId}`)?.name || '-';
+      const categoryCell = document.createElement('td');
+      categoryCell.textContent = categoryName;
+      row.appendChild(categoryCell);
+
+      const styleId = registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
+      const styleName = registration.style_name || styleById.get(`${styleId}`)?.name || '-';
+      const styleCell = document.createElement('td');
+      styleCell.textContent = styleName;
+      row.appendChild(styleCell);
+
+      const statusCell = document.createElement('td');
+      const statusInfo = formatStatusInfo(registration.status);
+      const statusBadge = document.createElement('span');
+      statusBadge.className = `badge bg-${statusInfo.color}`;
+      statusBadge.textContent = statusInfo.label;
+      statusCell.appendChild(statusBadge);
+      row.appendChild(statusCell);
+
+      const participantsCell = document.createElement('td');
+      participantsCell.className = 'text-center';
+      participantsCell.textContent = `${getParticipantsCount(registration)}`;
+      row.appendChild(participantsCell);
+
+      const actionsCell = document.createElement('td');
+      actionsCell.className = 'text-center';
+      const actionGroup = document.createElement('div');
+      actionGroup.className = 'btn-group';
+      actionGroup.setAttribute('role', 'group');
+
+      const validateBtn = document.createElement('button');
+      validateBtn.type = 'button';
+      validateBtn.className = 'btn btn-outline-success btn-sm';
+      validateBtn.textContent = validateLabel;
+      validateBtn.disabled = true;
+
+      const rejectBtn = document.createElement('button');
+      rejectBtn.type = 'button';
+      rejectBtn.className = 'btn btn-outline-danger btn-sm';
+      rejectBtn.textContent = rejectLabel;
+      rejectBtn.disabled = true;
+
+      const membersBtn = document.createElement('button');
+      membersBtn.type = 'button';
+      membersBtn.className = 'btn btn-outline-secondary btn-sm btn-org-registration-members';
+      membersBtn.dataset.id = registration.id;
+      membersBtn.textContent = membersLabel;
+
+      const detailsBtn = document.createElement('button');
+      detailsBtn.type = 'button';
+      detailsBtn.className = 'btn btn-outline-primary btn-sm btn-org-registration-details';
+      detailsBtn.dataset.id = registration.id;
+      detailsBtn.textContent = detailsLabel;
+
+      actionGroup.appendChild(validateBtn);
+      actionGroup.appendChild(rejectBtn);
+      actionGroup.appendChild(membersBtn);
+      actionGroup.appendChild(detailsBtn);
+      actionsCell.appendChild(actionGroup);
+      row.appendChild(actionsCell);
+
+      tableBody.appendChild(row);
+    });
+  };
+
+  const showRegistrationsError = (message) => {
+    tableBody.innerHTML = '';
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 7;
+    cell.className = 'text-danger';
+    cell.textContent = message;
+    row.appendChild(cell);
+    tableBody.appendChild(row);
+    emptyEl.classList.add('d-none');
+  };
+
+  const loadRegistrations = async () => {
+    try {
+      const params = new URLSearchParams();
+      const eventObj = getEvent();
+      if (eventObj?.id) {
+        params.set('event_id', eventObj.id);
+      }
+      const url = params.toString()
+        ? `${API_BASE_URL}${registrationEndpoints.list}?${params.toString()}`
+        : `${API_BASE_URL}${registrationEndpoints.list}`;
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(t('org_registrations_load_error', 'Error loading registrations.'));
+      }
+
+      const data = await res.json();
+      registrationState.organizerRegistrations = Array.isArray(data) ? data : [];
+      renderRegistrations();
+    } catch (err) {
+      showRegistrationsError(err.message || t('org_registrations_load_error', 'Error loading registrations.'));
+    }
+  };
+
+  filterForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+  });
+  filterSchool.addEventListener('change', renderRegistrations);
+  filterStatus.addEventListener('change', renderRegistrations);
+  filterCategory.addEventListener('change', renderRegistrations);
+  filterStyle.addEventListener('change', renderRegistrations);
+  filterClear.addEventListener('click', () => {
+    filterSchool.value = '';
+    filterStatus.value = '';
+    filterCategory.value = '';
+    filterStyle.value = '';
+    renderRegistrations();
+  });
+
+  tableBody.addEventListener('click', (event) => {
+    const detailsBtn = event.target.closest('.btn-org-registration-details');
+    const membersBtn = event.target.closest('.btn-org-registration-members');
+    if (membersBtn) {
+      const registration = registrationState.organizerRegistrations.find(item => `${item.id}` === `${membersBtn.dataset.id}`);
+      if (registration) {
+        openMembersModal(registration);
+      }
+      return;
+    }
+    if (!detailsBtn) return;
+    const registration = registrationState.organizerRegistrations.find(item => `${item.id}` === `${detailsBtn.dataset.id}`);
+    if (registration) {
+      openRegistrationDetails(registration);
+    }
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    if (modalEl.dataset.viewOnly !== 'true') return;
+    setModalViewMode(false);
+    delete modalEl.dataset.viewOnly;
+  });
+  membersModalEl.addEventListener('hidden.bs.modal', () => {
+    if (membersModalEl.dataset.viewOnly !== 'true') return;
+    setMembersViewMode(false);
+    delete membersModalEl.dataset.viewOnly;
+    if (membersElements.table) {
+      membersElements.table.innerHTML = '';
+    }
+    if (membersElements.empty) {
+      membersElements.empty.classList.remove('d-none');
+    }
+  });
+
+  Promise.resolve()
+    .then(loadRegistrationConfig)
+    .then(loadSchools)
+    .then(loadRegistrations)
+    .catch(() => loadRegistrations());
 }
