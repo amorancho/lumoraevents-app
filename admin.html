@@ -488,6 +488,23 @@
                       <label class="form-check-label" for="has_penalties">Tiene penalizaciones</label>
                     </div>
                   </div>
+
+                  <div class="col-md-3">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="has_registrations">
+                      <label class="form-check-label" for="has_registrations">Tiene Inscripciones</label>
+                    </div>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Inicio inscripciones</label>
+                    <input type="date" class="form-control" id="registration_start">
+                  </div>
+
+                  <div class="col-md-3">
+                    <label class="form-label">Fin inscripciones</label>
+                    <input type="date" class="form-control" id="registration_end">
+                  </div>
                   
                 </div>
               </div>
@@ -526,6 +543,14 @@
                   <option value="INT">Enteros</option>
                   <option value="DEC">Decimales (1 decimal)</option>
                   <option value="MED">Medios (0.5)</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Config. Criterios</label>
+                <select id="criteria_config" class="form-select">
+                  <option value="NO_CONFIG">Sin configuracion</option>
+                  <option value="BY_CAT_STY">Por Categoria/Estilo</option>
+                  <option value="WITH_POR">Con Porcentajes</option>
                 </select>
               </div>
 
@@ -650,4 +675,5 @@
 
 </body>
 </html>
+
 

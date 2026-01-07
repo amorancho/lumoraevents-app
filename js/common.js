@@ -139,7 +139,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         score_type: data.score_type,
         hasRegistration: data.has_registrations === 1,
         registrationStart: data.registration_start,
-        registrationEnd: data.registration_end
+        registrationEnd: data.registration_end,
+        criteriaConfig: data.criteria_config
       };
 
     }

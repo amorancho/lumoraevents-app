@@ -404,6 +404,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('category_class_type').value = eventObj.category_class_type || '';
   document.getElementById('license').value = eventObj.license || 'small';
   document.getElementById('score_type').value = eventObj.score_type;
+  document.getElementById('criteria_config').value = eventObj.criteria_config || 'NO_CONFIG';
 
   // switches -> convertir 1/0 a checkbox
   document.getElementById('visible').checked = (Number(eventObj.visible) === 1);
@@ -414,6 +415,13 @@ function openEditEventModal(eventObj) {
   document.getElementById('visible_results').checked = (Number(eventObj.visible_results) === 1);
   document.getElementById('visible_statistics').checked = (Number(eventObj.visible_statistics) === 1);
   document.getElementById('has_penalties').checked = (Number(eventObj.has_penalties) === 1);
+  document.getElementById('has_registrations').checked = (Number(eventObj.has_registrations) === 1);
+  document.getElementById('registration_start').value = eventObj.registration_start
+    ? eventObj.registration_start.slice(0, 10)
+    : '';
+  document.getElementById('registration_end').value = eventObj.registration_end
+    ? eventObj.registration_end.slice(0, 10)
+    : '';
   document.getElementById('notice_text').value = eventObj.notice_text;
   document.getElementById('notice_active').checked = (Number(eventObj.notice_active) === 1);
   document.getElementById('notice_type').value = eventObj.notice_type;
@@ -457,12 +465,16 @@ async function saveEvent() {
     judges_to_vote: parseInt(document.getElementById('judges_to_vote').value, 10) || 0,
     category_class_type: document.getElementById('category_class_type').value || '',
     license: document.getElementById('license').value || 'small',
+    criteria_config: document.getElementById('criteria_config').value || 'NO_CONFIG',
     visible_judges: document.getElementById('visible_judges').checked ? 1 : 0,
     visible_participants: document.getElementById('visible_participants').checked ? 1 : 0,
     visible_schedule: document.getElementById('visible_schedule').checked ? 1 : 0,
     visible_results: document.getElementById('visible_results').checked ? 1 : 0,
     visible_statistics: document.getElementById('visible_statistics').checked ? 1 : 0,
     has_penalties: document.getElementById('has_penalties').checked ? 1 : 0,
+    has_registrations: document.getElementById('has_registrations').checked ? 1 : 0,
+    registration_start: document.getElementById('registration_start').value || null,
+    registration_end: document.getElementById('registration_end').value || null,
     notice_text: document.getElementById('notice_text').value.trim(),
     notice_active: document.getElementById('notice_active').checked ? 1 : 0,
     notice_type: document.getElementById('notice_type').value,
