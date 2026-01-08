@@ -55,7 +55,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         scheduleCol.classList.remove("d-none");
         resultsCol.classList.remove("d-none");
         statisticsCol.classList.remove("d-none");
-        registrationCol.classList.remove("d-none");
+        //registrationCol.classList.remove("d-none");
+
+        if ((["admin", "organizer"].includes(user.role)) && (getEvent().hasRegistration == 1)) {
+            registrationCol.classList.remove("d-none");
+        }
 
     } else if ((getEvent().visible)) {
         
@@ -111,6 +115,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         principalContainer.classList.add('d-none');
         hiddenMessage.classList.remove('d-none');
     }
+
+
 
 });
 
