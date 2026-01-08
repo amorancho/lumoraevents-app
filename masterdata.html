@@ -87,12 +87,12 @@
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-penalties-tab" data-bs-toggle="tab" data-bs-target="#tab-penalties" type="button"
-          role="tab" aria-controls="tab-penalties" aria-selected="true" data-i18n="tab_penalties">Penalizaciones</button>
-      </li>
-      <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-criteria-config-tab" data-bs-toggle="tab" data-bs-target="#tab-criteria-config" type="button"
           role="tab" aria-controls="tab-criteria-config" aria-selected="false">Configuracion de Criterios</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-penalties-tab" data-bs-toggle="tab" data-bs-target="#tab-penalties" type="button"
+          role="tab" aria-controls="tab-penalties" aria-selected="true" data-i18n="tab_penalties">Penalizaciones</button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-clubs-tab" data-bs-toggle="tab" data-bs-target="#tab-clubs" type="button" role="tab"
@@ -251,6 +251,20 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <h5 class="card-title mb-0">Configuraciones</h5>
                   <span id="count-criteria-config" class="badge bg-secondary rounded-pill">0</span>
+                </div>
+                <div class="row g-2 mb-3">
+                  <div class="col-12 col-md-4">
+                    <label class="form-label small mb-1">Categoria</label>
+                    <select id="criteria-config-filter-category" class="form-select form-select-sm"></select>
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <label class="form-label small mb-1">Estilo</label>
+                    <select id="criteria-config-filter-style" class="form-select form-select-sm"></select>
+                  </div>
+                  <div class="col-12 col-md-4">
+                    <label class="form-label small mb-1">Criterio</label>
+                    <select id="criteria-config-filter-criteria" class="form-select form-select-sm"></select>
+                  </div>
                 </div>
                 <div class="table-responsive">
                   <table class="table table-hover align-middle">

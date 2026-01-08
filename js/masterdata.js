@@ -238,7 +238,6 @@ function makeSortable(table) {
 
 
 function shouldShowCriteriaConfigTab() {
-    console.log(getEvent());
     return getEvent()?.criteriaConfig && getEvent().criteriaConfig !== 'NO_CONFIG';
 }
 
@@ -270,6 +269,13 @@ function bindCriteriaConfigEvents() {
     if (addBtn) {
         addBtn.addEventListener('click', addCriteriaConfig);
     }
+
+    const filterCategory = document.getElementById('criteria-config-filter-category');
+    const filterStyle = document.getElementById('criteria-config-filter-style');
+    const filterCriteria = document.getElementById('criteria-config-filter-criteria');
+    if (filterCategory) filterCategory.addEventListener('change', renderCriteriaConfigTable);
+    if (filterStyle) filterStyle.addEventListener('change', renderCriteriaConfigTable);
+    if (filterCriteria) filterCriteria.addEventListener('change', renderCriteriaConfigTable);
 
     const categoriesAll = document.getElementById('criteria-config-categories-all');
     const categoriesNone = document.getElementById('criteria-config-categories-none');
@@ -312,6 +318,55 @@ function populateCriteriaConfigOptions() {
 
     renderCriteriaConfigCheckboxes('criteria-config-categories', categoriesList, 'category');
     renderCriteriaConfigCheckboxes('criteria-config-styles', stylesList, 'style');
+    populateCriteriaConfigFilters();
+}
+
+function populateCriteriaConfigFilters() {
+    const filterCategory = document.getElementById('criteria-config-filter-category');
+    const filterStyle = document.getElementById('criteria-config-filter-style');
+    const filterCriteria = document.getElementById('criteria-config-filter-criteria');
+
+    if (filterCategory) {
+        filterCategory.innerHTML = '';
+        const allOption = document.createElement('option');
+        allOption.value = '';
+        allOption.textContent = 'Todas';
+        filterCategory.appendChild(allOption);
+        categoriesList.forEach((item) => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.name;
+            filterCategory.appendChild(option);
+        });
+    }
+
+    if (filterStyle) {
+        filterStyle.innerHTML = '';
+        const allOption = document.createElement('option');
+        allOption.value = '';
+        allOption.textContent = 'Todos';
+        filterStyle.appendChild(allOption);
+        stylesList.forEach((item) => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.name;
+            filterStyle.appendChild(option);
+        });
+    }
+
+    if (filterCriteria) {
+        filterCriteria.innerHTML = '';
+        const allOption = document.createElement('option');
+        allOption.value = '';
+        allOption.textContent = 'Todos';
+        filterCriteria.appendChild(allOption);
+        criteriaList.forEach((item) => {
+            const option = document.createElement('option');
+            option.value = item.id;
+            option.textContent = item.name;
+            filterCriteria.appendChild(option);
+        });
+    }
 }
 
 function renderCriteriaConfigCheckboxes(containerId, items, namePrefix) {
@@ -378,6 +433,14 @@ function renderCriteriaConfigTable() {
     if (!tableBody) return;
     tableBody.innerHTML = '';
 
+    const filterCategory = document.getElementById('criteria-config-filter-category');
+    const filterStyle = document.getElementById('criteria-config-filter-style');
+    const filterCriteria = document.getElementById('criteria-config-filter-criteria');
+
+    const selectedCategory = filterCategory ? filterCategory.value : '';
+    const selectedStyle = filterStyle ? filterStyle.value : '';
+    const selectedCriteria = filterCriteria ? filterCriteria.value : '';
+
     const showPorcentage = getEvent().criteriaConfig === 'WITH_POR';
     const porcentageClass = showPorcentage ? '' : 'd-none';
 
@@ -385,7 +448,14 @@ function renderCriteriaConfigTable() {
     const styleMap = new Map(stylesList.map((item) => [String(item.id), item.name]));
     const criteriaMap = new Map(criteriaList.map((item) => [String(item.id), item.name]));
 
-    criteriaConfigList.forEach((item) => {
+    const filteredList = criteriaConfigList.filter((item) => {
+        const categoryMatch = !selectedCategory || String(item.category_id) === selectedCategory;
+        const styleMatch = !selectedStyle || String(item.style_id) === selectedStyle;
+        const criteriaMatch = !selectedCriteria || String(item.criteria_id) === selectedCriteria;
+        return categoryMatch && styleMatch && criteriaMatch;
+    });
+
+    filteredList.forEach((item) => {
         const tr = document.createElement('tr');
 
         const categoryName = item.category_name || categoryMap.get(String(item.category_id)) || `#${item.category_id}`;
@@ -409,7 +479,12 @@ function renderCriteriaConfigTable() {
     });
 
     const countEl = document.getElementById('count-criteria-config');
-    if (countEl) countEl.textContent = criteriaConfigList.length;
+    if (countEl) {
+        const hasFilters = Boolean(selectedCategory || selectedStyle || selectedCriteria);
+        countEl.textContent = hasFilters
+            ? `${filteredList.length} / ${criteriaConfigList.length}`
+            : `${criteriaConfigList.length}`;
+    }
 }
 
 async function addCriteriaConfig() {
@@ -431,47 +506,51 @@ async function addCriteriaConfig() {
     }
 
     const needsPorcentage = getEvent().criteriaConfig === 'WITH_POR';
-    let porcentage = null;
+    let percentage = null;
     if (needsPorcentage) {
         const input = document.getElementById('criteria-config-porcentage');
-        porcentage = input ? Number(input.value) : null;
-        if (porcentage === null || Number.isNaN(porcentage) || porcentage < 0 || porcentage > 100) {
+        const rawValue = input ? input.value.trim() : '';
+        if (!rawValue) {
+            showMessageModal('Indica un porcentaje valido.', 'Error');
+            return;
+        }
+        percentage = Number(rawValue);
+        if (Number.isNaN(percentage) || percentage < 0 || percentage > 100) {
             showMessageModal('Indica un porcentaje valido.', 'Error');
             return;
         }
     }
 
-    const payloads = [];
-    categories.forEach((categoryId) => {
-        styles.forEach((styleId) => {
-            payloads.push({
-                event_id: getEvent().id,
-                category_id: Number(categoryId),
-                style_id: Number(styleId),
-                criteria_id: criteriaId,
-                porcentage: needsPorcentage ? porcentage : null
-            });
-        });
-    });
-
-    const results = await Promise.allSettled(payloads.map(async (payload) => {
+    try {
         const res = await fetch(`${API_BASE_URL}/api/criteria/config`, {
             method: 'POST',
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                category_ids: categories.map(Number),
+                style_ids: styles.map(Number),
+                criteria_id: criteriaId,
+                percentage: needsPorcentage ? percentage : null
+            })
         });
+
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            throw new Error(data.error || 'Error saving criteria config');
+            showMessageModal(data.error || 'Error saving criteria config', 'Error');
+            return;
         }
-    }));
 
-    const failures = results.filter((result) => result.status === 'rejected');
-    if (failures.length) {
-        showMessageModal('Algunas combinaciones no se pudieron guardar.', 'Error');
+        setAllCriteriaConfigChecks('criteria-config-categories', false);
+        setAllCriteriaConfigChecks('criteria-config-styles', false);
+        if (needsPorcentage) {
+            const input = document.getElementById('criteria-config-porcentage');
+            if (input) input.value = '';
+        }
+
+        await loadCriteriaConfig();
+    } catch (error) {
+        console.error('Error saving criteria config:', error);
+        showMessageModal('Error saving criteria config', 'Error');
     }
-
-    await loadCriteriaConfig();
 }
 
 async function deleteCriteriaConfig(id) {
