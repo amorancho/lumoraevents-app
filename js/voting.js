@@ -77,7 +77,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     styleSelect.dispatchEvent(new Event('change'));
   });
 
-  await loadCriteria();
   syncCriteriaToggleButtonState();
 
   const modalEl = document.getElementById('detailsModal');
@@ -241,6 +240,11 @@ async function loadCompetitionAndDancers() {
   if (!category || !style) return;
 
   const data = await fetchVoting(category, style);
+  const loadedCriteria = Array.isArray(data.criteria) ? data.criteria : [];
+  criteriaList = loadedCriteria
+    .slice()
+    .sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0));
+  syncCriteriaToggleButtonState();
   renderCompetitionInfo(data.competition);
 
   // Si data.competition.judge_reserve es true, mostrar texto indicando que es juez reserva
@@ -280,11 +284,63 @@ function showVotesModal(dancer, mode = "details") {
   const getCriteriaInput = (criteriaId) =>
     criteriaContainer.querySelector(`.score-input[data-criteria="${criteriaId}"]`);
 
-  function refreshTotalScore() {
-    let sum = 0;
+  const parseCriteriaPercentage = (criteria) => {
+    const rawPercentage = criteria?.percentage;
+    if (rawPercentage === undefined || rawPercentage === null || rawPercentage === '') {
+      return null;
+    }
+    const percentageNumber = Number(rawPercentage);
+    if (Number.isNaN(percentageNumber)) return null;
+    return percentageNumber;
+  };
+
+  const hasCriteriaPercentages = () =>
+    criteriaList.some(c => parseCriteriaPercentage(c) !== null);
+
+  const formatCriteriaLabel = (criteria) => {
+    const percentageNumber = parseCriteriaPercentage(criteria);
+    if (percentageNumber === null) return criteria.name;
+    return `${criteria.name} (${percentageNumber}%)`;
+  };
+
+  const formatTotalScore = (value) => {
+    if (value === null || value === undefined) return '';
+    if (hasCriteriaPercentages()) {
+      return Number.isFinite(value) ? value.toFixed(1) : '';
+    }
+    return formatScoreForDisplay(value, scoreType);
+  };
+
+  const calculateTotalScore = (getScore) => {
+    const hasWeights = hasCriteriaPercentages();
+    let total = 0;
+    let weightSum = 0;
+
     criteriaList.forEach(c => {
-      const input = getCriteriaInput(c.id);
-      if (!input) return;
+      const score = getScore(c);
+      if (score === null || score === undefined) return;
+
+      const percentage = parseCriteriaPercentage(c);
+      if (hasWeights && percentage !== null) {
+        total += score * percentage;
+        weightSum += percentage;
+      } else if (!hasWeights) {
+        total += score;
+      }
+    });
+
+    if (hasWeights) {
+      if (weightSum <= 0) return 0;
+      return total / weightSum;
+    }
+
+    return total;
+  };
+
+  function refreshTotalScore() {
+    const total = calculateTotalScore((criteria) => {
+      const input = getCriteriaInput(criteria.id);
+      if (!input) return null;
       const normalized = normalizeScoreValue(
         input.value,
         scoreType,
@@ -292,11 +348,11 @@ function showVotesModal(dancer, mode = "details") {
         maxScore,
         { clamp: false }
       );
-      if (normalized !== null) sum += normalized;
+      return normalized;
     });
     const totalEl = document.getElementById('totalScore');
     if (totalEl) {
-      totalEl.textContent = formatScoreForDisplay(sum, scoreType) || '0';
+      totalEl.textContent = formatTotalScore(total) || '0';
     }
   }
 
@@ -306,39 +362,37 @@ function showVotesModal(dancer, mode = "details") {
       totalCol.className = 'col-12 mt-3 text-center';
       totalCol.innerHTML = `
         <div class="fw-bold mb-1">Total</div>
-        <span id="totalScore" class="badge bg-success fs-4 px-4">${formatScoreForDisplay(initialTotal, scoreType) || '0'}</span>
+        <span id="totalScore" class="badge bg-success fs-4 px-4">${formatTotalScore(initialTotal) || '0'}</span>
       `;
     } else {
       totalCol.className = 'border-top pt-3 text-center';
       totalCol.innerHTML = `
         <div class="fw-bold mb-1">Total</div>
-        <span id="totalScore" class="badge bg-success fs-4 px-4">${formatScoreForDisplay(initialTotal, scoreType) || '0'}</span>
+        <span id="totalScore" class="badge bg-success fs-4 px-4">${formatTotalScore(initialTotal) || '0'}</span>
       `;
     }
     criteriaContainer.appendChild(totalCol);
   }
 
   if (useMobileLayout) {
-    let total = 0;
-
     criteriaList.forEach(c => {
       const value = dancer.scores?.[c.name] ?? '-';
+      const criteriaLabel = formatCriteriaLabel(c);
       const col = document.createElement('div');
       col.className = 'col-6 text-center';
 
       if (mode === "details") {
         // Solo lectura
-        if (typeof value === 'number') total += value;
         const formattedValue = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : value;
         col.innerHTML = `
-        <div class="mb-1 fw-semibold">${c.name}</div>
+        <div class="mb-1 fw-semibold">${criteriaLabel}</div>
         <span class="badge bg-info fs-5">${formattedValue}</span>
       `;
       } else {
         // Modo edicion
         const currentVal = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : '';
         col.innerHTML = `
-        <div class="mb-1 fw-semibold">${c.name}</div>
+        <div class="mb-1 fw-semibold">${criteriaLabel}</div>
         <input type="number" inputmode="${inputMode}" class="form-control form-control-lg score-input"
                data-criteria="${c.id}" data-score-type="${scoreType}" step="${scoreStep}" value="${currentVal}">
       `;
@@ -348,6 +402,10 @@ function showVotesModal(dancer, mode = "details") {
 
     });
 
+    const total = calculateTotalScore((criteria) => {
+      const rawValue = dancer.scores?.[criteria.name];
+      return typeof rawValue === 'number' ? rawValue : rawValue == null ? null : Number(rawValue);
+    });
     renderTotal(total);
   } else {
     const options = generateScoreOptions(scoreType, minScore, maxScore);
@@ -359,7 +417,7 @@ function showVotesModal(dancer, mode = "details") {
 
       const labelCol = document.createElement('div');
       labelCol.className = 'col-12 col-md-3 mb-2 mb-md-0 fw-semibold text-md-end';
-      labelCol.textContent = c.name;
+      labelCol.textContent = formatCriteriaLabel(c);
       row.appendChild(labelCol);
 
       const controlCol = document.createElement('div');
@@ -711,19 +769,6 @@ function setVoteButtonsDisabled(disabled) {
   });
 }
 
-
-async function loadCriteria() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/criteria?event_id=${getEvent().id}`);
-    const loaded = await res.json();
-    criteriaList = Array.isArray(loaded)
-      ? loaded.sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0))
-      : [];
-  } catch (err) {
-    console.error('Error loading criteria', err);
-    criteriaList = [];
-  }
-}
 
 async function fetchVoting(category, style) {
   try {

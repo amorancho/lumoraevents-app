@@ -286,6 +286,18 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
 
   const data = await res.json();
 
+  const formatCriteriaLabel = (criteria) => {
+    const rawPercentage = criteria?.percentage;
+    if (rawPercentage === undefined || rawPercentage === null || rawPercentage === '') {
+      return criteria.name;
+    }
+    const percentageNumber = Number(rawPercentage);
+    if (Number.isNaN(percentageNumber)) {
+      return criteria.name;
+    }
+    return `${criteria.name} (${percentageNumber}%)`;
+  };
+
   // Filtramos dancerId de data.dancers
   data.dancers = data.dancers.find(d => d.id === dancerId);
   if (!data.dancers) throw new Error('No se han encontrado datos de la bailarina');
@@ -298,7 +310,7 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
     // Solo lectura
     if (typeof value === 'number') total += value;
     col.innerHTML = `
-      <div class="mb-1 fw-semibold">${c.name}</div>
+      <div class="mb-1 fw-semibold">${formatCriteriaLabel(c)}</div>
       <span class="badge bg-info fs-5">${value}</span>
     `;    
 
