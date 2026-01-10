@@ -124,23 +124,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Detalle por juez
     if (Array.isArray(dancerData.votes) && dancerData.votes.length > 0) {
       dancerData.votes.forEach(vote => {
-        const totalJudge = (vote.criteria || []).reduce((sum, c) => sum + (Number(c.score) || 0), 0);
+        //const totalJudge = (vote.criteria || []).reduce((sum, c) => sum + (Number(c.score) || 0), 0);
 
         const judgeCard = document.createElement('div');
         judgeCard.className = 'card mb-3';
         judgeCard.innerHTML = `
           <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="mb-0 text-primary">${escapeHtml(vote.judge_name || 'Judge')}</h6>
-            <span class="badge bg-primary fs-6">Total: ${Number(totalJudge).toFixed(1)}</span>
+            <span class="badge bg-primary fs-6">Total: ${Number(vote.judge_total_score).toFixed(1)}</span>
           </div>
           <div class="card-body">
             <div class="row">
-              ${ (vote.criteria || []).map(c => `
-                <div class="col-6 col-md-4 col-lg-3 mb-2">
-                  <label class="form-label mb-1">${escapeHtml(c.name || '')}</label>
+              ${ (vote.criteria || []).map(c => {
+                const percentageSuffix = (c.percentage != null && c.percentage !== '')
+                  ? ` (${Number(c.percentage).toFixed(0)}%)`
+                  : '';
+                return `
+                <div class="col-6 col-md-4 col-lg-4 mb-2">
+                  <label class="form-label mb-1">${escapeHtml(c.name || '')}${percentageSuffix}</label>
                   <input type="number" class="form-control" value="${Number(c.score).toFixed(1)}" readonly>
                 </div>
-              `).join('') }
+              `;
+              }).join('') }
             </div>
           </div>
         `;

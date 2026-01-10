@@ -253,9 +253,12 @@ function renderCompetitions(competitions) {
         }).join('');
 
         // Asignar ID a la fila combinando competición-dancer-judge (para poder localizarla en reset)
+        const totalScoreText = (getEvent().criteriaConfig === 'WITH_POR')
+          ? Number(d.total_score ?? 0).toFixed(1)
+          : (d.total_score || 0);
         tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}        
         <td class="bg-light">${d.judges_voted}</td>
-        <td class="bg-light">${d.total_score || 0}</td></tr>`;
+        <td class="bg-light">${totalScoreText}</td></tr>`;
       });
 
       tableHTML += '</tbody></table>';
