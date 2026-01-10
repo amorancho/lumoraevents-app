@@ -1,6 +1,7 @@
 var title = 'Competition Tracking';
 
 const allowedRoles = ["admin", "organizer"];
+const voteDetailsInFlight = new Set();
 
 const categorySelect = document.getElementById('categorySelect');
 
@@ -273,68 +274,76 @@ function renderCompetitions(competitions) {
 }
 
 async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
+  if (voteDetailsInFlight.has(rowId)) {
+    return;
+  }
+  voteDetailsInFlight.add(rowId);
+
   document.getElementById('detailsModalLabel').textContent = `${t('judge')}: ${judgeName} / ${t('dancer')}: ${dancerName}`;
 
   criteriaContainer.innerHTML = '';
 
   let total = 0;
 
-  const res = await fetch(`${API_BASE_URL}/api/voting?event_id=${getEvent().id}&judge=${judgeId}&category=${categoryId}&style=${styleId}`);
-  if (!res.ok) {
-    throw new Error('Error al obtener detalles de la votación');
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/voting?event_id=${getEvent().id}&judge=${judgeId}&category=${categoryId}&style=${styleId}`);
+    if (!res.ok) {
+      throw new Error('Error al obtener detalles de la votaci?n');
+    }
+
+    const data = await res.json();
+
+    const formatCriteriaLabel = (criteria) => {
+      const rawPercentage = criteria?.percentage;
+      if (rawPercentage === undefined || rawPercentage === null || rawPercentage === '') {
+        return criteria.name;
+      }
+      const percentageNumber = Number(rawPercentage);
+      if (Number.isNaN(percentageNumber)) {
+        return criteria.name;
+      }
+      return `${criteria.name} (${percentageNumber}%)`;
+    };
+
+    // Filtramos dancerId de data.dancers
+    data.dancers = data.dancers.find(d => d.id === dancerId);
+    if (!data.dancers) throw new Error('No se han encontrado datos de la bailarina');
+
+    data.criteria.forEach(c => {
+      const value = data.dancers.scores?.[c.name] ?? '-';
+      const col = document.createElement('div');
+      col.className = 'col-6 text-center';
+
+      // Solo lectura
+      if (typeof value === 'number') total += value;
+      col.innerHTML = `
+        <div class="mb-1 fw-semibold">${formatCriteriaLabel(c)}</div>
+        <span class="badge bg-info fs-5">${value}</span>
+      `;    
+
+      criteriaContainer.appendChild(col);
+    });
+
+    // Total
+    const totalCol = document.createElement('div');
+    totalCol.className = 'col-12 mt-3 text-center';
+    totalCol.innerHTML = `
+      <div class="fw-bold mb-1">${t('total')}</div>
+      <span id="totalScore" class="badge bg-success fs-4 px-4">${data.dancers.totalScore}</span>
+    `;
+    criteriaContainer.appendChild(totalCol);
+
+    const modalEl = document.getElementById('detailsModal');
+    let modal = new bootstrap.Modal(modalEl);
+
+    // Footer  limpiar primero
+    const footer = modal._element.querySelector('.modal-footer');
+    footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${t('close')}</button>`;
+
+    modal.show();
+  } finally {
+    voteDetailsInFlight.delete(rowId);
   }
-
-  const data = await res.json();
-
-  const formatCriteriaLabel = (criteria) => {
-    const rawPercentage = criteria?.percentage;
-    if (rawPercentage === undefined || rawPercentage === null || rawPercentage === '') {
-      return criteria.name;
-    }
-    const percentageNumber = Number(rawPercentage);
-    if (Number.isNaN(percentageNumber)) {
-      return criteria.name;
-    }
-    return `${criteria.name} (${percentageNumber}%)`;
-  };
-
-  // Filtramos dancerId de data.dancers
-  data.dancers = data.dancers.find(d => d.id === dancerId);
-  if (!data.dancers) throw new Error('No se han encontrado datos de la bailarina');
-
-  data.criteria.forEach(c => {
-    const value = data.dancers.scores?.[c.name] ?? '-';
-    const col = document.createElement('div');
-    col.className = 'col-6 text-center';
-
-    // Solo lectura
-    if (typeof value === 'number') total += value;
-    col.innerHTML = `
-      <div class="mb-1 fw-semibold">${formatCriteriaLabel(c)}</div>
-      <span class="badge bg-info fs-5">${value}</span>
-    `;    
-
-    criteriaContainer.appendChild(col);
-  });
-
-  // Total
-  const totalCol = document.createElement('div');
-  totalCol.className = 'col-12 mt-3 text-center';
-  totalCol.innerHTML = `
-    <div class="fw-bold mb-1">${t('total')}</div>
-    <span id="totalScore" class="badge bg-success fs-4 px-4">${data.dancers.totalScore}</span>
-  `;
-  criteriaContainer.appendChild(totalCol);
-
-  const modalEl = document.getElementById('detailsModal');
-  let modal = new bootstrap.Modal(modalEl);
-
-  // Footer → limpiar primero
-  const footer = modal._element.querySelector('.modal-footer');
-  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${t('close')}</button>`;
-
-  
-  modal.show();
 }
 
 async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
