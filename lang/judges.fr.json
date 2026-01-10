@@ -11,6 +11,7 @@
   "alert_end_event": "Le festival est terminé. Les données ne peuvent plus être modifiées.",
   "table_title": "Juges",
   "welcome_send_all": "Envoyer l'Email de Bienvenue",
+  "welcome_send_all_tooltip": "Envoyer l'Email de bienvenue à tous les juges",
   "col_name": "Nom",
   "col_email": "Email",
   "col_master": "Maître",

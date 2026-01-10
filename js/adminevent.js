@@ -325,6 +325,7 @@ async function loadEventData(eventId) {
 
 async function saveEventData(eventId) {
   const f = id => document.getElementById(id);
+  const saveBtn = document.getElementById('saveEventBtn');
   
   const payload = {
     name: f('name').value.trim(),
@@ -345,6 +346,7 @@ async function saveEventData(eventId) {
   };
 
   try {
+    setButtonLoading(saveBtn, true, t('guardando'));
     const res = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -357,6 +359,8 @@ async function saveEventData(eventId) {
   } catch (err) {
     showAlert('danger', '❌ Failed to update event');
     console.error(err);
+  } finally {
+    setButtonLoading(saveBtn, false);
   }
 }
 
