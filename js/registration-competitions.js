@@ -5,6 +5,7 @@
   const createBtn = document.getElementById('createRegistrationBtn');
   const modalEl = document.getElementById('registrationModal');
   const deleteModalEl = document.getElementById('deleteRegistrationModal');
+  const deleteAudioModalEl = document.getElementById('deleteAudioModal');
   const membersModalEl = document.getElementById('registrationMembersModal');
   const confirmModalEl = document.getElementById('confirmRegistrationModal');
 
@@ -43,11 +44,26 @@
     deleteMessage: document.getElementById('deleteRegistrationMessage'),
     confirmDeleteBtn: document.getElementById('confirmDeleteRegistrationBtn'),
     confirmMessage: document.getElementById('confirmRegistrationMessage'),
-    confirmRegistrationBtn: document.getElementById('confirmRegistrationBtn')
+    confirmRegistrationBtn: document.getElementById('confirmRegistrationBtn'),
+    audioDeleteModal: deleteAudioModalEl,
+    audioDeleteConfirmBtn: document.getElementById('confirmDeleteAudioBtn'),
+    audioSection: document.getElementById('registrationAudioSection'),
+    audioUploadControls: document.getElementById('registrationAudioUploadControls'),
+    audioDropzone: document.getElementById('registrationAudioDropzone'),
+    audioInput: document.getElementById('registrationAudioInput'),
+    audioBrowseBtn: document.getElementById('registrationAudioBrowseBtn'),
+    audioName: document.getElementById('registrationAudioName'),
+    audioDuration: document.getElementById('registrationAudioDuration'),
+    audioSize: document.getElementById('registrationAudioSize'),
+    audioMax: document.getElementById('registrationAudioMax'),
+    audioError: document.getElementById('registrationAudioError'),
+    audioRemoveBtn: document.getElementById('registrationAudioRemoveBtn'),
+    audioSaveBtn: document.getElementById('registrationAudioSaveBtn')
   };
 
   const registrationModal = new bootstrap.Modal(modalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
+  const audioDeleteModal = deleteAudioModalEl ? new bootstrap.Modal(deleteAudioModalEl) : null;
   const registrationMembersModal = new bootstrap.Modal(membersModalEl);
   const confirmModal = new bootstrap.Modal(confirmModalEl);
 
@@ -59,7 +75,8 @@
     members: (id) => `/api/registrations/choreographies/${id}/members`,
     detail: (id) => `/api/registrations/${id}`,
     confirm: (id) => `/api/registrations/choreographies/${id}/confirm`,
-    desconfirm: (id) => `/api/registrations/choreographies/${id}/desconfirm`
+    desconfirm: (id) => `/api/registrations/choreographies/${id}/desconfirm`,
+    music: (id) => `/api/registrations/choreographies/${id}/music`
   };
 
   let participantSelect = null;
@@ -72,6 +89,16 @@
   let confirmAction = 'confirm';
   let membersRegistration = null;
   let membersCategoryId = null;
+  let audioState = {
+    file: null,
+    duration: null,
+    maxDuration: null,
+    existingName: '',
+    existingDuration: null,
+    existingSize: null,
+    hasRemote: false,
+    isValid: true
+  };
   const saveBtnLabel = elements.saveBtn ? elements.saveBtn.textContent : '';
   const membersSaveBtnLabel = elements.membersSaveBtn ? elements.membersSaveBtn.textContent : '';
 
@@ -115,6 +142,7 @@
     const category = getSelectedCategory();
     if (!category) {
       elements.categoryInfo.textContent = '';
+      updateAudioMaxDuration();
       return;
     }
 
@@ -135,6 +163,292 @@
     }
 
     elements.categoryInfo.textContent = info;
+    updateAudioMaxDuration();
+  };
+
+  const formatDuration = (value) => {
+    const totalSeconds = Math.round(Number(value));
+    if (!Number.isFinite(totalSeconds)) return '-';
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  const formatBytes = (value) => {
+    const bytes = Number(value);
+    if (!Number.isFinite(bytes)) return '-';
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    const mb = kb / 1024;
+    return `${mb.toFixed(1)} MB`;
+  };
+
+  const setAudioSectionVisible = (visible) => {
+    if (!elements.audioSection) return;
+    elements.audioSection.classList.toggle('d-none', !visible);
+  };
+
+  const setAudioUploadControlsVisible = (visible) => {
+    if (!elements.audioUploadControls) return;
+    elements.audioUploadControls.classList.toggle('d-none', !visible);
+  };
+
+  const setAudioRemoveVisible = (visible) => {
+    if (!elements.audioRemoveBtn) return;
+    elements.audioRemoveBtn.classList.toggle('d-none', !visible);
+  };
+
+  const setAudioError = (message) => {
+    if (!elements.audioError) return;
+    if (message) {
+      elements.audioError.textContent = message;
+      elements.audioError.classList.remove('d-none');
+    } else {
+      elements.audioError.textContent = '';
+      elements.audioError.classList.add('d-none');
+    }
+  };
+
+  const validateAudioDuration = () => {
+    if (!audioState.file) {
+      audioState.isValid = true;
+      setAudioError('');
+      if (elements.audioSaveBtn) elements.audioSaveBtn.disabled = true;
+      return true;
+    }
+
+    if (audioState.duration == null) {
+      audioState.isValid = false;
+      setAudioError('No se pudo leer la duracion del audio.');
+      if (elements.audioSaveBtn) elements.audioSaveBtn.disabled = true;
+      return false;
+    }
+
+    const maxDuration = audioState.maxDuration;
+    if (maxDuration != null && audioState.duration > maxDuration) {
+      audioState.isValid = false;
+      setAudioError(`La duracion supera el maximo permitido (${formatDuration(maxDuration)}).`);
+      if (elements.audioSaveBtn) elements.audioSaveBtn.disabled = true;
+      return false;
+    }
+
+    audioState.isValid = true;
+    setAudioError('');
+    if (elements.audioSaveBtn) elements.audioSaveBtn.disabled = false;
+    return true;
+  };
+
+  const updateAudioMaxDuration = () => {
+    const category = getSelectedCategory();
+    const maxDuration = normalizeNumber(category?.music_max_duration);
+    audioState.maxDuration = maxDuration;
+    if (elements.audioMax) {
+      elements.audioMax.textContent = maxDuration == null ? '-' : formatDuration(maxDuration);
+    }
+    validateAudioDuration();
+  };
+
+  const updateAudioUi = () => {
+    setAudioUploadControlsVisible(!audioState.hasRemote);
+    setAudioRemoveVisible(audioState.hasRemote);
+
+    const name = audioState.file
+      ? audioState.file.name
+      : (audioState.existingName || '-');
+    if (elements.audioName) {
+      elements.audioName.textContent = name;
+    }
+
+    const durationValue = audioState.file ? audioState.duration : audioState.existingDuration;
+    if (elements.audioDuration) {
+      elements.audioDuration.textContent = durationValue != null ? formatDuration(durationValue) : '-';
+    }
+
+    const sizeValue = audioState.file ? audioState.file.size : audioState.existingSize;
+    if (elements.audioSize) {
+      elements.audioSize.textContent = sizeValue != null ? formatBytes(sizeValue) : '-';
+    }
+
+    if (elements.audioRemoveBtn) {
+      elements.audioRemoveBtn.disabled = !audioState.hasRemote && !audioState.file;
+    }
+
+    validateAudioDuration();
+  };
+
+  const resetAudioState = () => {
+    audioState = {
+      file: null,
+      duration: null,
+      maxDuration: audioState.maxDuration,
+      existingName: '',
+      existingDuration: null,
+      existingSize: null,
+      hasRemote: false,
+      isValid: true
+    };
+    if (elements.audioInput) elements.audioInput.value = '';
+    setAudioError('');
+    updateAudioUi();
+  };
+
+  const setRemoteAudioInfo = (info) => {
+    audioState.existingName = info?.original_name || '';
+    audioState.existingDuration = normalizeNumber(info?.duration);
+    audioState.existingSize = normalizeNumber(info?.size);
+    audioState.hasRemote = Boolean(audioState.existingName);
+    updateAudioUi();
+  };
+
+  const getMusicUrl = (registrationId) => {
+    const eventIdValue = getEventIdValue();
+    return eventIdValue
+      ? `${API_BASE_URL}${registrationEndpoints.music(registrationId)}?event_id=${encodeURIComponent(eventIdValue)}`
+      : `${API_BASE_URL}${registrationEndpoints.music(registrationId)}`;
+  };
+
+  const fetchRegistrationAudioInfo = async (registrationId) => {
+    if (!registrationId) return;
+    resetAudioState();
+    try {
+      const url = getMusicUrl(registrationId);
+      const res = await fetch(url);
+      if (!res.ok) {
+        if (res.status === 404) {
+          return;
+        }
+        const data = await safeJson(res);
+        const message = data?.error || 'Error al cargar el audio.';
+        throw new Error(message);
+      }
+      const data = await safeJson(res);
+      if (!data || !data.original_name) {
+        return;
+      }
+      setRemoteAudioInfo(data);
+    } catch (err) {
+      showMessageModal(err.message || 'Error al cargar el audio.', t('error_title', 'Error'));
+    }
+  };
+
+  const readAudioDuration = (file) => new Promise((resolve) => {
+    const audio = document.createElement('audio');
+    audio.preload = 'metadata';
+    const objectUrl = URL.createObjectURL(file);
+    audio.src = objectUrl;
+    audio.onloadedmetadata = () => {
+      const duration = audio.duration;
+      URL.revokeObjectURL(objectUrl);
+      resolve(Number.isFinite(duration) ? duration : null);
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    };
+  });
+
+  const handleAudioFile = async (file) => {
+    if (!file) return;
+    if (!file.type || !file.type.startsWith('audio/')) {
+      setAudioError('Selecciona un archivo de audio valido.');
+      return;
+    }
+    audioState.file = file;
+    audioState.duration = await readAudioDuration(file);
+    updateAudioUi();
+  };
+
+  const clearSelectedAudio = () => {
+    audioState.file = null;
+    audioState.duration = null;
+    if (elements.audioInput) elements.audioInput.value = '';
+    updateAudioUi();
+  };
+
+  const saveRegistrationAudio = async () => {
+    const registrationId = elements.id ? elements.id.value : '';
+    if (!registrationId) return;
+    if (!audioState.file) {
+      showMessageModal('Selecciona un archivo de audio.', t('error_title', 'Error'));
+      return;
+    }
+    if (!validateAudioDuration()) {
+      return;
+    }
+
+    if (elements.audioSaveBtn) {
+      elements.audioSaveBtn.disabled = true;
+      elements.audioSaveBtn.textContent = t('saving', 'Guardando...');
+    }
+
+    try {
+      const url = getMusicUrl(registrationId);
+      const formData = new FormData();
+      formData.append('audio', audioState.file);
+      if (audioState.duration != null) {
+        formData.append('duration', `${Math.round(audioState.duration)}`);
+      }
+
+      const res = await fetch(url, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await safeJson(res);
+      if (!res.ok) {
+        const message = data?.error || 'Error al guardar el audio.';
+        throw new Error(message);
+      }
+
+      audioState.existingName = audioState.file.name;
+      audioState.existingDuration = audioState.duration;
+      audioState.existingSize = audioState.file.size;
+      audioState.hasRemote = true;
+      clearSelectedAudio();
+    } catch (err) {
+      showMessageModal(err.message || 'Error al guardar el audio.', t('error_title', 'Error'));
+    } finally {
+      if (elements.audioSaveBtn) {
+        elements.audioSaveBtn.disabled = !(audioState.file && audioState.isValid);
+        elements.audioSaveBtn.textContent = 'Guardar audio';
+      }
+    }
+  };
+
+  const deleteRegistrationAudio = async () => {
+    const registrationId = elements.id ? elements.id.value : '';
+    if (!registrationId || !audioState.existingName) return;
+
+    const confirmDelete = await showAudioDeleteConfirm();
+    if (!confirmDelete) {
+      return;
+    }
+
+    if (elements.audioRemoveBtn) {
+      elements.audioRemoveBtn.disabled = true;
+    }
+
+    try {
+      const url = getMusicUrl(registrationId);
+      const res = await fetch(url, { method: 'DELETE' });
+      const data = await safeJson(res);
+      if (!res.ok) {
+        const message = data?.error || 'Error al eliminar el audio.';
+        throw new Error(message);
+      }
+      audioState.existingName = '';
+      audioState.existingDuration = null;
+      audioState.existingSize = null;
+      audioState.hasRemote = false;
+      updateAudioUi();
+    } catch (err) {
+      showMessageModal(err.message || 'Error al eliminar el audio.', t('error_title', 'Error'));
+    } finally {
+      if (elements.audioRemoveBtn) {
+        elements.audioRemoveBtn.disabled = !(audioState.file || audioState.existingName);
+      }
+    }
   };
 
   const updateMemberControls = () => {
@@ -370,6 +684,27 @@
     return safeJson(res);
   };
 
+  const showAudioDeleteConfirm = () => new Promise((resolve) => {
+    if (!audioDeleteModal || !elements.audioDeleteConfirmBtn || !elements.audioDeleteModal) {
+      resolve(window.confirm('Seguro que deseas eliminar la musica?'));
+      return;
+    }
+
+    let resolved = false;
+    const handleHidden = () => {
+      if (!resolved) resolve(false);
+    };
+
+    elements.audioDeleteModal.addEventListener('hidden.bs.modal', handleHidden, { once: true });
+    elements.audioDeleteConfirmBtn.onclick = () => {
+      resolved = true;
+      audioDeleteModal.hide();
+      resolve(true);
+    };
+
+    audioDeleteModal.show();
+  });
+
   const resolveRegistrationMembers = async (registration) => {
     if (!registration) return [];
     if (Array.isArray(registration.members)) {
@@ -433,12 +768,16 @@
 
     if (mode === 'create') {
       resetChoreoForm();
+      setAudioSectionVisible(false);
+      resetAudioState();
       registrationModal.show();
       return;
     }
 
     if (!registration) {
       resetChoreoForm();
+      setAudioSectionVisible(false);
+      resetAudioState();
       registrationModal.show();
       return;
     }
@@ -450,6 +789,9 @@
     elements.style.value = registration.reg_style_id;
 
     updateCategoryInfo();
+    setAudioSectionVisible(true);
+    resetAudioState();
+    await fetchRegistrationAudioInfo(registration.id);
     registrationModal.show();
   };
 
@@ -601,6 +943,13 @@
       participantsCell.textContent = registration.member_count;
       row.appendChild(participantsCell);
 
+      const musicCell = document.createElement('td');
+      musicCell.className = 'text-center';
+      musicCell.textContent = Number(registration.has_music) === 1
+        ? t('registration_competitions_music_yes', 'Sí')
+        : t('registration_competitions_music_no', 'No');
+      row.appendChild(musicCell);
+
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
       const actionGroup = document.createElement('div');
@@ -660,7 +1009,7 @@
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 7;
+    cell.colSpan = 8;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -1046,6 +1395,54 @@
     elements.membersSaveBtn.addEventListener('click', saveMembers);
   }
 
+  if (elements.audioBrowseBtn && elements.audioInput) {
+    elements.audioBrowseBtn.addEventListener('click', () => {
+      elements.audioInput.click();
+    });
+  }
+
+  if (elements.audioInput) {
+    elements.audioInput.addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      handleAudioFile(file);
+    });
+  }
+
+  if (elements.audioDropzone) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      elements.audioDropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        elements.audioDropzone.classList.add('is-dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      elements.audioDropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        elements.audioDropzone.classList.remove('is-dragover');
+      });
+    });
+    elements.audioDropzone.addEventListener('drop', (event) => {
+      const file = event.dataTransfer?.files && event.dataTransfer.files[0];
+      handleAudioFile(file);
+    });
+  }
+
+  if (elements.audioRemoveBtn) {
+    elements.audioRemoveBtn.addEventListener('click', () => {
+      if (audioState.file) {
+        clearSelectedAudio();
+        return;
+      }
+      deleteRegistrationAudio();
+    });
+  }
+
+  if (elements.audioSaveBtn) {
+    elements.audioSaveBtn.addEventListener('click', saveRegistrationAudio);
+  }
+
   if (createBtn) {
     createBtn.addEventListener('click', () => openRegistrationModal('create'));
   }
@@ -1134,6 +1531,8 @@
   }
 
   modalEl.addEventListener('hidden.bs.modal', () => {
+    resetAudioState();
+    setAudioSectionVisible(false);
     loadRegistrations();
   });
 

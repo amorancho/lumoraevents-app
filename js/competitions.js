@@ -203,23 +203,29 @@ function loadCompetitions() {
         //await fetchCompetitionsFromAPI();
         let newStatus;
         if (action === 'open') {
-          newStatus = 'OPEN';
+          newStatus = 'OPE';
         } else if (action === 'close') {
-          newStatus = 'CLOSED';
+          newStatus = 'CLO';
+        }
+
+        // Actualizamos la competición en el array local
+        const compIndex = competitions.findIndex(c => c.id == compId);
+        if (compIndex !== -1) {
+          competitions[compIndex].status = newStatus;
         }
 
         const statusTd = row.querySelector('td[data-status]');
         const badge = statusTd.querySelector('.badge');
         if (badge) {
-          badge.textContent = newStatus;
+          badge.textContent = convertStatus[newStatus];
           badge.classList.remove('bg-success', 'bg-danger');
-          badge.classList.add(newStatus === 'OPEN' ? 'bg-success' : 'bg-danger');
+          badge.classList.add(newStatus === 'OPE' ? 'bg-success' : 'bg-danger');
         }
 
         // Actualizamos el botón
-        btn.dataset.action = newStatus === 'OPEN' ? 'close' : 'open';
-        btn.title = newStatus === 'OPEN' ? t('close_competition') : t('open_competition');
-        btn.querySelector('i').className = newStatus === 'OPEN' ? 'bi bi-lock' : 'bi bi-unlock';
+        btn.dataset.action = newStatus === 'OPE' ? 'close' : 'open';
+        btn.title = newStatus === 'OPE' ? t('close_competition') : t('open_competition');
+        btn.querySelector('i').className = newStatus === 'OPE' ? 'bi bi-lock' : 'bi bi-unlock';
 
 
       } catch (error) {

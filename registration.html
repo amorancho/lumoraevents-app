@@ -17,6 +17,14 @@
     .members-modal .modal-content {
       height: 100%;
     }
+    .audio-dropzone {
+      border-style: dashed;
+      transition: border-color 0.15s ease, background-color 0.15s ease;
+    }
+    .audio-dropzone.is-dragover {
+      border-color: #0d6efd;
+      background-color: rgba(13, 110, 253, 0.08);
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -253,6 +261,7 @@
                           <th data-i18n="registration_competitions_table_style">Estilo</th>
                           <th data-i18n="registration_competitions_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_participants">Participantes</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
                           <th class="text-center" data-i18n="registration_competitions_table_actions">Acciones</th>
                         </tr>
                       </thead>
@@ -418,10 +427,48 @@
             </div>
 
             <hr class="my-4">
+
+            <div id="registrationAudioSection" class="d-none">
+              <h6 class="text-uppercase text-muted small mb-2">Musica</h6>
+              <div id="registrationAudioUploadControls">
+                <div class="audio-dropzone border border-2 border-secondary-subtle rounded p-3 text-center bg-light" id="registrationAudioDropzone">
+                  <input type="file" id="registrationAudioInput" accept="audio/*" class="d-none">
+                  <div class="mb-2">
+                    <i class="bi bi-music-note-beamed me-2"></i>
+                    Arrastra aqui tu audio o
+                    <button type="button" class="btn btn-link p-0 align-baseline" id="registrationAudioBrowseBtn">selecciona un archivo</button>
+                  </div>
+                  <div class="small text-muted">Formatos de audio</div>
+                </div>
+              </div>
+              <div class="row g-2 mt-2">
+                <div class="col-12 col-md-6">
+                  <div class="text-muted small">Archivo</div>
+                  <div id="registrationAudioName" class="fw-semibold">-</div>
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="text-muted small">Duracion</div>
+                  <div id="registrationAudioDuration" class="fw-semibold">-</div>
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="text-muted small">Tamano</div>
+                  <div id="registrationAudioSize" class="fw-semibold">-</div>
+                </div>
+                <div class="col-6 col-md-2">
+                  <div class="text-muted small">Maximo</div>
+                  <div id="registrationAudioMax" class="fw-semibold">-</div>
+                </div>
+              </div>
+              <div id="registrationAudioError" class="text-danger small mt-2 d-none"></div>
+              <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+                <button type="button" class="btn btn-outline-danger" id="registrationAudioRemoveBtn" disabled>Eliminar musica</button>
+                <button type="button" class="btn btn-outline-primary" id="registrationAudioSaveBtn" disabled>Guardar audio</button>
+              </div>
+            </div>
           </form>
         </div>
         <div class="modal-footer flex-column flex-md-row gap-2">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
           <button type="button" class="btn btn-primary" id="registrationSaveBtn">Guardar coreografia</button>
         </div>
       </div>
@@ -516,6 +563,24 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteRegistrationBtn" data-i18n="delete">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="deleteAudioModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Eliminar musica</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteAudioMessage">Seguro que deseas eliminar la musica?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteAudioBtn">Eliminar</button>
         </div>
       </div>
     </div>
