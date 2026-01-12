@@ -94,25 +94,6 @@ function renderEvents() {
         statusBadge = `<span class="badge bg-secondary">${event.status}</span>`;
     }
 
-    // 🔹 License badge
-    let licenseBadge = '';
-    switch (event.license) {
-      case 'small':
-        licenseBadge = `<span class="badge bg-warning text-dark">SMALL</span>`;
-        break;
-      case 'medium':
-        licenseBadge = `<span class="badge bg-info text-dark">MEDIUM</span>`;
-        break;
-      case 'large':
-        licenseBadge = `<span class="badge bg-success text-white" style="background-color: orange;">LARGE</span>`;
-        break;
-      case 'unlimited':
-        licenseBadge = `<span class="badge bg-dark text-white" style="background-color: orange;">UNLIMITED</span>`;
-        break;
-      default:
-        licenseBadge = `<span class="badge bg-secondary">${event.license}</span>`;
-    }
-
     const { badgeClass, badgeLabel, badgeTooltip } = getWelcomeEmailBadge(event);
     const badgeTooltipAttr = badgeTooltip
       ? `data-bs-toggle="tooltip" data-bs-placement="top" title="${badgeTooltip}"`
@@ -136,7 +117,6 @@ function renderEvents() {
       <td>${event.client_name}</td>
       <td>${visibleIcon}</td>
       <td>${trialIcon}</td>
-      <td>${licenseBadge}</td>
       <td class="align-middle text-center">
         <span class="badge ${badgeClass}" ${badgeTooltipAttr}>${badgeLabel}</span>
       </td>
@@ -402,7 +382,6 @@ function openEditEventModal(eventObj) {
   document.getElementById('autorefresh_minutes').value = eventObj.autorefresh_minutes || '';
   document.getElementById('judges_to_vote').value = eventObj.judges_to_vote || '';
   document.getElementById('category_class_type').value = eventObj.category_class_type || '';
-  document.getElementById('license').value = eventObj.license || 'small';
   document.getElementById('score_type').value = eventObj.score_type;
   document.getElementById('criteria_config').value = eventObj.criteria_config || 'NO_CONFIG';
 
@@ -464,7 +443,6 @@ async function saveEvent() {
     autorefresh_minutes: parseInt(document.getElementById('autorefresh_minutes').value, 10) || 0,
     judges_to_vote: parseInt(document.getElementById('judges_to_vote').value, 10) || 0,
     category_class_type: document.getElementById('category_class_type').value || '',
-    license: document.getElementById('license').value || 'small',
     criteria_config: document.getElementById('criteria_config').value || 'NO_CONFIG',
     visible_judges: document.getElementById('visible_judges').checked ? 1 : 0,
     visible_participants: document.getElementById('visible_participants').checked ? 1 : 0,

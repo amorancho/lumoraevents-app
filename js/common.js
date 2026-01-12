@@ -126,7 +126,6 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         judgesToVote: data.judges_to_vote,
         autoRefreshMin: data.autorefresh_minutes,
         catClassification: data.category_class_type,
-        license: data.license,
         visibleJudges: data.visible_judges,
         visibleParticipants: data.visible_participants,
         visibleSchedule: data.visible_schedule,

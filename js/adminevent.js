@@ -275,45 +275,6 @@ async function loadEventData(eventId) {
     if (f('visible_statistics')) f('visible_statistics').checked = data.visible_statistics == 1;
     if (f('notice_active')) f('notice_active').checked = data.notice_active == 1;
 
-    const licenseInfo = document.getElementById("licenseInfo");
-    if (licenseInfo) {
-      const licenseDetails = {
-        small: {
-          icon: "bi-person",
-          name: "Small",
-          text: t('license_small_text')
-        },
-        medium: {
-          icon: "bi-people",
-          name: "Medium",
-          text: t('license_medium_text')
-        },
-        large: {
-          icon: "bi-people-fill",
-          name: "Large",
-          text: t('license_large_text')
-        },
-        unlimited: {
-          icon: "bi-stars",
-          name: "Unlimited",
-          text: t('license_unlimited_text')
-        }
-      };
-
-      const license = licenseDetails[data.license];
-      if (license) {
-        licenseInfo.innerHTML = `
-          <span class="badge bg-warning text-dark px-3 py-2 fs-6">
-            <i class="bi ${license.icon} me-1"></i>
-            <span data-i18n="license">${t('license')}</span> <strong>${license.name}</strong> — 
-            <span data-i18n="license_${data.license}_text">${license.text}</span>
-          </span>
-
-        `;
-      } else {
-        licenseInfo.textContent = "Licencia desconocida";
-      }
-    }
 
     updateLogoPreview();
   } catch (err) {
