@@ -88,7 +88,7 @@
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-criteria-config-tab" data-bs-toggle="tab" data-bs-target="#tab-criteria-config" type="button"
-          role="tab" aria-controls="tab-criteria-config" aria-selected="false">Configuracion de Criterios</button>
+          role="tab" aria-controls="tab-criteria-config" aria-selected="false" data-i18n="tab_criteria_config">Configuración de criterios</button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-penalties-tab" data-bs-toggle="tab" data-bs-target="#tab-penalties" type="button"
@@ -202,19 +202,19 @@
           <div class="col-12 col-lg-4">
             <div class="card shadow-sm bg-light">
               <div class="card-body">
-                <h5 class="card-title mb-3">Nueva configuracion</h5>
+                <h5 class="card-title mb-3" data-i18n="criteria_config_new_title">Nueva configuración</h5>
 
                 <div class="mb-3">
-                  <label class="form-label">Criterio</label>
+                  <label class="form-label" data-i18n="criteria_config_criteria_label">Criterio</label>
                   <select id="criteria-config-criteria" class="form-select"></select>
                 </div>
 
                 <div class="mb-3">
                   <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0">Categorias</label>
+                    <label class="form-label mb-0" data-i18n="criteria_config_categories_label">Categorías</label>
                     <div class="btn-group btn-group-sm" role="group">
-                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-categories-all">Todas</button>
-                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-categories-none">Ninguna</button>
+                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-categories-all" data-i18n="criteria_config_all_feminine">Todas</button>
+                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-categories-none" data-i18n="criteria_config_none_feminine">Ninguna</button>
                     </div>
                   </div>
                   <div class="border rounded p-2 bg-white criteria-config-list">
@@ -224,10 +224,10 @@
 
                 <div class="mb-3">
                   <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0">Estilos</label>
+                    <label class="form-label mb-0" data-i18n="criteria_config_styles_label">Estilos</label>
                     <div class="btn-group btn-group-sm" role="group">
-                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-styles-all">Todos</button>
-                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-styles-none">Ninguno</button>
+                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-styles-all" data-i18n="criteria_config_all_masculine">Todos</button>
+                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-styles-none" data-i18n="criteria_config_none_masculine">Ninguno</button>
                     </div>
                   </div>
                   <div class="border rounded p-2 bg-white criteria-config-list">
@@ -236,11 +236,11 @@
                 </div>
 
                 <div class="mb-3" id="criteria-config-porcentage-field">
-                  <label class="form-label">Porcentaje</label>
-                  <input type="number" class="form-control" id="criteria-config-porcentage" min="0" max="100" step="0.01" placeholder="0-100">
+                  <label class="form-label" data-i18n="criteria_config_percentage_label">Porcentaje</label>
+                  <input type="number" class="form-control" id="criteria-config-porcentage" min="0" max="100" step="0.01" placeholder="0-100" data-i18n-placeholder="criteria_config_percentage_placeholder">
                 </div>
 
-                <button type="button" class="btn btn-primary w-100" id="criteria-config-add-btn">Crear combinaciones</button>
+                <button type="button" class="btn btn-primary w-100" id="criteria-config-add-btn" data-i18n="criteria_config_create_combinations">Crear combinaciones</button>
               </div>
             </div>
           </div>
@@ -249,32 +249,36 @@
             <div class="card shadow-sm bg-light">
               <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                  <h5 class="card-title mb-0">Configuraciones</h5>
+                  <h5 class="card-title mb-0" data-i18n="criteria_config_title">Configuraciones</h5>
                   <span id="count-criteria-config" class="badge bg-secondary rounded-pill">0</span>
                 </div>
                 <div class="row g-2 mb-3">
                   <div class="col-12 col-md-4">
-                    <label class="form-label small mb-1">Categoria</label>
+                    <label class="form-label small mb-1" data-i18n="criteria_config_category_label">Categoría</label>
                     <select id="criteria-config-filter-category" class="form-select form-select-sm"></select>
                   </div>
                   <div class="col-12 col-md-4">
-                    <label class="form-label small mb-1">Estilo</label>
+                    <label class="form-label small mb-1" data-i18n="criteria_config_style_label">Estilo</label>
                     <select id="criteria-config-filter-style" class="form-select form-select-sm"></select>
                   </div>
                   <div class="col-12 col-md-4">
-                    <label class="form-label small mb-1">Criterio</label>
+                    <label class="form-label small mb-1" data-i18n="criteria_config_criteria_label">Criterio</label>
                     <select id="criteria-config-filter-criteria" class="form-select form-select-sm"></select>
+                  </div>
+                  <div class="col-12">
+                    <button type="button" class="btn btn-outline-danger w-100" id="criteria-config-delete-filtered" data-i18n="criteria_config_delete_filtered" disabled>Borrar criterios filtrados</button>
                   </div>
                 </div>
                 <div class="table-responsive">
                   <table class="table table-hover align-middle">
                     <thead class="table">
                       <tr>
-                        <th>Categoria</th>
-                        <th>Estilo</th>
-                        <th>Criterio</th>
-                        <th id="criteria-config-porcentage-header">%</th>
-                        <th class="text-center">Acciones</th>
+                        <th data-i18n="criteria_config_category_label">Categoría</th>
+                        <th data-i18n="criteria_config_style_label">Estilo</th>
+                        <th id="criteria-config-total-header" data-i18n="criteria_config_total_percent">% total</th>
+                        <th data-i18n="criteria_config_criteria_label">Criterio</th>
+                        <th id="criteria-config-porcentage-header" data-i18n="criteria_config_percent">%</th>
+                        <th class="text-center" data-i18n="criteria_config_actions">Acciones</th>
                       </tr>
                     </thead>
                     <tbody id="criteria-config-table"></tbody>

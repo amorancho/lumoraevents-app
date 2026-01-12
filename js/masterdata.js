@@ -6,6 +6,7 @@ let categoriesList = [];
 let stylesList = [];
 let criteriaList = [];
 let criteriaConfigList = [];
+let filteredCriteriaConfigIds = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     validateRoles(allowedRoles);
@@ -262,6 +263,11 @@ function setupCriteriaConfigTab() {
     if (porcentageHeader) {
         porcentageHeader.classList.toggle('d-none', !showPorcentage);
     }
+    const totalHeader = document.getElementById('criteria-config-total-header');
+    if (totalHeader) {
+        totalHeader.classList.toggle('d-none', !showPorcentage);
+    }
+
 }
 
 function bindCriteriaConfigEvents() {
@@ -276,6 +282,20 @@ function bindCriteriaConfigEvents() {
     if (filterCategory) filterCategory.addEventListener('change', renderCriteriaConfigTable);
     if (filterStyle) filterStyle.addEventListener('change', renderCriteriaConfigTable);
     if (filterCriteria) filterCriteria.addEventListener('change', renderCriteriaConfigTable);
+
+    const deleteFilteredBtn = document.getElementById('criteria-config-delete-filtered');
+    if (deleteFilteredBtn) {
+        deleteFilteredBtn.addEventListener('click', async () => {
+            if (!filteredCriteriaConfigIds.length) return;
+            const count = filteredCriteriaConfigIds.length;
+            const confirmText = t('criteria_config_delete_many_confirm').replace('{count}', `<strong>${count}</strong>`);
+            const confirmed = await showModal(confirmText);
+            if (!confirmed) return;
+
+            await deleteCriteriaConfig(filteredCriteriaConfigIds);
+            await loadCriteriaConfig();
+        });
+    }
 
     const categoriesAll = document.getElementById('criteria-config-categories-all');
     const categoriesNone = document.getElementById('criteria-config-categories-none');
@@ -295,10 +315,10 @@ function bindCriteriaConfigEvents() {
 
             const id = deleteBtn.dataset.id;
             if (!id) return;
-            const confirmed = await showModal('Deseas eliminar esta configuracion?');
+            const confirmed = await showModal(t('criteria_config_delete_one_confirm'));
             if (!confirmed) return;
 
-            await deleteCriteriaConfig(id);
+            await deleteCriteriaConfig([id]);
             await loadCriteriaConfig();
         });
     }
@@ -330,7 +350,7 @@ function populateCriteriaConfigFilters() {
         filterCategory.innerHTML = '';
         const allOption = document.createElement('option');
         allOption.value = '';
-        allOption.textContent = 'Todas';
+        allOption.textContent = t('criteria_config_all_feminine');
         filterCategory.appendChild(allOption);
         categoriesList.forEach((item) => {
             const option = document.createElement('option');
@@ -344,7 +364,7 @@ function populateCriteriaConfigFilters() {
         filterStyle.innerHTML = '';
         const allOption = document.createElement('option');
         allOption.value = '';
-        allOption.textContent = 'Todos';
+        allOption.textContent = t('criteria_config_all_masculine');
         filterStyle.appendChild(allOption);
         stylesList.forEach((item) => {
             const option = document.createElement('option');
@@ -358,7 +378,7 @@ function populateCriteriaConfigFilters() {
         filterCriteria.innerHTML = '';
         const allOption = document.createElement('option');
         allOption.value = '';
-        allOption.textContent = 'Todos';
+        allOption.textContent = t('criteria_config_all_masculine');
         filterCriteria.appendChild(allOption);
         criteriaList.forEach((item) => {
             const option = document.createElement('option');
@@ -377,7 +397,7 @@ function renderCriteriaConfigCheckboxes(containerId, items, namePrefix) {
     if (!items.length) {
         const empty = document.createElement('div');
         empty.className = 'text-muted small';
-        empty.textContent = 'Sin datos';
+        empty.textContent = t('criteria_config_no_data');
         container.appendChild(empty);
         return;
     }
@@ -443,6 +463,7 @@ function renderCriteriaConfigTable() {
 
     const showPorcentage = getEvent().criteriaConfig === 'WITH_POR';
     const porcentageClass = showPorcentage ? '' : 'd-none';
+    const totalClass = showPorcentage ? '' : 'd-none';
 
     const categoryMap = new Map(categoriesList.map((item) => [String(item.id), item.name]));
     const styleMap = new Map(stylesList.map((item) => [String(item.id), item.name]));
@@ -455,27 +476,90 @@ function renderCriteriaConfigTable() {
         return categoryMatch && styleMatch && criteriaMatch;
     });
 
+    filteredCriteriaConfigIds = filteredList.map((item) => String(item.id));
+
+    const groups = [];
     filteredList.forEach((item) => {
-        const tr = document.createElement('tr');
+        const key = `${item.category_id}-${item.style_id}`;
+        let group = groups[groups.length - 1];
+        if (!group || group.key !== key) {
+            group = { key, items: [] };
+            groups.push(group);
+        }
+        group.items.push(item);
+    });
 
-        const categoryName = item.category_name || categoryMap.get(String(item.category_id)) || `#${item.category_id}`;
-        const styleName = item.style_name || styleMap.get(String(item.style_id)) || `#${item.style_id}`;
-        const criteriaName = item.criteria_name || criteriaMap.get(String(item.criteria_id)) || `#${item.criteria_id}`;
-        const porcentageVal = item.porcentage ?? item.percentage ?? '';
+    groups.forEach((group) => {
+        const total = group.items.reduce((sum, item) => {
+            const rawValue = item.porcentage ?? item.percentage ?? 0;
+            const value = Number(rawValue);
+            return sum + (Number.isFinite(value) ? value : 0);
+        }, 0);
+        const totalText = showPorcentage ? formatPercentage(total) : '';
+        const totalRounded = Math.round(total * 100) / 100;
+        let totalBadgeClass = 'badge bg-secondary';
+        if (showPorcentage) {
+            if (totalRounded === 100) {
+                totalBadgeClass = 'badge bg-success';
+            } else if (totalRounded < 100) {
+                totalBadgeClass = 'badge bg-warning text-dark';
+            } else {
+                totalBadgeClass = 'badge bg-danger';
+            }
+        }
 
-        tr.innerHTML = `
-            <td>${categoryName}</td>
-            <td>${styleName}</td>
-            <td>${criteriaName}</td>
-            <td class="${porcentageClass}">${showPorcentage ? porcentageVal : ''}</td>
-            <td class="text-center">
-                <button type="button" class="btn btn-link text-danger p-0 btn-delete-criteria-config" data-id="${item.id}">
-                    <i class="bi bi-trash"></i>
-                </button>
-            </td>
-        `;
+        group.items.forEach((item, index) => {
+            const tr = document.createElement('tr');
 
-        tableBody.appendChild(tr);
+            const categoryName = item.category_name || categoryMap.get(String(item.category_id)) || `#${item.category_id}`;
+            const styleName = item.style_name || styleMap.get(String(item.style_id)) || `#${item.style_id}`;
+            const criteriaName = item.criteria_name || criteriaMap.get(String(item.criteria_id)) || `#${item.criteria_id}`;
+            const porcentageVal = item.porcentage ?? item.percentage ?? '';
+
+            if (index === 0) {
+                const categoryCell = document.createElement('td');
+                categoryCell.rowSpan = group.items.length;
+                categoryCell.textContent = categoryName;
+                tr.appendChild(categoryCell);
+
+                const styleCell = document.createElement('td');
+                styleCell.rowSpan = group.items.length;
+                styleCell.textContent = styleName;
+                tr.appendChild(styleCell);
+
+                const totalCell = document.createElement('td');
+                totalCell.rowSpan = group.items.length;
+                totalCell.className = totalClass;
+                if (showPorcentage) {
+                    const badge = document.createElement('span');
+                    badge.className = totalBadgeClass;
+                    badge.textContent = totalText;
+                    totalCell.appendChild(badge);
+                }
+                tr.appendChild(totalCell);
+            }
+
+            const criteriaCell = document.createElement('td');
+            criteriaCell.textContent = criteriaName;
+            tr.appendChild(criteriaCell);
+
+            const porcentageCell = document.createElement('td');
+            porcentageCell.className = porcentageClass;
+            porcentageCell.textContent = showPorcentage ? porcentageVal : '';
+            tr.appendChild(porcentageCell);
+
+            const actionsCell = document.createElement('td');
+            actionsCell.className = 'text-center';
+            const deleteBtn = document.createElement('button');
+            deleteBtn.type = 'button';
+            deleteBtn.className = 'btn btn-link text-danger p-0 btn-delete-criteria-config';
+            deleteBtn.dataset.id = item.id;
+            deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+            actionsCell.appendChild(deleteBtn);
+            tr.appendChild(actionsCell);
+
+            tableBody.appendChild(tr);
+        });
     });
 
     const countEl = document.getElementById('count-criteria-config');
@@ -485,6 +569,20 @@ function renderCriteriaConfigTable() {
             ? `${filteredList.length} / ${criteriaConfigList.length}`
             : `${criteriaConfigList.length}`;
     }
+
+    const deleteFilteredBtn = document.getElementById('criteria-config-delete-filtered');
+    if (deleteFilteredBtn) {
+        const hasFilters = Boolean(selectedCategory || selectedStyle || selectedCriteria);
+        deleteFilteredBtn.disabled = !hasFilters || filteredList.length === 0;
+    }
+
+}
+
+function formatPercentage(value) {
+    if (!Number.isFinite(value)) return '-';
+    const rounded = Math.round(value * 100) / 100;
+    const display = Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2);
+    return `${display}%`;
 }
 
 async function addCriteriaConfig() {
@@ -493,7 +591,7 @@ async function addCriteriaConfig() {
 
     const criteriaId = Number(criteriaSelect.value);
     if (!criteriaId) {
-        showMessageModal('Selecciona un criterio.', 'Error');
+        showMessageModal(t('criteria_config_select_criteria_error'), t('error'));
         return;
     }
 
@@ -501,7 +599,7 @@ async function addCriteriaConfig() {
     const styles = getCriteriaConfigCheckedValues('criteria-config-styles');
 
     if (!categories.length || !styles.length) {
-        showMessageModal('Selecciona al menos una categoria y un estilo.', 'Error');
+        showMessageModal(t('criteria_config_select_category_style_error'), t('error'));
         return;
     }
 
@@ -511,12 +609,12 @@ async function addCriteriaConfig() {
         const input = document.getElementById('criteria-config-porcentage');
         const rawValue = input ? input.value.trim() : '';
         if (!rawValue) {
-            showMessageModal('Indica un porcentaje valido.', 'Error');
+            showMessageModal(t('criteria_config_percentage_invalid'), t('error'));
             return;
         }
         percentage = Number(rawValue);
         if (Number.isNaN(percentage) || percentage < 0 || percentage > 100) {
-            showMessageModal('Indica un porcentaje valido.', 'Error');
+            showMessageModal(t('criteria_config_percentage_invalid'), t('error'));
             return;
         }
     }
@@ -535,7 +633,7 @@ async function addCriteriaConfig() {
 
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            showMessageModal(data.error || 'Error saving criteria config', 'Error');
+            showMessageModal(data.error || t('criteria_config_save_error'), t('error'));
             return;
         }
 
@@ -549,19 +647,23 @@ async function addCriteriaConfig() {
         await loadCriteriaConfig();
     } catch (error) {
         console.error('Error saving criteria config:', error);
-        showMessageModal('Error saving criteria config', 'Error');
+        showMessageModal(t('criteria_config_save_error'), t('error'));
     }
 }
 
-async function deleteCriteriaConfig(id) {
+async function deleteCriteriaConfig(ids) {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/criteria/config/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${API_BASE_URL}/api/criteria/config`, {
+            method: 'DELETE',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ids.map(Number))
+        });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            showMessageModal(data.error || 'Error deleting criteria config', 'Error');
+            showMessageModal(data.error || t('criteria_config_delete_error'), t('error'));
         }
     } catch (error) {
         console.error('Error deleting criteria config:', error);
-        showMessageModal('Error deleting criteria config', 'Error');
+        showMessageModal(t('criteria_config_delete_error'), t('error'));
     }
 }
