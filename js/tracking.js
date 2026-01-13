@@ -71,7 +71,7 @@ function renderCompetitions(competitions) {
   container.innerHTML = '';
 
   let btnDisabled = '';
-  if (getEvent().status === 'completed') {
+  if (getEvent().status === 'finished') {
     btnDisabled = 'disabled';
   }
 

@@ -25,8 +25,8 @@ function generateHeader(callback) {
         infoBadge.textContent = 'TRIAL EVENT';
       }
 
-      if (infoBadge && getEvent().status === 'completed' ) {
-        infoBadge.textContent = 'CLOSED EVENT';
+      if (infoBadge && getEvent().status === 'finished' ) {
+        infoBadge.textContent = 'FINISHED EVENT';
       }
 
       // Insertar el HTML modificado en el DOM final

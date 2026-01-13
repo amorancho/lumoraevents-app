@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const closedPanel = document.getElementById('closedPanel');
 
-  if (getEvent().status == 'completed') {
+  if (getEvent().status == 'finished') {
       closedPanel.style.display = 'block';
 
       // deshabilitar inputs y botones
@@ -92,7 +92,7 @@ function loadCompetitions() {
     const isClosed = comp.status === 'CLO';
 
     let btnDisabled = '';
-    if (getEvent().status === 'completed') {
+    if (getEvent().status === 'finished') {
       btnDisabled = 'disabled';
     }
 

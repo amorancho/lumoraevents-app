@@ -103,14 +103,14 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
 
       let status;
 
-      if (data.status === 'CLO') {
-        status = 'completed';
+      if (data.status === 'FIN') {
+        status = 'finished';
       } else if (start > today) {
         status = 'upcoming';
       } else if (start <= today && end >= today) {
         status = 'ongoing';
       } else {
-        status = 'completed';
+        status = 'ongoing';
       }
 
       eventObj = {

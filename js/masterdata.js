@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         alertPanel.style.display = 'block';
     }
 
-    if (getEvent().status == 'completed') {
+    if (getEvent().status == 'finished') {
         closedPanel.style.display = 'block';
 
         // deshabilitar inputs y botones
@@ -112,7 +112,7 @@ function renderTable(table, fullData) {
         const leftDiv = document.createElement("div");
         leftDiv.className = "d-flex align-items-center gap-2";
 
-        if ((getEvent().status !== 'completed') && (table !== 'clubs')) {
+        if ((getEvent().status !== 'finished') && (table !== 'clubs')) {
 
             const dragHandle = document.createElement("i");
             dragHandle.className = "bi bi-grip-vertical text-muted drag-handle";
@@ -128,7 +128,7 @@ function renderTable(table, fullData) {
 
         li.appendChild(leftDiv);
 
-        if (getEvent().status !== 'completed') {
+        if (getEvent().status !== 'finished') {
 
             // botón eliminar
             const btn = document.createElement("button");

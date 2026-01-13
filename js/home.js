@@ -69,28 +69,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             configCol.classList.remove("d-none");
         }
 
-        // Voting card solo para admin + judge
-        
-        if (votingCol && (!user || !["admin", "judge"].includes(user.role) || ( user.role === "judge" && getEvent().status === 'completed') || (getEvent().visibleJudges == 0) )) {
+        if (votingCol && (!user || !["admin", "judge"].includes(user.role) || ( user.role === "judge" && getEvent().status === 'finished') || (getEvent().visibleJudges == 0) )) {
             votingCol.remove();
         } else {
             votingCol.classList.remove("d-none");
         }
-
         
         if (getEvent().visibleParticipants == 0) {
             participantsCol.remove();
         } else {
             participantsCol.classList.remove("d-none");
         }
-
         
         if (getEvent().visibleSchedule == 0) {
             scheduleCol.remove();
         } else {
             scheduleCol.classList.remove("d-none");
         }
-
         
         if (getEvent().visibleResults == 0) {
             resultsCol.remove();
@@ -104,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             statisticsCol.classList.remove("d-none");
         }
 
-        if ((getEvent().hasRegistration == 0) || (new Date() < new Date(getEvent().registrationStart)) || (new Date() > new Date(getEvent().registrationEnd)) ) {
+        if ((getEvent().hasRegistration == 0) || getEvent().status !== 'upcoming' || (new Date() < new Date(getEvent().registrationStart)) || (new Date() > new Date(getEvent().registrationEnd)) ) {
             registrationCol.remove();
         } else {
             registrationCol.classList.remove("d-none");

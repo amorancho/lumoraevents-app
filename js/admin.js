@@ -369,21 +369,21 @@ function openEditEventModal(eventObj) {
   document.getElementById('eventId').value = eventObj.id;
 
   // Poblamos campos
-  document.getElementById('code').value = eventObj.code || '';
-  document.getElementById('name').value = eventObj.name || '';
-  document.getElementById('language').value = eventObj.language || 'es';
-  document.getElementById('status').value = eventObj.status || 'OPE';
+  document.getElementById('code').value = eventObj.code;
+  document.getElementById('name').value = eventObj.name;
+  document.getElementById('language').value = eventObj.language;
+  document.getElementById('status').value = eventObj.status;
   document.getElementById('start').value = eventObj.start.slice(0, 10) || '';
   document.getElementById('end').value = eventObj.end.slice(0, 10) || '';
-  document.getElementById('password').value = eventObj.password || '';
-  document.getElementById('eventurl').value = eventObj.eventurl || '';
-  document.getElementById('eventlogo').value = eventObj.eventlogo || '';
-  document.getElementById('min_styles').value = eventObj.min_styles || '';
-  document.getElementById('autorefresh_minutes').value = eventObj.autorefresh_minutes || '';
-  document.getElementById('judges_to_vote').value = eventObj.judges_to_vote || '';
-  document.getElementById('category_class_type').value = eventObj.category_class_type || '';
+  document.getElementById('password').value = eventObj.password;
+  document.getElementById('eventurl').value = eventObj.eventurl;
+  document.getElementById('eventlogo').value = eventObj.eventlogo;
+  document.getElementById('min_styles').value = eventObj.min_styles;
+  document.getElementById('autorefresh_minutes').value = eventObj.autorefresh_minutes;
+  document.getElementById('judges_to_vote').value = eventObj.judges_to_vote;
+  document.getElementById('category_class_type').value = eventObj.category_class_type;
   document.getElementById('score_type').value = eventObj.score_type;
-  document.getElementById('criteria_config').value = eventObj.criteria_config || 'NO_CONFIG';
+  document.getElementById('criteria_config').value = eventObj.criteria_config;
 
   // switches -> convertir 1/0 a checkbox
   document.getElementById('visible').checked = (Number(eventObj.visible) === 1);
