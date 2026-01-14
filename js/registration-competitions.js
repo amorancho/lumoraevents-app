@@ -477,6 +477,7 @@
 
     if (!selectedMembers.length) {
       if (elements.membersEmpty) elements.membersEmpty.classList.remove('d-none');
+      updateMemberControls();
       return;
     }
 
