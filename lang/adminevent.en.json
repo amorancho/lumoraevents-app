@@ -35,5 +35,19 @@
   "notice_active": "Active",
   "notice_type_info": "Info",
   "notice_type_important": "Important",
-  "qr_tooltip": "Show the event QR to share the link"
+  "qr_tooltip": "Show the event QR to share the link",
+  "registration_config_title": "Registration Settings",
+  "registration_start_label": "Registration start",
+  "registration_end_label": "Registration end",
+  "event_status_finish_btn": "Mark event as finished",
+  "event_status_open_btn": "Open Event",
+  "event_status_modal_title_finish": "Finish event",
+  "event_status_modal_title_open": "Open event",
+  "event_status_modal_msg_finish": "Are you sure you want to mark this event as finished?",
+  "event_status_modal_msg_open": "Are you sure you want to open this event?",
+  "event_status_modal_cancel": "Cancel",
+  "event_status_modal_confirm": "Confirm",
+  "event_status_success_open": "Event opened successfully",
+  "event_status_success_finish": "Event finished successfully",
+  "event_status_error_update": "Error updating event status"
 }

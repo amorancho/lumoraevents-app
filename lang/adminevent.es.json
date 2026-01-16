@@ -35,5 +35,19 @@
   "notice_active": "Aviso",
   "notice_type_info": "Info",
   "notice_type_important": "Importante",
-  "qr_tooltip": "Muestra el QR del evento para compartir el enlace"
+  "qr_tooltip": "Muestra el QR del evento para compartir el enlace",
+  "registration_config_title": "Configuracion de Inscripciones",
+  "registration_start_label": "Inicio inscripciones",
+  "registration_end_label": "Fin inscripciones",
+  "event_status_finish_btn": "Marcar evento como finalizado",
+  "event_status_open_btn": "Abrir Evento",
+  "event_status_modal_title_finish": "Finalizar evento",
+  "event_status_modal_title_open": "Abrir evento",
+  "event_status_modal_msg_finish": "Seguro que quieres marcar este evento como finalizado?",
+  "event_status_modal_msg_open": "Seguro que quieres abrir este evento?",
+  "event_status_modal_cancel": "Cancelar",
+  "event_status_modal_confirm": "Confirmar",
+  "event_status_success_open": "Evento abierto correctamente",
+  "event_status_success_finish": "Evento finalizado correctamente",
+  "event_status_error_update": "Error actualizando el estado del evento"
 }

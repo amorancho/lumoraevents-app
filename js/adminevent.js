@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initQrModal();
   initExportEventModal();
+  initStatusToggleModal();
   //initTooltips();
 
   const toggleVisible = document.getElementById('visible');
@@ -78,8 +79,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Ejecutar cada vez que cambie el select
   categorySelect.addEventListener('change', updateMinStylesState);
 
-  
+
 });
+
+let currentEventStatus = null;
 
 function initExportEventModal() {
   const exportBtn = document.getElementById('exportEventBtn');
@@ -129,6 +132,75 @@ function initExportEventModal() {
       confirmBtn.disabled = false;
     }
   });
+}
+
+function initStatusToggleModal() {
+  const toggleBtn = document.getElementById('toggleEventStatusBtn');
+  const modalEl = document.getElementById('eventStatusModal');
+  const confirmBtn = document.getElementById('eventStatusConfirmBtn');
+  const titleEl = document.getElementById('eventStatusModalTitle');
+  const messageEl = document.getElementById('eventStatusModalMessage');
+
+  if (!toggleBtn || !modalEl || !confirmBtn || !titleEl || !messageEl) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+
+  toggleBtn.addEventListener('click', () => {
+    if (!currentEventStatus) return;
+
+    const isFinished = currentEventStatus === 'FIN';
+    titleEl.textContent = isFinished
+      ? t('event_status_modal_title_open', 'Abrir evento')
+      : t('event_status_modal_title_finish', 'Finalizar evento');
+    messageEl.textContent = isFinished
+      ? t('event_status_modal_msg_open', 'Seguro que quieres abrir este evento?')
+      : t('event_status_modal_msg_finish', 'Seguro que quieres marcar este evento como finalizado?');
+
+    modal.show();
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    if (!currentEventStatus) return;
+
+    const isFinished = currentEventStatus === 'FIN';
+    const endpoint = isFinished ? 'open' : 'finish';
+
+    confirmBtn.disabled = true;
+    toggleBtn.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}/${endpoint}`, {
+        method: 'POST'
+      });
+      if (!res.ok) throw new Error('Error updating event status');
+
+      currentEventStatus = isFinished ? 'OPE' : 'FIN';
+      updateEventStatusUI(currentEventStatus);
+      modal.hide();
+      showAlert('success', isFinished
+        ? t('event_status_success_open', 'Evento abierto correctamente')
+        : t('event_status_success_finish', 'Evento finalizado correctamente'));
+    } catch (err) {
+      console.error('Error updating event status:', err);
+      showMessageModal(t('event_status_error_update', 'Error actualizando el estado del evento'), 'Error');
+    } finally {
+      confirmBtn.disabled = false;
+      toggleBtn.disabled = false;
+    }
+  });
+}
+
+function updateEventStatusUI(status) {
+  const toggleBtn = document.getElementById('toggleEventStatusBtn');
+  const statusSelect = document.getElementById('status');
+
+  if (statusSelect) statusSelect.value = status;
+
+  if (toggleBtn) {
+    toggleBtn.textContent = status === 'FIN'
+      ? t('event_status_open_btn', 'Abrir Evento')
+      : t('event_status_finish_btn', 'Marcar evento como finalizado');
+  }
 }
 
 function setButtonLoading(button, isLoading, loadingText = 'Loading...') {
@@ -251,7 +323,7 @@ async function loadEventData(eventId) {
 
     const f = id => document.getElementById(id);
 
-    const dateFields = ['start', 'end'];
+    const dateFields = ['start', 'end', 'registration_start', 'registration_end'];
 
     for (let key in data) {
       const input = f(key);
@@ -275,6 +347,13 @@ async function loadEventData(eventId) {
     if (f('visible_statistics')) f('visible_statistics').checked = data.visible_statistics == 1;
     if (f('notice_active')) f('notice_active').checked = data.notice_active == 1;
 
+    const registrationSection = f('registrationConfigSection');
+    if (registrationSection) {
+      registrationSection.classList.toggle('d-none', data.has_registrations != 1);
+    }
+
+    currentEventStatus = data.status;
+    updateEventStatusUI(currentEventStatus);
 
     updateLogoPreview();
   } catch (err) {
@@ -303,7 +382,9 @@ async function saveEventData(eventId) {
     visible_statistics: f('visible_statistics').checked ? 1 : 0,
     notice_text: f('notice_text').value.trim(),
     notice_active: f('notice_active').checked ? 1 : 0,
-    notice_type: f('notice_type').value
+    notice_type: f('notice_type').value,
+    registration_start: f('registration_start').value || null,
+    registration_end: f('registration_end').value || null
   };
 
   try {

@@ -35,5 +35,19 @@
   "notice_active": "Actif",
   "notice_type_info": "Info",
   "notice_type_important": "Important",
-  "qr_tooltip": "Afficher le QR de l'evenement pour partager le lien"
+  "qr_tooltip": "Afficher le QR de l'evenement pour partager le lien",
+  "registration_config_title": "Configuration des inscriptions",
+  "registration_start_label": "Debut des inscriptions",
+  "registration_end_label": "Fin des inscriptions",
+  "event_status_finish_btn": "Marquer l'evenement comme termine",
+  "event_status_open_btn": "Ouvrir l'evenement",
+  "event_status_modal_title_finish": "Terminer l'evenement",
+  "event_status_modal_title_open": "Ouvrir l'evenement",
+  "event_status_modal_msg_finish": "Etes-vous sur de vouloir marquer cet evenement comme termine?",
+  "event_status_modal_msg_open": "Etes-vous sur de vouloir ouvrir cet evenement?",
+  "event_status_modal_cancel": "Annuler",
+  "event_status_modal_confirm": "Confirmer",
+  "event_status_success_open": "Evenement ouvert avec succes",
+  "event_status_success_finish": "Evenement termine avec succes",
+  "event_status_error_update": "Erreur lors de la mise a jour du statut de l'evenement"
 }

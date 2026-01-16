@@ -146,7 +146,11 @@ function renderTable(table, fullData) {
                             showMessageModal(data.error || 'Unknown error', t('error_deleting'));
                             return;
                         }
-                        loadTable(table);
+                        if (shouldReloadCriteriaConfig(table)) {
+                            await loadAll();
+                        } else {
+                            await loadTable(table);
+                        }
                     } catch (error) {
                         console.error('Unexpected error:', error);
                         showMessageModal(`Unexpected error: ${error.message}`, 'Error');
@@ -184,13 +188,21 @@ async function addEntry(table) {
                 return;
             }
             input.value = "";
-            loadTable(table);
+            if (shouldReloadCriteriaConfig(table)) {
+                await loadAll();
+            } else {
+                await loadTable(table);
+            }
         } catch (error) {
             console.error("Error en addEntry:", error);
         } finally {
             input.focus();
         }
     }
+}
+
+function shouldReloadCriteriaConfig(table) {
+    return ['categories', 'styles', 'criteria'].includes(table);
 }
 
 function showModal(message) {
