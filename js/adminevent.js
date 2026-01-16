@@ -140,8 +140,9 @@ function initStatusToggleModal() {
   const confirmBtn = document.getElementById('eventStatusConfirmBtn');
   const titleEl = document.getElementById('eventStatusModalTitle');
   const messageEl = document.getElementById('eventStatusModalMessage');
+  const detailsEl = document.getElementById('eventStatusModalDetails');
 
-  if (!toggleBtn || !modalEl || !confirmBtn || !titleEl || !messageEl) return;
+  if (!toggleBtn || !modalEl || !confirmBtn || !titleEl || !messageEl || !detailsEl) return;
 
   const modal = new bootstrap.Modal(modalEl);
 
@@ -155,6 +156,23 @@ function initStatusToggleModal() {
     messageEl.textContent = isFinished
       ? t('event_status_modal_msg_open', 'Seguro que quieres abrir este evento?')
       : t('event_status_modal_msg_finish', 'Seguro que quieres marcar este evento como finalizado?');
+    if (!isFinished) {
+      const details = [
+        t('event_status_finish_detail_1', 'Ya no se podran realizar votaciones por parte de los jueces'),
+        t('event_status_finish_detail_2', 'No se podran modificar datos maestros, jueces, bailarinas y competiciones'),
+        t('event_status_finish_detail_3', 'Se enviara un email a las bailarinas con su codigo de acceso para las estadisticas'),
+        t('event_status_finish_detail_4', 'Si ha habido registro de inscripciones por parte de escuelas, todos los audios subidos a la plataforma se eliminaran de manera permanente')
+      ];
+      const listItems = details.map((item) => `<li>${item}</li>`).join('');
+      detailsEl.innerHTML = `
+        <div class="fw-semibold mb-1">${t('event_status_finish_info_title', 'Al marcar el evento como finalizado:')}</div>
+        <ul class="mb-0 ps-3">${listItems}</ul>
+      `;
+      detailsEl.classList.remove('d-none');
+    } else {
+      detailsEl.classList.add('d-none');
+      detailsEl.innerHTML = '';
+    }
 
     modal.show();
   });

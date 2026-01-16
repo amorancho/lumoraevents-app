@@ -49,5 +49,10 @@
   "event_status_modal_confirm": "Confirm",
   "event_status_success_open": "Event opened successfully",
   "event_status_success_finish": "Event finished successfully",
-  "event_status_error_update": "Error updating event status"
+  "event_status_error_update": "Error updating event status",
+  "event_status_finish_info_title": "By marking the event as finished:",
+  "event_status_finish_detail_1": "Judges will no longer be able to submit votes",
+  "event_status_finish_detail_2": "Master data, judges, dancers, and competitions can no longer be modified",
+  "event_status_finish_detail_3": "An email will be sent to the dancers with their access code for statistics",
+  "event_status_finish_detail_4": "If schools registered inscriptions, all audio files uploaded to the platform will be permanently deleted"
 }

@@ -49,5 +49,10 @@
   "event_status_modal_confirm": "Confirmer",
   "event_status_success_open": "Evenement ouvert avec succes",
   "event_status_success_finish": "Evenement termine avec succes",
-  "event_status_error_update": "Erreur lors de la mise a jour du statut de l'evenement"
+  "event_status_error_update": "Erreur lors de la mise a jour du statut de l'evenement",
+  "event_status_finish_info_title": "En marquant l'evenement comme termine:",
+  "event_status_finish_detail_1": "Les juges ne pourront plus voter",
+  "event_status_finish_detail_2": "Les donnees maitres, juges, danseuses et competitions ne pourront plus etre modifies",
+  "event_status_finish_detail_3": "Un email sera envoye aux danseuses avec leur code d'acces pour les statistiques",
+  "event_status_finish_detail_4": "Si des ecoles ont enregistre des inscriptions, tous les audios televerses sur la plateforme seront supprimes definitivement"
 }

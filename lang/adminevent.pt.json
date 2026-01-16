@@ -49,5 +49,10 @@
   "event_status_modal_confirm": "Confirmar",
   "event_status_success_open": "Evento aberto com sucesso",
   "event_status_success_finish": "Evento finalizado com sucesso",
-  "event_status_error_update": "Erro ao atualizar o status do evento"
+  "event_status_error_update": "Erro ao atualizar o status do evento",
+  "event_status_finish_info_title": "Ao marcar o evento como finalizado:",
+  "event_status_finish_detail_1": "Os jurados nao poderao mais votar",
+  "event_status_finish_detail_2": "Dados mestres, jurados, bailarinas e competicoes nao poderao mais ser modificados",
+  "event_status_finish_detail_3": "Sera enviado um email as bailarinas com o codigo de acesso para as estatisticas",
+  "event_status_finish_detail_4": "Se houve registro de inscricoes por parte das escolas, todos os audios enviados para a plataforma serao removidos permanentemente"
 }
