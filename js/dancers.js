@@ -62,6 +62,20 @@ document.addEventListener('DOMContentLoaded', function () {
   const filterCategory = document.getElementById('categoryFilter');
   const filterClub = document.getElementById('clubFilter');
   const table = document.getElementById('dancersTable');
+  const codeLabel = document.getElementById('dancerCodeLabel');
+  const currentUser = getUserFromToken();
+  const isAdmin = currentUser && currentUser.role === 'admin';
+
+  const setCodeLabel = (value, forceShow = false) => {
+    if (!codeLabel) return;
+    if (!isAdmin || (!value && !forceShow)) {
+      codeLabel.textContent = '';
+      codeLabel.classList.add('d-none');
+      return;
+    }
+    codeLabel.textContent = `Code: ${value || '-'}`;
+    codeLabel.classList.remove('d-none');
+  };
 
   filterCategory.addEventListener('change', () => {
     applyFilter();
@@ -84,6 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('nationality').tomselect.setValue('');
     document.getElementById('editClub').selectedIndex = 0;
     document.getElementById('editStyles').selectedIndex = -1; // Deseleccionar todos los estilos
+    setCodeLabel('', false);
     
 
     // Cambiar el título del modal si lo deseas
@@ -119,6 +134,8 @@ document.addEventListener('DOMContentLoaded', function () {
       Array.from(stylesOptions).forEach(opt => {
         opt.selected = dancer.styles.some(style => style.id == opt.value);
       });
+
+      setCodeLabel(dancer.code, true);
 
       document.querySelector('#editModal .modal-title span').textContent = t('edit_dancer');
 

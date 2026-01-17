@@ -32,7 +32,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateElementProperty('scheduleUrl', 'href', `?eventId=${eventId}`, false);
     updateElementProperty('resultsUrl', 'href', `?eventId=${eventId}`, false);
     updateElementProperty('statisticsUrl', 'href', `?eventId=${eventId}`, false);
-    updateElementProperty('registrationUrl', 'href', `?eventId=${eventId}`, false);
 
     const principalContainer = document.getElementById('principalContainer');
     const hiddenMessage = document.getElementById('eventHiddenMessage');
@@ -46,6 +45,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const registrationCol = document.getElementById("col-registrationUrl");
 
     const user = getUserFromToken();
+
+    if (user && (user.role === 'admin' || ((user.role === 'organizer' || user.role === 'school') && user.eventId === eventId))) {
+        updateElementProperty('registrationUrl', 'href', `registration.html?eventId=${encodeURIComponent(eventId)}`);
+    } else {
+        updateElementProperty('registrationUrl', 'href', `registrationhome.html?eventId=${encodeURIComponent(eventId)}`);
+    }
 
     if (validateRoles(allowedRoles, false)) {
 

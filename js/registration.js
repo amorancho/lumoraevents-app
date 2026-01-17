@@ -300,6 +300,7 @@ function initParticipantsTab(role) {
   const filterClear = document.getElementById('participantsFilterClear');
   const modalEl = document.getElementById('participantModal');
   const deleteModalEl = document.getElementById('deleteParticipantModal');
+  const duplicateModalEl = document.getElementById('duplicateParticipantModal');
 
   if (!tableBody || !modalEl || !deleteModalEl) {
     return;
@@ -317,8 +318,11 @@ function initParticipantsTab(role) {
     if (addBtn) addBtn.classList.add('d-none');
     if (actionsHeader) actionsHeader.classList.add('d-none');
   }
-  if (!showSchoolColumn && filtersForm) {
-    filtersForm.classList.add('d-none');
+  if (!showSchoolColumn) {
+    if (filterSchool) {
+      const schoolGroup = filterSchool.closest('.col-12');
+      if (schoolGroup) schoolGroup.classList.add('d-none');
+    }
   }
   if (showSchoolColumn) {
     const headRow = tableBody.closest('table')?.querySelector('thead tr');
@@ -368,7 +372,10 @@ function initParticipantsTab(role) {
 
   const participantModal = new bootstrap.Modal(modalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
+  const duplicateModal = duplicateModalEl ? new bootstrap.Modal(duplicateModalEl) : null;
   let participantToDelete = null;
+  const duplicateMessageEl = document.getElementById('duplicateParticipantMessage');
+  const confirmDuplicateBtn = document.getElementById('confirmDuplicateParticipantBtn');
 
   const setCountryValue = (value) => {
     if (participantCountrySelect) {
@@ -571,15 +578,12 @@ function initParticipantsTab(role) {
   };
 
   const applyParticipantFilters = (participants) => {
-    if (!showSchoolColumn) {
-      return participants;
-    }
-    const schoolValue = filterSchool ? filterSchool.value : '';
+    const schoolValue = showSchoolColumn && filterSchool ? filterSchool.value : '';
     const nameValue = filterName ? filterName.value.trim().toLowerCase() : '';
 
     return participants.filter(participant => {
       const matchesName = !nameValue || (participant?.name || '').toLowerCase().includes(nameValue);
-      if (!schoolValue) {
+      if (!schoolValue || !showSchoolColumn) {
         return matchesName;
       }
       const participantSchoolId = participant?.school_id ?? participant?.school?.id;
@@ -587,6 +591,49 @@ function initParticipantsTab(role) {
       return matchesName && matchesSchool;
     });
   };
+
+  const findDuplicateParticipant = (payload) => {
+    const nameValue = payload?.name ? payload.name.trim().toLowerCase() : '';
+    const dobValue = payload?.date_of_birth || '';
+    if (!nameValue || !dobValue) return null;
+
+    return registrationState.participants.find(participant => {
+      const participantName = (participant?.name || '').trim().toLowerCase();
+      const participantDob = getDateOnlyValue(participant?.date_of_birth);
+      return participantName === nameValue && participantDob === dobValue;
+    }) || null;
+  };
+
+  const confirmDuplicateParticipant = (participant) => new Promise((resolve) => {
+    if (!duplicateModal || !duplicateModalEl) {
+      resolve(true);
+      return;
+    }
+
+    const dobValue = getDateOnlyValue(participant?.date_of_birth) || '-';
+    if (duplicateMessageEl) {
+      duplicateMessageEl.innerHTML = `Ya existe un participante con el mismo nombre y fecha de nacimiento: <strong>${participant?.name || '-'}</strong> (${dobValue}). ¿Es correcto?`;
+    }
+
+    let confirmed = false;
+    const onConfirm = () => {
+      confirmed = true;
+      duplicateModal.hide();
+    };
+    const onHidden = () => {
+      duplicateModalEl.removeEventListener('hidden.bs.modal', onHidden);
+      if (confirmDuplicateBtn) {
+        confirmDuplicateBtn.removeEventListener('click', onConfirm);
+      }
+      resolve(confirmed);
+    };
+
+    if (confirmDuplicateBtn) {
+      confirmDuplicateBtn.addEventListener('click', onConfirm);
+    }
+    duplicateModalEl.addEventListener('hidden.bs.modal', onHidden);
+    duplicateModal.show();
+  });
 
   const loadParticipantSchools = async () => {
     if (!showSchoolColumn || !filterSchool) {
@@ -649,6 +696,16 @@ function initParticipantsTab(role) {
     if (isEdit && !participantId) {
       showMessageModal(t('registration_participants_save_error', 'Error saving participant.'), t('error_title', 'Error'));
       return;
+    }
+
+    if (!isEdit) {
+      const duplicate = findDuplicateParticipant(payload);
+      if (duplicate) {
+        const shouldContinue = await confirmDuplicateParticipant(duplicate);
+        if (!shouldContinue) {
+          return;
+        }
+      }
     }
     const url = `${API_BASE_URL}/api/participants${isEdit ? `/${participantId}` : ''}`;
     const method = isEdit ? 'PUT' : 'POST';

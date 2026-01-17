@@ -244,7 +244,7 @@
     const maxDuration = normalizeNumber(category?.music_max_duration);
     audioState.maxDuration = maxDuration;
     if (elements.audioMax) {
-      elements.audioMax.textContent = maxDuration == null ? '-' : formatDuration(maxDuration);
+      elements.audioMax.textContent = maxDuration == null ? '-' : `${formatDuration(maxDuration)} (+10 sec extra)`;
     }
     validateAudioDuration();
   };

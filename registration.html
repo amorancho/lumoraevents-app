@@ -390,6 +390,24 @@
     </div>
   </div>
 
+  <div class="modal fade" id="duplicateParticipantModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Participante duplicado</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="duplicateParticipantMessage">Ya existe un participante con el mismo nombre y fecha de nacimiento. ¿Es correcto?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirmDuplicateParticipantBtn">Continuar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="registrationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
@@ -442,7 +460,7 @@
                 </div>
               </div>
               <div class="row g-2 mt-2">
-                <div class="col-12 col-md-6">
+                <div class="col-12 col-md-5">
                   <div class="text-muted small">Archivo</div>
                   <div id="registrationAudioName" class="fw-semibold">-</div>
                 </div>
@@ -454,7 +472,7 @@
                   <div class="text-muted small">Tamano</div>
                   <div id="registrationAudioSize" class="fw-semibold">-</div>
                 </div>
-                <div class="col-6 col-md-2">
+                <div class="col-6 col-md-3">
                   <div class="text-muted small">Maximo</div>
                   <div id="registrationAudioMax" class="fw-semibold">-</div>
                 </div>
