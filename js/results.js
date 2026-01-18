@@ -124,14 +124,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Detalle por juez
     if (Array.isArray(dancerData.votes) && dancerData.votes.length > 0) {
       dancerData.votes.forEach(vote => {
-        //const totalJudge = (vote.criteria || []).reduce((sum, c) => sum + (Number(c.score) || 0), 0);
+        const totalJudge = (vote.criteria || []).reduce((sum, c) => sum + (Number(c.score) || 0), 0);
 
         const judgeCard = document.createElement('div');
         judgeCard.className = 'card mb-3';
         judgeCard.innerHTML = `
           <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="mb-0 text-primary">${escapeHtml(vote.judge_name || 'Judge')}</h6>
-            <span class="badge bg-primary fs-6">Total: ${Number(vote.judge_total_score ?? vote.total_score ?? 0).toFixed(1)}</span>
+            <span class="badge bg-primary fs-6">Total: ${Number(vote.judge_total_score ?? vote.total_score ?? totalJudge).toFixed(1)}</span>
           </div>
           <div class="card-body">
             <div class="row">
