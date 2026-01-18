@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         judgeCard.innerHTML = `
           <div class="card-header d-flex justify-content-between align-items-center">
             <h6 class="mb-0 text-primary">${escapeHtml(vote.judge_name || 'Judge')}</h6>
-            <span class="badge bg-primary fs-6">Total: ${Number(vote.judge_total_score).toFixed(1)}</span>
+            <span class="badge bg-primary fs-6">Total: ${Number(vote.judge_total_score ?? vote.total_score ?? 0).toFixed(1)}</span>
           </div>
           <div class="card-body">
             <div class="row">
