@@ -378,7 +378,7 @@ function buildVotesDetailTable(styles, criteria, dancerId) {
         tr.appendChild(td);
       });
 
-      const judgeTotal = vote?.total_score ?? sumNumericScores(voteCriteria);
+      const judgeTotal = vote?.judge_total_score ?? sumNumericScores(voteCriteria);
       const tdTotal = document.createElement('td');
       tdTotal.className = 'text-center fw-semibold';
       tdTotal.innerHTML = renderTotalScore(judgeTotal);

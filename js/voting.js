@@ -1037,7 +1037,11 @@ function isScoreInRange(value, min = 1, max = 10) {
 
 function formatScoreForDisplay(value, scoreType) {
   if (typeof value !== 'number' || Number.isNaN(value)) return '';
-  const normalizedType = (scoreType || 'INT').toUpperCase();
+  
+  const eventData = typeof getEvent === 'function' ? getEvent() : null;
+  const criteriaConfig = eventData?.criteriaConfig;
+  const isWeighted = criteriaConfig === 'WITH_POR';
+  const normalizedType = (isWeighted ? 'DEC' : (scoreType || 'INT')).toUpperCase();
 
   switch (normalizedType) {
     case 'DEC':
