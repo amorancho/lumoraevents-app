@@ -96,12 +96,26 @@ function renderCompetitions(competitions) {
     } else {
       statusText = comp.status;
     }
+    const isFinished = comp.status === 'FIN';
+    const isOpen = comp.status === 'OPE';
+    const statusActionButton = !isFinished
+      ? `
+        <button type="button"
+          class="btn btn-outline-${isOpen ? 'warning' : 'success'} btn-sm btn-toggle-status ms-auto"
+          data-action="${isOpen ? 'close' : 'open'}"
+          data-comp-id="${comp.id}" ${btnDisabled}>
+          <i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'} me-1"></i>
+          ${isOpen ? t('close_competition') : t('open_competition')}
+        </button>
+      `
+      : '';
     // Card con info de competición
     const card = document.createElement('div');
     card.className = 'card mb-4';
     card.innerHTML = `
-      <div class="card-header text-center">
+      <div class="card-header d-flex align-items-center">
         <h5 class="mb-0">${comp.category_name} - ${comp.style_name}</h5>
+        ${statusActionButton}
       </div>
       <div class="card-body">
         <div class="row text-center">
@@ -273,6 +287,43 @@ function renderCompetitions(competitions) {
       hr.style.width = '200px';
       container.appendChild(hr);
     }
+  });
+
+  container.querySelectorAll('.btn-toggle-status').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+
+      const compId = btn.dataset.compId;
+      const action = btn.dataset.action;
+      if (!compId || !action) return;
+
+      btn.disabled = true;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/competitions/${compId}/changestatus`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_id: getEvent().id, action })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          showMessageModal(data.error || t('error_change_competition_status'), t('error_title'));
+          btn.disabled = false;
+          return;
+        }
+
+        await loadCompetitions(
+          document.getElementById('categorySelect').value,
+          document.getElementById('styleSelect').value
+        );
+      } catch (error) {
+        console.error('Error changing competition status:', error);
+        showMessageModal(t('error_change_competition_status'), t('error_title'));
+        btn.disabled = false;
+      }
+    });
   });
 }
 

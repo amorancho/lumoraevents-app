@@ -31,5 +31,9 @@
   "judge": "Judge",
   "dancer": "Dancer",
   "confirm_reset_1": "Are you sure you want to reset the vote of the judge",
-  "confirm_reset_2": "for the dancer"
+  "confirm_reset_2": "for the dancer",
+  "open_competition": "Open Competition",
+  "close_competition": "Close Competition",
+  "error_title": "Error",
+  "error_change_competition_status": "Error changing competition status."
 }
