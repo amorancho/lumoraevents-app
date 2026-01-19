@@ -251,6 +251,10 @@
                       <i class="bi bi-plus-circle me-2"></i>
                       <span data-i18n="registration_categories_add">Nueva categoria</span>
                     </button>
+                    <div class="d-flex align-items-center gap-2 ms-sm-auto">
+                      <span class="text-muted" data-i18n="registration_categories_total">Total categorias</span>
+                      <span class="badge bg-secondary" id="registrationCategoriesCount">0</span>
+                    </div>
                   </div>
 
                   <div class="table-responsive">
@@ -365,6 +369,7 @@
                           <th data-i18n="schools_table_representative">Representante</th>
                           <th class="text-center" data-i18n="schools_table_participants"># de participantes</th>
                           <th class="text-center" data-i18n="schools_table_choreos"># de choreos</th>
+                          <th class="text-center" data-i18n="schools_table_choreos_status">Estados de las coreos</th>
                           <th class="text-center" data-i18n="schools_table_actions">Acciones</th>
                         </tr>
                       </thead>
@@ -573,6 +578,16 @@
                   <option value=""></option>
                 </select>
                 <div class="form-text" id="categoryRuleInfo"></div>
+                <div id="registrationStatusWrapper" class="mt-3 d-none">
+                  <label class="form-label mb-1" data-i18n="registration_competitions_status_label">Estado</label>
+                  <div>
+                    <span id="registrationStatusBadge" class="badge bg-secondary fs-6">-</span>
+                  </div>
+                </div>
+                <div id="registrationRejectReasonWrapper" class="mt-3 d-none">
+                  <label class="form-label mb-1" data-i18n="registration_competitions_reject_reason_label">Motivo rechazo</label>
+                  <div id="registrationRejectReason" class="text-danger fw-semibold fs-6">-</div>
+                </div>
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationStyle" data-i18n="registration_competitions_style">Estilo</label>
@@ -619,6 +634,7 @@
               <div class="d-flex flex-column flex-md-row gap-2 mt-3">
                 <button type="button" class="btn btn-outline-danger" id="registrationAudioRemoveBtn" disabled>Eliminar musica</button>
                 <button type="button" class="btn btn-outline-primary" id="registrationAudioSaveBtn" disabled>Guardar audio</button>
+                <a class="btn btn-outline-primary d-none" id="registrationAudioDownloadBtn" href="#" download data-i18n="registration_audio_download">Descargar audio</a>
               </div>
             </div>
           </form>
@@ -755,6 +771,44 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-success" id="confirmRegistrationBtn" data-i18n="confirm">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="orgRegistrationValidateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="org_registrations_validate_title">Validar coreografia</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p data-i18n="org_registrations_validate_question">Seguro que deseas validar esta coreografia?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-success" id="confirmOrgRegistrationValidateBtn" data-i18n="confirm">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="orgRegistrationRejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="org_registrations_reject_title">Rechazar coreografia</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label for="orgRegistrationRejectReason" class="form-label" data-i18n="org_registrations_reject_label">Por favor, indique los motivos del rechazo.</label>
+          <textarea id="orgRegistrationRejectReason" class="form-control" rows="4" data-i18n-placeholder="org_registrations_reject_placeholder" placeholder="Motivos del rechazo"></textarea>
+          <div class="invalid-feedback" data-i18n="org_registrations_reject_error">Indica los motivos del rechazo.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmOrgRegistrationRejectBtn" data-i18n="org_registrations_reject_confirm">Rechazar</button>
         </div>
       </div>
     </div>
