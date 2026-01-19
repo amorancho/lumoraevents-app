@@ -68,7 +68,6 @@
   const confirmModal = new bootstrap.Modal(confirmModalEl);
 
   const registrationEndpoints = {
-    config: '/api/registrations/config',
     list: '/api/registrations/choreographies',
     registerChoreography: '/api/registrations/choreographies',
     registration: '/api/registrations/choreographies',
@@ -612,13 +611,9 @@
     });
   };
 
-  const loadRegistrationConfig = async () => {
-    if (registrationState.registrationConfig.categories.length || registrationState.registrationConfig.styles.length) {
-      categoryById = new Map(registrationState.registrationConfig.categories.map(item => [`${item.id}`, item]));
-      styleById = new Map(registrationState.registrationConfig.styles.map(item => [`${item.id}`, item]));
-      populateSelect(elements.category, registrationState.registrationConfig.categories);
-      populateSelect(elements.style, registrationState.registrationConfig.styles);
-      return;
+  const ensureRegistrationCategories = async () => {
+    if (registrationState.registrationCategories.length) {
+      return registrationState.registrationCategories;
     }
 
     const params = new URLSearchParams();
@@ -628,24 +623,69 @@
     }
 
     const url = params.toString()
-      ? `${API_BASE_URL}${registrationEndpoints.config}?${params.toString()}`
-      : `${API_BASE_URL}${registrationEndpoints.config}`;
+      ? `${API_BASE_URL}/api/registrations/categories?${params.toString()}`
+      : `${API_BASE_URL}/api/registrations/categories`;
 
     const res = await fetch(url);
     if (!res.ok) {
-      throw new Error(t('registration_competitions_load_error', 'Error loading registrations.'));
+      throw new Error(t('registration_categories_load_error', 'Error loading categories.'));
     }
 
     const data = await res.json();
-    const categories = Array.isArray(data?.categories) ? data.categories : [];
-    const styles = Array.isArray(data?.styles) ? data.styles : [];
+    const categories = Array.isArray(data)
+      ? data
+      : (Array.isArray(data?.categories) ? data.categories : []);
+    registrationState.registrationCategories = categories;
+    registrationState.registrationConfig.categories = categories;
+    return categories;
+  };
 
-    registrationState.registrationConfig = { categories, styles };
+  const ensureRegistrationStyles = async () => {
+    if (registrationState.registrationDisciplines.length) {
+      return registrationState.registrationDisciplines;
+    }
+
+    const params = new URLSearchParams();
+    const eventIdValue = getEventIdValue();
+    if (eventIdValue) {
+      params.set('event_id', eventIdValue);
+    }
+
+    const url = params.toString()
+      ? `${API_BASE_URL}/api/registrations/styles?${params.toString()}`
+      : `${API_BASE_URL}/api/registrations/styles`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(t('registration_disciplines_load_error', 'Error loading disciplines.'));
+    }
+
+    const data = await res.json();
+    const styles = Array.isArray(data)
+      ? data
+      : (Array.isArray(data?.styles) ? data.styles : (Array.isArray(data?.disciplines) ? data.disciplines : []));
+    registrationState.registrationDisciplines = styles;
+    registrationState.registrationConfig.styles = styles;
+    return styles;
+  };
+
+  const loadRegistrationConfig = async () => {
+    const categories = await ensureRegistrationCategories();
+    const styles = await ensureRegistrationStyles();
+    const orderedStyles = [...styles].sort((a, b) => (a.position ?? 9999) - (b.position ?? 9999));
+
+    registrationState.registrationConfig = { categories, styles: orderedStyles };
     categoryById = new Map(categories.map(item => [`${item.id}`, item]));
-    styleById = new Map(styles.map(item => [`${item.id}`, item]));
+    styleById = new Map(orderedStyles.map(item => [`${item.id}`, item]));
+
+    const selectedCategory = elements.category?.value || '';
+    const selectedStyle = elements.style?.value || '';
 
     populateSelect(elements.category, categories);
-    populateSelect(elements.style, styles);
+    populateSelect(elements.style, orderedStyles);
+
+    if (elements.category && selectedCategory) elements.category.value = selectedCategory;
+    if (elements.style && selectedStyle) elements.style.value = selectedStyle;
   };
   const normalizeMembers = (members) => {
     if (!Array.isArray(members)) return [];
@@ -1540,6 +1580,13 @@
   membersModalEl.addEventListener('hidden.bs.modal', () => {
     resetMembersState();
   });
+
+  const handleConfigUpdate = () => {
+    loadRegistrationConfig()
+      .then(renderRegistrations)
+      .catch(() => {});
+  };
+  window.addEventListener('registration:config-updated', handleConfigUpdate);
 
   Promise.resolve()
     .then(loadRegistrationConfig)

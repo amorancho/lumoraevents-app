@@ -48,6 +48,12 @@
               <button class="nav-link" id="org-registrations-tab" data-bs-toggle="tab" data-bs-target="#org-registrations" type="button" role="tab" aria-controls="org-registrations" aria-selected="false" data-i18n="registration_tab_org_registrations">Inscripciones</button>
             </li>
             <li class="nav-item" role="presentation">
+              <button class="nav-link" id="registration-categories-tab" data-bs-toggle="tab" data-bs-target="#registration-categories" type="button" role="tab" aria-controls="registration-categories" aria-selected="false" data-i18n="registration_tab_categories">Categorias</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="registration-disciplines-tab" data-bs-toggle="tab" data-bs-target="#registration-disciplines" type="button" role="tab" aria-controls="registration-disciplines" aria-selected="false" data-i18n="registration_tab_disciplines">Disciplinas</button>
+            </li>
+            <li class="nav-item" role="presentation">
               <button class="nav-link" id="competitions-tab" data-bs-toggle="tab" data-bs-target="#competitions" type="button" role="tab" aria-controls="competitions" aria-selected="false" data-i18n="registration_tab_competitions">Inscripciones en competiciones</button>
             </li>
           </ul>
@@ -237,6 +243,56 @@
                 </div>
               </div>
             </div>
+            <div class="tab-pane fade" id="registration-categories" role="tabpanel" aria-labelledby="registration-categories-tab">
+              <div class="card shadow-sm">
+                <div class="card-body p-4">
+                  <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
+                    <button type="button" class="btn btn-primary" id="registrationCategoryAddBtn">
+                      <i class="bi bi-plus-circle me-2"></i>
+                      <span data-i18n="registration_categories_add">Nueva categoria</span>
+                    </button>
+                  </div>
+
+                  <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                      <thead class="table-light">
+                        <tr>
+                          <th data-i18n="registration_categories_name">Nombre</th>
+                          <th class="text-center" data-i18n="registration_categories_min_par">Min. participantes</th>
+                          <th class="text-center" data-i18n="registration_categories_max_par">Max. participantes</th>
+                          <th class="text-center" data-i18n="registration_categories_min_years">Min. anos</th>
+                          <th class="text-center" data-i18n="registration_categories_max_years">Max. anos</th>
+                          <th class="text-center" data-i18n="registration_categories_music_max_duration">Duracion musica</th>
+                          <th class="text-center" data-i18n="registration_categories_actions">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody id="registrationCategoriesTable"></tbody>
+                    </table>
+                  </div>
+
+                  <div id="registrationCategoriesEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_categories_empty">
+                    No hay categorias disponibles.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="registration-disciplines" role="tabpanel" aria-labelledby="registration-disciplines-tab">
+              <div class="col-12 col-lg-6">
+                <div class="card shadow-sm bg-light">
+                  <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <h5 class="card-title mb-0" data-i18n="registration_disciplines_title">Disciplinas</h5>
+                      <span id="count-registration-disciplines" class="badge bg-secondary rounded-pill">0</span>
+                    </div>
+                    <div class="input-group mb-3 mt-4">
+                      <input type="text" id="input-registration-disciplines" class="form-control" placeholder="Nueva disciplina" data-i18n-placeholder="registration_disciplines_new_placeholder" maxlength="40" />
+                      <button class="btn btn-primary" id="registrationDisciplinesAddBtn" type="button" data-i18n="registration_disciplines_add">Nueva disciplina</button>
+                    </div>
+                    <ul class="list-group" id="list-registration-disciplines"></ul>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="tab-pane fade" id="competitions" role="tabpanel" aria-labelledby="competitions-tab">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
@@ -403,6 +459,88 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-primary" id="confirmDuplicateParticipantBtn">Continuar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="registrationCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="registrationCategoryModalTitle" data-i18n="registration_categories_modal_create">Nueva categoria</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="registrationCategoryForm" data-mode="create" novalidate>
+            <input type="hidden" id="registrationCategoryId">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="registrationCategoryName" data-i18n="registration_categories_field_name">Nombre</label>
+                <input type="text" class="form-control" id="registrationCategoryName" required>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="registrationCategoryMinPar" data-i18n="registration_categories_field_min_par">Min. participantes</label>
+                <input type="number" class="form-control" id="registrationCategoryMinPar" min="0" step="1">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="registrationCategoryMaxPar" data-i18n="registration_categories_field_max_par">Max. participantes</label>
+                <input type="number" class="form-control" id="registrationCategoryMaxPar" min="0" step="1">
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label" for="registrationCategoryMusicMaxDuration" data-i18n="registration_categories_field_music_max_duration">Duracion musica</label>
+                <input type="number" class="form-control" id="registrationCategoryMusicMaxDuration" min="0" step="1">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="registrationCategoryMinYears" data-i18n="registration_categories_field_min_years">Min. anos</label>
+                <input type="number" class="form-control" id="registrationCategoryMinYears" min="0" step="1">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="registrationCategoryMaxYears" data-i18n="registration_categories_field_max_years">Max. anos</label>
+                <input type="number" class="form-control" id="registrationCategoryMaxYears" min="0" step="1">
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="registrationCategorySaveBtn" data-i18n="save">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="registrationCategoryDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="registration_categories_delete_title">Eliminar categoria</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="registrationCategoryDeleteMessage" data-i18n="registration_categories_delete_question">Seguro que deseas eliminar esta categoria?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteRegistrationCategoryBtn" data-i18n="delete">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="registrationDisciplineDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="registration_disciplines_delete_title">Eliminar disciplina</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="registrationDisciplineDeleteMessage" data-i18n="registration_disciplines_delete_question">Seguro que deseas eliminar esta disciplina?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteRegistrationDisciplineBtn" data-i18n="delete">Eliminar</button>
         </div>
       </div>
     </div>
@@ -673,6 +811,7 @@
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/header.js"></script>

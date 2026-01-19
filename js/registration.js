@@ -7,10 +7,28 @@ const registrationState = {
   registrationConfig: {
     categories: [],
     styles: []
-  }
+  },
+  registrationCategories: [],
+  registrationDisciplines: []
 };
 
 let schoolLoadPromise = null;
+
+function syncRegistrationConfigState() {
+  registrationState.registrationConfig = {
+    categories: Array.isArray(registrationState.registrationCategories)
+      ? registrationState.registrationCategories
+      : [],
+    styles: Array.isArray(registrationState.registrationDisciplines)
+      ? registrationState.registrationDisciplines
+      : []
+  };
+}
+
+function notifyRegistrationConfigUpdate() {
+  syncRegistrationConfigState();
+  window.dispatchEvent(new CustomEvent('registration:config-updated'));
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
@@ -27,6 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (role === 'organizer') {
     initSchoolsTab();
     initOrganizerRegistrationsTab();
+    initRegistrationCategoriesTab();
+    initRegistrationDisciplinesTab();
   }
 });
 
@@ -65,6 +85,8 @@ function setRoleTabVisibility(role) {
     { roles: ['school'], buttonId: 'school-tab', paneId: 'school' },
     { roles: ['school', 'organizer'], buttonId: 'participants-tab', paneId: 'participants' },
     { roles: ['organizer'], buttonId: 'org-registrations-tab', paneId: 'org-registrations' },
+    { roles: ['organizer'], buttonId: 'registration-categories-tab', paneId: 'registration-categories' },
+    { roles: ['organizer'], buttonId: 'registration-disciplines-tab', paneId: 'registration-disciplines' },
     { roles: ['school'], buttonId: 'competitions-tab', paneId: 'competitions' }
   ];
 
@@ -1088,6 +1110,600 @@ function initSchoolsTab() {
   loadSchools();
 }
 
+function initRegistrationCategoriesTab() {
+  const tableBody = document.getElementById('registrationCategoriesTable');
+  const emptyEl = document.getElementById('registrationCategoriesEmpty');
+  const addBtn = document.getElementById('registrationCategoryAddBtn');
+  const modalEl = document.getElementById('registrationCategoryModal');
+  const deleteModalEl = document.getElementById('registrationCategoryDeleteModal');
+
+  if (!tableBody || !modalEl || !deleteModalEl) {
+    return;
+  }
+
+  const form = document.getElementById('registrationCategoryForm');
+  const elements = {
+    id: document.getElementById('registrationCategoryId'),
+    name: document.getElementById('registrationCategoryName'),
+    minPar: document.getElementById('registrationCategoryMinPar'),
+    maxPar: document.getElementById('registrationCategoryMaxPar'),
+    minYears: document.getElementById('registrationCategoryMinYears'),
+    maxYears: document.getElementById('registrationCategoryMaxYears'),
+    musicMaxDuration: document.getElementById('registrationCategoryMusicMaxDuration'),
+    modalTitle: document.getElementById('registrationCategoryModalTitle'),
+    saveBtn: document.getElementById('registrationCategorySaveBtn'),
+    deleteMessage: document.getElementById('registrationCategoryDeleteMessage'),
+    confirmDeleteBtn: document.getElementById('confirmDeleteRegistrationCategoryBtn')
+  };
+
+  const categoryModal = new bootstrap.Modal(modalEl);
+  const deleteModal = new bootstrap.Modal(deleteModalEl);
+  let categoryToDelete = null;
+
+  const normalizeNumber = (value) => {
+    const raw = `${value ?? ''}`.trim();
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const setFormValues = (category = {}) => {
+    if (elements.id) elements.id.value = category?.id ?? '';
+    if (elements.name) elements.name.value = category?.name ?? '';
+    if (elements.minPar) elements.minPar.value = category?.min_par ?? '';
+    if (elements.maxPar) elements.maxPar.value = category?.max_par ?? '';
+    if (elements.minYears) elements.minYears.value = category?.min_years ?? '';
+    if (elements.maxYears) elements.maxYears.value = category?.max_years ?? '';
+    if (elements.musicMaxDuration) elements.musicMaxDuration.value = category?.music_max_duration ?? '';
+  };
+
+  const openCategoryModal = (mode, category = null) => {
+    if (!form) return;
+    form.dataset.mode = mode;
+    form.classList.remove('was-validated');
+
+    if (mode === 'edit') {
+      if (elements.modalTitle) {
+        elements.modalTitle.textContent = t('registration_categories_modal_edit', 'Editar categoria');
+      }
+      setFormValues(category || {});
+    } else {
+      if (elements.modalTitle) {
+        elements.modalTitle.textContent = t('registration_categories_modal_create', 'Nueva categoria');
+      }
+      setFormValues({});
+    }
+
+    categoryModal.show();
+  };
+
+  const renderCategories = () => {
+    tableBody.innerHTML = '';
+    const categories = Array.isArray(registrationState.registrationCategories)
+      ? registrationState.registrationCategories
+      : [];
+
+    if (!categories.length) {
+      if (emptyEl) emptyEl.classList.remove('d-none');
+      return;
+    }
+
+    if (emptyEl) emptyEl.classList.add('d-none');
+
+    const editTitle = t('edit', 'Edit');
+    const deleteTitle = t('delete', 'Delete');
+
+    categories.forEach(category => {
+      const row = document.createElement('tr');
+      row.dataset.id = category.id;
+
+      const nameCell = document.createElement('td');
+      nameCell.textContent = category.name || '-';
+      row.appendChild(nameCell);
+
+      const minParCell = document.createElement('td');
+      minParCell.className = 'text-center';
+      minParCell.textContent = category.min_par ?? '-';
+      row.appendChild(minParCell);
+
+      const maxParCell = document.createElement('td');
+      maxParCell.className = 'text-center';
+      maxParCell.textContent = category.max_par ?? '-';
+      row.appendChild(maxParCell);
+
+      const minYearsCell = document.createElement('td');
+      minYearsCell.className = 'text-center';
+      minYearsCell.textContent = category.min_years ?? '-';
+      row.appendChild(minYearsCell);
+
+      const maxYearsCell = document.createElement('td');
+      maxYearsCell.className = 'text-center';
+      maxYearsCell.textContent = category.max_years ?? '-';
+      row.appendChild(maxYearsCell);
+
+      const musicMaxCell = document.createElement('td');
+      musicMaxCell.className = 'text-center';
+      musicMaxCell.textContent = category.music_max_duration ?? '-';
+      row.appendChild(musicMaxCell);
+
+      const actionsCell = document.createElement('td');
+      actionsCell.className = 'text-center';
+      const actionGroup = document.createElement('div');
+      actionGroup.className = 'btn-group';
+      actionGroup.setAttribute('role', 'group');
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn btn-outline-primary btn-sm btn-registration-category-edit';
+      editBtn.dataset.id = category.id;
+      editBtn.title = editTitle;
+      editBtn.setAttribute('aria-label', editTitle);
+      editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'btn btn-outline-danger btn-sm btn-registration-category-delete';
+      deleteBtn.dataset.id = category.id;
+      deleteBtn.title = deleteTitle;
+      deleteBtn.setAttribute('aria-label', deleteTitle);
+      deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+
+      actionGroup.appendChild(editBtn);
+      actionGroup.appendChild(deleteBtn);
+      actionsCell.appendChild(actionGroup);
+      row.appendChild(actionsCell);
+
+      tableBody.appendChild(row);
+    });
+  };
+
+  const showCategoriesError = (message) => {
+    tableBody.innerHTML = '';
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 7;
+    cell.className = 'text-danger';
+    cell.textContent = message;
+    row.appendChild(cell);
+    tableBody.appendChild(row);
+    if (emptyEl) emptyEl.classList.add('d-none');
+  };
+
+  const loadCategories = async () => {
+    try {
+      const params = new URLSearchParams();
+      const eventObj = getEvent();
+      if (eventObj?.id) {
+        params.set('event_id', eventObj.id);
+      }
+
+      const url = params.toString()
+        ? `${API_BASE_URL}/api/registrations/categories?${params.toString()}`
+        : `${API_BASE_URL}/api/registrations/categories`;
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(t('registration_categories_load_error', 'Error loading categories.'));
+      }
+
+      const data = await res.json();
+      const categories = Array.isArray(data)
+        ? data
+        : (Array.isArray(data?.categories) ? data.categories : []);
+      registrationState.registrationCategories = categories;
+      notifyRegistrationConfigUpdate();
+      renderCategories();
+    } catch (err) {
+      showCategoriesError(err.message || t('registration_categories_load_error', 'Error loading categories.'));
+    }
+  };
+
+  const saveCategory = async () => {
+    if (!form) return;
+    if (!form.checkValidity()) {
+      form.classList.add('was-validated');
+      return;
+    }
+
+    if (elements.saveBtn) {
+      elements.saveBtn.disabled = true;
+    }
+
+    const originalText = elements.saveBtn ? elements.saveBtn.textContent : '';
+    if (elements.saveBtn) {
+      elements.saveBtn.textContent = t('saving', 'Guardando...');
+    }
+
+    const payload = {
+      event_id: getEvent()?.id,
+      name: elements.name ? elements.name.value.trim() : '',
+      min_par: normalizeNumber(elements.minPar?.value),
+      max_par: normalizeNumber(elements.maxPar?.value),
+      min_years: normalizeNumber(elements.minYears?.value),
+      max_years: normalizeNumber(elements.maxYears?.value),
+      music_max_duration: normalizeNumber(elements.musicMaxDuration?.value)
+    };
+
+    if (!payload.event_id) delete payload.event_id;
+
+    const isEdit = form.dataset.mode === 'edit';
+    const categoryId = elements.id ? elements.id.value : '';
+    if (isEdit && categoryId) {
+      payload.id = categoryId;
+    }
+
+    const url = isEdit && categoryId
+      ? `${API_BASE_URL}/api/registrations/categories/${categoryId}`
+      : `${API_BASE_URL}/api/registrations/categories`;
+    const method = isEdit ? 'PUT' : 'POST';
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        let errorMessage = t('registration_categories_save_error', 'Error saving category.');
+        try {
+          const errData = await res.json();
+          if (errData && errData.error) {
+            errorMessage = errData.error;
+          }
+        } catch (parseErr) {
+          // ignore
+        }
+        throw new Error(errorMessage);
+      }
+
+      categoryModal.hide();
+      await loadCategories();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_categories_save_error', 'Error saving category.'), t('error_title', 'Error'));
+    } finally {
+      if (elements.saveBtn) {
+        elements.saveBtn.disabled = false;
+        elements.saveBtn.textContent = originalText;
+      }
+    }
+  };
+
+  const deleteCategory = async () => {
+    if (!categoryToDelete) return;
+
+    if (elements.confirmDeleteBtn) {
+      elements.confirmDeleteBtn.disabled = true;
+    }
+
+    try {
+      const payload = {
+        event_id: getEvent()?.id
+      };
+      if (!payload.event_id) delete payload.event_id;
+
+      const res = await fetch(`${API_BASE_URL}/api/registrations/categories/${categoryToDelete.id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        let errorMessage = t('registration_categories_delete_error', 'Error deleting category.');
+        try {
+          const errData = await res.json();
+          if (errData && errData.error) {
+            errorMessage = errData.error;
+          }
+        } catch (parseErr) {
+          // ignore
+        }
+        throw new Error(errorMessage);
+      }
+
+      deleteModal.hide();
+      await loadCategories();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_categories_delete_error', 'Error deleting category.'), t('error_title', 'Error'));
+    } finally {
+      if (elements.confirmDeleteBtn) {
+        elements.confirmDeleteBtn.disabled = false;
+      }
+      categoryToDelete = null;
+    }
+  };
+
+  if (addBtn) {
+    addBtn.addEventListener('click', () => openCategoryModal('create'));
+  }
+
+  if (elements.saveBtn) {
+    elements.saveBtn.addEventListener('click', saveCategory);
+  }
+
+  if (elements.confirmDeleteBtn) {
+    elements.confirmDeleteBtn.addEventListener('click', deleteCategory);
+  }
+
+  tableBody.addEventListener('click', (event) => {
+    const editBtn = event.target.closest('.btn-registration-category-edit');
+    const deleteBtn = event.target.closest('.btn-registration-category-delete');
+
+    if (editBtn) {
+      const category = registrationState.registrationCategories.find(item => `${item.id}` === `${editBtn.dataset.id}`);
+      if (category) {
+        openCategoryModal('edit', category);
+      }
+      return;
+    }
+
+    if (!deleteBtn) return;
+    const category = registrationState.registrationCategories.find(item => `${item.id}` === `${deleteBtn.dataset.id}`);
+    if (!category) return;
+
+    categoryToDelete = category;
+    if (elements.deleteMessage) {
+      const message = `${t('registration_categories_delete_question', 'Seguro que deseas eliminar la categoria')} "${category.name || ''}"?`;
+      elements.deleteMessage.textContent = message;
+    }
+    deleteModal.show();
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    if (!form) return;
+    form.classList.remove('was-validated');
+    form.dataset.mode = 'create';
+  });
+
+  loadCategories();
+}
+
+function initRegistrationDisciplinesTab() {
+  const listEl = document.getElementById('list-registration-disciplines');
+  const countEl = document.getElementById('count-registration-disciplines');
+  const inputEl = document.getElementById('input-registration-disciplines');
+  const addBtn = document.getElementById('registrationDisciplinesAddBtn');
+  const deleteModalEl = document.getElementById('registrationDisciplineDeleteModal');
+
+  if (!listEl || !inputEl || !addBtn || !deleteModalEl) {
+    return;
+  }
+
+  const elements = {
+    deleteMessage: document.getElementById('registrationDisciplineDeleteMessage'),
+    confirmDeleteBtn: document.getElementById('confirmDeleteRegistrationDisciplineBtn')
+  };
+
+  const deleteModal = new bootstrap.Modal(deleteModalEl);
+  let disciplineToDelete = null;
+  let sortableInstance = null;
+
+  const renderDisciplines = () => {
+    listEl.innerHTML = '';
+    const disciplines = Array.isArray(registrationState.registrationDisciplines)
+      ? [...registrationState.registrationDisciplines]
+      : [];
+
+    disciplines.sort((a, b) => (a.position ?? 9999) - (b.position ?? 9999));
+    registrationState.registrationDisciplines = disciplines;
+
+    disciplines.forEach(discipline => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.dataset.id = discipline.id;
+
+      const leftDiv = document.createElement('div');
+      leftDiv.className = 'd-flex align-items-center gap-2';
+
+      const dragHandle = document.createElement('i');
+      dragHandle.className = 'bi bi-grip-vertical text-muted drag-handle';
+      dragHandle.style.cursor = 'grab';
+      leftDiv.appendChild(dragHandle);
+
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = discipline.name || '-';
+      leftDiv.appendChild(nameSpan);
+
+      li.appendChild(leftDiv);
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'btn btn-link text-danger p-0';
+      deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+      deleteBtn.addEventListener('click', () => {
+        disciplineToDelete = discipline;
+        if (elements.deleteMessage) {
+          const message = `${t('registration_disciplines_delete_question', 'Seguro que deseas eliminar la disciplina')} "${discipline.name || ''}"?`;
+          elements.deleteMessage.textContent = message;
+        }
+        deleteModal.show();
+      });
+
+      li.appendChild(deleteBtn);
+      listEl.appendChild(li);
+    });
+
+    if (countEl) {
+      countEl.textContent = `${disciplines.length}`;
+    }
+
+    if (!sortableInstance && window.Sortable) {
+      sortableInstance = new Sortable(listEl, {
+        animation: 150,
+        handle: '.drag-handle',
+        onEnd: async () => {
+          const items = Array.from(listEl.children).map((li, idx) => ({
+            id: li.dataset.id,
+            position: idx + 1
+          }));
+
+          const disciplineById = new Map(
+            registrationState.registrationDisciplines.map(item => [`${item.id}`, item])
+          );
+          registrationState.registrationDisciplines = items.map(item => ({
+            ...(disciplineById.get(`${item.id}`) || { id: item.id }),
+            position: item.position
+          }));
+          notifyRegistrationConfigUpdate();
+
+          try {
+            const res = await fetch(`${API_BASE_URL}/api/registrations/styles/reorder`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ items })
+            });
+
+            if (!res.ok) {
+              const error = await res.json();
+              console.error('Error reordering disciplines:', error);
+            }
+          } catch (err) {
+            console.error('Unexpected reorder error:', err);
+          }
+        }
+      });
+    }
+  };
+
+  const showDisciplinesError = (message) => {
+    listEl.innerHTML = '';
+    const li = document.createElement('li');
+    li.className = 'list-group-item text-danger';
+    li.textContent = message;
+    listEl.appendChild(li);
+    if (countEl) {
+      countEl.textContent = '0';
+    }
+  };
+
+  const loadDisciplines = async () => {
+    try {
+      const params = new URLSearchParams();
+      const eventObj = getEvent();
+      if (eventObj?.id) {
+        params.set('event_id', eventObj.id);
+      }
+
+      const url = params.toString()
+        ? `${API_BASE_URL}/api/registrations/styles?${params.toString()}`
+        : `${API_BASE_URL}/api/registrations/styles`;
+
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(t('registration_disciplines_load_error', 'Error loading disciplines.'));
+      }
+
+      const data = await res.json();
+      const disciplines = Array.isArray(data)
+        ? data
+        : (Array.isArray(data?.disciplines) ? data.disciplines : []);
+      registrationState.registrationDisciplines = disciplines;
+      renderDisciplines();
+      notifyRegistrationConfigUpdate();
+    } catch (err) {
+      showDisciplinesError(err.message || t('registration_disciplines_load_error', 'Error loading disciplines.'));
+    }
+  };
+
+  const addDiscipline = async () => {
+    const value = inputEl.value.trim();
+    if (!value) {
+      inputEl.focus();
+      return;
+    }
+
+    addBtn.disabled = true;
+    const originalText = addBtn.textContent;
+    addBtn.textContent = t('saving', 'Guardando...');
+
+    try {
+      const payload = { name: value };
+      const eventIdValue = getEvent()?.id;
+      if (eventIdValue) {
+        payload.event_id = eventIdValue;
+      }
+      const res = await fetch(`${API_BASE_URL}/api/registrations/styles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        let errorMessage = t('registration_disciplines_save_error', 'Error saving discipline.');
+        try {
+          const errData = await res.json();
+          if (errData && errData.error) {
+            errorMessage = errData.error;
+          }
+        } catch (parseErr) {
+          // ignore
+        }
+        throw new Error(errorMessage);
+      }
+
+      inputEl.value = '';
+      await loadDisciplines();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_disciplines_save_error', 'Error saving discipline.'), t('error_title', 'Error'));
+    } finally {
+      addBtn.disabled = false;
+      addBtn.textContent = originalText;
+      inputEl.focus();
+    }
+  };
+
+  const deleteDiscipline = async () => {
+    if (!disciplineToDelete) return;
+
+    if (elements.confirmDeleteBtn) {
+      elements.confirmDeleteBtn.disabled = true;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/registrations/styles/${disciplineToDelete.id}`, {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) {
+        let errorMessage = t('registration_disciplines_delete_error', 'Error deleting discipline.');
+        try {
+          const errData = await res.json();
+          if (errData && errData.error) {
+            errorMessage = errData.error;
+          }
+        } catch (parseErr) {
+          // ignore
+        }
+        throw new Error(errorMessage);
+      }
+
+      deleteModal.hide();
+      await loadDisciplines();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_disciplines_delete_error', 'Error deleting discipline.'), t('error_title', 'Error'));
+    } finally {
+      if (elements.confirmDeleteBtn) {
+        elements.confirmDeleteBtn.disabled = false;
+      }
+      disciplineToDelete = null;
+    }
+  };
+
+  addBtn.addEventListener('click', addDiscipline);
+  inputEl.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addDiscipline();
+    }
+  });
+
+  if (elements.confirmDeleteBtn) {
+    elements.confirmDeleteBtn.addEventListener('click', deleteDiscipline);
+  }
+
+  loadDisciplines();
+}
+
 function initOrganizerRegistrationsTab() {
   const tableBody = document.getElementById('orgRegistrationsTable');
   const emptyEl = document.getElementById('orgRegistrationsEmpty');
@@ -1105,7 +1721,6 @@ function initOrganizerRegistrationsTab() {
   }
 
   const registrationEndpoints = {
-    config: '/api/registrations/config',
     list: '/api/registrations/choreographies'
   };
 
@@ -1150,15 +1765,9 @@ function initOrganizerRegistrationsTab() {
     });
   };
 
-  const loadRegistrationConfig = async () => {
-    if (registrationState.registrationConfig.categories.length || registrationState.registrationConfig.styles.length) {
-      categoryById = new Map(registrationState.registrationConfig.categories.map(item => [`${item.id}`, item]));
-      styleById = new Map(registrationState.registrationConfig.styles.map(item => [`${item.id}`, item]));
-      populateSelect(filterCategory, registrationState.registrationConfig.categories);
-      populateSelect(filterStyle, registrationState.registrationConfig.styles);
-      populateSelect(modalElements.category, registrationState.registrationConfig.categories);
-      populateSelect(modalElements.style, registrationState.registrationConfig.styles);
-      return;
+  const ensureRegistrationCategories = async () => {
+    if (registrationState.registrationCategories.length) {
+      return registrationState.registrationCategories;
     }
 
     const params = new URLSearchParams();
@@ -1168,25 +1777,74 @@ function initOrganizerRegistrationsTab() {
     }
 
     const url = params.toString()
-      ? `${API_BASE_URL}${registrationEndpoints.config}?${params.toString()}`
-      : `${API_BASE_URL}${registrationEndpoints.config}`;
+      ? `${API_BASE_URL}/api/registrations/categories?${params.toString()}`
+      : `${API_BASE_URL}/api/registrations/categories`;
 
     const res = await fetch(url);
     if (!res.ok) {
-      throw new Error(t('org_registrations_load_error', 'Error loading registrations.'));
+      throw new Error(t('registration_categories_load_error', 'Error loading categories.'));
     }
 
     const data = await res.json();
-    const categories = Array.isArray(data?.categories) ? data.categories : [];
-    const styles = Array.isArray(data?.styles) ? data.styles : [];
+    const categories = Array.isArray(data)
+      ? data
+      : (Array.isArray(data?.categories) ? data.categories : []);
+    registrationState.registrationCategories = categories;
+    syncRegistrationConfigState();
+    return categories;
+  };
 
-    registrationState.registrationConfig = { categories, styles };
+  const ensureRegistrationStyles = async () => {
+    if (registrationState.registrationDisciplines.length) {
+      return registrationState.registrationDisciplines;
+    }
+
+    const params = new URLSearchParams();
+    const eventObj = getEvent();
+    if (eventObj?.id) {
+      params.set('event_id', eventObj.id);
+    }
+
+    const url = params.toString()
+      ? `${API_BASE_URL}/api/registrations/styles?${params.toString()}`
+      : `${API_BASE_URL}/api/registrations/styles`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(t('registration_disciplines_load_error', 'Error loading disciplines.'));
+    }
+
+    const data = await res.json();
+    const styles = Array.isArray(data)
+      ? data
+      : (Array.isArray(data?.styles) ? data.styles : (Array.isArray(data?.disciplines) ? data.disciplines : []));
+    registrationState.registrationDisciplines = styles;
+    syncRegistrationConfigState();
+    return styles;
+  };
+
+  const loadRegistrationConfig = async () => {
+    const categories = await ensureRegistrationCategories();
+    const styles = await ensureRegistrationStyles();
+    const orderedStyles = [...styles].sort((a, b) => (a.position ?? 9999) - (b.position ?? 9999));
+
     categoryById = new Map(categories.map(item => [`${item.id}`, item]));
-    styleById = new Map(styles.map(item => [`${item.id}`, item]));
+    styleById = new Map(orderedStyles.map(item => [`${item.id}`, item]));
+
+    const selectedFilterCategory = filterCategory.value;
+    const selectedFilterStyle = filterStyle.value;
+    const selectedModalCategory = modalElements.category?.value || '';
+    const selectedModalStyle = modalElements.style?.value || '';
+
     populateSelect(filterCategory, categories);
-    populateSelect(filterStyle, styles);
+    populateSelect(filterStyle, orderedStyles);
     populateSelect(modalElements.category, categories);
-    populateSelect(modalElements.style, styles);
+    populateSelect(modalElements.style, orderedStyles);
+
+    if (selectedFilterCategory) filterCategory.value = selectedFilterCategory;
+    if (selectedFilterStyle) filterStyle.value = selectedFilterStyle;
+    if (modalElements.category && selectedModalCategory) modalElements.category.value = selectedModalCategory;
+    if (modalElements.style && selectedModalStyle) modalElements.style.value = selectedModalStyle;
   };
 
   const loadSchools = async () => {
@@ -1614,6 +2272,13 @@ function initOrganizerRegistrationsTab() {
     filterStyle.value = '';
     renderRegistrations();
   });
+
+  const handleConfigUpdate = () => {
+    loadRegistrationConfig()
+      .then(renderRegistrations)
+      .catch(() => {});
+  };
+  window.addEventListener('registration:config-updated', handleConfigUpdate);
 
   tableBody.addEventListener('click', (event) => {
     const detailsBtn = event.target.closest('.btn-org-registration-details');
