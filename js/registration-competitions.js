@@ -695,13 +695,13 @@
     if (!Array.isArray(members)) return [];
     return members.map(member => {
       if (member && typeof member === 'object') {
-        const memberId = member.id;
+        const memberId = member.participant_id;
         const fallback = memberId ? participantsById.get(`${memberId}`) : null;
         return {
           ...fallback,
           ...member,
           id: memberId,
-          name: member.name,
+          name: member.name || (memberId != null ? `#${memberId}` : ''),
           date_of_birth: member.date_of_birth
         };
       }
