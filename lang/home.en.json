@@ -1,15 +1,17 @@
 {
   "title": "Welcome",
   "org_access": "Organization Access",
-  "jud_access": "Judges Access",
+  "jud_access": "Voting",
   "par_access": "Participants",
   "sch_access": "Schedule",
+  "sta_access": "Statistics",
   "res_access": "Results",
   "reg_access": "Participant Registration",
   "org_access_sub": "Exclusive panel to configure the event.",
   "jud_access_sub": "Exclusive panel for the event's jury.",
   "par_access_sub": "Explore the participants of the event.",
   "sch_access_sub": "Planning of the Event.",
+  "sta_access_sub": "Your statistics for this event.",
   "res_access_sub": "Display of classifications and scores.",
   "reg_access_sub": "Participant Registration Area."
 }

@@ -112,10 +112,16 @@ function renderCompetitions(competitions) {
     // Card con info de competición
     const card = document.createElement('div');
     card.className = 'card mb-4';
+    const positionedStatusButton = statusActionButton
+      ? statusActionButton.replace(
+        'btn-toggle-status ms-auto',
+        'btn-toggle-status position-absolute end-0 top-50 translate-middle-y me-3'
+      )
+      : '';
     card.innerHTML = `
-      <div class="card-header d-flex align-items-center">
-        <h5 class="mb-0">${comp.category_name} - ${comp.style_name}</h5>
-        ${statusActionButton}
+      <div class="card-header position-relative">
+        <h5 class="mb-0 text-center w-100">${comp.category_name} - ${comp.style_name}</h5>
+        ${positionedStatusButton}
       </div>
       <div class="card-body">
         <div class="row text-center">
@@ -216,7 +222,31 @@ function renderCompetitions(competitions) {
               <img src="${flagUrl}" class="me-2" style="vertical-align: middle;">
               <span>${d.dancer_name}</span>
             </div>
-            <span class="badge bg-info">#${d.position}</span>
+            <div class="d-flex align-items-center gap-2">
+              <div class="dropdown">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                  type="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false" ${btnDisabled}>
+                  ${t('actions')}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <button class="dropdown-item js-no-show"
+                      type="button"
+                      data-category-id="${comp.category_id}"
+                      data-style-id="${comp.style_id}"
+                      data-dancer-id="${d.dancer_id ?? d.id}"
+                      data-dancer-name="${d.dancer_name}" ${btnDisabled}>
+                      ${t('no_show')}
+                    </button>
+                  </li>
+                  <li><button class="dropdown-item" type="button" ${btnDisabled}>${t('disqualify')}</button></li>
+                  <li><button class="dropdown-item" type="button" ${btnDisabled}>${t('penalty')}</button></li>
+                </ul>
+              </div>
+              <span class="badge bg-info">#${d.position}</span>
+            </div>
           </div>
         `;
 
@@ -325,6 +355,18 @@ function renderCompetitions(competitions) {
       }
     });
   });
+
+  container.querySelectorAll('.js-no-show').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      await markNoShow(
+        btn.dataset.categoryId,
+        btn.dataset.styleId,
+        btn.dataset.dancerId,
+        btn.dataset.dancerName
+      );
+    });
+  });
 }
 
 async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
@@ -431,6 +473,38 @@ async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerNa
 
   } catch (err) {
     alert(err.message);
+  }
+}
+
+async function markNoShow(categoryId, styleId, dancerId, dancerName) {
+  const confirmed = await showModal(`${t('confirm_no_show_1')} "${dancerName}"${t('confirm_no_show_2')}`);
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/voting/markNoShow`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_id: Number(getEvent().id),
+        category_id: Number(categoryId),
+        style_id: Number(styleId),
+        dancer_id: Number(dancerId)
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showMessageModal(data.error || t('error_mark_no_show'), t('error_title'));
+      return;
+    }
+
+    await loadCompetitions(
+      document.getElementById('categorySelect').value,
+      document.getElementById('styleSelect').value
+    );
+  } catch (err) {
+    showMessageModal(err.message || t('error_mark_no_show'), t('error_title'));
   }
 }
 

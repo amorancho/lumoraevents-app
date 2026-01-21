@@ -1,15 +1,17 @@
 {
   "title": "Bem-vindo",
   "org_access": "Acesso Organizadores",
-  "jud_access": "Acesso Jurados",
+  "jud_access": "Votação",
   "par_access": "Participantes",
   "sch_access": "Programação",
+  "sta_access": "Estat?sticas",
   "res_access": "Resultados",
   "reg_access": "Registro de Participantes",
   "org_access_sub": "Painel exclusivo para a configuração do evento.",
   "jud_access_sub": "Painel exclusivo para o júri do evento.",
   "par_access_sub": "Explore as participantes do evento.",
   "sch_access_sub": "Programação do Evento.",
+  "sta_access_sub": "As suas estat?sticas para este evento.",
   "res_access_sub": "Visualize as classificações e as votações.",
   "reg_access_sub": "Área de Registro de Participantes."
 }
