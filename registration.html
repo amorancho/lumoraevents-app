@@ -603,40 +603,40 @@
             <hr class="my-4">
 
             <div id="registrationAudioSection" class="d-none">
-              <h6 class="text-uppercase text-muted small mb-2">Musica</h6>
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="registration_competitions_audio">Musica</h6>
               <div id="registrationAudioUploadControls">
                 <div class="audio-dropzone border border-2 border-secondary-subtle rounded p-3 text-center bg-light" id="registrationAudioDropzone">
                   <input type="file" id="registrationAudioInput" accept="audio/*" class="d-none">
                   <div class="mb-2">
                     <i class="bi bi-music-note-beamed me-2"></i>
-                    Arrastra aqui tu audio o
-                    <button type="button" class="btn btn-link p-0 align-baseline" id="registrationAudioBrowseBtn">selecciona un archivo</button>
+                    <span data-i18n="registration_audio_drag_drop">Arrastra aqui tu audio o</span>
+                    <button type="button" class="btn btn-link p-0 align-baseline" id="registrationAudioBrowseBtn" data-i18n="registration_audio_browse">selecciona un archivo</button>
                   </div>
-                  <div class="small text-muted">Formatos de audio</div>
+                  <div class="small text-muted" data-i18n="registration_audio_formats">Formatos de audio</div>
                 </div>
               </div>
               <div class="row g-2 mt-2">
                 <div class="col-12 col-md-5">
-                  <div class="text-muted small">Archivo</div>
+                  <div class="text-muted small" data-i18n="registration_audio_file">Archivo</div>
                   <div id="registrationAudioName" class="fw-semibold">-</div>
                 </div>
                 <div class="col-6 col-md-2">
-                  <div class="text-muted small">Duracion</div>
+                  <div class="text-muted small" data-i18n="registration_audio_duration">Duracion</div>
                   <div id="registrationAudioDuration" class="fw-semibold">-</div>
                 </div>
                 <div class="col-6 col-md-2">
-                  <div class="text-muted small">Tamano</div>
+                  <div class="text-muted small" data-i18n="registration_audio_size">Tamano</div>
                   <div id="registrationAudioSize" class="fw-semibold">-</div>
                 </div>
                 <div class="col-6 col-md-3">
-                  <div class="text-muted small">Maximo</div>
+                  <div class="text-muted small" data-i18n="registration_audio_max">Maximo</div>
                   <div id="registrationAudioMax" class="fw-semibold">-</div>
                 </div>
               </div>
               <div id="registrationAudioError" class="text-danger small mt-2 d-none"></div>
               <div class="d-flex flex-column flex-md-row gap-2 mt-3">
-                <button type="button" class="btn btn-outline-danger" id="registrationAudioRemoveBtn" disabled>Eliminar musica</button>
-                <button type="button" class="btn btn-outline-primary" id="registrationAudioSaveBtn" disabled>Guardar audio</button>
+                <button type="button" class="btn btn-outline-danger" id="registrationAudioRemoveBtn" disabled data-i18n="registration_audio_remove">Eliminar musica</button>
+                <button type="button" class="btn btn-outline-primary" id="registrationAudioSaveBtn" disabled data-i18n="registration_audio_save">Guardar audio</button>
                 <a class="btn btn-outline-primary d-none" id="registrationAudioDownloadBtn" href="#" download data-i18n="registration_audio_download">Descargar audio</a>
               </div>
             </div>
@@ -644,7 +644,7 @@
         </div>
         <div class="modal-footer flex-column flex-md-row gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
-          <button type="button" class="btn btn-primary" id="registrationSaveBtn">Guardar coreografia</button>
+          <button type="button" class="btn btn-primary" id="registrationSaveBtn" data-i18n="save_choreo">Guardar coreografia</button>
         </div>
       </div>
     </div>
@@ -717,7 +717,7 @@
         </div>
         <div class="modal-footer flex-column flex-md-row gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="registrationMembersSaveBtn">
+          <button type="button" class="btn btn-primary" id="registrationMembersSaveBtn" data-i18n="registration_competitions_members_save">
             Guardar miembros
           </button>
         </div>
@@ -769,7 +769,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p id="confirmRegistrationMessage">Seguro que deseas confirmar esta inscripcion?</p>
+          <p id="confirmRegistrationMessage" data-i18n="registration_competitions_confirm_question">Seguro que deseas confirmar esta inscripcion?</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
