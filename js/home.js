@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const principalContainer = document.getElementById('principalContainer');
     const hiddenMessage = document.getElementById('eventHiddenMessage');
 
+    const menuRow = document.getElementById("home-menu-row");
     const configCol = document.getElementById("col-configUrl");
     const votingCol = document.getElementById("col-votingUrl");
     const participantsCol = document.getElementById("col-participantsUrl");
@@ -108,6 +109,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             registrationCol.remove();
         } else {
             registrationCol.classList.remove("d-none");
+        }
+
+        if (user && user.role === "judge" && votingCol && menuRow && votingCol.parentElement === menuRow) {
+            const judgeRow = document.createElement("div");
+            judgeRow.className = "row g-4 justify-content-center pt-4";
+            judgeRow.id = "judge-menu-row";
+            menuRow.parentElement.insertBefore(judgeRow, menuRow);
+            judgeRow.appendChild(votingCol);
         }
 
     } else {

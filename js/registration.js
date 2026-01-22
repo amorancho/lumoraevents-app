@@ -1021,13 +1021,38 @@ function initSchoolsTab() {
 
       const participantsCell = document.createElement('td');
       participantsCell.className = 'text-center';
-      participantsCell.textContent = school.num_participants;
+      const participantsBadge = document.createElement('span');
+      participantsBadge.className = 'badge bg-secondary';
+      participantsBadge.textContent = `${school.num_participants ?? 0}`;
+      participantsCell.appendChild(participantsBadge);
       row.appendChild(participantsCell);
 
       const choreosCell = document.createElement('td');
       choreosCell.className = 'text-center';
-      choreosCell.textContent = school.num_choreos;
+      const totalChoreosBadge = document.createElement('span');
+      totalChoreosBadge.className = 'badge bg-dark';
+      totalChoreosBadge.textContent = `${school.num_choreos ?? 0}`;
+      choreosCell.appendChild(totalChoreosBadge);
       row.appendChild(choreosCell);
+
+      const choreoStatusCell = document.createElement('td');
+      choreoStatusCell.className = 'text-center';
+      const statusBadges = [
+        { value: school.choreos_cre, className: 'bg-primary' },
+        { value: school.choreos_pen, className: 'bg-warning text-dark' },
+        { value: school.choreos_val, className: 'bg-success' },
+        { value: school.choreos_rej, className: 'bg-danger' }
+      ];
+      statusBadges.forEach((badgeData, index) => {
+        const badge = document.createElement('span');
+        badge.className = `badge ${badgeData.className}`;
+        badge.textContent = `${badgeData.value ?? 0}`;
+        choreoStatusCell.appendChild(badge);
+        if (index < statusBadges.length - 1) {
+          choreoStatusCell.appendChild(document.createTextNode(' / '));
+        }
+      });
+      row.appendChild(choreoStatusCell);
 
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
@@ -1047,7 +1072,7 @@ function initSchoolsTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 6;
+    cell.colSpan = 7;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -1113,6 +1138,7 @@ function initSchoolsTab() {
 function initRegistrationCategoriesTab() {
   const tableBody = document.getElementById('registrationCategoriesTable');
   const emptyEl = document.getElementById('registrationCategoriesEmpty');
+  const countEl = document.getElementById('registrationCategoriesCount');
   const addBtn = document.getElementById('registrationCategoryAddBtn');
   const modalEl = document.getElementById('registrationCategoryModal');
   const deleteModalEl = document.getElementById('registrationCategoryDeleteModal');
@@ -1182,6 +1208,10 @@ function initRegistrationCategoriesTab() {
     const categories = Array.isArray(registrationState.registrationCategories)
       ? registrationState.registrationCategories
       : [];
+
+    if (countEl) {
+      countEl.textContent = `${categories.length}`;
+    }
 
     if (!categories.length) {
       if (emptyEl) emptyEl.classList.remove('d-none');
@@ -1267,6 +1297,7 @@ function initRegistrationCategoriesTab() {
     row.appendChild(cell);
     tableBody.appendChild(row);
     if (emptyEl) emptyEl.classList.add('d-none');
+    if (countEl) countEl.textContent = '0';
   };
 
   const loadCategories = async () => {
@@ -1715,13 +1746,19 @@ function initOrganizerRegistrationsTab() {
   const filterClear = document.getElementById('orgRegistrationsFilterClear');
   const modalEl = document.getElementById('registrationModal');
   const membersModalEl = document.getElementById('registrationMembersModal');
+  const validateModalEl = document.getElementById('orgRegistrationValidateModal');
+  const rejectModalEl = document.getElementById('orgRegistrationRejectModal');
 
-  if (!tableBody || !emptyEl || !filterForm || !filterSchool || !filterStatus || !filterCategory || !filterStyle || !modalEl || !membersModalEl) {
+  if (!tableBody || !emptyEl || !filterForm || !filterSchool || !filterStatus || !filterCategory || !filterStyle || !modalEl || !membersModalEl || !validateModalEl || !rejectModalEl) {
     return;
   }
 
   const registrationEndpoints = {
-    list: '/api/registrations/choreographies'
+    list: '/api/registrations/choreographies',
+    music: (id) => `/api/registrations/choreographies/${id}/music`,
+    musicDownload: (id) => `/api/registrations/choreographies/${id}/music/download`,
+    validate: (id) => `/api/registrations/choreographies/${id}/validate`,
+    reject: (id) => `/api/registrations/choreographies/${id}/reject`
   };
 
   const form = document.getElementById('registrationForm');
@@ -1734,8 +1771,27 @@ function initOrganizerRegistrationsTab() {
     modalTitle: document.getElementById('registrationModalTitle'),
     saveBtn: document.getElementById('registrationSaveBtn')
   };
+  const validationElements = {
+    validateConfirmBtn: document.getElementById('confirmOrgRegistrationValidateBtn'),
+    rejectConfirmBtn: document.getElementById('confirmOrgRegistrationRejectBtn'),
+    rejectReason: document.getElementById('orgRegistrationRejectReason')
+  };
+  const audioElements = {
+    section: document.getElementById('registrationAudioSection'),
+    uploadControls: document.getElementById('registrationAudioUploadControls'),
+    name: document.getElementById('registrationAudioName'),
+    duration: document.getElementById('registrationAudioDuration'),
+    size: document.getElementById('registrationAudioSize'),
+    max: document.getElementById('registrationAudioMax'),
+    error: document.getElementById('registrationAudioError'),
+    removeBtn: document.getElementById('registrationAudioRemoveBtn'),
+    saveBtn: document.getElementById('registrationAudioSaveBtn'),
+    downloadBtn: document.getElementById('registrationAudioDownloadBtn')
+  };
   const registrationModal = new bootstrap.Modal(modalEl);
   const membersModal = new bootstrap.Modal(membersModalEl);
+  const validateModal = new bootstrap.Modal(validateModalEl);
+  const rejectModal = new bootstrap.Modal(rejectModalEl);
 
   const membersElements = {
     table: document.getElementById('registrationMembersTable'),
@@ -1753,6 +1809,8 @@ function initOrganizerRegistrationsTab() {
 
   let categoryById = new Map();
   let styleById = new Map();
+  let validationTarget = null;
+  let rejectTarget = null;
 
   const populateSelect = (selectEl, items) => {
     if (!selectEl) return;
@@ -1880,6 +1938,285 @@ function initOrganizerRegistrationsTab() {
     return Number.isFinite(parsed) ? parsed : null;
   };
 
+  const safeJson = async (res) => {
+    try {
+      return await res.json();
+    } catch (err) {
+      return null;
+    }
+  };
+
+  const formatDuration = (value) => {
+    const totalSeconds = Math.round(Number(value));
+    if (!Number.isFinite(totalSeconds)) return '-';
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  const formatBytes = (value) => {
+    const bytes = Number(value);
+    if (!Number.isFinite(bytes)) return '-';
+    if (bytes < 1024) return `${bytes} B`;
+    const kb = bytes / 1024;
+    if (kb < 1024) return `${kb.toFixed(1)} KB`;
+    const mb = kb / 1024;
+    return `${mb.toFixed(1)} MB`;
+  };
+
+  const getEventIdValue = () => getEvent()?.id;
+
+  const getMusicUrl = (registrationId) => {
+    const eventIdValue = getEventIdValue();
+    return eventIdValue
+      ? `${API_BASE_URL}${registrationEndpoints.music(registrationId)}?event_id=${encodeURIComponent(eventIdValue)}`
+      : `${API_BASE_URL}${registrationEndpoints.music(registrationId)}`;
+  };
+
+  const getMusicDownloadUrl = (registrationId) => {
+    const eventIdValue = getEventIdValue();
+    return eventIdValue
+      ? `${API_BASE_URL}${registrationEndpoints.musicDownload(registrationId)}?event_id=${encodeURIComponent(eventIdValue)}`
+      : `${API_BASE_URL}${registrationEndpoints.musicDownload(registrationId)}`;
+  };
+
+  const buildActionUrl = (endpoint) => {
+    const eventIdValue = getEventIdValue();
+    return eventIdValue
+      ? `${API_BASE_URL}${endpoint}?event_id=${encodeURIComponent(eventIdValue)}`
+      : `${API_BASE_URL}${endpoint}`;
+  };
+
+  const setAudioSectionVisible = (visible) => {
+    if (!audioElements.section) return;
+    audioElements.section.classList.toggle('d-none', !visible);
+  };
+
+  const setAudioViewMode = (isViewOnly) => {
+    if (audioElements.uploadControls) {
+      audioElements.uploadControls.classList.toggle('d-none', isViewOnly);
+    }
+    if (audioElements.removeBtn) {
+      audioElements.removeBtn.classList.toggle('d-none', isViewOnly);
+    }
+    if (audioElements.saveBtn) {
+      audioElements.saveBtn.classList.toggle('d-none', isViewOnly);
+    }
+    if (audioElements.error) {
+      audioElements.error.classList.add('d-none');
+      audioElements.error.textContent = '';
+    }
+  };
+
+  const setAudioDownloadState = (hasAudio, url, filename) => {
+    if (!audioElements.downloadBtn) return;
+    audioElements.downloadBtn.classList.toggle('d-none', !hasAudio);
+    if (!hasAudio) {
+      audioElements.downloadBtn.href = '#';
+      audioElements.downloadBtn.removeAttribute('download');
+      audioElements.downloadBtn.setAttribute('aria-disabled', 'true');
+      audioElements.downloadBtn.tabIndex = -1;
+      return;
+    }
+    audioElements.downloadBtn.href = url || '#';
+    if (filename) {
+      audioElements.downloadBtn.setAttribute('download', filename);
+    } else {
+      audioElements.downloadBtn.removeAttribute('download');
+    }
+    audioElements.downloadBtn.setAttribute('aria-disabled', 'false');
+    audioElements.downloadBtn.tabIndex = 0;
+  };
+
+  const resetAudioInfo = () => {
+    if (audioElements.name) audioElements.name.textContent = '-';
+    if (audioElements.duration) audioElements.duration.textContent = '-';
+    if (audioElements.size) audioElements.size.textContent = '-';
+    setAudioDownloadState(false);
+  };
+
+  const downloadBlob = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || 'audio';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const getFilenameFromHeader = (headerValue) => {
+    if (!headerValue) return '';
+    const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(headerValue);
+    if (!match || !match[1]) return '';
+    try {
+      return decodeURIComponent(match[1].replace(/\"/g, '').trim());
+    } catch (err) {
+      return match[1].replace(/\"/g, '').trim();
+    }
+  };
+
+  const handleAudioDownloadClick = async (event, registrationId) => {
+    event.preventDefault();
+    if (!registrationId) return;
+    const url = getMusicDownloadUrl(registrationId);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const data = await safeJson(res);
+        const message = data?.error || t('registration_audio_download_error', 'Error downloading audio.');
+        throw new Error(message);
+      }
+      const blob = await res.blob();
+      const headerFilename = getFilenameFromHeader(res.headers.get('content-disposition'));
+      const fallbackName = audioElements.name?.textContent || '';
+      downloadBlob(blob, headerFilename || fallbackName || 'audio');
+    } catch (err) {
+      showMessageModal(err.message || t('registration_audio_download_error', 'Error downloading audio.'), t('error_title', 'Error'));
+    }
+  };
+
+  const setAudioInfo = (info, registrationId) => {
+    if (audioElements.name) audioElements.name.textContent = info?.original_name || '-';
+    if (audioElements.duration) {
+      const durationValue = normalizeNumber(info?.duration);
+      audioElements.duration.textContent = durationValue != null ? formatDuration(durationValue) : '-';
+    }
+    if (audioElements.size) {
+      const sizeValue = normalizeNumber(info?.size);
+      audioElements.size.textContent = sizeValue != null ? formatBytes(sizeValue) : '-';
+    }
+    const downloadUrl = info?.download_url || info?.url || info?.file_url || getMusicDownloadUrl(registrationId);
+    setAudioDownloadState(Boolean(info?.original_name), downloadUrl, info?.original_name);
+    if (audioElements.downloadBtn) {
+      audioElements.downloadBtn.onclick = (event) => handleAudioDownloadClick(event, registrationId);
+    }
+  };
+
+  const fetchRegistrationAudioInfo = async (registrationId) => {
+    if (!registrationId) return;
+    resetAudioInfo();
+    try {
+      const url = getMusicUrl(registrationId);
+      const res = await fetch(url);
+      if (!res.ok) {
+        if (res.status === 404) {
+          return;
+        }
+        const data = await safeJson(res);
+        const message = data?.error || t('registration_audio_load_error', 'Error loading audio.');
+        throw new Error(message);
+      }
+      const data = await safeJson(res);
+      if (!data || !data.original_name) {
+        return;
+      }
+      setAudioInfo(data, registrationId);
+    } catch (err) {
+      showMessageModal(err.message || t('registration_audio_load_error', 'Error loading audio.'), t('error_title', 'Error'));
+    }
+  };
+
+  const openValidateModal = (registration) => {
+    validationTarget = registration;
+    if (validationElements.validateConfirmBtn) {
+      validationElements.validateConfirmBtn.disabled = false;
+    }
+    validateModal.show();
+  };
+
+  const openRejectModal = (registration) => {
+    rejectTarget = registration;
+    if (validationElements.rejectReason) {
+      validationElements.rejectReason.value = '';
+      validationElements.rejectReason.classList.remove('is-invalid');
+    }
+    if (validationElements.rejectConfirmBtn) {
+      validationElements.rejectConfirmBtn.disabled = false;
+    }
+    rejectModal.show();
+  };
+
+  const submitValidation = async () => {
+    if (!validationTarget) return;
+    if (validationElements.validateConfirmBtn) {
+      validationElements.validateConfirmBtn.disabled = true;
+    }
+
+    try {
+      const url = buildActionUrl(registrationEndpoints.validate(validationTarget.id));
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) {
+        let message = t('org_registrations_validate_error', 'Error validating registration.');
+        try {
+          const data = await res.json();
+          if (data?.error) {
+            message = data.error;
+          }
+        } catch (err) {
+          // ignore
+        }
+        throw new Error(message);
+      }
+      validateModal.hide();
+      await loadRegistrations();
+    } catch (err) {
+      showMessageModal(err.message || t('org_registrations_validate_error', 'Error validating registration.'), t('error_title', 'Error'));
+    } finally {
+      if (validationElements.validateConfirmBtn) {
+        validationElements.validateConfirmBtn.disabled = false;
+      }
+      validationTarget = null;
+    }
+  };
+
+  const submitRejection = async () => {
+    if (!rejectTarget) return;
+    const reason = validationElements.rejectReason ? validationElements.rejectReason.value.trim() : '';
+    if (!reason) {
+      if (validationElements.rejectReason) {
+        validationElements.rejectReason.classList.add('is-invalid');
+        validationElements.rejectReason.focus();
+      }
+      return;
+    }
+
+    if (validationElements.rejectConfirmBtn) {
+      validationElements.rejectConfirmBtn.disabled = true;
+    }
+
+    try {
+      const url = buildActionUrl(registrationEndpoints.reject(rejectTarget.id));
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reject_reason: reason })
+      });
+      if (!res.ok) {
+        let message = t('org_registrations_reject_error_request', 'Error rejecting registration.');
+        try {
+          const data = await res.json();
+          if (data?.error) {
+            message = data.error;
+          }
+        } catch (err) {
+          // ignore
+        }
+        throw new Error(message);
+      }
+      rejectModal.hide();
+      await loadRegistrations();
+    } catch (err) {
+      showMessageModal(err.message || t('org_registrations_reject_error_request', 'Error rejecting registration.'), t('error_title', 'Error'));
+    } finally {
+      if (validationElements.rejectConfirmBtn) {
+        validationElements.rejectConfirmBtn.disabled = false;
+      }
+      rejectTarget = null;
+    }
+  };
+
   const getParticipantsCount = (registration) => {
     if (!registration) return 0;
     const count = registration.participants_count ?? registration.members_count ?? registration.member_count ?? registration.num_participants;
@@ -1896,7 +2233,8 @@ function initOrganizerRegistrationsTab() {
       VAL: { label: t('registration_status_validated', 'Validada'), color: 'success' },
       REJ: { label: t('registration_status_rejected', 'Rechazada'), color: 'danger' }
     };
-    return statusMap[status] || { label: status || '-', color: 'secondary' };
+    const info = statusMap[status] || { label: status || '-', color: 'secondary' };
+    return { ...info, label: `${info.label}`.toUpperCase() };
   };
 
   const applyFilters = () => {
@@ -2098,6 +2436,7 @@ function initOrganizerRegistrationsTab() {
     if (modalElements.saveBtn) {
       modalElements.saveBtn.classList.toggle('d-none', isViewOnly);
     }
+    setAudioViewMode(isViewOnly);
   };
 
   const openRegistrationDetails = async (registration) => {
@@ -2125,6 +2464,9 @@ function initOrganizerRegistrationsTab() {
 
     modalEl.dataset.viewOnly = 'true';
     setModalViewMode(true);
+    setAudioSectionVisible(true);
+    resetAudioInfo();
+    await fetchRegistrationAudioInfo(registration.id);
     registrationModal.show();
   };
 
@@ -2189,15 +2531,17 @@ function initOrganizerRegistrationsTab() {
 
       const validateBtn = document.createElement('button');
       validateBtn.type = 'button';
-      validateBtn.className = 'btn btn-outline-success btn-sm';
+      validateBtn.className = 'btn btn-outline-success btn-sm btn-org-registration-validate';
       validateBtn.textContent = validateLabel;
-      validateBtn.disabled = true;
+      validateBtn.disabled = registration.status !== 'PEN';
+      validateBtn.dataset.id = registration.id;
 
       const rejectBtn = document.createElement('button');
       rejectBtn.type = 'button';
-      rejectBtn.className = 'btn btn-outline-danger btn-sm';
+      rejectBtn.className = 'btn btn-outline-danger btn-sm btn-org-registration-reject';
       rejectBtn.textContent = rejectLabel;
-      rejectBtn.disabled = true;
+      rejectBtn.disabled = !['PEN', 'VAL'].includes(`${registration.status || ''}`);
+      rejectBtn.dataset.id = registration.id;
 
       const membersBtn = document.createElement('button');
       membersBtn.type = 'button';
@@ -2283,10 +2627,26 @@ function initOrganizerRegistrationsTab() {
   tableBody.addEventListener('click', (event) => {
     const detailsBtn = event.target.closest('.btn-org-registration-details');
     const membersBtn = event.target.closest('.btn-org-registration-members');
+    const validateBtn = event.target.closest('.btn-org-registration-validate');
+    const rejectBtn = event.target.closest('.btn-org-registration-reject');
     if (membersBtn) {
       const registration = registrationState.organizerRegistrations.find(item => `${item.id}` === `${membersBtn.dataset.id}`);
       if (registration) {
         openMembersModal(registration);
+      }
+      return;
+    }
+    if (validateBtn) {
+      const registration = registrationState.organizerRegistrations.find(item => `${item.id}` === `${validateBtn.dataset.id}`);
+      if (registration) {
+        openValidateModal(registration);
+      }
+      return;
+    }
+    if (rejectBtn) {
+      const registration = registrationState.organizerRegistrations.find(item => `${item.id}` === `${rejectBtn.dataset.id}`);
+      if (registration) {
+        openRejectModal(registration);
       }
       return;
     }
@@ -2296,6 +2656,18 @@ function initOrganizerRegistrationsTab() {
       openRegistrationDetails(registration);
     }
   });
+
+  if (validationElements.validateConfirmBtn) {
+    validationElements.validateConfirmBtn.addEventListener('click', submitValidation);
+  }
+  if (validationElements.rejectConfirmBtn) {
+    validationElements.rejectConfirmBtn.addEventListener('click', submitRejection);
+  }
+  if (validationElements.rejectReason) {
+    validationElements.rejectReason.addEventListener('input', () => {
+      validationElements.rejectReason.classList.remove('is-invalid');
+    });
+  }
 
   modalEl.addEventListener('hidden.bs.modal', () => {
     if (modalEl.dataset.viewOnly !== 'true') return;

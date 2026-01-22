@@ -51,7 +51,7 @@
               <button class="nav-link" id="registration-categories-tab" data-bs-toggle="tab" data-bs-target="#registration-categories" type="button" role="tab" aria-controls="registration-categories" aria-selected="false" data-i18n="registration_tab_categories">Categorias</button>
             </li>
             <li class="nav-item" role="presentation">
-              <button class="nav-link" id="registration-disciplines-tab" data-bs-toggle="tab" data-bs-target="#registration-disciplines" type="button" role="tab" aria-controls="registration-disciplines" aria-selected="false" data-i18n="registration_tab_disciplines">Disciplinas</button>
+              <button class="nav-link" id="registration-disciplines-tab" data-bs-toggle="tab" data-bs-target="#registration-disciplines" type="button" role="tab" aria-controls="registration-disciplines" aria-selected="false" data-i18n="registration_tab_disciplines">Disciplinas/Estilos</button>
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link" id="competitions-tab" data-bs-toggle="tab" data-bs-target="#competitions" type="button" role="tab" aria-controls="competitions" aria-selected="false" data-i18n="registration_tab_competitions">Inscripciones en competiciones</button>
@@ -209,7 +209,7 @@
                         </select>
                       </div>
                       <div class="col-12 col-md-2">
-                        <label class="form-label" for="orgRegistrationsFilterStyle" data-i18n="org_registrations_filter_style">Estilo</label>
+                        <label class="form-label" for="orgRegistrationsFilterStyle" data-i18n="org_registrations_filter_style">Disciplina/Estilo</label>
                         <select id="orgRegistrationsFilterStyle" class="form-select">
                           <option value=""></option>
                         </select>
@@ -227,7 +227,7 @@
                           <th data-i18n="org_registrations_table_school">Escuela</th>
                           <th data-i18n="org_registrations_table_choreo">Choreo</th>
                           <th data-i18n="org_registrations_table_category">Categoria</th>
-                          <th data-i18n="org_registrations_table_style">Estilo</th>
+                          <th data-i18n="org_registrations_table_style">Disciplina/Estilo</th>
                           <th data-i18n="org_registrations_table_status">Estado</th>
                           <th class="text-center" data-i18n="org_registrations_table_participants"># Participantes</th>
                           <th class="text-center" data-i18n="org_registrations_table_actions">Acciones</th>
@@ -251,6 +251,10 @@
                       <i class="bi bi-plus-circle me-2"></i>
                       <span data-i18n="registration_categories_add">Nueva categoria</span>
                     </button>
+                    <div class="d-flex align-items-center gap-2 ms-sm-auto">
+                      <span class="text-muted" data-i18n="registration_categories_total">Total categorias</span>
+                      <span class="badge bg-secondary" id="registrationCategoriesCount">0</span>
+                    </div>
                   </div>
 
                   <div class="table-responsive">
@@ -281,12 +285,12 @@
                 <div class="card shadow-sm bg-light">
                   <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center">
-                      <h5 class="card-title mb-0" data-i18n="registration_disciplines_title">Disciplinas</h5>
+                      <h5 class="card-title mb-0" data-i18n="registration_disciplines_title">Disciplinas/Estilos</h5>
                       <span id="count-registration-disciplines" class="badge bg-secondary rounded-pill">0</span>
                     </div>
                     <div class="input-group mb-3 mt-4">
-                      <input type="text" id="input-registration-disciplines" class="form-control" placeholder="Nueva disciplina" data-i18n-placeholder="registration_disciplines_new_placeholder" maxlength="40" />
-                      <button class="btn btn-primary" id="registrationDisciplinesAddBtn" type="button" data-i18n="registration_disciplines_add">Nueva disciplina</button>
+                      <input type="text" id="input-registration-disciplines" class="form-control" placeholder="Nueva disciplina/estilo" data-i18n-placeholder="registration_disciplines_new_placeholder" maxlength="40" />
+                      <button class="btn btn-primary" id="registrationDisciplinesAddBtn" type="button" data-i18n="registration_disciplines_add">Crear disciplina/estilo</button>
                     </div>
                     <ul class="list-group" id="list-registration-disciplines"></ul>
                   </div>
@@ -314,7 +318,7 @@
                           <th data-i18n="registration_competitions_table_choreography">Coreografia</th>
                           <th data-i18n="registration_competitions_table_choreographer">Coreografo</th>
                           <th data-i18n="registration_competitions_table_category">Categoria</th>
-                          <th data-i18n="registration_competitions_table_style">Estilo</th>
+                          <th data-i18n="registration_competitions_table_style">Disciplina/Estilo</th>
                           <th data-i18n="registration_competitions_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_participants">Participantes</th>
                           <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
@@ -365,6 +369,7 @@
                           <th data-i18n="schools_table_representative">Representante</th>
                           <th class="text-center" data-i18n="schools_table_participants"># de participantes</th>
                           <th class="text-center" data-i18n="schools_table_choreos"># de choreos</th>
+                          <th class="text-center" data-i18n="schools_table_choreos_status">Estados de las coreos</th>
                           <th class="text-center" data-i18n="schools_table_actions">Acciones</th>
                         </tr>
                       </thead>
@@ -489,7 +494,10 @@
               </div>
               <div class="col-12 col-md-4">
                 <label class="form-label" for="registrationCategoryMusicMaxDuration" data-i18n="registration_categories_field_music_max_duration">Duracion musica</label>
-                <input type="number" class="form-control" id="registrationCategoryMusicMaxDuration" min="0" step="1">
+                <div class="input-group">
+                  <input type="number" class="form-control" id="registrationCategoryMusicMaxDuration" min="0" step="1">
+                  <span class="input-group-text">Secs</span>
+                </div>
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationCategoryMinYears" data-i18n="registration_categories_field_min_years">Min. anos</label>
@@ -532,11 +540,11 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" data-i18n="registration_disciplines_delete_title">Eliminar disciplina</h5>
+          <h5 class="modal-title" data-i18n="registration_disciplines_delete_title">Eliminar disciplina/estilo</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p id="registrationDisciplineDeleteMessage" data-i18n="registration_disciplines_delete_question">Seguro que deseas eliminar esta disciplina?</p>
+          <p id="registrationDisciplineDeleteMessage" data-i18n="registration_disciplines_delete_question">Seguro que deseas eliminar la disciplina/estilo?</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
@@ -573,9 +581,19 @@
                   <option value=""></option>
                 </select>
                 <div class="form-text" id="categoryRuleInfo"></div>
+                <div id="registrationStatusWrapper" class="mt-3 d-none">
+                  <label class="form-label mb-1" data-i18n="registration_competitions_status_label">Estado</label>
+                  <div>
+                    <span id="registrationStatusBadge" class="badge bg-secondary fs-6">-</span>
+                  </div>
+                </div>
+                <div id="registrationRejectReasonWrapper" class="mt-3 d-none">
+                  <label class="form-label mb-1" data-i18n="registration_competitions_reject_reason_label">Motivo rechazo</label>
+                  <div id="registrationRejectReason" class="text-danger fw-semibold fs-6">-</div>
+                </div>
               </div>
               <div class="col-12 col-md-6">
-                <label class="form-label" for="registrationStyle" data-i18n="registration_competitions_style">Estilo</label>
+                <label class="form-label" for="registrationStyle" data-i18n="registration_competitions_style">Disciplina/Estilo</label>
                 <select id="registrationStyle" class="form-select" required>
                   <option value=""></option>
                 </select>
@@ -585,47 +603,48 @@
             <hr class="my-4">
 
             <div id="registrationAudioSection" class="d-none">
-              <h6 class="text-uppercase text-muted small mb-2">Musica</h6>
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="registration_competitions_audio">Musica</h6>
               <div id="registrationAudioUploadControls">
                 <div class="audio-dropzone border border-2 border-secondary-subtle rounded p-3 text-center bg-light" id="registrationAudioDropzone">
                   <input type="file" id="registrationAudioInput" accept="audio/*" class="d-none">
                   <div class="mb-2">
                     <i class="bi bi-music-note-beamed me-2"></i>
-                    Arrastra aqui tu audio o
-                    <button type="button" class="btn btn-link p-0 align-baseline" id="registrationAudioBrowseBtn">selecciona un archivo</button>
+                    <span data-i18n="registration_audio_drag_drop">Arrastra aqui tu audio o</span>
+                    <button type="button" class="btn btn-link p-0 align-baseline" id="registrationAudioBrowseBtn" data-i18n="registration_audio_browse">selecciona un archivo</button>
                   </div>
-                  <div class="small text-muted">Formatos de audio</div>
+                  <div class="small text-muted" data-i18n="registration_audio_formats">Formatos de audio</div>
                 </div>
               </div>
               <div class="row g-2 mt-2">
                 <div class="col-12 col-md-5">
-                  <div class="text-muted small">Archivo</div>
+                  <div class="text-muted small" data-i18n="registration_audio_file">Archivo</div>
                   <div id="registrationAudioName" class="fw-semibold">-</div>
                 </div>
                 <div class="col-6 col-md-2">
-                  <div class="text-muted small">Duracion</div>
+                  <div class="text-muted small" data-i18n="registration_audio_duration">Duracion</div>
                   <div id="registrationAudioDuration" class="fw-semibold">-</div>
                 </div>
                 <div class="col-6 col-md-2">
-                  <div class="text-muted small">Tamano</div>
+                  <div class="text-muted small" data-i18n="registration_audio_size">Tamano</div>
                   <div id="registrationAudioSize" class="fw-semibold">-</div>
                 </div>
                 <div class="col-6 col-md-3">
-                  <div class="text-muted small">Maximo</div>
+                  <div class="text-muted small" data-i18n="registration_audio_max">Maximo</div>
                   <div id="registrationAudioMax" class="fw-semibold">-</div>
                 </div>
               </div>
               <div id="registrationAudioError" class="text-danger small mt-2 d-none"></div>
               <div class="d-flex flex-column flex-md-row gap-2 mt-3">
-                <button type="button" class="btn btn-outline-danger" id="registrationAudioRemoveBtn" disabled>Eliminar musica</button>
-                <button type="button" class="btn btn-outline-primary" id="registrationAudioSaveBtn" disabled>Guardar audio</button>
+                <button type="button" class="btn btn-outline-danger" id="registrationAudioRemoveBtn" disabled data-i18n="registration_audio_remove">Eliminar musica</button>
+                <button type="button" class="btn btn-outline-primary" id="registrationAudioSaveBtn" disabled data-i18n="registration_audio_save">Guardar audio</button>
+                <a class="btn btn-outline-primary d-none" id="registrationAudioDownloadBtn" href="#" download data-i18n="registration_audio_download">Descargar audio</a>
               </div>
             </div>
           </form>
         </div>
         <div class="modal-footer flex-column flex-md-row gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
-          <button type="button" class="btn btn-primary" id="registrationSaveBtn">Guardar coreografia</button>
+          <button type="button" class="btn btn-primary" id="registrationSaveBtn" data-i18n="save_choreo">Guardar coreografia</button>
         </div>
       </div>
     </div>
@@ -653,7 +672,7 @@
                 <div class="fw-semibold" id="registrationMembersCategory">-</div>
               </div>
               <div class="col-12 col-md-4">
-                <div class="text-muted small" data-i18n="registration_competitions_member_style_label">Estilo</div>
+                <div class="text-muted small" data-i18n="registration_competitions_member_style_label">Disciplina/Estilo</div>
                 <div class="fw-semibold" id="registrationMembersStyle">-</div>
               </div>
             </div>
@@ -698,7 +717,7 @@
         </div>
         <div class="modal-footer flex-column flex-md-row gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
-          <button type="button" class="btn btn-primary" id="registrationMembersSaveBtn">
+          <button type="button" class="btn btn-primary" id="registrationMembersSaveBtn" data-i18n="registration_competitions_members_save">
             Guardar miembros
           </button>
         </div>
@@ -750,11 +769,49 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p id="confirmRegistrationMessage">Seguro que deseas confirmar esta inscripcion?</p>
+          <p id="confirmRegistrationMessage" data-i18n="registration_competitions_confirm_question">Seguro que deseas confirmar esta inscripcion?</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-success" id="confirmRegistrationBtn" data-i18n="confirm">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="orgRegistrationValidateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="org_registrations_validate_title">Validar coreografia</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p data-i18n="org_registrations_validate_question">Seguro que deseas validar esta coreografia?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-success" id="confirmOrgRegistrationValidateBtn" data-i18n="confirm">Confirmar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="orgRegistrationRejectModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="org_registrations_reject_title">Rechazar coreografia</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label for="orgRegistrationRejectReason" class="form-label" data-i18n="org_registrations_reject_label">Por favor, indique los motivos del rechazo.</label>
+          <textarea id="orgRegistrationRejectReason" class="form-control" rows="4" data-i18n-placeholder="org_registrations_reject_placeholder" placeholder="Motivos del rechazo"></textarea>
+          <div class="invalid-feedback" data-i18n="org_registrations_reject_error">Indica los motivos del rechazo.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmOrgRegistrationRejectBtn" data-i18n="org_registrations_reject_confirm">Rechazar</button>
         </div>
       </div>
     </div>

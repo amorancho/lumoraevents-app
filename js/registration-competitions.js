@@ -27,6 +27,10 @@
     category: document.getElementById('registrationCategory'),
     style: document.getElementById('registrationStyle'),
     categoryInfo: document.getElementById('categoryRuleInfo'),
+    statusWrapper: document.getElementById('registrationStatusWrapper'),
+    statusBadge: document.getElementById('registrationStatusBadge'),
+    rejectWrapper: document.getElementById('registrationRejectReasonWrapper'),
+    rejectReason: document.getElementById('registrationRejectReason'),
     participantSelect: document.getElementById('registrationParticipantSelect'),
     addMemberBtn: document.getElementById('addRegistrationMemberBtn'),
     membersTable: document.getElementById('registrationMembersTable'),
@@ -691,13 +695,13 @@
     if (!Array.isArray(members)) return [];
     return members.map(member => {
       if (member && typeof member === 'object') {
-        const memberId = member.id;
+        const memberId = member.participant_id;
         const fallback = memberId ? participantsById.get(`${memberId}`) : null;
         return {
           ...fallback,
           ...member,
           id: memberId,
-          name: member.name,
+          name: member.name || (memberId != null ? `#${memberId}` : ''),
           date_of_birth: member.date_of_birth
         };
       }
@@ -811,6 +815,7 @@
       resetChoreoForm();
       setAudioSectionVisible(false);
       resetAudioState();
+      updateModalStatusInfo('', '');
       registrationModal.show();
       return;
     }
@@ -819,6 +824,7 @@
       resetChoreoForm();
       setAudioSectionVisible(false);
       resetAudioState();
+      updateModalStatusInfo('', '');
       registrationModal.show();
       return;
     }
@@ -832,6 +838,16 @@
     updateCategoryInfo();
     setAudioSectionVisible(true);
     resetAudioState();
+    let statusValue = registration.status || '';
+    let rejectReason = getRejectReasonValue(registration);
+    if ((!statusValue || (`${statusValue}` === 'REJ' && !rejectReason)) && registration.id) {
+      const details = await fetchRegistrationDetails(registration.id);
+      if (details) {
+        statusValue = details.status || statusValue;
+        rejectReason = rejectReason || getRejectReasonValue(details);
+      }
+    }
+    updateModalStatusInfo(statusValue, rejectReason);
     await fetchRegistrationAudioInfo(registration.id);
     registrationModal.show();
   };
@@ -922,7 +938,37 @@
       VAL: { label: t('registration_status_validated', 'Validada'), color: 'success' },
       REJ: { label: t('registration_status_rejected', 'Rechazada'), color: 'danger' }
     };
-    return statusMap[status] || { label: status || '-', color: 'secondary' };
+    const info = statusMap[status] || { label: status || '-', color: 'secondary' };
+    return { ...info, label: `${info.label}`.toUpperCase() };
+  };
+
+  const getRejectReasonValue = (data) => data?.reject_reason
+    || data?.rejection_reason
+    || data?.rejectReason
+    || data?.reject_note
+    || '';
+
+  const updateModalStatusInfo = (status, rejectReason) => {
+    if (!elements.statusWrapper || !elements.statusBadge) return;
+    if (!status) {
+      elements.statusWrapper.classList.add('d-none');
+      if (elements.rejectWrapper) elements.rejectWrapper.classList.add('d-none');
+      return;
+    }
+
+    const statusInfo = formatStatusInfo(status);
+    elements.statusBadge.className = `badge bg-${statusInfo.color}`;
+    elements.statusBadge.textContent = statusInfo.label;
+    elements.statusWrapper.classList.remove('d-none');
+
+    if (elements.rejectWrapper && elements.rejectReason) {
+      if (`${status}` === 'REJ') {
+        elements.rejectReason.textContent = rejectReason || '-';
+        elements.rejectWrapper.classList.remove('d-none');
+      } else {
+        elements.rejectWrapper.classList.add('d-none');
+      }
+    }
   };
 
   const renderRegistrations = () => {
@@ -951,6 +997,7 @@
       const row = document.createElement('tr');
       row.dataset.id = registration.id;
       const isPending = `${registration.status}` === 'PEN';
+      const isValidated = `${registration.status}` === 'VAL';
 
       const nameCell = document.createElement('td');
       const nameWrapper = document.createElement('div');
@@ -1003,7 +1050,7 @@
       editBtn.dataset.id = registration.id;
       editBtn.title = editTitle;
       editBtn.setAttribute('aria-label', editTitle);
-      editBtn.disabled = isPending;
+      editBtn.disabled = isPending || isValidated;
       editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
 
       const membersBtn = document.createElement('button');
@@ -1012,7 +1059,7 @@
       membersBtn.dataset.id = registration.id;
       membersBtn.title = t('registration_competitions_members_title', 'Gestion de miembros');
       membersBtn.setAttribute('aria-label', membersBtn.title);
-      membersBtn.disabled = isPending;
+      membersBtn.disabled = isPending || isValidated;
       membersBtn.innerHTML = '<i class="bi bi-people"></i>';
 
       const confirmBtn = document.createElement('button');
@@ -1027,6 +1074,7 @@
       confirmBtn.innerHTML = isPending
         ? '<i class="bi bi-x-circle"></i>'
         : '<i class="bi bi-check-circle"></i>';
+      confirmBtn.disabled = isValidated;
 
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';

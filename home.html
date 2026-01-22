@@ -8,6 +8,12 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
+  <style>
+    .card-judge-emphasis {
+      border: 2px solid #f2c94c;
+      box-shadow: 0 0.75rem 1.75rem rgba(242, 201, 76, 0.25);
+    }
+  </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
   
@@ -31,7 +37,7 @@
     </div>
 
     
-    <div class="row g-4 justify-content-center pt-4">
+    <div class="row g-4 justify-content-center pt-4" id="home-menu-row">
 
       <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-none" id="col-configUrl">
         <a href="configevent.html" class="card h-100 text-center text-decoration-none shadow-sm hover-shadow" id="configUrl">
@@ -54,10 +60,10 @@
       </div>
 
       <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-none" id="col-votingUrl">
-        <a href="voting.html" class="card h-100 text-center text-decoration-none shadow-sm" id="votingUrl">
+        <a href="voting.html" class="card h-100 text-center text-decoration-none shadow-sm card-judge-emphasis" id="votingUrl">
           <div class="card-body">
             <div class="fs-1 text-primary">⚖️</div>
-            <h5 class="card-title mt-3" data-i18n="jud_access">Judges Access</h5>
+            <h5 class="card-title mt-3" data-i18n="jud_access">Voting</h5>
             <p class="card-text text-muted" data-i18n="jud_access_sub">Exclusive panel for the event's jury.</p>
           </div>
         </a>
