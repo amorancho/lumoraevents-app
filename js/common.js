@@ -123,7 +123,6 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         status: status,
         homeUrl: `home.html?eventId=${eventId}`,
         language: data.language,
-        judgesToVote: data.judges_to_vote,
         autoRefreshMin: data.autorefresh_minutes,
         catClassification: data.category_class_type,
         visibleJudges: data.visible_judges,
