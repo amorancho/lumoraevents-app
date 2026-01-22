@@ -204,9 +204,22 @@
               <div class="card-body">
                 <h5 class="card-title mb-3" data-i18n="criteria_config_new_title">Nueva configuración</h5>
 
-                <div class="mb-3">
+                <div class="mb-3" id="criteria-config-criteria-select-field">
                   <label class="form-label" data-i18n="criteria_config_criteria_label">Criterio</label>
                   <select id="criteria-config-criteria" class="form-select"></select>
+                </div>
+
+                <div class="mb-3 d-none" id="criteria-config-criteria-list-field">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <label class="form-label mb-0" data-i18n="criteria_config_criteria_label">Criterio</label>
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-criteria-all" data-i18n="criteria_config_all_masculine">Todos</button>
+                      <button type="button" class="btn btn-outline-secondary" id="criteria-config-criteria-none" data-i18n="criteria_config_none_masculine">Ninguno</button>
+                    </div>
+                  </div>
+                  <div class="border rounded p-2 bg-white criteria-config-list">
+                    <div id="criteria-config-criteria-list"></div>
+                  </div>
                 </div>
 
                 <div class="mb-3">
