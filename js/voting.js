@@ -331,7 +331,9 @@ function showVotesModal(dancer, mode = "details") {
 
     if (hasWeights) {
       if (weightSum <= 0) return 0;
-      return total / weightSum;
+      // redondeamos de 8.1 a 8.4, hacia abajo, y de 8.5 a 8.9 hacia arriba
+      total = Math.round((total / weightSum) * 10) / 10;
+      return total;
     }
 
     return total;
@@ -406,7 +408,8 @@ function showVotesModal(dancer, mode = "details") {
       const rawValue = dancer.scores?.[criteria.name];
       return typeof rawValue === 'number' ? rawValue : rawValue == null ? null : Number(rawValue);
     });
-    renderTotal(total);
+    //renderTotal(total);
+    renderTotal(dancer.totalScore);
   } else {
     const options = generateScoreOptions(scoreType, minScore, maxScore);
 
