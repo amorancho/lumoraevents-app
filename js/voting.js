@@ -814,11 +814,13 @@ function renderDancersTable(dancers, compStatus) {
             ? 'bg-danger'
             : d.status === 'Max Judges Voted'
               ? 'bg-danger'
-              : d.status === 'No Show'
-                ? 'bg-noshown'
-                : d.status === 'Not Applicable'
-                  ? 'bg-secondary'
-                  : 'bg-success'}">
+              : d.status === 'Disqualified'
+                ? 'bg-danger'
+                  : d.status === 'No Show'
+                    ? 'bg-noshown'
+                    : d.status === 'Not Applicable'
+                      ? 'bg-secondary'
+                      : 'bg-success'}">
         ${d.status}
       </span>
     `;

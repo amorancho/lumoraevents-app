@@ -257,6 +257,7 @@ function renderCompetitions(competitions) {
           else if (v.status === 'Incompatible') badgeClass = 'danger';
           else if (v.status === 'Max Judges Voted') badgeClass = 'danger';
           else if (v.status === 'No Show') badgeClass = 'noshown';
+          else if (v.status === 'Disqualified') badgeClass = 'danger';
 
           // async function resetVote(categoryId, styleId, judgeId, dancerId, rowId) {
 
