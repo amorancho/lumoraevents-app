@@ -380,7 +380,6 @@ function openEditEventModal(eventObj) {
   document.getElementById('eventlogo').value = eventObj.eventlogo;
   document.getElementById('min_styles').value = eventObj.min_styles;
   document.getElementById('autorefresh_minutes').value = eventObj.autorefresh_minutes;
-  document.getElementById('judges_to_vote').value = eventObj.judges_to_vote;
   document.getElementById('category_class_type').value = eventObj.category_class_type;
   document.getElementById('score_type').value = eventObj.score_type;
   document.getElementById('criteria_config').value = eventObj.criteria_config;
@@ -441,7 +440,6 @@ async function saveEvent() {
     trial: document.getElementById('trial').checked ? 1 : 0,
     min_styles: parseInt(document.getElementById('min_styles').value, 10) || null,
     autorefresh_minutes: parseInt(document.getElementById('autorefresh_minutes').value, 10) || 0,
-    judges_to_vote: parseInt(document.getElementById('judges_to_vote').value, 10) || 0,
     category_class_type: document.getElementById('category_class_type').value || '',
     criteria_config: document.getElementById('criteria_config').value || 'NO_CONFIG',
     visible_judges: document.getElementById('visible_judges').checked ? 1 : 0,

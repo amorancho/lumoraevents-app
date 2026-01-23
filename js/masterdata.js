@@ -268,6 +268,8 @@ function setupCriteriaConfigTab() {
     const showPorcentage = getEvent().criteriaConfig === 'WITH_POR';
     const porcentageField = document.getElementById('criteria-config-porcentage-field');
     const porcentageHeader = document.getElementById('criteria-config-porcentage-header');
+    const criteriaSelectField = document.getElementById('criteria-config-criteria-select-field');
+    const criteriaListField = document.getElementById('criteria-config-criteria-list-field');
 
     if (porcentageField) {
         porcentageField.classList.toggle('d-none', !showPorcentage);
@@ -278,6 +280,12 @@ function setupCriteriaConfigTab() {
     const totalHeader = document.getElementById('criteria-config-total-header');
     if (totalHeader) {
         totalHeader.classList.toggle('d-none', !showPorcentage);
+    }
+    if (criteriaSelectField) {
+        criteriaSelectField.classList.toggle('d-none', !showPorcentage);
+    }
+    if (criteriaListField) {
+        criteriaListField.classList.toggle('d-none', showPorcentage);
     }
 
 }
@@ -313,11 +321,15 @@ function bindCriteriaConfigEvents() {
     const categoriesNone = document.getElementById('criteria-config-categories-none');
     const stylesAll = document.getElementById('criteria-config-styles-all');
     const stylesNone = document.getElementById('criteria-config-styles-none');
+    const criteriaAll = document.getElementById('criteria-config-criteria-all');
+    const criteriaNone = document.getElementById('criteria-config-criteria-none');
 
     if (categoriesAll) categoriesAll.addEventListener('click', () => setAllCriteriaConfigChecks('criteria-config-categories', true));
     if (categoriesNone) categoriesNone.addEventListener('click', () => setAllCriteriaConfigChecks('criteria-config-categories', false));
     if (stylesAll) stylesAll.addEventListener('click', () => setAllCriteriaConfigChecks('criteria-config-styles', true));
     if (stylesNone) stylesNone.addEventListener('click', () => setAllCriteriaConfigChecks('criteria-config-styles', false));
+    if (criteriaAll) criteriaAll.addEventListener('click', () => setAllCriteriaConfigChecks('criteria-config-criteria-list', true));
+    if (criteriaNone) criteriaNone.addEventListener('click', () => setAllCriteriaConfigChecks('criteria-config-criteria-list', false));
 
     const tableBody = document.getElementById('criteria-config-table');
     if (tableBody) {
@@ -350,6 +362,7 @@ function populateCriteriaConfigOptions() {
 
     renderCriteriaConfigCheckboxes('criteria-config-categories', categoriesList, 'category');
     renderCriteriaConfigCheckboxes('criteria-config-styles', stylesList, 'style');
+    renderCriteriaConfigCheckboxes('criteria-config-criteria-list', criteriaList, 'criteria');
     populateCriteriaConfigFilters();
 }
 
@@ -598,13 +611,25 @@ function formatPercentage(value) {
 }
 
 async function addCriteriaConfig() {
-    const criteriaSelect = document.getElementById('criteria-config-criteria');
-    if (!criteriaSelect) return;
+    const needsPorcentage = getEvent().criteriaConfig === 'WITH_POR';
+    let criteriaIds = [];
 
-    const criteriaId = Number(criteriaSelect.value);
-    if (!criteriaId) {
-        showMessageModal(t('criteria_config_select_criteria_error'), t('error'));
-        return;
+    if (needsPorcentage) {
+        const criteriaSelect = document.getElementById('criteria-config-criteria');
+        if (!criteriaSelect) return;
+
+        const criteriaId = Number(criteriaSelect.value);
+        if (!criteriaId) {
+            showMessageModal(t('criteria_config_select_criteria_error'), t('error'));
+            return;
+        }
+        criteriaIds = [criteriaId];
+    } else {
+        criteriaIds = getCriteriaConfigCheckedValues('criteria-config-criteria-list').map(Number);
+        if (!criteriaIds.length) {
+            showMessageModal(t('criteria_config_select_criteria_error'), t('error'));
+            return;
+        }
     }
 
     const categories = getCriteriaConfigCheckedValues('criteria-config-categories');
@@ -615,7 +640,6 @@ async function addCriteriaConfig() {
         return;
     }
 
-    const needsPorcentage = getEvent().criteriaConfig === 'WITH_POR';
     let percentage = null;
     if (needsPorcentage) {
         const input = document.getElementById('criteria-config-porcentage');
@@ -636,9 +660,10 @@ async function addCriteriaConfig() {
             method: 'POST',
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+                event_id: getEvent().id,
                 category_ids: categories.map(Number),
                 style_ids: styles.map(Number),
-                criteria_id: criteriaId,
+                criteria_ids: criteriaIds,
                 percentage: needsPorcentage ? percentage : null
             })
         });
@@ -651,6 +676,9 @@ async function addCriteriaConfig() {
 
         setAllCriteriaConfigChecks('criteria-config-categories', false);
         setAllCriteriaConfigChecks('criteria-config-styles', false);
+        if (!needsPorcentage) {
+            setAllCriteriaConfigChecks('criteria-config-criteria-list', false);
+        }
         if (needsPorcentage) {
             const input = document.getElementById('criteria-config-porcentage');
             if (input) input.value = '';
