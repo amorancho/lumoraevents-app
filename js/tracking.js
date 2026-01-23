@@ -241,7 +241,16 @@ function renderCompetitions(competitions) {
                       ${t('no_show')}
                     </button>
                   </li>
-                  <li><button class="dropdown-item" type="button" ${btnDisabled}>${t('disqualify')}</button></li>
+                  <li>
+                    <button class="dropdown-item js-disqualify"
+                      type="button"
+                      data-category-id="${comp.category_id}"
+                      data-style-id="${comp.style_id}"
+                      data-dancer-id="${d.dancer_id ?? d.id}"
+                      data-dancer-name="${d.dancer_name}" ${btnDisabled}>
+                      ${t('disqualify')}
+                    </button>
+                  </li>
                   <li><button class="dropdown-item" type="button" ${btnDisabled}>${t('penalty')}</button></li>
                 </ul>
               </div>
@@ -361,6 +370,18 @@ function renderCompetitions(competitions) {
     btn.addEventListener('click', async () => {
       if (btn.disabled) return;
       await markNoShow(
+        btn.dataset.categoryId,
+        btn.dataset.styleId,
+        btn.dataset.dancerId,
+        btn.dataset.dancerName
+      );
+    });
+  });
+
+  container.querySelectorAll('.js-disqualify').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      await markDisqualified(
         btn.dataset.categoryId,
         btn.dataset.styleId,
         btn.dataset.dancerId,
@@ -506,6 +527,38 @@ async function markNoShow(categoryId, styleId, dancerId, dancerName) {
     );
   } catch (err) {
     showMessageModal(err.message || t('error_mark_no_show'), t('error_title'));
+  }
+}
+
+async function markDisqualified(categoryId, styleId, dancerId, dancerName) {
+  const confirmed = await showModal(`${t('confirm_disqualify_1')} "${dancerName}"${t('confirm_disqualify_2')}`);
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/voting/setDesqualified`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_id: Number(getEvent().id),
+        category_id: Number(categoryId),
+        style_id: Number(styleId),
+        dancer_id: Number(dancerId)
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showMessageModal(data.error || t('error_set_disqualified'), t('error_title'));
+      return;
+    }
+
+    await loadCompetitions(
+      document.getElementById('categorySelect').value,
+      document.getElementById('styleSelect').value
+    );
+  } catch (err) {
+    showMessageModal(err.message || t('error_set_disqualified'), t('error_title'));
   }
 }
 

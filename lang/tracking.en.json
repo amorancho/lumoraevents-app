@@ -38,9 +38,12 @@
   "penalty": "Penalty",
   "confirm_no_show_1": "Are you sure you want to mark as No Show",
   "confirm_no_show_2": "?",
+  "confirm_disqualify_1": "Are you sure you want to disqualify",
+  "confirm_disqualify_2": "?",
   "open_competition": "Open Competition",
   "close_competition": "Close Competition",
   "error_title": "Error",
   "error_change_competition_status": "Error changing competition status.",
-  "error_mark_no_show": "Error marking dancer as No Show."
+  "error_mark_no_show": "Error marking dancer as No Show.",
+  "error_set_disqualified": "Error disqualifying dancer."
 }
