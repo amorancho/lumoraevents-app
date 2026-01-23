@@ -389,6 +389,22 @@ function renderCompetitions(competitions) {
       );
     });
   });
+
+  initActionDropdowns(container);
+}
+
+function initActionDropdowns(container) {
+  container.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(btn => {
+    if (bootstrap.Dropdown.getInstance(btn)) return;
+    new bootstrap.Dropdown(btn, {
+      popperConfig: {
+        strategy: 'fixed',
+        modifiers: [
+          { name: 'preventOverflow', options: { boundary: 'viewport' } }
+        ]
+      }
+    });
+  });
 }
 
 async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
