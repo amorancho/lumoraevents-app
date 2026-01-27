@@ -9,9 +9,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   const form = document.getElementById('statsForm');
   if (form) {
     form.addEventListener('submit', handleStatsSubmit);
+    autoLoadStatsFromUrl(form);
   }
 
 });
+
+function autoLoadStatsFromUrl(form) {
+  const input = dancerCodeInput();
+  if (!input) return;
+
+  const params = new URLSearchParams(window.location.search || '');
+  const code = (params.get('code') || '').trim();
+  if (!code) return;
+
+  input.value = code;
+
+  if (typeof form.requestSubmit === 'function') {
+    form.requestSubmit();
+  } else {
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  }
+}
 
 async function handleStatsSubmit(event) {
   event.preventDefault();
