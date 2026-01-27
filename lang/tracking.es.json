@@ -45,5 +45,6 @@
   "open_competition": "Abrir competicion",
   "close_competition": "Cerrar competicion",
   "error_title": "Error",
-  "error_change_competition_status": "Error al cambiar el estado de la competicion."
+  "error_change_competition_status": "Error al cambiar el estado de la competicion.",
+  "view_results": "Ver Resultados"
 }

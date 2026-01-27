@@ -101,7 +101,7 @@ function renderCompetitions(competitions) {
     const statusActionButton = !isFinished
       ? `
         <button type="button"
-          class="btn btn-outline-${isOpen ? 'warning' : 'success'} btn-sm btn-toggle-status ms-auto"
+          class="btn btn-outline-${isOpen ? 'warning' : 'success'} btn-sm w-100 btn-toggle-status"
           data-action="${isOpen ? 'close' : 'open'}"
           data-comp-id="${comp.id}" ${btnDisabled}>
           <i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'} me-1"></i>
@@ -112,19 +112,21 @@ function renderCompetitions(competitions) {
     // Card con info de competición
     const card = document.createElement('div');
     card.className = 'card mb-4';
-    const positionedStatusButton = statusActionButton
-      ? statusActionButton.replace(
-        'btn-toggle-status ms-auto',
-        'btn-toggle-status position-absolute end-0 top-50 translate-middle-y me-3'
-      )
-      : '';
     card.innerHTML = `
-      <div class="card-header position-relative">
+      <div class="card-header">
         <h5 class="mb-0 text-center w-100">${comp.category_name} - ${comp.style_name}</h5>
-        ${positionedStatusButton}
       </div>
       <div class="card-body">
-        <div class="row text-center">
+        <div class="row text-center align-items-stretch">
+          <div class="col-6 col-md-2 d-flex">
+            <div class="d-grid gap-2 w-100">
+              ${statusActionButton}
+              <button type="button" class="btn btn-outline-primary btn-sm w-100" disabled>
+                <i class="bi bi-trophy me-1"></i>
+                ${t('view_results')}
+              </button>
+            </div>
+          </div>
           <div class="col-6 col-md-2">
             <p class="mb-1 fw-semibold">${t('category')}</p>
             <p><span class="badge bg-secondary">${comp.category_name}</span></p>
@@ -137,7 +139,7 @@ function renderCompetitions(competitions) {
             <p class="mb-1 fw-semibold">${t('stimated_time')}</p>
             <p>${comp.estimated_start_form ?? '<span class="badge bg-dark">' + t('not_defined') + '</span>'}</p>
           </div>
-          <div class="col-6 col-md-2">
+          <div class="col-6 col-md-1">
             <p class="mb-1 fw-semibold">${t('status')}</p>
             <p>
               <span class="badge bg-${
@@ -152,31 +154,26 @@ function renderCompetitions(competitions) {
             </p>
 
           </div>                  
-          <div class="col-12 col-md-4">
-              <div class="row text-center">
-                <div class="col-4">
-                  <p class="mb-1 fw-semibold">${t('judges')}</p>
-                  <p>
-                    <span class="badge bg-primary">${comp.judge_number}</span>
-                    <span class="mx-1">/</span>
-
-                    <span class="badge bg-warning"
-                          data-bs-toggle="tooltip"
-                          data-bs-placement="top"
-                          title="${t('reserve_judges')}">
-                      ${comp.judge_number_reserve}
-                    </span>
-                  </p>
-                </div>
-                <div class="col-4">
-                  <p class="mb-1 fw-semibold">${t('dancers')}</p>
-                  <p><span class="badge bg-primary">${comp.num_dancers}</span></p>
-                </div>
-                <div class="col-4">
-                  <p class="mb-1 fw-semibold">${t('pending')}</p>
-                  <p><span class="badge bg-warning">${comp.dancers.filter(d => d.votes.some(v => v.status === 'Pending')).length}</span></p>
-                </div>
-              </div>
+          <div class="col-6 col-md-1">
+            <p class="mb-1 fw-semibold">${t('judges')}</p>
+            <p>
+              <span class="badge bg-primary">${comp.judge_number}</span>
+              <span class="mx-1">/</span>
+              <span class="badge bg-warning"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="${t('reserve_judges')}">
+                ${comp.judge_number_reserve}
+              </span>
+            </p>
+          </div>
+          <div class="col-6 col-md-1">
+            <p class="mb-1 fw-semibold">${t('dancers')}</p>
+            <p><span class="badge bg-primary">${comp.num_dancers}</span></p>
+          </div>
+          <div class="col-6 col-md-1">
+            <p class="mb-1 fw-semibold">${t('pending')}</p>
+            <p><span class="badge bg-warning">${comp.dancers.filter(d => d.votes.some(v => v.status === 'Pending')).length}</span></p>
           </div>
         </div>
       </div>
