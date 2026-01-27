@@ -568,7 +568,7 @@ function showVotesModal(dancer, mode = "details") {
     sendBtn.textContent = t('send_votes');
   
     const noShowBtn = document.createElement('button');
-    noShowBtn.className = "btn btn-warning btn-sm me-auto";
+    noShowBtn.className = "btn btn-warning btn-sm me-auto d-none"; // Por ahora lo ocultamos
     noShowBtn.textContent = t('no_show');
   
     // --- funcion auxiliar para enviar votos ---
