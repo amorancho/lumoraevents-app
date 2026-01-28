@@ -383,6 +383,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('category_class_type').value = eventObj.category_class_type;
   document.getElementById('score_type').value = eventObj.score_type;
   document.getElementById('criteria_config').value = eventObj.criteria_config;
+  document.getElementById('total_system').value = eventObj.total_system;  
 
   // switches -> convertir 1/0 a checkbox
   document.getElementById('visible').checked = (Number(eventObj.visible) === 1);
@@ -442,6 +443,7 @@ async function saveEvent() {
     autorefresh_minutes: parseInt(document.getElementById('autorefresh_minutes').value, 10) || 0,
     category_class_type: document.getElementById('category_class_type').value || '',
     criteria_config: document.getElementById('criteria_config').value || 'NO_CONFIG',
+    total_system: document.getElementById('total_system').value || 'SUM_SCORES',
     visible_judges: document.getElementById('visible_judges').checked ? 1 : 0,
     visible_participants: document.getElementById('visible_participants').checked ? 1 : 0,
     visible_schedule: document.getElementById('visible_schedule').checked ? 1 : 0,

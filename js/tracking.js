@@ -207,6 +207,7 @@ function renderCompetitions(competitions) {
               `).join('')}              
               <th>${t('voted')}</th>
               <th>${t('total')}</th>
+              ${shouldShowAvgPlaceColumn() ? `<th>${t('avg_place')}</th>` : ''}
             </tr>
           </thead>
           <tbody>
@@ -311,9 +312,11 @@ function renderCompetitions(competitions) {
         const totalScoreText = (getEvent().criteriaConfig === 'WITH_POR')
           ? Number(d.total_score ?? 0).toFixed(1)
           : (d.total_score || 0);
+        const avgPlaceText = formatAvgPlace(d.avg_place);
         tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}        
         <td class="bg-light">${d.judges_voted}</td>
-        <td class="bg-light">${totalScoreText}</td></tr>`;
+        <td class="bg-light">${totalScoreText}</td>
+        ${shouldShowAvgPlaceColumn() ? `<td class="bg-light">${avgPlaceText}</td>` : ''}</tr>`;
       });
 
       tableHTML += '</tbody></table>';
@@ -645,6 +648,14 @@ function formatResultScore(totalScore) {
   return totalScore ?? 0;
 }
 
+function formatAvgPlace(avgPlace) {
+  return avgPlace ?? '';
+}
+
+function shouldShowAvgPlaceColumn() {
+  return getEvent().totalSystem === 'AVG_POSJUD';
+}
+
 async function showResults(categoryId, styleId, status) {
   const modalEl = document.getElementById('resultsModal');
   const bodyEl = document.getElementById('resultsModalBody');
@@ -699,11 +710,13 @@ async function showResults(categoryId, styleId, status) {
           </div>
         </div>
       `;
+      const avgPlaceText = formatAvgPlace(r.avg_place);
       return `
         <tr>
           <td class="fw-semibold">${index + 1}</td>
           <td>${dancerCell}</td>
           <td class="fw-semibold">${formatResultScore(r.total_score)}</td>
+          ${shouldShowAvgPlaceColumn() ? `<td class="fw-semibold">${avgPlaceText}</td>` : ''}
         </tr>
       `;
     }).join('');
@@ -717,6 +730,7 @@ async function showResults(categoryId, styleId, status) {
               <th>#</th>
               <th>${t('dancer')}</th>
               <th>${t('total')}</th>
+              ${shouldShowAvgPlaceColumn() ? `<th>${t('avg_place')}</th>` : ''}
             </tr>
           </thead>
           <tbody>

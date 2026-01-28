@@ -4,6 +4,16 @@ let categoryName;
 
 let autoRefreshInterval = null;
 
+function shouldShowAvgPlaceBadge() {
+  return getEvent().totalSystem === 'AVG_POSJUD';
+}
+
+function formatAvgPlace(avgPlace) {
+  if (avgPlace == null || avgPlace === '') return '';
+  const num = Number(avgPlace);
+  return Number.isNaN(num) ? avgPlace : num;
+}
+
 
 document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
@@ -112,9 +122,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           </div>
           <!-- DERECHA: Total Score -->
           <div class="col-auto text-center">
-            <span class="badge bg-success fs-4 py-2 px-3">
-              ${Number(dancerData.total_score).toFixed(1)}
-            </span>
+            <div class="d-flex align-items-center gap-2 justify-content-center flex-wrap">
+              <span class="badge bg-success fs-4 py-2 px-3">
+                ${Number(dancerData.total_score).toFixed(1)}
+              </span>
+              ${shouldShowAvgPlaceBadge() ? `
+                <span class="badge bg-info fs-5 py-2 px-3">
+                  ${formatAvgPlace(dancerData.avg_place)}
+                </span>
+              ` : ''}
+            </div>
           </div>
         </div>
       </div>
@@ -366,6 +383,9 @@ function renderStyleClassification(style) {
         <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
         <span class="me-auto">${escapeHtml(d.dancer_name)} ${i<3 ? medals[i] : ""}</span>
         <span class="badge bg-light text-dark rounded-pill">${Number(d.total_score).toFixed(1)}</span>
+        ${shouldShowAvgPlaceBadge() ? `
+          <span class="badge bg-info text-dark rounded-pill ms-2">${formatAvgPlace(d.avg_place)}</span>
+        ` : ''}
       </button>
     `;
   });
