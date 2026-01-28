@@ -46,5 +46,7 @@
   "error_change_competition_status": "Error changing competition status.",
   "error_mark_no_show": "Error marking dancer as No Show.",
   "error_set_disqualified": "Error disqualifying dancer.",
-  "view_results": "View Results"
+  "view_results": "View Results",
+  "results_provisional": "Provisional Results",
+  "no_votes_yet": "No votes have been recorded yet."
 }

@@ -121,7 +121,11 @@ function renderCompetitions(competitions) {
           <div class="col-6 col-md-2 d-flex">
             <div class="d-grid gap-2 w-100">
               ${statusActionButton}
-              <button type="button" class="btn btn-outline-primary btn-sm w-100" disabled>
+              <button type="button"
+                class="btn btn-outline-primary btn-sm w-100 btn-view-results"
+                data-category-id="${comp.category_id}"
+                data-style-id="${comp.style_id}"
+                data-status="${comp.status}">
                 <i class="bi bi-trophy me-1"></i>
                 ${t('view_results')}
               </button>
@@ -387,6 +391,13 @@ function renderCompetitions(competitions) {
     });
   });
 
+  container.querySelectorAll('.btn-view-results').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      await showResults(btn.dataset.categoryId, btn.dataset.styleId, btn.dataset.status);
+    });
+  });
+
   initActionDropdowns(container);
 }
 
@@ -624,6 +635,104 @@ function populateStyleSelect(selectedCategoryId, data, styleSelect) {
     styleSelect.disabled = false;
   } else {
     styleSelect.disabled = true;
+  }
+}
+
+function formatResultScore(totalScore) {
+  if (getEvent().criteriaConfig === 'WITH_POR') {
+    return Number(totalScore ?? 0).toFixed(1);
+  }
+  return totalScore ?? 0;
+}
+
+async function showResults(categoryId, styleId, status) {
+  const modalEl = document.getElementById('resultsModal');
+  const bodyEl = document.getElementById('resultsModalBody');
+  const modalTitle = document.getElementById('resultsModalLabel');
+
+  modalTitle.textContent = t('view_results');
+  const provisionalNote = status !== 'FIN'
+    ? `
+      <div class="alert alert-warning text-center mb-3">
+        ${t('results_provisional')}
+      </div>
+    `
+    : '';
+
+  bodyEl.innerHTML = `
+    ${provisionalNote}
+    <div class="d-flex align-items-center justify-content-center py-4">
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span>${t('loading')}</span>
+    </div>
+  `;
+
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  try {
+    const url = `${API_BASE_URL}/api/competitions/tracking/results?event_id=${getEvent().id}&category_id=${categoryId}&style_id=${styleId}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error('Error loading results');
+    }
+
+    const results = await res.json();
+
+    if (!results || results.length === 0) {
+      bodyEl.innerHTML = `
+        <div class="alert alert-info text-center mb-0">
+          ${t('no_votes_yet')}
+        </div>
+      `;
+      return;
+    }
+
+    const rows = results.map((r, index) => {
+      const flagCode = r.dancer_nationality || 'XX';
+      const flagUrl = `https://flagsapi.com/${flagCode}/shiny/24.png`;
+      const dancerCell = `
+        <div class="d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center">
+            <img src="${flagUrl}" class="me-2" style="vertical-align: middle;">
+            <span>${r.dancer_name}</span>
+          </div>
+        </div>
+      `;
+      return `
+        <tr>
+          <td class="fw-semibold">${index + 1}</td>
+          <td>${dancerCell}</td>
+          <td class="fw-semibold">${formatResultScore(r.total_score)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    bodyEl.innerHTML = `
+      ${provisionalNote}
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>${t('dancer')}</th>
+              <th>${t('total')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (err) {
+    console.error('Error fetching results:', err);
+    bodyEl.innerHTML = `
+      ${provisionalNote}
+      <div class="alert alert-danger text-center mb-0">
+        ${t('error_title')}
+      </div>
+    `;
   }
 }
 

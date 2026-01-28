@@ -46,5 +46,7 @@
   "close_competition": "Cerrar competicion",
   "error_title": "Error",
   "error_change_competition_status": "Error al cambiar el estado de la competicion.",
-  "view_results": "Ver Resultados"
+  "view_results": "Ver Resultados",
+  "results_provisional": "Resultados Provisionales",
+  "no_votes_yet": "No hay votaciones registradas."
 }
