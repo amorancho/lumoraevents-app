@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
+  updateElementProperty('scheduleconfigUrl', 'href', `scheduleconfig.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${eventId}`);
   updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
   updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);

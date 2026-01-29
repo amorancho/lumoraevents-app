@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -21,30 +21,33 @@
   <div id="header"></div>
   <div class="container-fluid container-lg py-4">    
 
-    <div class="d-flex justify-content-center mb-3">
+    <div class="d-flex justify-content-center mb-3 gap-2 flex-wrap">
       <a href="" class="btn btn-secondary rounded-pill px-4 fw-semibold" id="eventconfigUrl" data-i18n="menu_config">
-        ⚙️ Event Configuration
+        âš™ï¸ Event Configuration
+      </a>
+      <a href="" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold" id="scheduleconfigUrl" data-i18n="menu_schedule_config">
+        Schedule Configurator
       </a>
     </div> 
     <div class="row justify-content-center mb-4 g-2">
       <div class="col-6 col-md-auto d-flex justify-content-center">
         <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="admineventUrl" data-i18n="menu_general">
-          🌐 General Config.
+          ðŸŒ General Config.
         </a>
       </div>
       <div class="col-6 col-md-auto d-flex justify-content-center">
         <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="masterdataUrl" data-i18n="menu_master">
-          🌐 Master Data
+          ðŸŒ Master Data
         </a>
       </div>
       <div class="col-6 col-md-auto d-flex justify-content-center">
         <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="judgesUrl" data-i18n="menu_judges">
-          ⚖️ Judges
+          âš–ï¸ Judges
         </a>
       </div>
       <div class="col-6 col-md-auto d-flex justify-content-center">
         <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="dancersUrl" data-i18n="menu_dancers">
-          💃 Dancers
+          ðŸ’ƒ Dancers
         </a>
       </div>
     </div>
@@ -55,9 +58,9 @@
         <div class="card mb-3">
           <div class="card-body bg-light">
             <div class="row g-3 align-items-end"> <!-- align-items-end para alinear por la parte inferior -->
-              <!-- Categoría -->
+              <!-- CategorÃ­a -->
               <div class="col-md-4">
-                <label for="categoryDropdown" class="form-label mb-1 fw-semibold" data-i18n="category">Categoría</label>
+                <label for="categoryDropdown" class="form-label mb-1 fw-semibold" data-i18n="category">CategorÃ­a</label>
                 <select class="form-select" id="categoryDropdown">
                   <option selected disabled value="" data-i18n="select_category">Choose a Category</option>
                 </select>
@@ -71,7 +74,7 @@
                 </select>
               </div>
               
-              <!-- Botón -->
+              <!-- BotÃ³n -->
               <div class="col-md-4 text-center">
                 <button id="createBtn" class="btn btn-primary" data-i18n="create_competition" onclick="addCompt()">
                   Create Competition                  
@@ -158,7 +161,7 @@
     </div>
   </div>
 
-  <!-- Modal de edición -->
+  <!-- Modal de ediciÃ³n -->
   <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -198,7 +201,7 @@
                 <i class="bi bi-info-circle text-danger ms-1"
                   data-bs-toggle="tooltip"
                   data-bs-placement="right"
-                  title="Un juez reserva sólo puede votar a las bailarinas que tengan un juez como maestro (incompatibilidad)">
+                  title="Un juez reserva sÃ³lo puede votar a las bailarinas que tengan un juez como maestro (incompatibilidad)">
                 </i>
               </label>
               <select class="form-select" id="editJudgeReserve">
@@ -220,7 +223,7 @@
       </div>
     </div>
   </div>
-  <!-- Modal de ordenación de las bailarinas -->
+  <!-- Modal de ordenaciÃ³n de las bailarinas -->
   <div class="modal fade" id="dancersOrderModal" tabindex="-1" aria-labelledby="dancersOrderModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-md">
       <div class="modal-content">
@@ -230,7 +233,7 @@
         </div>
         <div class="modal-body">
           <ul id="sortableDancers" class="list-group">
-            <!-- Se insertarán aquí las bailarinas -->
+            <!-- Se insertarÃ¡n aquÃ­ las bailarinas -->
           </ul>
         </div>
         <div class="modal-footer">
@@ -255,3 +258,5 @@
 
 </body>
 </html>
+
+
