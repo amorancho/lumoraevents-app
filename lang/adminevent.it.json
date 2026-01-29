@@ -54,5 +54,11 @@
   "event_status_finish_detail_1": "I giudici non potranno piu votare",
   "event_status_finish_detail_2": "Dati maestri, giudici, ballerine e competizioni non potranno piu essere modificati",
   "event_status_finish_detail_3": "Verrà inviata una email alle ballerine con il loro codice di accesso per le statistiche",
-  "event_status_finish_detail_4": "Se le scuole hanno registrato iscrizioni, tutti gli audio caricati sulla piattaforma saranno eliminati in modo permanente"
+  "event_status_finish_detail_4": "Se le scuole hanno registrato iscrizioni, tutti gli audio caricati sulla piattaforma saranno eliminati in modo permanente",
+  "change_visibility_title": "Cambia visibilità dell'evento",
+  "notify_judges_label": "Invia email di benvenuto ai giudici",
+  "cancel": "Annulla",
+  "confirm": "Accetta",
+  "visibility_modal_make_visible": "Sei sicuro di voler segnare l'evento come visibile?",
+  "visibility_modal_hide_event": "Sei sicuro di voler nascondere l'evento?"
 }

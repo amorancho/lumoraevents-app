@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const { confirmed, notifyJudges } = await showVisibilityModal(
       isMakingVisible
-        ? "¿Seguro que quieres marcar el evento como visible?"
-        : "¿Seguro que quieres ocultar el evento?",
+        ? t("visibility_modal_make_visible")
+        : t("visibility_modal_hide_event"),
       isMakingVisible // solo mostrar checkbox si está marcando visible
     );
 

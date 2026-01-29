@@ -54,5 +54,11 @@
   "event_status_finish_detail_1": "Les juges ne pourront plus voter",
   "event_status_finish_detail_2": "Les donnees maitres, juges, danseuses et competitions ne pourront plus etre modifies",
   "event_status_finish_detail_3": "Un email sera envoye aux danseuses avec leur code d'acces pour les statistiques",
-  "event_status_finish_detail_4": "Si des ecoles ont enregistre des inscriptions, tous les audios televerses sur la plateforme seront supprimes definitivement"
+  "event_status_finish_detail_4": "Si des ecoles ont enregistre des inscriptions, tous les audios televerses sur la plateforme seront supprimes definitivement",
+  "change_visibility_title": "Changer la visibilite de l'evenement",
+  "notify_judges_label": "Envoyer un email de bienvenue aux juges",
+  "cancel": "Annuler",
+  "confirm": "Accepter",
+  "visibility_modal_make_visible": "Etes-vous sur de vouloir marquer l'evenement comme visible?",
+  "visibility_modal_hide_event": "Etes-vous sur de vouloir cacher l'evenement?"
 }

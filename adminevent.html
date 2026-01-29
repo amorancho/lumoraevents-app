@@ -272,21 +272,21 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Cambiar visibilidad del evento</h5>
+          <h5 class="modal-title" data-i18n="change_visibility_title">Cambiar visibilidad del evento</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
           <p id="visibilityModalMessage">Mensaje dinámico</p>
           <div class="form-check mt-2" id="notifyJudgesContainer">
             <input class="form-check-input" type="checkbox" value="" id="notifyJudgesCheck">
-            <label class="form-check-label" for="notifyJudgesCheck">
+            <label class="form-check-label" for="notifyJudgesCheck" data-i18n="notify_judges_label">
               Enviar email de bienvenida a los jueces
             </label>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" id="visibilityCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="button" id="visibilityConfirmBtn" class="btn btn-primary">Aceptar</button>
+          <button type="button" id="visibilityCancelBtn" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" id="visibilityConfirmBtn" class="btn btn-primary" data-i18n="confirm">Aceptar</button>
         </div>
       </div>
     </div>

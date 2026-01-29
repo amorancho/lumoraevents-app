@@ -54,5 +54,11 @@
   "event_status_finish_detail_1": "Os jurados nao poderao mais votar",
   "event_status_finish_detail_2": "Dados mestres, jurados, bailarinas e competicoes nao poderao mais ser modificados",
   "event_status_finish_detail_3": "Sera enviado um email as bailarinas com o codigo de acesso para as estatisticas",
-  "event_status_finish_detail_4": "Se houve registro de inscricoes por parte das escolas, todos os audios enviados para a plataforma serao removidos permanentemente"
+  "event_status_finish_detail_4": "Se houve registro de inscricoes por parte das escolas, todos os audios enviados para a plataforma serao removidos permanentemente",
+  "change_visibility_title": "Alterar visibilidade do evento",
+  "notify_judges_label": "Enviar email de boas-vindas aos jurados",
+  "cancel": "Cancelar",
+  "confirm": "Aceitar",
+  "visibility_modal_make_visible": "Tem certeza de que deseja marcar o evento como visível?",
+  "visibility_modal_hide_event": "Tem certeza de que deseja ocultar o evento?"
 }

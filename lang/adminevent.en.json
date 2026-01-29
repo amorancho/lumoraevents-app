@@ -54,5 +54,11 @@
   "event_status_finish_detail_1": "Judges will no longer be able to submit votes",
   "event_status_finish_detail_2": "Master data, judges, dancers, and competitions can no longer be modified",
   "event_status_finish_detail_3": "An email will be sent to the dancers with their access code for statistics",
-  "event_status_finish_detail_4": "If schools registered inscriptions, all audio files uploaded to the platform will be permanently deleted"
+  "event_status_finish_detail_4": "If schools registered inscriptions, all audio files uploaded to the platform will be permanently deleted",
+  "change_visibility_title": "Change event visibility",
+  "notify_judges_label": "Send welcome email to judges",
+  "cancel": "Cancel",
+  "confirm": "Accept",
+  "visibility_modal_make_visible": "Are you sure you want to mark the event as visible?",
+  "visibility_modal_hide_event": "Are you sure you want to hide the event?"
 }
