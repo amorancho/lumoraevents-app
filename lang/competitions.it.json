@@ -1,19 +1,18 @@
 ﻿{
   "title": "Competizioni",
-  "menu_config": "âš™ï¸ Configurazione Evento",
+  "menu_config": "⚙️ Configurazione Evento",
+  "menu_general": "⚙️ Config. Generale",
+  "menu_master": "🌐 Dati Master",
+  "menu_judges": "⚖️ Giudici",
+  "menu_dancers": "💃 Ballerine",
+  "menu_competitions": "🚀 Competizioni",
   "menu_schedule_config": "Configuratore Programmazione",
-  "judges_assignment": "Assegnazione giudici",
-  "menu_general": "âš™ï¸ Config. Generale",
-  "menu_master": "ðŸŒ Dati Master",
-  "menu_judges": "âš–ï¸ Giudici",
-  "menu_dancers": "ðŸ’ƒ Ballerine",
-  "menu_competitions": "ðŸš€ Competizioni",
   "category": "Categoria",
   "style": "Stile",
   "select_category": "Seleziona una Categoria",
   "select_style": "Seleziona uno Stile",
   "create_competition": "Crea Competizione",
-  "alert_finish": "Il festival Ã¨ terminato. Non Ã¨ possibile modificare i dati.",
+  "alert_finish": "Il festival è terminato. Non è possibile modificare i dati.",
   "competitions": "Competizioni",
   "all_categories": "Tutte le Categorie",
   "col_category": "Categoria",
@@ -29,7 +28,7 @@
   "delete_confirm": "Conferma Eliminazione",
   "cancel": "Annulla",
   "delete": "Elimina",
-  "form_text_select_multiple": "Usa Ctrl (Windows) o Cmd (Mac) per selezionare piÃ¹ elementi.",
+  "form_text_select_multiple": "Usa Ctrl (Windows) o Cmd (Mac) per selezionare più elementi.",
   "col_judge_reserve": "Giudice di Riserva",
   "ninguno": "Nessuno",
   "save_changes": "Salva Modifiche",
@@ -44,7 +43,3 @@
   "error_create_competition": "Seleziona una categoria e uno stile per creare una competizione.",
   "confirm_delete_competition": "Sei sicuro di voler eliminare la competizione per"
 }
-
-
-
-
