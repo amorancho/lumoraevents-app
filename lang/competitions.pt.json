@@ -2,6 +2,7 @@
   "title": "CompetiÃ§Ãµes",
   "menu_config": "âš™ï¸ ConfiguraÃ§Ã£o do Evento",
   "menu_schedule_config": "Configurador de Programação",
+  "judges_assignment": "Atribuição de juízes",
   "menu_general": "âš™ï¸ Config. Geral",
   "menu_master": "ðŸŒ Dados Mestres",
   "menu_judges": "âš–ï¸ Jurados",
@@ -43,6 +44,7 @@
   "error_create_competition": "Selecione uma categoria e um estilo para criar uma competiÃ§Ã£o.",
   "confirm_delete_competition": "Tem certeza de que deseja excluir a competiÃ§Ã£o para"
 }
+
 
 
 

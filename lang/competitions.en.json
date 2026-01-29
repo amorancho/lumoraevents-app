@@ -1,12 +1,13 @@
 ﻿{
   "title": "Competitions",
-  "menu_config": "âš™ï¸ Event Settings",
+  "menu_config": "⚙️ Event Configuration",
+  "menu_general": "⚙️ General Settings",
+  "menu_master": "🌐 Master Data",
+  "menu_judges": "⚖️ Judges",
+  "menu_dancers": "💃 Dancers",
+  "menu_competitions": "🚀 Competitions",
   "menu_schedule_config": "Schedule Configurator",
-  "menu_general": "âš™ï¸ General Settings",
-  "menu_master": "ðŸŒ Master Data",
-  "menu_judges": "âš–ï¸ Judges",
-  "menu_dancers": "ðŸ’ƒ Dancers",
-  "menu_competitions": "ðŸš€ Competitions",
+  "judges_assignment": "Judge Assignment",
   "category": "Category",
   "style": "Style",
   "select_category": "Select a Category",
@@ -43,6 +44,7 @@
   "error_create_competition": "Select a category and a style to create a competition.",
   "confirm_delete_competition": "Are you sure you want to delete the competition for"
 }
+
 
 
 

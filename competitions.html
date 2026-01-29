@@ -25,9 +25,6 @@
       <a href="" class="btn btn-secondary rounded-pill px-4 fw-semibold" id="eventconfigUrl" data-i18n="menu_config">
         âš™ï¸ Event Configuration
       </a>
-      <a href="" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold" id="scheduleconfigUrl" data-i18n="menu_schedule_config">
-        Schedule Configurator
-      </a>
     </div> 
     <div class="row justify-content-center mb-4 g-2">
       <div class="col-6 col-md-auto d-flex justify-content-center">
@@ -53,35 +50,44 @@
     </div>
 
 
-    <div class="row justify-content-center">
-      <div class="col-md-8">
+    <div class="row justify-content-center align-items-start g-3">
+      <div class="col-lg-9">
         <div class="card mb-3">
           <div class="card-body bg-light">
-            <div class="row g-3 align-items-end"> <!-- align-items-end para alinear por la parte inferior -->
-              <!-- CategorÃ­a -->
+            <div class="row g-3 align-items-center">
               <div class="col-md-4">
-                <label for="categoryDropdown" class="form-label mb-1 fw-semibold" data-i18n="category">CategorÃ­a</label>
-                <select class="form-select" id="categoryDropdown">
-                  <option selected disabled value="" data-i18n="select_category">Choose a Category</option>
-                </select>
+                <div class="d-flex align-items-center gap-2">
+                  <label for="categoryDropdown" class="col-form-label fw-semibold mb-0" data-i18n="category">CategorÃ­a</label>
+                  <select class="form-select" id="categoryDropdown">
+                    <option selected disabled value="" data-i18n="select_category">Choose a Category</option>
+                  </select>
+                </div>
               </div>
-              
-              <!-- Estilo -->
               <div class="col-md-4">
-                <label for="styleDropdown" class="form-label mb-1 fw-semibold" data-i18n="style">Estilo</label>
-                <select class="form-select" id="styleDropdown">
-                  <option selected disabled value="" data-i18n="select_style">Choose a Style</option>
-                </select>
+                <div class="d-flex align-items-center gap-2">
+                  <label for="styleDropdown" class="col-form-label fw-semibold mb-0" data-i18n="style">Estilo</label>
+                  <select class="form-select" id="styleDropdown">
+                    <option selected disabled value="" data-i18n="select_style">Choose a Style</option>
+                  </select>
+                </div>
               </div>
-              
-              <!-- BotÃ³n -->
               <div class="col-md-4 text-center">
-                <button id="createBtn" class="btn btn-primary" data-i18n="create_competition" onclick="addCompt()">
-                  Create Competition                  
+                <button id="createBtn" class="btn btn-primary w-100" data-i18n="create_competition" onclick="addCompt()">
+                  Create Competition
                 </button>
               </div>
             </div>
           </div>
+        </div>
+      </div>
+      <div class="col-lg-3">
+        <div class="d-grid gap-2 mb-3">
+          <a href="" class="btn btn-outline-warning" id="scheduleconfigUrl" data-i18n="menu_schedule_config">
+            Schedule Configurator
+          </a>
+          <button type="button" class="btn btn-outline-warning" id="judgesAssignmentBtn" data-i18n="judges_assignment">
+            AsignaciÃ³n Jueces
+          </button>
         </div>
       </div>
     </div>
