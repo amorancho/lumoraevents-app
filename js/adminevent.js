@@ -61,25 +61,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.getElementById('eventlogo').addEventListener('input', updateLogoPreview);
 
-  const categorySelect = document.getElementById('category_class_type');
-  const minStylesInput = document.getElementById('min_styles');
-
-  function updateMinStylesState() {
-    if (categorySelect.value === 'NO') {
-      minStylesInput.value = '';      // limpiar valor
-      minStylesInput.disabled = true; // deshabilitar input
-    } else {
-      minStylesInput.disabled = false; // permitir editar
-    }
-  }
-
-  // Ejecutar al cargar la página
-  updateMinStylesState();
-
-  // Ejecutar cada vez que cambie el select
-  categorySelect.addEventListener('change', updateMinStylesState);
-
-
 });
 
 let currentEventStatus = null;

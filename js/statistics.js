@@ -6,6 +6,17 @@ const dancerCodeInput = () => document.getElementById('dancerCode');
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
 
+  const user = getUserFromToken();
+  const role = user ? user.role : 'guest';
+
+  // Si el evento no tiene visibleParticipants y el usuario no es ni admin ni organizer, redirigir a home
+  if (!getEvent().visibleStatistics && role !== 'admin' && role !== 'organizer') {
+      //alert('Esta página no es visible en estos momentos');
+      alert(t('page_not_visible'));
+      window.location.href = 'home.html?eventId='+eventId;
+      return;
+  }
+
   const form = document.getElementById('statsForm');
   if (form) {
     form.addEventListener('submit', handleStatsSubmit);

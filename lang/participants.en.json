@@ -18,5 +18,6 @@
     "icon_legend": "Click this icon in each style to view the dancers' order.",
     "style_schedule": "Styles Schedule",
     "col_style": "Style",
-    "col_start": "Estimated Start Time"
+    "col_start": "Estimated Start Time",
+    "page_not_visible": "This page is not visible at this time"
 }

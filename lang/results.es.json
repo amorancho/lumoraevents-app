@@ -11,5 +11,6 @@
     "general_classification": "Clasificación General",
     "place": "Puesto",
     "total_score": "Puntuación Total",
-    "no_voting_details": "No hay detalles de votación disponibles para este bailarín en este estilo."
+    "no_voting_details": "No hay detalles de votación disponibles para este bailarín en este estilo.",
+    "page_not_visible": "Esta página no es visible en estos momentos."
 }

@@ -11,5 +11,6 @@
     "general_classification": "General Classification",
     "place": "Place",
     "total_score": "Total Score",
-    "no_voting_details": "No vote details available for this dancer in this style."
+    "no_voting_details": "No vote details available for this dancer in this style.",
+    "page_not_visible": "This page is not visible at this time."
 }

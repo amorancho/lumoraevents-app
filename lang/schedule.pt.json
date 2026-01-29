@@ -6,5 +6,6 @@
   "status": "Estado",
   "dancers": "Bailarinas",
   "participants": "Participantes (ordem de atuação)",
-  "info_notice_text": "O festival já começou. A modificação destes dados pode causar inconsistências."
+  "info_notice_text": "O festival já começou. A modificação destes dados pode causar inconsistências.",
+  "page_not_visible": "Esta página não está visível neste momento."
 }

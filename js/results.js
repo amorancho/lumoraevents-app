@@ -19,11 +19,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
   await WaitEventLoaded();
 
-  if (!getEvent().visibleResults && getUserFromToken().role != "admin") {
-      alert('Esta página no es visible en estos momentos');
+  const user = getUserFromToken();
+  const role = user ? user.role : 'guest';
+
+  // Si el evento no tiene visibleParticipants y el usuario no es ni admin ni organizer, redirigir a home
+  if (!getEvent().visibleResults && role !== 'admin' && role !== 'organizer') {
+      //alert('Esta página no es visible en estos momentos');
+      alert(t('page_not_visible'));
       window.location.href = 'home.html?eventId='+eventId;
       return;
   }
+
 
   const categorySelect = document.getElementById('categorySelect');
   const refreshBtn = document.getElementById('refreshBtn');

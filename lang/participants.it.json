@@ -18,5 +18,6 @@
   "icon_legend": "Clicca su questa icona di ogni stile per vedere l'ordine delle ballerine.",
   "style_schedule": "Orario degli Stili",
   "col_style": "Stile",
-  "col_start": "Ora Stimata di Inizio"
+  "col_start": "Ora Stimata di Inizio",
+  "page_not_visible": "Questa pagina non è visibile in questo momento"
 }
