@@ -1,4 +1,5 @@
 var competitions = [];
+var masters = [];
 
 const convertStatus = {
   'OPE': 'OPEN',
@@ -323,6 +324,8 @@ function toDatetimeLocalFormat(str) {
 document.addEventListener('DOMContentLoaded', () => {
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
     const dancersOrderModal = new bootstrap.Modal(document.getElementById('dancersOrderModal'));
+    const judgesAssignmentModalEl = document.getElementById('judgesAssignmentModal');
+    const judgesAssignmentModal = judgesAssignmentModalEl ? new bootstrap.Modal(judgesAssignmentModalEl) : null;
 
     document.addEventListener('click', (event) => {
 
@@ -497,6 +500,65 @@ document.addEventListener('DOMContentLoaded', () => {
       // Cerrar modal
       dancersOrderModal.hide();
     });
+
+    const judgesAssignmentBtn = document.getElementById('judgesAssignmentBtn');
+    const assignJudgesBtn = document.getElementById('assignJudgesBtn');
+
+    if (judgesAssignmentBtn && judgesAssignmentModal) {
+      judgesAssignmentBtn.addEventListener('click', async () => {
+        if (!masters.length) {
+          await loadMasters();
+        }
+
+        if (!competitions.length) {
+          await fetchCompetitionsFromAPI();
+        }
+
+        renderJudgesAssignmentList();
+        renderCompetitionsAssignmentList();
+        judgesAssignmentModal.show();
+      });
+    }
+
+    if (assignJudgesBtn) {
+      assignJudgesBtn.addEventListener('click', async () => {
+        const selectedJudges = getSelectedAssignmentJudges();
+        const selectedCompetitions = getSelectedAssignmentCompetitions();
+
+        if (!selectedJudges.length) {
+          showMessageModal(t('judges_assignment_missing_judges'), 'Error');
+          return;
+        }
+
+        if (!selectedCompetitions.length) {
+          showMessageModal(t('judges_assignment_missing_competitions'), 'Error');
+          return;
+        }
+
+        assignJudgesBtn.disabled = true;
+        const originalText = assignJudgesBtn.textContent;
+        assignJudgesBtn.textContent = t('judges_assignment_status_updating');
+
+        for (const compId of selectedCompetitions) {
+          const competition = competitions.find(c => String(c.id) === String(compId));
+          if (!competition) {
+            setAssignmentResult(compId, 'error', 'Competition not found');
+            continue;
+          }
+
+          await updateCompetitionJudgesAssignment(competition, selectedJudges);
+        }
+
+        assignJudgesBtn.disabled = false;
+        assignJudgesBtn.textContent = originalText;
+      });
+    }
+
+    if (judgesAssignmentModalEl) {
+      judgesAssignmentModalEl.addEventListener('hidden.bs.modal', () => {
+        window.location.reload();
+      });
+    }
   });
 
 
@@ -558,7 +620,7 @@ async function loadMasters() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/judges?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching masters');
-    const masters = await response.json();
+    masters = await response.json();
 
     masters.forEach(master => {
       const option = document.createElement('option');
@@ -616,5 +678,183 @@ function applyCategoryFilter() {
   // Mostrar o no el empty state
   const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
   document.getElementById('emptyState')?.classList.toggle('d-none', visibleRows.length > 0);
+}
+
+function renderJudgesAssignmentList() {
+  const list = document.getElementById('judgesAssignmentList');
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  if (!masters.length) {
+    const empty = document.createElement('div');
+    empty.className = 'text-muted small';
+    empty.textContent = t('judges_assignment_no_judges');
+    list.appendChild(empty);
+    return;
+  }
+
+  masters.forEach(master => {
+    const label = document.createElement('label');
+    label.className = 'list-group-item d-flex align-items-center gap-2';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'form-check-input';
+    checkbox.value = master.id;
+
+    const name = document.createElement('span');
+    name.textContent = master.name;
+
+    label.appendChild(checkbox);
+    label.appendChild(name);
+    list.appendChild(label);
+  });
+}
+
+function renderCompetitionsAssignmentList() {
+  const list = document.getElementById('competitionsAssignmentList');
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  const availableCompetitions = competitions.filter(comp => comp.status !== 'FIN');
+
+  if (!availableCompetitions.length) {
+    const empty = document.createElement('div');
+    empty.className = 'text-muted small';
+    empty.textContent = t('judges_assignment_no_competitions');
+    list.appendChild(empty);
+    return;
+  }
+
+  availableCompetitions.forEach(comp => {
+    const item = document.createElement('div');
+    item.className = 'list-group-item d-flex align-items-center justify-content-between gap-3';
+
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `badge bg-${statusColor[comp.status] || 'secondary'} ms-2`;
+    statusBadge.textContent = convertStatus[comp.status] || comp.status;
+
+    const formCheck = document.createElement('div');
+    formCheck.className = 'form-check';
+
+    const checkbox = document.createElement('input');
+    const checkboxId = `assign-comp-${comp.id}`;
+    checkbox.type = 'checkbox';
+    checkbox.className = 'form-check-input';
+    checkbox.id = checkboxId;
+    checkbox.dataset.compId = comp.id;
+    const label = document.createElement('label');
+    label.className = 'form-check-label';
+    label.htmlFor = checkboxId;
+
+    const categorySpan = document.createElement('span');
+    categorySpan.className = 'fw-semibold';
+    categorySpan.textContent = comp.category_name;
+
+    const styleSpan = document.createElement('span');
+    styleSpan.className = 'text-muted ms-1';
+    styleSpan.textContent = `/ ${comp.style_name}`;
+
+    label.appendChild(categorySpan);
+    label.appendChild(styleSpan);
+    label.appendChild(statusBadge);
+
+    formCheck.appendChild(checkbox);
+    formCheck.appendChild(label);
+
+    const result = document.createElement('span');
+    result.className = 'small text-muted ms-auto';
+    result.dataset.result = 'pending';
+    result.textContent = t('judges_assignment_status_pending');
+
+    item.appendChild(formCheck);
+    item.appendChild(result);
+
+    list.appendChild(item);
+  });
+}
+
+function getSelectedAssignmentJudges() {
+  return Array.from(document.querySelectorAll('#judgesAssignmentList input[type="checkbox"]:checked'))
+    .map(input => input.value);
+}
+
+function getSelectedAssignmentCompetitions() {
+  return Array.from(document.querySelectorAll('#competitionsAssignmentList input[type="checkbox"]:checked'))
+    .map(input => input.dataset.compId);
+}
+
+function setAssignmentResult(compId, status, message) {
+  const resultEl = document.querySelector(`#competitionsAssignmentList input[data-comp-id="${compId}"]`)
+    ?.closest('.list-group-item')
+    ?.querySelector('[data-result]');
+
+  if (!resultEl) return;
+
+  resultEl.classList.remove('text-muted', 'text-success', 'text-danger', 'text-warning');
+
+  if (status === 'updating') {
+    resultEl.textContent = t('judges_assignment_status_updating');
+    resultEl.classList.add('text-warning');
+    return;
+  }
+
+  if (status === 'ok') {
+    resultEl.textContent = t('judges_assignment_status_ok');
+    resultEl.classList.add('text-success');
+    return;
+  }
+
+  if (status === 'error') {
+    const errorPrefix = t('judges_assignment_status_error');
+    resultEl.textContent = message ? `${errorPrefix}: ${message}` : errorPrefix;
+    resultEl.classList.add('text-danger');
+    return;
+  }
+
+  resultEl.textContent = t('judges_assignment_status_pending');
+  resultEl.classList.add('text-muted');
+}
+
+async function updateCompetitionJudgesAssignment(competition, judgeIds) {
+  if (!competition) return;
+
+  setAssignmentResult(competition.id, 'updating');
+
+  const reserveJudge = (competition.judges || []).find(j => j.reserve);
+  const reserveId = reserveJudge ? String(reserveJudge.id) : null;
+  const reserveToSend = reserveId && judgeIds.includes(reserveId) ? reserveId : null;
+
+  const competitionData = {
+    category_id: competition.category_id,
+    style_id: competition.style_id,
+    estimated_start: toDatetimeLocalFormat(competition.estimated_start_form),
+    status: competition.status,
+    judges: judgeIds,
+    judge_reserve: reserveToSend,
+    event_id: getEvent().id
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitions/${competition.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(competitionData)
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setAssignmentResult(competition.id, 'error', data?.error || 'Error saving competition');
+      return;
+    }
+
+    setAssignmentResult(competition.id, 'ok');
+  } catch (error) {
+    console.error('Error updating competition judges:', error);
+    setAssignmentResult(competition.id, 'error', error?.message || 'Unexpected error');
+  }
 }
 

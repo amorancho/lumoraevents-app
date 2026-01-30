@@ -15,6 +15,10 @@
     .drag-icon {
       cursor: grab;
     }
+    .assignment-list {
+      max-height: 55vh;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -225,6 +229,34 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
           <button type="button" class="btn btn-primary" id="saveEditBtn" data-i18n="save_changes">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Modal de asignaciÃ³n de jueces -->
+  <div class="modal fade" id="judgesAssignmentModal" tabindex="-1" aria-labelledby="judgesAssignmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="judgesAssignmentModalLabel" data-i18n="judges_assignment_title">Judge Assignment</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="judges_assignment_judges">Judges</h6>
+              <div id="judgesAssignmentList" class="list-group assignment-list"></div>
+            </div>
+            <div class="col-md-7">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="judges_assignment_competitions">Competitions</h6>
+              <div id="competitionsAssignmentList" class="list-group assignment-list"></div>
+              <div class="form-text mt-2" data-i18n="judges_assignment_help">Select judges and competitions to assign.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+          <button type="button" class="btn btn-primary" id="assignJudgesBtn" data-i18n="judges_assignment_apply">Assign Judges</button>
         </div>
       </div>
     </div>
