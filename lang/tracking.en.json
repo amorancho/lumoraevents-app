@@ -49,5 +49,6 @@
   "error_set_disqualified": "Error disqualifying dancer.",
   "view_results": "View Results",
   "results_provisional": "Provisional Results",
-  "no_votes_yet": "No votes have been recorded yet."
+  "no_votes_yet": "No votes have been recorded yet.",
+  "save_classification": "Save Classification"
 }

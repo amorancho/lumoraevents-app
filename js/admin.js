@@ -384,6 +384,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('score_type').value = eventObj.score_type;
   document.getElementById('criteria_config').value = eventObj.criteria_config;
   document.getElementById('total_system').value = eventObj.total_system;  
+  document.getElementById('can_decide_positions').value = eventObj.can_decide_positions;
 
   // switches -> convertir 1/0 a checkbox
   document.getElementById('visible').checked = (Number(eventObj.visible) === 1);
@@ -456,7 +457,8 @@ async function saveEvent() {
     notice_text: document.getElementById('notice_text').value.trim(),
     notice_active: document.getElementById('notice_active').checked ? 1 : 0,
     notice_type: document.getElementById('notice_type').value,
-    score_type: document.getElementById('score_type').value
+    score_type: document.getElementById('score_type').value,
+    can_decide_positions: parseInt(document.getElementById('can_decide_positions').value, 10) || 0
   };
 
   try {

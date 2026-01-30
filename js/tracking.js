@@ -43,6 +43,63 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  const saveClassificationBtn = document.getElementById('saveClassificationBtn');
+  if (saveClassificationBtn) {
+    saveClassificationBtn.addEventListener('click', async () => {
+      if (!getEvent().canDecidePositions) return;
+
+      const modalEl = document.getElementById('resultsModal');
+      const tbody = modalEl?.querySelector('tbody');
+      const categoryId = modalEl?.dataset.categoryId;
+      const styleId = modalEl?.dataset.styleId;
+
+      if (!tbody || !categoryId || !styleId) return;
+
+      const classification = buildClassificationFromResultsTable(tbody, modalEl?._resultsData);
+      const originalText = saveClassificationBtn.innerHTML;
+
+      saveClassificationBtn.disabled = true;
+      saveClassificationBtn.innerHTML = `
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        ${t('loading')}
+      `;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/competitions/set-classification`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_id: getEvent().id,
+            category_id: Number(categoryId),
+            style_id: Number(styleId),
+            classification
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          showMessageModal(data.error || t('error_title'), t('error_title'));
+          return;
+        }
+
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        const currentCategory = document.getElementById('categorySelect')?.value;
+        const currentStyle = document.getElementById('styleSelect')?.value;
+        if (currentCategory) {
+          await loadCompetitions(currentCategory, currentStyle);
+        }
+      } catch (err) {
+        showMessageModal(err.message || t('error_title'), t('error_title'));
+      } finally {
+        saveClassificationBtn.disabled = false;
+        saveClassificationBtn.innerHTML = originalText;
+      }
+    });
+  }
+
 });
 
 
@@ -656,12 +713,119 @@ function shouldShowAvgPlaceColumn() {
   return getEvent().totalSystem === 'AVG_POSJUD';
 }
 
+function updateResultsPositions(tbody) {
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  rows.forEach((row, index) => {
+    const cell = row.querySelector('td');
+    if (!cell) return;
+    const positionText = `${index + 1}`;
+    if (row.dataset.draggable === 'true') {
+      cell.innerHTML = `<i class="bi bi-grip-vertical text-muted me-2 tie-move-icon" aria-hidden="true"></i>${positionText}`;
+    } else {
+      cell.textContent = positionText;
+    }
+  });
+}
+
+function initResultsTieSorting(bodyEl) {
+  if (!getEvent().canDecidePositions || !window.Sortable) return;
+
+  const tbody = bodyEl.querySelector('tbody');
+  if (!tbody) return;
+
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  if (!rows.length) return;
+
+  const scoreCounts = rows.reduce((acc, row) => {
+    const key = row.dataset.score || '';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  let hasTies = false;
+  rows.forEach(row => {
+    const key = row.dataset.score || '';
+    if (scoreCounts[key] > 1) {
+      row.dataset.draggable = 'true';
+      row.classList.add('results-draggable');
+      const firstCell = row.querySelector('td');
+      if (firstCell && !firstCell.querySelector('.tie-move-icon')) {
+        firstCell.insertAdjacentHTML(
+          'afterbegin',
+          '<i class="bi bi-grip-vertical text-muted me-2 tie-move-icon" aria-hidden="true"></i>'
+        );
+      }
+      hasTies = true;
+    } else {
+      row.dataset.draggable = 'false';
+    }
+  });
+
+  if (!hasTies) return;
+
+  new Sortable(tbody, {
+    animation: 150,
+    draggable: 'tr[data-draggable="true"]',
+    onMove: (evt) => {
+      const draggedScore = evt.dragged?.dataset.score;
+      const relatedScore = evt.related?.dataset.score;
+      if (!draggedScore || !relatedScore) return false;
+      return draggedScore === relatedScore;
+    },
+    onEnd: () => updateResultsPositions(tbody)
+  });
+}
+
+function buildClassificationFromResultsTable(tbody, resultsData) {
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  const byId = new Map();
+  if (Array.isArray(resultsData)) {
+    resultsData.forEach(item => {
+      const key = item?.dancer_id ?? item?.id;
+      if (key !== undefined && key !== null) {
+        byId.set(String(key), item);
+      }
+    });
+  }
+
+  return rows.map((row, index) => {
+    const dancerIdRaw = row.dataset.dancerId;
+    const dancerId = dancerIdRaw !== undefined ? String(dancerIdRaw) : null;
+    if (dancerId && byId.has(dancerId)) {
+      return { ...byId.get(dancerId) };
+    }
+
+    const avgPlaceRaw = row.dataset.avgPlace;
+    const totalScoreRaw = row.dataset.score;
+    return {
+      dancer_id: dancerId ? Number(dancerId) : null,
+      dancer_name: null,
+      dancer_nationality: null,
+      total_score: totalScoreRaw !== undefined && totalScoreRaw !== '' ? Number(totalScoreRaw) : null,
+      avg_place: avgPlaceRaw !== undefined && avgPlaceRaw !== '' ? Number(avgPlaceRaw) : null
+    };
+  });
+}
+
 async function showResults(categoryId, styleId, status) {
   const modalEl = document.getElementById('resultsModal');
   const bodyEl = document.getElementById('resultsModalBody');
   const modalTitle = document.getElementById('resultsModalLabel');
+  const saveClassificationBtn = document.getElementById('saveClassificationBtn');
 
   modalTitle.textContent = t('view_results');
+  if (modalEl) {
+    modalEl.dataset.categoryId = categoryId;
+    modalEl.dataset.styleId = styleId;
+  }
+  if (saveClassificationBtn) {
+    if (getEvent().canDecidePositions) {
+      saveClassificationBtn.classList.remove('d-none');
+      saveClassificationBtn.disabled = false;
+    } else {
+      saveClassificationBtn.classList.add('d-none');
+    }
+  }
   const provisionalNote = status !== 'FIN'
     ? `
       <div class="alert alert-warning text-center mb-3">
@@ -689,6 +853,9 @@ async function showResults(categoryId, styleId, status) {
     }
 
     const results = await res.json();
+    if (modalEl) {
+      modalEl._resultsData = results;
+    }
 
     if (!results || results.length === 0) {
       bodyEl.innerHTML = `
@@ -710,12 +877,16 @@ async function showResults(categoryId, styleId, status) {
           </div>
         </div>
       `;
+      const scoreValue = formatResultScore(r.total_score);
+      const scoreKey = String(scoreValue);
       const avgPlaceText = formatAvgPlace(r.avg_place);
+      const dancerId = r.dancer_id ?? r.id ?? '';
+      const avgPlaceKey = r.avg_place ?? '';
       return `
-        <tr>
+        <tr data-score="${scoreKey}" data-dancer-id="${dancerId}" data-avg-place="${avgPlaceKey}">
           <td class="fw-semibold">${index + 1}</td>
           <td>${dancerCell}</td>
-          <td class="fw-semibold">${formatResultScore(r.total_score)}</td>
+          <td class="fw-semibold">${scoreValue}</td>
           ${shouldShowAvgPlaceColumn() ? `<td class="fw-semibold">${avgPlaceText}</td>` : ''}
         </tr>
       `;
@@ -739,6 +910,8 @@ async function showResults(categoryId, styleId, status) {
         </table>
       </div>
     `;
+
+    initResultsTieSorting(bodyEl);
   } catch (err) {
     console.error('Error fetching results:', err);
     bodyEl.innerHTML = `

@@ -139,7 +139,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         registrationStart: data.registration_start,
         registrationEnd: data.registration_end,
         criteriaConfig: data.criteria_config,
-        totalSystem: data.total_system
+        totalSystem: data.total_system,
+        canDecidePositions: data.can_decide_positions === 1
       };
 
     }

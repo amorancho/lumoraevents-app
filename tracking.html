@@ -18,6 +18,15 @@
       overflow-x: auto;
       overflow-y: visible;
     }
+    .results-draggable {
+      cursor: grab;
+    }
+    .results-draggable:active {
+      cursor: grabbing;
+    }
+    .tie-move-icon {
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -94,6 +103,7 @@
           </div>
           <div class="modal-body" id="resultsModalBody"></div>
           <div class="modal-footer">
+            <button type="button" class="btn btn-primary d-none" id="saveClassificationBtn" data-i18n="save_classification">Save Classification</button>
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
           </div>
         </div>
@@ -123,6 +133,7 @@
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/header.js"></script>

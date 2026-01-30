@@ -49,5 +49,6 @@
   "error_change_competition_status": "Erreur lors du changement de statut de la competition.",
   "view_results": "Voir les résultats",
   "results_provisional": "Résultats provisoires",
-  "no_votes_yet": "Aucun vote n'a encore été enregistré."
+  "no_votes_yet": "Aucun vote n'a encore été enregistré.",
+  "save_classification": "Enregistrer le classement"
 }

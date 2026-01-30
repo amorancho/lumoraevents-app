@@ -49,5 +49,6 @@
   "error_change_competition_status": "Errore durante la modifica dello stato della competizione.",
   "view_results": "Visualizza risultati",
   "results_provisional": "Risultati provvisori",
-  "no_votes_yet": "Non sono stati registrati voti."
+  "no_votes_yet": "Non sono stati registrati voti.",
+  "save_classification": "Salva classificazione"
 }
