@@ -13,13 +13,13 @@ let scheduleBlocks = [];
 let competitions = [];
 let selectedBlockId = null;
 let detailSortable = null;
-let isDirty = false;
 let confirmDeleteCallback = null;
 let activeDetailId = null;
 let activeCompetitionId = null;
 let competitionModal = null;
 let breakModal = null;
 let confirmDeleteModal = null;
+let previewScheduleModal = null;
 
 window.renderScheduleConfig = renderScheduleConfig;
 
@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   competitionModal = new bootstrap.Modal(document.getElementById('competitionModal'));
   breakModal = new bootstrap.Modal(document.getElementById('breakModal'));
   confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+  previewScheduleModal = new bootstrap.Modal(document.getElementById('previewScheduleModal'));
 
   initColorSelect();
   bindScheduleConfigEvents();
@@ -40,7 +41,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     await ensureBlockDetailsLoaded();
   }
   renderScheduleConfig();
-  setDirty(false);
 });
 
 function bindScheduleConfigEvents() {
@@ -122,7 +122,7 @@ function bindScheduleConfigEvents() {
 
   document.getElementById('saveCompetitionDetailBtn').addEventListener('click', saveCompetitionDetailFromModal);
   document.getElementById('saveBreakDetailBtn').addEventListener('click', saveBreakDetailFromModal);
-  document.getElementById('saveAllBtn').addEventListener('click', saveAllBlocks);
+  document.getElementById('previewScheduleBtn').addEventListener('click', openPreviewSchedule);
 
   document.getElementById('detailsList').addEventListener('click', (event) => {
     const editButton = event.target.closest('.btn-edit-detail');
@@ -419,6 +419,158 @@ function renderCompetitionsList() {
   });
 }
 
+async function openPreviewSchedule() {
+  await Promise.all(scheduleBlocks.map(block => ensureBlockDetailsLoadedFor(block)));
+  renderPreviewSchedule();
+  previewScheduleModal.show();
+}
+
+function renderPreviewSchedule() {
+  const list = document.getElementById('previewScheduleList');
+  const empty = document.getElementById('previewScheduleEmpty');
+  list.innerHTML = '';
+
+  if (!competitions.length) {
+    empty.classList.remove('d-none');
+    return;
+  }
+
+  const assignment = buildCompetitionAssignmentMap();
+  const previewItems = competitions.map(comp => {
+    const assigned = assignment.get(String(comp.id)) || null;
+    const estimatedStart = getCompetitionEstimatedStart(comp, assigned?.detailId);
+    return {
+      comp,
+      assigned,
+      estimatedStart
+    };
+  });
+
+  const withStart = previewItems.filter(item => item.estimatedStart);
+  const withoutStart = previewItems.filter(item => !item.estimatedStart);
+
+  withStart.sort((a, b) => a.estimatedStart - b.estimatedStart);
+  withoutStart.sort((a, b) => {
+    const nameA = `${a.comp.category_name || a.comp.category || ''} ${a.comp.style_name || a.comp.style || ''}`.trim();
+    const nameB = `${b.comp.category_name || b.comp.category || ''} ${b.comp.style_name || b.comp.style || ''}`.trim();
+    return nameA.localeCompare(nameB);
+  });
+
+  if (!withStart.length && !withoutStart.length) {
+    empty.classList.remove('d-none');
+    return;
+  }
+  empty.classList.add('d-none');
+
+  const groupedByDay = new Map();
+  withStart.forEach(item => {
+    const dayKey = formatDateOnly(item.estimatedStart);
+    if (!groupedByDay.has(dayKey)) {
+      groupedByDay.set(dayKey, []);
+    }
+    groupedByDay.get(dayKey).push(item);
+  });
+
+  const dayKeys = Array.from(groupedByDay.keys()).sort();
+  dayKeys.forEach(dayKey => {
+    const header = document.createElement('li');
+    header.className = 'list-group-item fw-semibold bg-light';
+    header.textContent = dayKey;
+    list.appendChild(header);
+
+    groupedByDay.get(dayKey).forEach(item => {
+      renderPreviewCompetitionItem(item, list);
+    });
+  });
+
+  if (withoutStart.length) {
+    const header = document.createElement('li');
+    header.className = 'list-group-item fw-semibold bg-warning-subtle';
+    header.textContent = t('preview_no_start');
+    list.appendChild(header);
+
+    withoutStart.forEach(item => {
+      renderPreviewCompetitionItem(item, list);
+    });
+  }
+}
+
+function renderPreviewCompetitionItem(item, list) {
+  const comp = item.comp;
+  const assigned = item.assigned;
+  const estimatedStart = item.estimatedStart;
+  const hasStart = Boolean(estimatedStart);
+
+  const li = document.createElement('li');
+  li.className = 'list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2';
+
+  const backgroundColor = !hasStart
+    ? '#ffe8a1'
+    : assigned?.blockColor
+      ? assigned.blockColor
+      : '#e9ecef';
+  li.style.backgroundColor = backgroundColor;
+
+  const category = comp.category_name || comp.category || t('category');
+  const style = comp.style_name || comp.style || '';
+  const dancers = comp.num_dancers ?? comp.dancers ?? 0;
+  const title = `${category}${style ? ` / ${style}` : ''}`;
+  const estimatedText = hasStart ? formatTime(estimatedStart) : t('not_set');
+
+  const badgeText = assigned ? t('preview_in_block') : t('preview_unassigned');
+  const badgeClass = assigned ? 'text-bg-light' : 'text-bg-secondary';
+
+  li.innerHTML = `
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="fw-semibold">${title}</span>
+        <span class="badge bg-secondary">${dancers}</span>
+        <span class="badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="text-muted small">${t('estimated_start')}: ${estimatedText}</div>
+    `;
+
+  list.appendChild(li);
+}
+
+function formatDateOnly(date) {
+  const pad = (num) => String(num).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function buildCompetitionAssignmentMap() {
+  const map = new Map();
+  scheduleBlocks.forEach(block => {
+    (block.details || []).forEach(detail => {
+      if (detail.block_type !== 'COMP' || !detail.competition_id) return;
+      const key = String(detail.competition_id);
+      if (map.has(key)) return;
+      map.set(key, {
+        blockId: block.id,
+        blockColor: block.color || '#e9ecef',
+        detailId: detail.id
+      });
+    });
+  });
+  return map;
+}
+
+function getCompetitionEstimatedStart(comp, detailId) {
+  const parsed = parseDate(comp.estimated_start || comp.estimatedStart);
+  if (parsed) return parsed;
+
+  if (!detailId) return null;
+
+  for (const block of scheduleBlocks) {
+    const detail = (block.details || []).find(item => String(item.id) === String(detailId));
+    if (!detail) continue;
+    const schedule = computeBlockSchedule(block);
+    const entry = schedule.find(item => String(item.id) === String(detailId));
+    if (entry?.estimatedStart) return entry.estimatedStart;
+  }
+
+  return null;
+}
+
 function renderDetails() {
   const list = document.getElementById('detailsList');
   const empty = document.getElementById('detailsEmpty');
@@ -538,7 +690,6 @@ function initSortable() {
       const order = Array.from(list.children).map(item => item.dataset.id);
       block.details.sort((a, b) => order.indexOf(String(a.id)) - order.indexOf(String(b.id)));
       renderDetails();
-      setDirty(true);
     }
   });
 }
@@ -630,7 +781,7 @@ async function saveSelectedBlock() {
 
   const payload = {
     event_id: getEvent().id,
-    start: block.start || null,
+    start: formatStartForApi(block.start),
     color: block.color || null,
     details: serializeDetails(block.details)
   };
@@ -689,73 +840,6 @@ async function deleteSelectedBlock() {
   }
 }
 
-async function saveAllBlocks() {
-  if (!scheduleBlocks.length) {
-    showMessageModal(t('no_blocks_to_save'), t('error'));
-    return;
-  }
-
-  const saveButton = document.getElementById('saveAllBtn');
-  const originalText = saveButton.textContent;
-  saveButton.disabled = true;
-  saveButton.textContent = t('saving');
-
-  let failed = false;
-
-  for (const block of scheduleBlocks) {
-    await ensureBlockDetailsLoadedFor(block);
-
-    const payload = {
-      event_id: getEvent().id,
-      start: block.start || null,
-      color: block.color || null,
-      details: serializeDetails(block.details)
-    };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/competitions/schedule-blocks/${block.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        showMessageModal(data.error || t('save_all_error'), t('error'));
-        failed = true;
-        break;
-      }
-
-      if (data && typeof data === 'object') {
-        block.start = data.start || block.start;
-        block.color = data.color || block.color;
-        if (Array.isArray(data.details)) {
-          block.details = data.details.map(normalizeDetail);
-          block.detailsLoaded = true;
-        }
-      }
-    } catch (error) {
-      console.error('Failed to save schedule blocks:', error);
-      showMessageModal(t('save_all_error'), t('error'));
-      failed = true;
-      break;
-    }
-  }
-
-  saveButton.disabled = false;
-  if (!failed) {
-    saveButton.textContent = t('saved');
-    renderScheduleConfig();
-    setDirty(false);
-    setTimeout(() => {
-      saveButton.textContent = originalText || t('save_all');
-    }, 1500);
-  } else {
-    saveButton.textContent = originalText || t('save_all');
-    setDirty(true);
-  }
-}
-
 function saveCompetitionDetailFromModal() {
   const timePerDancer = toNumber(document.getElementById('timePerDancerInput').value);
   const timeBeforeStart = toNumber(document.getElementById('timeBeforeStartInput').value);
@@ -789,7 +873,23 @@ function saveCompetitionDetailFromModal() {
   activeCompetitionId = null;
 
   renderScheduleConfig();
-  setDirty(true);
+}
+
+function formatStartForApi(value) {
+  if (!value) return null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmed)) {
+      return trimmed;
+    }
+    const match = trimmed.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})/);
+    if (match) {
+      return `${match[1]}T${match[2]}`;
+    }
+  }
+
+  const date = parseDate(value);
+  return date ? toDatetimeLocalValue(date) : null;
 }
 
 function saveBreakDetailFromModal() {
@@ -826,7 +926,6 @@ function saveBreakDetailFromModal() {
   activeDetailId = null;
 
   renderScheduleConfig();
-  setDirty(true);
 }
 
 function removeDetail(detailId) {
@@ -835,15 +934,6 @@ function removeDetail(detailId) {
 
   block.details = block.details.filter(detail => String(detail.id) !== String(detailId));
   renderScheduleConfig();
-  setDirty(true);
-}
-
-function setDirty(value) {
-  isDirty = value;
-  const saveButton = document.getElementById('saveAllBtn');
-  if (saveButton) {
-    saveButton.disabled = !value;
-  }
 }
 
 function confirmDelete(message, callback) {
@@ -872,29 +962,56 @@ function isTempId(id) {
 function computeBlockSchedule(block) {
   const details = block.details || [];
   const start = parseDate(block.start);
-  let current = start ? new Date(start.getTime()) : null;
-
-  return details.map(detail => {
-    const durationSec = getDetailDurationSec(detail);
-    const estimatedStart = current ? new Date(current.getTime()) : null;
-    if (current) {
-      current = new Date(current.getTime() + durationSec * 1000);
-    }
-    return {
+  if (!start) {
+    return details.map(detail => ({
       id: detail.id,
-      estimatedStart,
-      durationSec
-    };
-  });
-}
-
-function getDetailDurationSec(detail) {
-  if (detail.block_type === 'BREAK') {
-    return toNumber(detail.break_time) * 60;
+      estimatedStart: null,
+      durationSec: 0
+    }));
   }
 
-  const dancers = getCompetitionDancers(detail);
-  return toNumber(detail.time_before_start) + (toNumber(detail.time_per_dancer) * dancers);
+  const orderedDetails = [...details].sort((a, b) => {
+    const orderA = Number.isFinite(Number(a?.order)) ? Number(a.order) : 0;
+    const orderB = Number.isFinite(Number(b?.order)) ? Number(b.order) : 0;
+    return orderA - orderB;
+  });
+
+  let offsetSeconds = 0;
+  const schedule = [];
+
+  orderedDetails.forEach(detail => {
+    if (!detail) return;
+
+    if (detail.block_type === 'BREAK') {
+      const estimatedStart = new Date(start.getTime() + offsetSeconds * 1000);
+      const durationSec = toNumber(detail.break_time) * 60;
+      offsetSeconds += durationSec;
+      schedule.push({ id: detail.id, estimatedStart, durationSec });
+      return;
+    }
+
+    if (detail.block_type === 'COMP' && detail.competition_id) {
+      const preSeconds = toNumber(detail.time_before_start);
+      offsetSeconds += preSeconds;
+
+      if (offsetSeconds % 60 !== 0) {
+        offsetSeconds = Math.ceil(offsetSeconds / 60) * 60;
+      }
+
+      const estimatedStart = new Date(start.getTime() + offsetSeconds * 1000);
+
+      const dancers = getCompetitionDancers(detail);
+      const durationSec = toNumber(detail.time_per_dancer) * dancers;
+      offsetSeconds += durationSec;
+
+      schedule.push({ id: detail.id, estimatedStart, durationSec });
+      return;
+    }
+
+    schedule.push({ id: detail.id, estimatedStart: null, durationSec: 0 });
+  });
+
+  return schedule;
 }
 
 function getCompetitionDancers(detail) {

@@ -199,6 +199,9 @@
                 </select>
               </div>
             </div>
+            <div id="scheduleConfigNotice" class="small d-none mt-0 mb-3 text-warning">
+              La hora de esta competición está configurada automáticamente.
+            </div>
             <div class="mb-3">
               <label class="form-label" data-i18n="col_judges">Jueces</label>
               <select multiple class="form-select" id="editJudges" size="10">
@@ -257,6 +260,23 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
           <button type="button" class="btn btn-primary" id="assignJudgesBtn" data-i18n="judges_assignment_apply">Assign Judges</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="scheduleConfigWarningModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Aviso</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          Has modificado manualmente la hora estimada de inicio. Esta competición se quitará de la configuración del Schedule Configurator.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmScheduleConfigOverrideBtn">Continuar</button>
         </div>
       </div>
     </div>

@@ -320,9 +320,48 @@ function toDatetimeLocalFormat(str) {
          `${minute.toString().padStart(2, '0')}`;
 }
 
+async function saveCompetitionEdits(editModal) {
+  const editForm = document.getElementById('editForm');
+  const competitionId = editForm.dataset.id;
+  const categoryId = editForm.dataset.cat_id;
+  const styleId = editForm.dataset.style_id;
+
+  const inputEstimatedStart = document.getElementById('editStartTime');
+  const inputStatus = document.getElementById('editStatus');
+  const inputJudges = Array.from(document.getElementById('editJudges').selectedOptions).map(opt => opt.value);
+  const inputReserveJudge = document.getElementById('editJudgeReserve');
+
+  const competitionData = {
+    category_id: categoryId,
+    style_id: styleId,
+    estimated_start: inputEstimatedStart.value,
+    status: inputStatus.value,
+    judges: inputJudges,
+    judge_reserve: inputReserveJudge ? (inputReserveJudge.value || null) : null,
+    event_id: getEvent().id
+  };
+
+  const response = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(competitionData)
+  });
+
+  if (!response.ok) {
+    const errData = await response.json();
+    showMessageModal(errData.error || 'Error saving competition', 'Error');
+    return;
+  }
+
+  await fetchCompetitionsFromAPI();
+  editModal.hide();
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    const scheduleConfigWarningModalEl = document.getElementById('scheduleConfigWarningModal');
+    const scheduleConfigWarningModal = scheduleConfigWarningModalEl ? new bootstrap.Modal(scheduleConfigWarningModalEl) : null;
     const dancersOrderModal = new bootstrap.Modal(document.getElementById('dancersOrderModal'));
     const judgesAssignmentModalEl = document.getElementById('judgesAssignmentModal');
     const judgesAssignmentModal = judgesAssignmentModalEl ? new bootstrap.Modal(judgesAssignmentModalEl) : null;
@@ -345,8 +384,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('modalTitleCategory').textContent = competition.category_name;
         document.getElementById('modalTitleStyle').textContent = competition.style_name;
-        document.getElementById('editStartTime').value = toDatetimeLocalFormat(competition.estimated_start_form);
+        const estimatedStartValue = toDatetimeLocalFormat(competition.estimated_start_form);
+        document.getElementById('editStartTime').value = estimatedStartValue;
         document.getElementById('editStatus').value = competition.status;
+        const scheduleNotice = document.getElementById('scheduleConfigNotice');
+        const hasScheduleConfig = competition.schedule_config !== null && competition.schedule_config !== undefined;
+        editForm.dataset.schedule_config = hasScheduleConfig ? String(competition.schedule_config) : '';
+        editForm.dataset.original_estimated_start = estimatedStartValue || '';
+        if (scheduleNotice) {
+          scheduleNotice.classList.toggle('d-none', !hasScheduleConfig);
+        }
 
         const judges = competition.judges || [];
 
@@ -391,42 +438,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('saveEditBtn').addEventListener('click', async () => {
+      const editForm = document.getElementById('editForm');
+      const hasScheduleConfig = Boolean(editForm.dataset.schedule_config);
+      const originalStart = editForm.dataset.original_estimated_start || '';
+      const currentStart = document.getElementById('editStartTime').value || '';
 
-      const competitionId = document.getElementById('editForm').dataset.id;
-      const categoryId = document.getElementById('editForm').dataset.cat_id;
-      const styleId = document.getElementById('editForm').dataset.style_id;
-
-      inputEstimatedStart = document.getElementById('editStartTime');
-      inputStatus = document.getElementById('editStatus');
-      inputJudges = Array.from(document.getElementById('editJudges').selectedOptions).map(opt => opt.value);
-      const inputReserveJudge = document.getElementById('editJudgeReserve');
-
-      const competitionData = {
-        category_id: categoryId,
-        style_id: styleId,
-        estimated_start: inputEstimatedStart.value,
-        status: inputStatus.value,
-        judges: inputJudges,
-        judge_reserve: inputReserveJudge ? (inputReserveJudge.value || null) : null,
-        event_id: getEvent().id
-      }
-
-
-      const response = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(competitionData)
-      });
-
-      if (!response.ok) {
-        const errData = await response.json();
-        showMessageModal(errData.error || 'Error saving competition', 'Error');
+      if (hasScheduleConfig && originalStart !== currentStart && scheduleConfigWarningModal) {
+        const confirmButton = document.getElementById('confirmScheduleConfigOverrideBtn');
+        confirmButton.onclick = async () => {
+          await saveCompetitionEdits(editModal);
+          scheduleConfigWarningModal.hide();
+        };
+        scheduleConfigWarningModal.show();
         return;
       }
 
-      await fetchCompetitionsFromAPI();
-
-      editModal.hide();
+      await saveCompetitionEdits(editModal);
     });
 
     const sortable = new Sortable(document.getElementById('sortableDancers'), {

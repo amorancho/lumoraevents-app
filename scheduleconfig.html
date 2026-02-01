@@ -63,6 +63,9 @@
               <button class="btn btn-outline-primary" id="updateBlockBtn" data-i18n="block_update">Update block</button>
               <button class="btn btn-outline-danger" id="deleteBlockBtn" data-i18n="block_delete">Delete block</button>
             </div>
+            <div class="d-grid mt-3">
+              <button class="btn btn-outline-secondary" id="previewScheduleBtn" data-i18n="preview_full_schedule">Previsualizar Schedule Completo</button>
+            </div>
           </div>
         </div>
 
@@ -94,7 +97,6 @@
               </div>
               <div class="d-flex align-items-center gap-2">
                 <span class="badge text-bg-light" id="dragHint" data-i18n="drag_hint">Drag to reorder</span>
-                <button class="btn btn-sm btn-primary" id="saveAllBtn" data-i18n="save_all" disabled>Save all</button>
               </div>
             </div>
           </div>
@@ -172,6 +174,31 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteBtn" data-i18n="delete">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="previewScheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="preview_full_schedule">Previsualizar Schedule Completo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <span class="badge text-bg-light" id="previewLegendInBlock" data-i18n="preview_in_block">En bloque</span>
+            <span class="badge text-bg-secondary" id="previewLegendUnassigned" data-i18n="preview_unassigned">Sin bloque</span>
+            <span class="badge text-bg-warning" id="previewLegendNoStart" data-i18n="preview_no_start">Sin hora</span>
+          </div>
+          <div id="previewScheduleEmpty" class="text-center text-muted py-3" data-i18n="preview_empty">
+            No competitions available
+          </div>
+          <ul class="list-group list-group-flush" id="previewScheduleList"></ul>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
         </div>
       </div>
     </div>
