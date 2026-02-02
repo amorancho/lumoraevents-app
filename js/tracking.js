@@ -713,6 +713,15 @@ function shouldShowAvgPlaceColumn() {
   return getEvent().totalSystem === 'AVG_POSJUD';
 }
 
+function formatPositionCount(positionCount) {
+  if (!positionCount || typeof positionCount !== 'object') return '';
+  const entries = Object.entries(positionCount)
+    .filter(([, count]) => count !== null && count !== undefined && count !== '')
+    .sort((a, b) => Number(a[0]) - Number(b[0]));
+  if (!entries.length) return '';
+  return entries.map(([pos, count]) => `${pos}(${count})`).join(', ');
+}
+
 function updateResultsPositions(tbody) {
   const rows = Array.from(tbody.querySelectorAll('tr'));
   rows.forEach((row, index) => {
@@ -812,11 +821,17 @@ async function showResults(categoryId, styleId, status) {
   const bodyEl = document.getElementById('resultsModalBody');
   const modalTitle = document.getElementById('resultsModalLabel');
   const saveClassificationBtn = document.getElementById('saveClassificationBtn');
+  const showAvgPlace = shouldShowAvgPlaceColumn();
+  const showPositions = showAvgPlace && status === 'FIN';
 
   modalTitle.textContent = t('view_results');
   if (modalEl) {
     modalEl.dataset.categoryId = categoryId;
     modalEl.dataset.styleId = styleId;
+    const dialogEl = modalEl.querySelector('.modal-dialog');
+    if (dialogEl) {
+      dialogEl.classList.toggle('results-modal-wide', showPositions);
+    }
   }
   if (saveClassificationBtn) {
     if (getEvent().canDecidePositions) {
@@ -870,24 +885,26 @@ async function showResults(categoryId, styleId, status) {
       const flagCode = r.dancer_nationality || 'XX';
       const flagUrl = `https://flagsapi.com/${flagCode}/shiny/24.png`;
       const dancerCell = `
-        <div class="d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center">
+        <div class="d-flex align-items-center gap-2 results-dancer-row">
+          <div class="d-flex align-items-center results-dancer-content">
             <img src="${flagUrl}" class="me-2" style="vertical-align: middle;">
-            <span>${r.dancer_name}</span>
+            <span class="results-dancer-name">${r.dancer_name}</span>
           </div>
         </div>
       `;
       const scoreValue = formatResultScore(r.total_score);
       const scoreKey = String(scoreValue);
       const avgPlaceText = formatAvgPlace(r.avg_place);
+      const positionCountText = formatPositionCount(r.positionCount);
       const dancerId = r.dancer_id ?? r.id ?? '';
       const avgPlaceKey = r.avg_place ?? '';
       return `
         <tr data-score="${scoreKey}" data-dancer-id="${dancerId}" data-avg-place="${avgPlaceKey}">
           <td class="fw-semibold">${index + 1}</td>
-          <td>${dancerCell}</td>
+          <td class="results-dancer-cell">${dancerCell}</td>
           <td class="fw-semibold">${scoreValue}</td>
-          ${shouldShowAvgPlaceColumn() ? `<td class="fw-semibold">${avgPlaceText}</td>` : ''}
+          ${showPositions ? `<td class="fw-semibold">${positionCountText}</td>` : ''}
+          ${showAvgPlace ? `<td class="fw-semibold">${avgPlaceText}</td>` : ''}
         </tr>
       `;
     }).join('');
@@ -901,7 +918,8 @@ async function showResults(categoryId, styleId, status) {
               <th>#</th>
               <th>${t('dancer')}</th>
               <th>${t('total')}</th>
-              ${shouldShowAvgPlaceColumn() ? `<th>${t('avg_place')}</th>` : ''}
+              ${showPositions ? `<th>${t('positions')}</th>` : ''}
+              ${showAvgPlace ? `<th>${t('avg_place')}</th>` : ''}
             </tr>
           </thead>
           <tbody>

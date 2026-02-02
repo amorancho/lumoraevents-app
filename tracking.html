@@ -27,6 +27,36 @@
     .tie-move-icon {
       font-size: 0.9rem;
     }
+    .results-dancer-cell {
+      text-align: left;
+    }
+    .results-dancer-row {
+      width: 100%;
+      min-width: 0;
+    }
+    .results-dancer-content {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .results-dancer-name {
+      display: block;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #resultsModal .modal-dialog {
+      max-width: 600px;
+    }
+    #resultsModal .modal-dialog.results-modal-wide {
+      max-width: 800px;
+    }
+    #resultsModal .results-draggable td:first-child {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
