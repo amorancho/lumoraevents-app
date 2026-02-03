@@ -722,6 +722,15 @@ function formatPositionCount(positionCount) {
   return entries.map(([pos, count]) => `${pos}(${count})`).join(', ');
 }
 
+function formatPositionCountKey(positionCount) {
+  if (!positionCount || typeof positionCount !== 'object') return '';
+  const entries = Object.entries(positionCount)
+    .filter(([, count]) => count !== null && count !== undefined && count !== '')
+    .sort((a, b) => Number(a[0]) - Number(b[0]));
+  if (!entries.length) return '';
+  return entries.map(([pos, count]) => `${pos}:${count}`).join('|');
+}
+
 function updateResultsPositions(tbody) {
   const rows = Array.from(tbody.querySelectorAll('tr'));
   rows.forEach((row, index) => {
@@ -745,15 +754,25 @@ function initResultsTieSorting(bodyEl) {
   const rows = Array.from(tbody.querySelectorAll('tr'));
   if (!rows.length) return;
 
+  const usesAvgPosJud = getEvent().totalSystem === 'AVG_POSJUD';
+  const getTieKey = (row) => {
+    if (usesAvgPosJud) {
+      const avgPlace = row.dataset.avgPlace || '';
+      const positionCountKey = row.dataset.positionCountKey || '';
+      return `${avgPlace}|${positionCountKey}`;
+    }
+    return row.dataset.score || '';
+  };
+
   const scoreCounts = rows.reduce((acc, row) => {
-    const key = row.dataset.score || '';
+    const key = getTieKey(row);
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {});
 
   let hasTies = false;
   rows.forEach(row => {
-    const key = row.dataset.score || '';
+    const key = getTieKey(row);
     if (scoreCounts[key] > 1) {
       row.dataset.draggable = 'true';
       row.classList.add('results-draggable');
@@ -776,10 +795,10 @@ function initResultsTieSorting(bodyEl) {
     animation: 150,
     draggable: 'tr[data-draggable="true"]',
     onMove: (evt) => {
-      const draggedScore = evt.dragged?.dataset.score;
-      const relatedScore = evt.related?.dataset.score;
-      if (!draggedScore || !relatedScore) return false;
-      return draggedScore === relatedScore;
+      const draggedKey = evt.dragged ? getTieKey(evt.dragged) : '';
+      const relatedKey = evt.related ? getTieKey(evt.related) : '';
+      if (!draggedKey || !relatedKey) return false;
+      return draggedKey === relatedKey;
     },
     onEnd: () => updateResultsPositions(tbody)
   });
@@ -896,10 +915,11 @@ async function showResults(categoryId, styleId, status) {
       const scoreKey = String(scoreValue);
       const avgPlaceText = formatAvgPlace(r.avg_place);
       const positionCountText = formatPositionCount(r.positionCount);
+      const positionCountKey = formatPositionCountKey(r.positionCount);
       const dancerId = r.dancer_id ?? r.id ?? '';
       const avgPlaceKey = r.avg_place ?? '';
       return `
-        <tr data-score="${scoreKey}" data-dancer-id="${dancerId}" data-avg-place="${avgPlaceKey}">
+        <tr data-score="${scoreKey}" data-dancer-id="${dancerId}" data-avg-place="${avgPlaceKey}" data-position-count-key="${positionCountKey}">
           <td class="fw-semibold">${index + 1}</td>
           <td class="results-dancer-cell">${dancerCell}</td>
           <td class="fw-semibold">${scoreValue}</td>

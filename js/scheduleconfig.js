@@ -20,6 +20,7 @@ let competitionModal = null;
 let breakModal = null;
 let confirmDeleteModal = null;
 let previewScheduleModal = null;
+let beforeUnloadHandlerBound = false;
 
 window.renderScheduleConfig = renderScheduleConfig;
 
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   initColorSelect();
   bindScheduleConfigEvents();
+  bindBeforeUnloadWarning();
 
   await Promise.all([loadCompetitions(), loadScheduleBlocks()]);
   if (!selectedBlockId && scheduleBlocks.length > 0) {
@@ -60,6 +62,7 @@ function bindScheduleConfigEvents() {
     block.start = blockStart.value;
     renderDetails();
     updateSelectedBlockMeta();
+    markBlockDirty(block);
   });
 
   blockColor.addEventListener('change', () => {
@@ -69,6 +72,7 @@ function bindScheduleConfigEvents() {
     block.color = blockColor.value;
     renderDetails();
     updateSelectedBlockMeta();
+    markBlockDirty(block);
   });
 
   document.getElementById('addBlockBtn').addEventListener('click', createScheduleBlock);
@@ -227,7 +231,8 @@ function normalizeBlock(block) {
     start: startValue,
     color: colorValue,
     details: hasDetails ? details.map(normalizeDetail) : [],
-    detailsLoaded: hasDetails
+    detailsLoaded: hasDetails,
+    dirty: false
   };
 }
 
@@ -354,7 +359,7 @@ function updateBlockForm() {
     colorSelect.value = '';
   }
 
-  updateButton.disabled = false;
+  updateBlockDirtyState();
   deleteButton.disabled = false;
   addBreakButton.disabled = false;
 
@@ -430,29 +435,15 @@ function renderPreviewSchedule() {
   const empty = document.getElementById('previewScheduleEmpty');
   list.innerHTML = '';
 
-  if (!competitions.length) {
-    empty.classList.remove('d-none');
-    return;
-  }
-
-  const assignment = buildCompetitionAssignmentMap();
-  const previewItems = competitions.map(comp => {
-    const assigned = assignment.get(String(comp.id)) || null;
-    const estimatedStart = getCompetitionEstimatedStart(comp, assigned?.detailId);
-    return {
-      comp,
-      assigned,
-      estimatedStart
-    };
-  });
+  const previewItems = buildPreviewItems();
 
   const withStart = previewItems.filter(item => item.estimatedStart);
   const withoutStart = previewItems.filter(item => !item.estimatedStart);
 
   withStart.sort((a, b) => a.estimatedStart - b.estimatedStart);
   withoutStart.sort((a, b) => {
-    const nameA = `${a.comp.category_name || a.comp.category || ''} ${a.comp.style_name || a.comp.style || ''}`.trim();
-    const nameB = `${b.comp.category_name || b.comp.category || ''} ${b.comp.style_name || b.comp.style || ''}`.trim();
+    const nameA = getPreviewSortName(a);
+    const nameB = getPreviewSortName(b);
     return nameA.localeCompare(nameB);
   });
 
@@ -479,7 +470,7 @@ function renderPreviewSchedule() {
     list.appendChild(header);
 
     groupedByDay.get(dayKey).forEach(item => {
-      renderPreviewCompetitionItem(item, list);
+      renderPreviewItem(item, list);
     });
   });
 
@@ -490,16 +481,18 @@ function renderPreviewSchedule() {
     list.appendChild(header);
 
     withoutStart.forEach(item => {
-      renderPreviewCompetitionItem(item, list);
+      renderPreviewItem(item, list);
     });
   }
 }
 
-function renderPreviewCompetitionItem(item, list) {
+function renderPreviewItem(item, list) {
   const comp = item.comp;
+  const detail = item.detail;
   const assigned = item.assigned;
   const estimatedStart = item.estimatedStart;
   const hasStart = Boolean(estimatedStart);
+  const isBreak = item.type === 'BREAK';
 
   const li = document.createElement('li');
   li.className = 'list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2';
@@ -508,28 +501,72 @@ function renderPreviewCompetitionItem(item, list) {
     ? '#ffe8a1'
     : assigned?.blockColor
       ? assigned.blockColor
-      : '#e9ecef';
+        : '#e9ecef';
   li.style.backgroundColor = backgroundColor;
 
-  const category = comp.category_name || comp.category || t('category');
-  const style = comp.style_name || comp.style || '';
-  const dancers = comp.num_dancers ?? comp.dancers ?? 0;
-  const title = `${category}${style ? ` / ${style}` : ''}`;
+  const category = comp?.category_name || comp?.category || t('category');
+  const style = comp?.style_name || comp?.style || '';
+  const dancers = comp?.num_dancers ?? comp?.dancers ?? 0;
+  const title = isBreak
+    ? (detail?.break_name || t('break_label'))
+    : `${category}${style ? ` / ${style}` : ''}`;
   const estimatedText = hasStart ? formatTime(estimatedStart) : t('not_set');
 
   const badgeText = assigned ? t('preview_in_block') : t('preview_unassigned');
   const badgeClass = assigned ? 'text-bg-light' : 'text-bg-secondary';
 
   li.innerHTML = `
-      <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="fw-semibold">${title}</span>
-        <span class="badge bg-secondary">${dancers}</span>
-        <span class="badge ${badgeClass}">${badgeText}</span>
-      </div>
-      <div class="text-muted small">${t('estimated_start')}: ${estimatedText}</div>
-    `;
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="fw-semibold">${title}</span>
+          ${isBreak ? '' : `<span class="badge bg-secondary">${dancers}</span>`}
+          <span class="badge ${badgeClass}">${badgeText}</span>
+        </div>
+        <div class="text-muted small">${t('estimated_start')}: ${estimatedText}</div>
+      `;
 
   list.appendChild(li);
+}
+
+function buildPreviewItems() {
+  const assignment = buildCompetitionAssignmentMap();
+  const items = competitions.map(comp => {
+    const assigned = assignment.get(String(comp.id)) || null;
+    const estimatedStart = getCompetitionEstimatedStart(comp, assigned?.detailId);
+    return {
+      type: 'COMP',
+      comp,
+      assigned,
+      estimatedStart
+    };
+  });
+
+  scheduleBlocks.forEach(block => {
+    const schedule = computeBlockSchedule(block);
+    const scheduleMap = new Map(schedule.map(entry => [String(entry.id), entry]));
+    (block.details || []).forEach(detail => {
+      if (detail.block_type !== 'BREAK') return;
+      const scheduleInfo = scheduleMap.get(String(detail.id)) || {};
+      items.push({
+        type: 'BREAK',
+        detail,
+        assigned: {
+          blockId: block.id,
+          blockColor: block.color || '#e9ecef'
+        },
+        estimatedStart: scheduleInfo.estimatedStart || null
+      });
+    });
+  });
+
+  return items;
+}
+
+function getPreviewSortName(item) {
+  if (item.type === 'BREAK') {
+    return (item.detail?.break_name || t('break_label')).toString();
+  }
+  const comp = item.comp || {};
+  return `${comp.category_name || comp.category || ''} ${comp.style_name || comp.style || ''}`.trim();
 }
 
 function formatDateOnly(date) {
@@ -683,16 +720,17 @@ function initSortable() {
     detailSortable.destroy();
   }
 
-  detailSortable = new Sortable(list, {
-    animation: 150,
-    handle: '.drag-handle',
-    onEnd: () => {
-      const order = Array.from(list.children).map(item => item.dataset.id);
-      block.details.sort((a, b) => order.indexOf(String(a.id)) - order.indexOf(String(b.id)));
-      renderDetails();
-    }
-  });
-}
+    detailSortable = new Sortable(list, {
+      animation: 150,
+      handle: '.drag-handle',
+      onEnd: () => {
+        const order = Array.from(list.children).map(item => item.dataset.id);
+        block.details.sort((a, b) => order.indexOf(String(a.id)) - order.indexOf(String(b.id)));
+        markBlockDirty(block);
+        renderDetails();
+      }
+    });
+  }
 
 function getAvailableCompetitions() {
   const usedIds = new Set();
@@ -764,7 +802,8 @@ async function createScheduleBlock() {
       start: startValue,
       color: colorValue,
       details: [],
-      detailsLoaded: true
+      detailsLoaded: true,
+      dirty: false
     });
 
     selectedBlockId = blockId;
@@ -799,16 +838,17 @@ async function saveSelectedBlock() {
       return;
     }
 
-    if (data && typeof data === 'object') {
-      block.start = data.start || block.start;
-      block.color = data.color || block.color;
-      if (Array.isArray(data.details)) {
-        block.details = data.details.map(normalizeDetail);
-        block.detailsLoaded = true;
+      if (data && typeof data === 'object') {
+        block.start = data.start || block.start;
+        block.color = data.color || block.color;
+        if (Array.isArray(data.details)) {
+          block.details = data.details.map(normalizeDetail);
+          block.detailsLoaded = true;
+        }
       }
-    }
 
-    renderScheduleConfig();
+      clearBlockDirty(block);
+      renderScheduleConfig();
   } catch (error) {
     console.error('Failed to save schedule block:', error);
     showMessageModal('Error saving schedule block', t('error'));
@@ -872,6 +912,7 @@ function saveCompetitionDetailFromModal() {
   activeDetailId = null;
   activeCompetitionId = null;
 
+  markBlockDirty(block);
   renderScheduleConfig();
 }
 
@@ -925,6 +966,7 @@ function saveBreakDetailFromModal() {
   breakModal.hide();
   activeDetailId = null;
 
+  markBlockDirty(block);
   renderScheduleConfig();
 }
 
@@ -933,7 +975,42 @@ function removeDetail(detailId) {
   if (!block) return;
 
   block.details = block.details.filter(detail => String(detail.id) !== String(detailId));
+  markBlockDirty(block);
   renderScheduleConfig();
+}
+
+function markBlockDirty(block) {
+  if (!block) return;
+  block.dirty = true;
+  updateBlockDirtyState();
+}
+
+function clearBlockDirty(block) {
+  if (!block) return;
+  block.dirty = false;
+  updateBlockDirtyState();
+}
+
+function updateBlockDirtyState() {
+  const updateButton = document.getElementById('updateBlockBtn');
+  if (!updateButton) return;
+  const block = getSelectedBlock();
+  updateButton.disabled = !block || !block.dirty;
+}
+
+function hasPendingChanges() {
+  const updateButton = document.getElementById('updateBlockBtn');
+  return Boolean(updateButton && !updateButton.disabled);
+}
+
+function bindBeforeUnloadWarning() {
+  if (beforeUnloadHandlerBound) return;
+  beforeUnloadHandlerBound = true;
+  window.addEventListener('beforeunload', (event) => {
+    if (!hasPendingChanges()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
 }
 
 function confirmDelete(message, callback) {
@@ -983,6 +1060,9 @@ function computeBlockSchedule(block) {
     if (!detail) return;
 
     if (detail.block_type === 'BREAK') {
+      if (offsetSeconds % 60 !== 0) {
+        offsetSeconds = Math.ceil(offsetSeconds / 60) * 60;
+      }
       const estimatedStart = new Date(start.getTime() + offsetSeconds * 1000);
       const durationSec = toNumber(detail.break_time) * 60;
       offsetSeconds += durationSec;
