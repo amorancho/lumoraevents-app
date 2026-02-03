@@ -66,6 +66,9 @@
             <div class="d-grid mt-3">
               <button class="btn btn-outline-secondary" id="previewScheduleBtn" data-i18n="preview_full_schedule">Previsualizar Schedule Completo</button>
             </div>
+            <div class="d-grid mt-2">
+              <button class="btn btn-outline-secondary" id="backToCompetitionsBtn" data-i18n="back_to_competitions">Volver a Competiciones</button>
+            </div>
           </div>
         </div>
 
@@ -199,6 +202,24 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="unsavedChangesModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="unsaved_changes_title">Unsaved changes</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" data-i18n="unsaved_changes_message">
+          You have pending changes. Do you want to leave without saving?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmLeaveBtn" data-i18n="leave_without_saving">Leave without saving</button>
         </div>
       </div>
     </div>

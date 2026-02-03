@@ -20,7 +20,9 @@ let competitionModal = null;
 let breakModal = null;
 let confirmDeleteModal = null;
 let previewScheduleModal = null;
+let unsavedChangesModal = null;
 let beforeUnloadHandlerBound = false;
+let allowNavigateWithoutPrompt = false;
 
 window.renderScheduleConfig = renderScheduleConfig;
 
@@ -32,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   breakModal = new bootstrap.Modal(document.getElementById('breakModal'));
   confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
   previewScheduleModal = new bootstrap.Modal(document.getElementById('previewScheduleModal'));
+  unsavedChangesModal = new bootstrap.Modal(document.getElementById('unsavedChangesModal'));
 
   initColorSelect();
   bindScheduleConfigEvents();
@@ -127,6 +130,11 @@ function bindScheduleConfigEvents() {
   document.getElementById('saveCompetitionDetailBtn').addEventListener('click', saveCompetitionDetailFromModal);
   document.getElementById('saveBreakDetailBtn').addEventListener('click', saveBreakDetailFromModal);
   document.getElementById('previewScheduleBtn').addEventListener('click', openPreviewSchedule);
+  document.getElementById('backToCompetitionsBtn').addEventListener('click', handleBackToCompetitions);
+  document.getElementById('confirmLeaveBtn').addEventListener('click', () => {
+    if (unsavedChangesModal) unsavedChangesModal.hide();
+    navigateToCompetitions();
+  });
 
   document.getElementById('detailsList').addEventListener('click', (event) => {
     const editButton = event.target.closest('.btn-edit-detail');
@@ -1007,10 +1015,30 @@ function bindBeforeUnloadWarning() {
   if (beforeUnloadHandlerBound) return;
   beforeUnloadHandlerBound = true;
   window.addEventListener('beforeunload', (event) => {
+    if (allowNavigateWithoutPrompt) return;
     if (!hasPendingChanges()) return;
     event.preventDefault();
     event.returnValue = '';
   });
+}
+
+function handleBackToCompetitions() {
+  if (hasPendingChanges()) {
+    if (unsavedChangesModal) {
+      unsavedChangesModal.show();
+      return;
+    }
+  }
+  navigateToCompetitions();
+}
+
+function navigateToCompetitions() {
+  allowNavigateWithoutPrompt = true;
+  window.location.href = getCompetitionsUrl();
+}
+
+function getCompetitionsUrl() {
+  return `competitions.html?eventId=${encodeURIComponent(eventId)}`;
 }
 
 function confirmDelete(message, callback) {
