@@ -39,6 +39,11 @@ function initJudgeManagement() {
 
   if (editModalElement) {
     editModalElement.addEventListener('hidden.bs.modal', () => hideActionFeedback());
+    editModalElement.addEventListener('shown.bs.modal', () => {
+      if (document.getElementById('editForm').dataset.action === 'create') {
+        document.getElementById('judgeName').focus();
+      }
+    });
   }
 
   const actionFeedbackClose = document.getElementById('actionFeedbackClose');
