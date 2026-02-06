@@ -46,6 +46,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  const eventStatusFilter = document.getElementById('eventStatusFilter');
+  const eventVisibleFilter = document.getElementById('eventVisibleFilter');
+  const eventTrialFilter = document.getElementById('eventTrialFilter');
+
+  [eventStatusFilter, eventVisibleFilter, eventTrialFilter].forEach((filterEl) => {
+    if (filterEl) {
+      filterEl.addEventListener('change', () => {
+        renderEvents();
+      });
+    }
+  });
+
 });
 
 async function loadEvents() {
@@ -71,10 +83,21 @@ function renderEvents() {
     return;
   }
 
-  document.getElementById("emptyState").classList.add("d-none");
-  document.getElementById("count-events").textContent = events.length;
+  const statusFilterValue = document.getElementById('eventStatusFilter')?.value || 'all';
+  const visibleFilterValue = document.getElementById('eventVisibleFilter')?.value || 'all';
+  const trialFilterValue = document.getElementById('eventTrialFilter')?.value || 'all';
 
-  events.forEach(event => {
+  const filteredEvents = events.filter((event) => {
+    const statusOk = statusFilterValue === 'all' || event.status === statusFilterValue;
+    const visibleOk = visibleFilterValue === 'all' || Number(event.visible) === Number(visibleFilterValue);
+    const trialOk = trialFilterValue === 'all' || Number(event.trial) === Number(trialFilterValue);
+    return statusOk && visibleOk && trialOk;
+  });
+
+  document.getElementById("emptyState").classList.toggle("d-none", filteredEvents.length > 0);
+  document.getElementById("count-events").textContent = filteredEvents.length;
+
+  filteredEvents.forEach(event => {
     const tr = document.createElement("tr");
     tr.dataset.id = event.id;
 

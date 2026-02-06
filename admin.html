@@ -109,7 +109,24 @@
             <h5 class="mb-0 d-flex align-items-center">
               <i class="bi bi-people-fill me-2"></i> Eventos
             </h5>
-            <span id="count-events" class="badge bg-secondary rounded-pill">0</span>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              <select id="eventStatusFilter" class="form-select form-select-sm w-auto">
+                <option value="all" selected>Estado: Todos</option>
+                <option value="OPE">Estado: Opened</option>
+                <option value="FIN">Estado: Finished</option>
+              </select>
+              <select id="eventVisibleFilter" class="form-select form-select-sm w-auto">
+                <option value="all" selected>Visible: Todos</option>
+                <option value="1">Visible: Sí</option>
+                <option value="0">Visible: No</option>
+              </select>
+              <select id="eventTrialFilter" class="form-select form-select-sm w-auto">
+                <option value="all" selected>Trial: Todos</option>
+                <option value="1">Trial: Sí</option>
+                <option value="0">Trial: No</option>
+              </select>
+              <span id="count-events" class="badge bg-secondary rounded-pill">0</span>
+            </div>
 
             
           </div>
