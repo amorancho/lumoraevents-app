@@ -36,6 +36,8 @@
   "notice_type_info": "Info",
   "notice_type_important": "Important",
   "qr_tooltip": "Afficher le QR de l'evenement pour partager le lien",
+  "download_qr": "Télécharger le QR",
+  "close": "Fermer",
   "registration_config_title": "Configuration des inscriptions",
   "registration_start_label": "Debut des inscriptions",
   "registration_end_label": "Fin des inscriptions",

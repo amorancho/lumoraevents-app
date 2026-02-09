@@ -36,6 +36,8 @@
   "notice_type_info": "Info",
   "notice_type_important": "Important",
   "qr_tooltip": "Show the event QR to share the link",
+  "download_qr": "Download QR",
+  "close": "Close",
   "registration_config_title": "Registration Settings",
   "registration_start_label": "Registration start",
   "registration_end_label": "Registration end",
