@@ -58,7 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 document.addEventListener('DOMContentLoaded', function () {
 
-  const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+  const editModalElement = document.getElementById('editModal');
+  const editModal = new bootstrap.Modal(editModalElement);
   const filterCategory = document.getElementById('categoryFilter');
   const filterClub = document.getElementById('clubFilter');
   const table = document.getElementById('dancersTable');
@@ -83,6 +84,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   filterClub.addEventListener('change', () => {
     applyFilter();
+  });
+
+  editModalElement.addEventListener('shown.bs.modal', () => {
+    if (document.getElementById('editForm').dataset.action === 'create') {
+      document.getElementById('dancerName').focus();
+    }
   });
 
   document.getElementById('createNewDancerBtn').addEventListener('click', function () {

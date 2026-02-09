@@ -217,9 +217,9 @@ function renderCompetitions(competitions) {
           </div>                  
           <div class="col-6 col-md-1">
             <p class="mb-1 fw-semibold">${t('judges')}</p>
-            <p>
+            <p class="text-nowrap">
               <span class="badge bg-primary">${comp.judge_number}</span>
-              <span class="mx-1">/</span>
+              <span>/</span>
               <span class="badge bg-warning"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
