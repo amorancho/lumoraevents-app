@@ -171,21 +171,33 @@ function renderCompetitions(competitions) {
     card.className = 'card mb-4';
     card.innerHTML = `
       <div class="card-header">
-        <h5 class="mb-0 text-center w-100">${comp.category_name} - ${comp.style_name}</h5>
+        <h5 class="mb-0 text-center w-85">${comp.category_name} - ${comp.style_name}</h5>
       </div>
       <div class="card-body">
         <div class="row text-center align-items-stretch">
-          <div class="col-6 col-md-2 d-flex">
+          <div class="col-12 col-md-2 d-flex">
             <div class="d-grid gap-2 w-100">
               ${statusActionButton}
-              <button type="button"
-                class="btn btn-outline-primary btn-sm w-100 btn-view-results"
-                data-category-id="${comp.category_id}"
-                data-style-id="${comp.style_id}"
-                data-status="${comp.status}">
-                <i class="bi bi-trophy me-1"></i>
-                ${t('view_results')}
-              </button>
+              <div class="row g-2">
+                <div class="col-6">
+                  <button type="button"
+                    class="btn btn-outline-secondary btn-sm w-100 btn-competition-details"
+                    data-comp-id="${comp.id}">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Details
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button type="button"
+                    class="btn btn-outline-primary btn-sm w-100 btn-view-results"
+                    data-category-id="${comp.category_id}"
+                    data-style-id="${comp.style_id}"
+                    data-status="${comp.status}">
+                    <i class="bi bi-trophy me-1"></i>
+                    Results
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="col-6 col-md-2">

@@ -839,7 +839,7 @@ function renderDancersTable(dancers, compStatus) {
       btnDetails.textContent = t('details');
       btnDetails.addEventListener('click', () => showVotesModal(d, "details"));
       tdActions.appendChild(btnDetails);
-    } else if (d.status === 'Pending' && compStatus === 'OPE') {
+    } else if (d.status === 'Pending' && compStatus === 'OPE' && d.can_vote) {
       const btnVote = document.createElement('button');
       btnVote.className = 'btn btn-sm btn-primary';
       btnVote.textContent = t('vote');
