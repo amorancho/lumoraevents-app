@@ -2,8 +2,395 @@ var title = 'Competition Tracking';
 
 const allowedRoles = ["admin", "organizer"];
 const voteDetailsInFlight = new Set();
+const competitionDetailsInFlight = new Set();
 
 const categorySelect = document.getElementById('categorySelect');
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getCompetitionJudges(competition) {
+  const directJudges = Array.isArray(competition?.judges) ? competition.judges.filter(Boolean) : [];
+  if (directJudges.length) return directJudges;
+
+  const judgesById = new Map();
+  const dancers = Array.isArray(competition?.dancers) ? competition.dancers : [];
+  dancers.forEach(dancer => {
+    const votes = Array.isArray(dancer?.votes) ? dancer.votes : [];
+    votes.forEach(vote => {
+      const judge = vote?.judge;
+      if (!judge || judge.id === undefined || judge.id === null) return;
+      judgesById.set(String(judge.id), judge);
+    });
+  });
+
+  return Array.from(judgesById.values());
+}
+
+function getCompetitionCriteria(competition, judges) {
+  const dancers = Array.isArray(competition?.dancers) ? competition.dancers : [];
+  for (const dancer of dancers) {
+    const votes = Array.isArray(dancer?.votes) ? dancer.votes : [];
+    for (const judge of judges) {
+      const vote = votes.find(v => String(v?.judge?.id) === String(judge?.id));
+      const details = Array.isArray(vote?.details) ? vote.details : [];
+      if (!details.length) continue;
+
+      return details.map(detail => ({
+        criteria_id: detail?.criteria_id,
+        criteria_name: detail?.criteria_name || '',
+        percentage: detail?.percentage
+      }));
+    }
+  }
+  return [];
+}
+
+function findVoteDetailByCriteria(vote, criteriaRef) {
+  const details = Array.isArray(vote?.details) ? vote.details : [];
+  if (!details.length) return null;
+
+  const byId = details.find(detail =>
+    criteriaRef?.criteria_id !== undefined &&
+    criteriaRef?.criteria_id !== null &&
+    detail?.criteria_id === criteriaRef.criteria_id
+  );
+  if (byId) return byId;
+
+  return details.find(detail => String(detail?.criteria_name || '') === String(criteriaRef?.criteria_name || '')) || null;
+}
+
+function formatVoteScore(score) {
+  if (score === null || score === undefined || score === '') {
+    return '-';
+  }
+
+  const numericValue = Number(score);
+  if (Number.isFinite(numericValue) && (numericValue === 0 || numericValue === -1)) {
+    return '-';
+  }
+
+  return escapeHtml(score);
+}
+
+function renderCompetitionVotingDetailsTable(competition) {
+  const judges = getCompetitionJudges(competition);
+  const criteria = getCompetitionCriteria(competition, judges);
+  const dancers = Array.isArray(competition?.dancers) ? competition.dancers : [];
+
+  if (!judges.length || !dancers.length) {
+    return `
+      <div class="mb-4">
+        <div class="alert alert-info mb-0">${t('no_data')}</div>
+      </div>
+    `;
+  }
+
+  const criteriaPerJudge = criteria.length || 1;
+  const criteriaColumnsCount = judges.length * criteriaPerJudge;
+  const criteriaCols = new Array(criteriaColumnsCount).fill('<col class="vote-details-col-criteria">').join('');
+
+  const judgeHeaderCells = judges.map((judge) => {
+    const reserveBadge = judge?.reserve
+      ? `<span class="badge bg-secondary ms-1" title="${t('judge_in_reserve')}">R</span>`
+      : '';
+    return `<th class="text-center" colspan="${criteriaPerJudge}">${escapeHtml(judge?.name || '')}${reserveBadge}</th>`;
+  }).join('');
+
+  const criteriaHeaderCells = judges.map(() => {
+    if (!criteria.length) {
+      return `<th class="text-center vote-details-criteria-head">${t('total')}</th>`;
+    }
+    return criteria.map(item => {
+      const rawName = item?.criteria_name || '';
+      const rawPercentage = item?.percentage;
+      const percentage = rawPercentage === null || rawPercentage === undefined || rawPercentage === ''
+        ? ''
+        : ` (${rawPercentage}%)`;
+      const caption = `${rawName}${percentage}`;
+      const captionEscaped = escapeHtml(caption);
+      return `
+        <th class="text-center vote-details-criteria-head" title="${captionEscaped}">
+          <span class="vote-details-criteria-caption">${captionEscaped}</span>
+        </th>
+      `;
+    }).join('');
+  }).join('');
+
+  const rows = dancers.map(dancer => {
+    const votes = Array.isArray(dancer?.votes) ? dancer.votes : [];
+    const dancerName = escapeHtml(dancer?.dancer_name || '');
+    const positionBadge = dancer?.position
+      ? `<span class="badge bg-info vote-details-dancer-badge">#${escapeHtml(dancer.position)}</span>`
+      : '';
+
+    const judgeCells = judges.map((judge) => {
+      const vote = votes.find(v => String(v?.judge?.id) === String(judge?.id));
+      if (!vote) {
+        return new Array(criteriaPerJudge)
+          .fill('<td class="vote-details-cell vote-details-score-cell text-muted">-</td>')
+          .join('');
+      }
+
+      const statusTitle = escapeHtml(vote?.status || '');
+      if (!criteria.length) {
+        const firstDetail = Array.isArray(vote?.details) ? vote.details[0] : null;
+        const score = formatVoteScore(firstDetail?.score);
+        return `<td class="vote-details-cell vote-details-score-cell" title="${statusTitle}">${score}</td>`;
+      }
+
+      return criteria.map(criteriaRef => {
+        const detail = findVoteDetailByCriteria(vote, criteriaRef);
+        const score = formatVoteScore(detail?.score);
+        return `<td class="vote-details-cell vote-details-score-cell" title="${statusTitle}">${score}</td>`;
+      }).join('');
+    }).join('');
+
+    return `
+      <tr>
+        <th scope="row" class="text-start vote-details-sticky-col">
+          <div class="vote-details-dancer-cell">
+            <span class="vote-details-dancer-name" title="${dancerName}">${dancerName}</span>
+            ${positionBadge}
+          </div>
+        </th>
+        ${judgeCells}
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="vote-details-scroll-group mb-4">
+      <div class="vote-details-scrollbar-top" aria-hidden="true">
+        <div class="vote-details-scrollbar-spacer"></div>
+      </div>
+      <div class="vote-details-table-wrap">
+        <table class="table table-bordered align-middle text-center vote-details-table mb-0">
+          <colgroup>
+            <col class="vote-details-col-dancer">
+            ${criteriaCols}
+          </colgroup>
+          <thead class="table-light">
+            <tr>
+              <th class="text-start vote-details-sticky-col" rowspan="2">${t('dancer')}</th>
+              ${judgeHeaderCells}
+            </tr>
+            <tr>
+              ${criteriaHeaderCells}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function initVoteDetailsScrollSync(container) {
+  if (!container) return;
+
+  const groups = container.querySelectorAll('.vote-details-scroll-group');
+  groups.forEach(group => {
+    const topBar = group.querySelector('.vote-details-scrollbar-top');
+    const spacer = group.querySelector('.vote-details-scrollbar-spacer');
+    const tableWrap = group.querySelector('.vote-details-table-wrap');
+    const tableEl = group.querySelector('.vote-details-table');
+    if (!topBar || !spacer || !tableWrap || !tableEl) return;
+
+    const updateScrollbar = () => {
+      spacer.style.width = `${tableWrap.scrollWidth}px`;
+      const hasHorizontalOverflow = tableWrap.scrollWidth > (tableWrap.clientWidth + 1);
+      topBar.style.display = hasHorizontalOverflow ? 'block' : 'none';
+      if (hasHorizontalOverflow) {
+        topBar.scrollLeft = tableWrap.scrollLeft;
+      }
+
+      const firstHeaderRow = tableEl.querySelector('thead tr:first-child');
+      if (firstHeaderRow) {
+        const rowHeight = Math.ceil(firstHeaderRow.getBoundingClientRect().height);
+        tableEl.style.setProperty('--vote-details-header-second-row-top', `${rowHeight}px`);
+      }
+    };
+
+    if (!group.dataset.scrollSyncBound) {
+      let syncingFromTop = false;
+      let syncingFromTable = false;
+
+      topBar.addEventListener('scroll', () => {
+        if (syncingFromTable) return;
+        syncingFromTop = true;
+        tableWrap.scrollLeft = topBar.scrollLeft;
+        syncingFromTop = false;
+      });
+
+      tableWrap.addEventListener('scroll', () => {
+        if (syncingFromTop) return;
+        syncingFromTable = true;
+        topBar.scrollLeft = tableWrap.scrollLeft;
+        syncingFromTable = false;
+      });
+
+      group.dataset.scrollSyncBound = '1';
+    }
+
+    updateScrollbar();
+    requestAnimationFrame(updateScrollbar);
+  });
+}
+
+function initVoteDetailsGridHover(container) {
+  if (!container) return;
+
+  const clearHover = (table) => {
+    table.querySelectorAll('.vote-details-hover-row').forEach(row => row.classList.remove('vote-details-hover-row'));
+    table.querySelectorAll('.vote-details-hover-col').forEach(cell => cell.classList.remove('vote-details-hover-col'));
+    table._hoverColIndex = null;
+    table._hoverRowEl = null;
+  };
+
+  const highlightColumn = (table, colIndex) => {
+    const firstHeaderRow = table.querySelector('thead tr:first-child');
+    const secondHeaderRow = table.querySelector('thead tr:nth-child(2)');
+
+    if (colIndex === 0) {
+      const dancerHead = firstHeaderRow?.querySelector('.vote-details-sticky-col');
+      if (dancerHead) dancerHead.classList.add('vote-details-hover-col');
+    } else if (secondHeaderRow) {
+      const criteriaHead = secondHeaderRow.cells[colIndex - 1];
+      if (criteriaHead) criteriaHead.classList.add('vote-details-hover-col');
+    }
+
+    if (firstHeaderRow && colIndex > 0) {
+      let currentStart = 1;
+      const headerCells = Array.from(firstHeaderRow.cells).filter((cell, idx) => idx > 0);
+      for (const headerCell of headerCells) {
+        const span = Number(headerCell.colSpan || 1);
+        if (colIndex >= currentStart && colIndex < currentStart + span) {
+          headerCell.classList.add('vote-details-hover-col');
+          break;
+        }
+        currentStart += span;
+      }
+    }
+
+    table.querySelectorAll('tbody tr').forEach(row => {
+      const cell = row.cells[colIndex];
+      if (cell) cell.classList.add('vote-details-hover-col');
+    });
+  };
+
+  container.querySelectorAll('.vote-details-table').forEach(table => {
+    if (table.dataset.hoverBound === '1') return;
+
+    table.addEventListener('mousemove', (event) => {
+      const cell = event.target.closest('tbody td, tbody th');
+      if (!cell || !table.contains(cell)) {
+        clearHover(table);
+        return;
+      }
+
+      const row = cell.parentElement;
+      const colIndex = cell.cellIndex;
+      if (table._hoverRowEl === row && table._hoverColIndex === colIndex) {
+        return;
+      }
+
+      clearHover(table);
+      row.classList.add('vote-details-hover-row');
+      highlightColumn(table, colIndex);
+      table._hoverRowEl = row;
+      table._hoverColIndex = colIndex;
+    });
+
+    table.addEventListener('mouseleave', () => clearHover(table));
+    table.dataset.hoverBound = '1';
+  });
+}
+
+async function showCompetitionVotingDetails(categoryId, styleId) {
+  if (!categoryId || !styleId) return;
+
+  const requestKey = `${categoryId}-${styleId}`;
+  if (competitionDetailsInFlight.has(requestKey)) return;
+  competitionDetailsInFlight.add(requestKey);
+
+  const modalEl = document.getElementById('voteDetailsModal');
+  const modalBody = document.getElementById('voteDetailsBody');
+  const modalTitle = modalEl?.querySelector('.modal-title');
+  const modalFooter = modalEl?.querySelector('.modal-footer');
+
+  if (!modalEl || !modalBody) {
+    competitionDetailsInFlight.delete(requestKey);
+    return;
+  }
+
+  if (modalTitle) {
+    modalTitle.textContent = t('voting_details', 'Voting details');
+  }
+  if (modalFooter) {
+    modalFooter.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${t('close')}</button>`;
+  }
+
+  modalBody.innerHTML = `
+    <div class="d-flex align-items-center justify-content-center py-4">
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span>${t('loading')}</span>
+    </div>
+  `;
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+
+  try {
+    const url = `${API_BASE_URL}/api/competitions/tracking/voting-details?event_id=${getEvent().id}&category_id=${categoryId}&style_id=${styleId}`;
+    const response = await fetch(url);
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(data?.error || t('error_title'));
+    }
+
+    const competitions = Array.isArray(data) ? data : (data ? [data] : []);
+    if (!competitions.length) {
+      modalBody.innerHTML = `<div class="alert alert-info mb-0">${t('no_data')}</div>`;
+      return;
+    }
+
+    const firstCompetition = competitions[0];
+    if (modalTitle && (firstCompetition?.category_name || firstCompetition?.style_name)) {
+      const titleParts = [firstCompetition?.category_name, firstCompetition?.style_name].filter(Boolean);
+      modalTitle.textContent = `${t('voting_details', 'Voting details')}: ${titleParts.join(' - ')}`;
+    }
+
+    modalBody.innerHTML = competitions.map(renderCompetitionVotingDetailsTable).join('');
+    initVoteDetailsScrollSync(modalBody);
+    initVoteDetailsGridHover(modalBody);
+    if (!modalEl.dataset.voteDetailsResizeBound) {
+      window.addEventListener('resize', () => {
+        const body = document.getElementById('voteDetailsBody');
+        if (body) {
+          initVoteDetailsScrollSync(body);
+          initVoteDetailsGridHover(body);
+        }
+      });
+      modalEl.dataset.voteDetailsResizeBound = '1';
+    }
+  } catch (error) {
+    console.error('Error fetching competition voting details:', error);
+    modalBody.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(error?.message || t('error_title'))}</div>`;
+  } finally {
+    competitionDetailsInFlight.delete(requestKey);
+  }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -182,7 +569,9 @@ function renderCompetitions(competitions) {
                 <div class="col-6">
                   <button type="button"
                     class="btn btn-outline-secondary btn-sm w-100 btn-competition-details"
-                    data-comp-id="${comp.id}">
+                    data-category-id="${comp.category_id}"
+                    data-style-id="${comp.style_id}"
+                    data-status="${comp.status}">
                     <i class="bi bi-info-circle me-1"></i>
                     Details
                   </button>
@@ -460,6 +849,13 @@ function renderCompetitions(competitions) {
         btn.dataset.dancerId,
         btn.dataset.dancerName
       );
+    });
+  });
+
+  container.querySelectorAll('.btn-competition-details').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      await showCompetitionVotingDetails(btn.dataset.categoryId, btn.dataset.styleId);
     });
   });
 

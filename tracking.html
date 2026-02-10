@@ -57,6 +57,130 @@
       justify-content: center;
       gap: 0.25rem;
     }
+    #voteDetailsModal .modal-dialog {
+      max-width: 96vw;
+    }
+    #voteDetailsModal .modal-body {
+      max-height: 75vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-top: 0.75rem;
+    }
+    .vote-details-scroll-group {
+      margin-bottom: 1rem;
+    }
+    .vote-details-scrollbar-top {
+      overflow-x: auto;
+      overflow-y: hidden;
+      height: 12px;
+      margin-bottom: 0.4rem;
+    }
+    .vote-details-scrollbar-spacer {
+      height: 1px;
+    }
+    .vote-details-table-wrap {
+      overflow: auto;
+      max-height: 60vh;
+    }
+    .vote-details-table {
+      table-layout: auto;
+      width: max-content;
+      min-width: max-content;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .vote-details-col-dancer {
+      width: auto;
+    }
+    .vote-details-col-criteria {
+      width: 64px;
+    }
+    .vote-details-table th,
+    .vote-details-table td {
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    .vote-details-cell {
+      width: 64px;
+      min-width: 64px;
+      max-width: 64px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    .vote-details-score-cell {
+      font-weight: 600;
+    }
+    .vote-details-table.table-bordered > :not(caption) > * > * {
+      border-color: #d7dee5;
+    }
+    .vote-details-criteria-head {
+      font-size: 0.82rem;
+      max-width: 64px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      padding-left: 0.25rem;
+      padding-right: 0.25rem;
+    }
+    .vote-details-criteria-caption {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      width: 100%;
+    }
+    .vote-details-table thead tr:first-child th {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      background: var(--bs-light);
+    }
+    .vote-details-table thead tr:nth-child(2) th {
+      position: sticky;
+      top: var(--vote-details-header-second-row-top, 42px);
+      z-index: 3;
+      background: var(--bs-light);
+    }
+    .vote-details-table .vote-details-sticky-col {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: #fff;
+      width: auto;
+      min-width: max-content;
+      max-width: none;
+      overflow: hidden;
+    }
+    .vote-details-table thead .vote-details-sticky-col {
+      z-index: 5;
+      background: var(--bs-light);
+    }
+    .vote-details-dancer-cell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.35rem;
+      min-width: 0;
+      width: 100%;
+    }
+    .vote-details-dancer-name {
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+    }
+    .vote-details-dancer-badge {
+      flex: 0 0 auto;
+      margin-left: 0.35rem;
+    }
+    .vote-details-table tbody tr.vote-details-hover-row > th,
+    .vote-details-table tbody tr.vote-details-hover-row > td {
+      background: #f8fafc !important;
+    }
+    .vote-details-table .vote-details-hover-col {
+      background: #eaf3ff !important;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -93,14 +217,14 @@
 
 
     <div class="modal fade" id="voteDetailsModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" data-i18n="voting_details">Detalles de votación</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
           </div>
           <div class="modal-body">
-            <div id="voteDetailsBody" class="row"></div>
+            <div id="voteDetailsBody"></div>
           </div>
           <div class="modal-footer"></div>
         </div>
