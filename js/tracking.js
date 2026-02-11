@@ -80,10 +80,177 @@ function formatVoteScore(score) {
   return escapeHtml(score);
 }
 
+function parseCriterionScore(score) {
+  if (score === null || score === undefined || score === '') {
+    return null;
+  }
+
+  const numericValue = Number(score);
+  if (!Number.isFinite(numericValue) || numericValue === -1 || numericValue === 0) {
+    return null;
+  }
+
+  return numericValue;
+}
+
+function formatVoteTotalScore(score) {
+  if (score === null || score === undefined || score === '') {
+    return '-';
+  }
+
+  const numericValue = Number(score);
+  if (!Number.isFinite(numericValue)) {
+    return escapeHtml(score);
+  }
+  if (numericValue === -1) {
+    return '-';
+  }
+
+  return escapeHtml(formatResultScore(numericValue));
+}
+
+function getVoteStatusBadgeClass(status) {
+  if (status === 'Completed') return 'success';
+  if (status === 'Pending') return 'warning';
+  if (status === 'Incompatible') return 'danger';
+  if (status === 'Max Judges Voted') return 'danger';
+  if (status === 'No Show') return 'noshown';
+  if (status === 'Disqualified') return 'danger';
+  return 'secondary';
+}
+
+function renderVoteStatusBadge(status) {
+  const statusText = status ? escapeHtml(status) : '-';
+  const badgeClass = getVoteStatusBadgeClass(status);
+  return `<span class="badge bg-${badgeClass}">${statusText}</span>`;
+}
+
+function shouldCollapseCriteriaByStatus(status) {
+  return Boolean(status) && !['Completed', 'Pending'].includes(status);
+}
+
+function getCompetitionStatusBadgeInfo(status) {
+  if (status === 'OPE') return { label: 'OPEN', className: 'bg-warning text-dark' };
+  if (status === 'CLO') return { label: 'CLOSED', className: 'bg-secondary' };
+  if (status === 'FIN') return { label: 'FINISHED', className: 'bg-success' };
+  return { label: status || '-', className: 'bg-secondary' };
+}
+
+function renderVotingDetailsModalTitle(competition) {
+  const baseTitle = t('voting_details', 'Voting details');
+  const titleParts = [competition?.category_name, competition?.style_name]
+    .filter(Boolean)
+    .map(value => escapeHtml(value));
+  const titleText = titleParts.length
+    ? `${escapeHtml(baseTitle)}: ${titleParts.join(' - ')}`
+    : escapeHtml(baseTitle);
+
+  const statusInfo = getCompetitionStatusBadgeInfo(competition?.status);
+  return `${titleText} <span class="badge ${statusInfo.className} ms-2">${escapeHtml(statusInfo.label)}</span>`;
+}
+
+function renderCompetitionCriteriaLeadersSummary(competition, criteria) {
+  if (!Array.isArray(criteria) || !criteria.length) {
+    return '';
+  }
+
+  const dancers = Array.isArray(competition?.dancers) ? competition.dancers : [];
+  if (!dancers.length) {
+    return '';
+  }
+
+  const criteriaRows = criteria.map((criteriaRef) => {
+    const epsilon = 0.0001;
+    let maxTotal = null;
+    let leaders = [];
+
+    dancers.forEach((dancer) => {
+      const votes = Array.isArray(dancer?.votes) ? dancer.votes : [];
+      let dancerTotal = 0;
+      let hasAnyScore = false;
+
+      votes.forEach((vote) => {
+        const detail = findVoteDetailByCriteria(vote, criteriaRef);
+        const numericScore = parseCriterionScore(detail?.score);
+        if (numericScore === null) return;
+        dancerTotal += numericScore;
+        hasAnyScore = true;
+      });
+
+      if (!hasAnyScore) return;
+
+      if (maxTotal === null || dancerTotal > (maxTotal + epsilon)) {
+        maxTotal = dancerTotal;
+        leaders = [dancer];
+        return;
+      }
+
+      if (Math.abs(dancerTotal - maxTotal) <= epsilon) {
+        leaders.push(dancer);
+      }
+    });
+
+    const criteriaName = escapeHtml(criteriaRef?.criteria_name || t('criteria', 'Criterio'));
+    const leadersText = leaders.length
+      ? leaders.map((dancer) => escapeHtml(dancer?.dancer_name || t('dancer'))).join(', ')
+      : '-';
+    const totalText = formatVoteTotalScore(maxTotal);
+
+    return `
+      <div class="vote-details-criteria-leader-item">
+        <span class="vote-details-criteria-leader-name">${criteriaName}:</span>
+        <span class="vote-details-criteria-leader-value">${leadersText} <span class="text-muted">(${totalText})</span></span>
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="vote-details-criteria-leaders">
+      <div class="vote-details-criteria-leaders-title">${t('top_by_criteria', 'Mejor puntuación por criterio')}</div>
+      <div class="vote-details-criteria-leaders-list">
+        ${criteriaRows}
+      </div>
+    </div>
+  `;
+}
+
+function renderVoteDetailsFooter(showCriteria = false, showToggle = true) {
+  const toggleButton = showToggle
+    ? `
+      <button
+        type="button"
+        class="btn btn-outline-primary btn-sm btn-toggle-vote-details"
+        data-show-criteria="${showCriteria ? '1' : '0'}"
+        aria-pressed="${showCriteria ? 'true' : 'false'}">
+        ${showCriteria ? t('hide_vote_details', 'Ocultar detalles de votaciones') : t('show_vote_details', 'Ver detalles de votaciones')}
+      </button>
+    `
+    : '';
+
+  return `
+    ${toggleButton}
+    <button type="button" class="btn btn-secondary btn-sm ms-auto" data-bs-dismiss="modal">${t('close')}</button>
+  `;
+}
+
+function setVoteDetailsCriteriaVisibility(modalBody, modalFooter, showCriteria, showToggle = true) {
+  if (modalBody) {
+    modalBody.classList.toggle('vote-details-show-criteria', Boolean(showCriteria));
+    modalBody.querySelectorAll('.vote-details-judge-group-head').forEach((headerCell) => {
+      const expandedSpan = Number(headerCell.dataset.colspanExpanded || headerCell.colSpan || 1);
+      headerCell.colSpan = showCriteria ? expandedSpan : 1;
+    });
+  }
+  if (modalFooter) {
+    modalFooter.innerHTML = renderVoteDetailsFooter(showCriteria, showToggle);
+  }
+}
+
 function renderCompetitionVotingDetailsTable(competition) {
   const judges = getCompetitionJudges(competition);
   const criteria = getCompetitionCriteria(competition, judges);
   const dancers = Array.isArray(competition?.dancers) ? competition.dancers : [];
+  const criteriaLeadersSummary = renderCompetitionCriteriaLeadersSummary(competition, criteria);
 
   if (!judges.length || !dancers.length) {
     return `
@@ -93,22 +260,37 @@ function renderCompetitionVotingDetailsTable(competition) {
     `;
   }
 
-  const criteriaPerJudge = criteria.length || 1;
-  const criteriaColumnsCount = judges.length * criteriaPerJudge;
-  const criteriaCols = new Array(criteriaColumnsCount).fill('<col class="vote-details-col-criteria">').join('');
+  const hasCriteria = criteria.length > 0;
+  const detailColumnsPerJudge = hasCriteria ? (criteria.length + 1) : 1;
+  const staticColumnsCount = 2;
+  const detailCols = judges.map(() => {
+    if (!hasCriteria) {
+      return '<col class="vote-details-col-judge-total">';
+    }
+
+    const criteriaCols = new Array(criteria.length)
+      .fill('<col class="vote-details-col-criteria vote-details-criteria-col">')
+      .join('');
+    return `${criteriaCols}<col class="vote-details-col-judge-total">`;
+  }).join('');
 
   const judgeHeaderCells = judges.map((judge) => {
     const reserveBadge = judge?.reserve
       ? `<span class="badge bg-secondary ms-1" title="${t('judge_in_reserve')}">R</span>`
       : '';
-    return `<th class="text-center" colspan="${criteriaPerJudge}">${escapeHtml(judge?.name || '')}${reserveBadge}</th>`;
+    return `
+      <th class="text-center vote-details-judge-group-head" colspan="${detailColumnsPerJudge}" data-colspan-expanded="${detailColumnsPerJudge}">
+        ${escapeHtml(judge?.name || '')}${reserveBadge}
+      </th>
+    `;
   }).join('');
 
   const criteriaHeaderCells = judges.map(() => {
-    if (!criteria.length) {
-      return `<th class="text-center vote-details-criteria-head">${t('total')}</th>`;
+    if (!hasCriteria) {
+      return `<th class="text-center vote-details-criteria-head vote-details-judge-total-head">${t('total')}</th>`;
     }
-    return criteria.map(item => {
+
+    const criteriaHeads = criteria.map(item => {
       const rawName = item?.criteria_name || '';
       const rawPercentage = item?.percentage;
       const percentage = rawPercentage === null || rawPercentage === undefined || rawPercentage === ''
@@ -117,11 +299,16 @@ function renderCompetitionVotingDetailsTable(competition) {
       const caption = `${rawName}${percentage}`;
       const captionEscaped = escapeHtml(caption);
       return `
-        <th class="text-center vote-details-criteria-head" title="${captionEscaped}">
+        <th class="text-center vote-details-criteria-head vote-details-criteria-col" title="${captionEscaped}">
           <span class="vote-details-criteria-caption">${captionEscaped}</span>
         </th>
       `;
     }).join('');
+
+    return `
+      ${criteriaHeads}
+      <th class="text-center vote-details-criteria-head vote-details-judge-total-head" title="${t('total')}">${t('total')}</th>
+    `;
   }).join('');
 
   const rows = dancers.map(dancer => {
@@ -130,27 +317,47 @@ function renderCompetitionVotingDetailsTable(competition) {
     const positionBadge = dancer?.position
       ? `<span class="badge bg-info vote-details-dancer-badge">#${escapeHtml(dancer.position)}</span>`
       : '';
+    const dancerTotalScore = formatVoteTotalScore(dancer?.total_score);
 
     const judgeCells = judges.map((judge) => {
       const vote = votes.find(v => String(v?.judge?.id) === String(judge?.id));
       if (!vote) {
-        return new Array(criteriaPerJudge)
-          .fill('<td class="vote-details-cell vote-details-score-cell text-muted">-</td>')
+        if (!hasCriteria) {
+          return '<td class="vote-details-cell vote-details-score-cell text-muted">-</td>';
+        }
+        const emptyCriteriaCells = new Array(criteria.length)
+          .fill('<td class="vote-details-cell vote-details-score-cell text-muted vote-details-criteria-col">-</td>')
           .join('');
+        return `${emptyCriteriaCells}<td class="vote-details-cell vote-details-score-cell text-muted">-</td>`;
       }
 
       const statusTitle = escapeHtml(vote?.status || '');
-      if (!criteria.length) {
-        const firstDetail = Array.isArray(vote?.details) ? vote.details[0] : null;
-        const score = formatVoteScore(firstDetail?.score);
+      if (!hasCriteria) {
+        const score = formatVoteTotalScore(vote?.total);
+        if (shouldCollapseCriteriaByStatus(vote?.status)) {
+          return `<td class="vote-details-cell vote-details-score-cell" title="${statusTitle}">${renderVoteStatusBadge(vote?.status)}</td>`;
+        }
         return `<td class="vote-details-cell vote-details-score-cell" title="${statusTitle}">${score}</td>`;
       }
 
-      return criteria.map(criteriaRef => {
+      if (shouldCollapseCriteriaByStatus(vote?.status)) {
+        const judgeTotalScore = formatVoteTotalScore(vote?.total);
+        return `
+          <td class="vote-details-cell vote-details-status-cell vote-details-criteria-col" colspan="${criteria.length}" title="${statusTitle}">
+            ${renderVoteStatusBadge(vote?.status)}
+          </td>
+          <td class="vote-details-cell vote-details-score-cell" title="${statusTitle}">${judgeTotalScore}</td>
+        `;
+      }
+
+      const criteriaCells = criteria.map(criteriaRef => {
         const detail = findVoteDetailByCriteria(vote, criteriaRef);
         const score = formatVoteScore(detail?.score);
-        return `<td class="vote-details-cell vote-details-score-cell" title="${statusTitle}">${score}</td>`;
+        return `<td class="vote-details-cell vote-details-score-cell vote-details-criteria-col" title="${statusTitle}">${score}</td>`;
       }).join('');
+
+      const judgeTotalScore = formatVoteTotalScore(vote?.total);
+      return `${criteriaCells}<td class="vote-details-cell vote-details-score-cell" title="${statusTitle}">${judgeTotalScore}</td>`;
     }).join('');
 
     return `
@@ -161,25 +368,29 @@ function renderCompetitionVotingDetailsTable(competition) {
             ${positionBadge}
           </div>
         </th>
+        <td class="vote-details-cell vote-details-score-cell vote-details-dancer-total-cell">${dancerTotalScore}</td>
         ${judgeCells}
       </tr>
     `;
   }).join('');
 
   return `
-    <div class="vote-details-scroll-group mb-4">
+    ${criteriaLeadersSummary}
+    <div class="vote-details-scroll-group">
       <div class="vote-details-scrollbar-top" aria-hidden="true">
         <div class="vote-details-scrollbar-spacer"></div>
       </div>
       <div class="vote-details-table-wrap">
-        <table class="table table-bordered align-middle text-center vote-details-table mb-0">
+        <table class="table table-bordered align-middle text-center vote-details-table mb-0" data-static-cols="${staticColumnsCount}">
           <colgroup>
             <col class="vote-details-col-dancer">
-            ${criteriaCols}
+            <col class="vote-details-col-dancer-total">
+            ${detailCols}
           </colgroup>
           <thead class="table-light">
             <tr>
               <th class="text-start vote-details-sticky-col" rowspan="2">${t('dancer')}</th>
+              <th class="text-center vote-details-total-head" rowspan="2">${t('total')}</th>
               ${judgeHeaderCells}
             </tr>
             <tr>
@@ -260,18 +471,19 @@ function initVoteDetailsGridHover(container) {
   const highlightColumn = (table, colIndex) => {
     const firstHeaderRow = table.querySelector('thead tr:first-child');
     const secondHeaderRow = table.querySelector('thead tr:nth-child(2)');
+    const staticCols = Number(table.dataset.staticCols || 1);
 
-    if (colIndex === 0) {
-      const dancerHead = firstHeaderRow?.querySelector('.vote-details-sticky-col');
-      if (dancerHead) dancerHead.classList.add('vote-details-hover-col');
+    if (colIndex < staticCols) {
+      const staticHead = firstHeaderRow?.cells[colIndex];
+      if (staticHead) staticHead.classList.add('vote-details-hover-col');
     } else if (secondHeaderRow) {
-      const criteriaHead = secondHeaderRow.cells[colIndex - 1];
+      const criteriaHead = secondHeaderRow.cells[colIndex - staticCols];
       if (criteriaHead) criteriaHead.classList.add('vote-details-hover-col');
     }
 
-    if (firstHeaderRow && colIndex > 0) {
-      let currentStart = 1;
-      const headerCells = Array.from(firstHeaderRow.cells).filter((cell, idx) => idx > 0);
+    if (firstHeaderRow && colIndex >= staticCols) {
+      let currentStart = staticCols;
+      const headerCells = Array.from(firstHeaderRow.cells).filter((cell, idx) => idx >= staticCols);
       for (const headerCell of headerCells) {
         const span = Number(headerCell.colSpan || 1);
         if (colIndex >= currentStart && colIndex < currentStart + span) {
@@ -333,12 +545,27 @@ async function showCompetitionVotingDetails(categoryId, styleId) {
     return;
   }
 
+  if (!modalEl.dataset.voteDetailsToggleBound) {
+    modalEl.addEventListener('click', (event) => {
+      const toggleBtn = event.target.closest('.btn-toggle-vote-details');
+      if (!toggleBtn) return;
+
+      const bodyEl = document.getElementById('voteDetailsBody');
+      const footerEl = modalEl.querySelector('.modal-footer');
+      if (!bodyEl || !footerEl) return;
+
+      const showCriteria = toggleBtn.dataset.showCriteria !== '1';
+      setVoteDetailsCriteriaVisibility(bodyEl, footerEl, showCriteria, true);
+      initVoteDetailsScrollSync(bodyEl);
+      initVoteDetailsGridHover(bodyEl);
+    });
+    modalEl.dataset.voteDetailsToggleBound = '1';
+  }
+
   if (modalTitle) {
     modalTitle.textContent = t('voting_details', 'Voting details');
   }
-  if (modalFooter) {
-    modalFooter.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${t('close')}</button>`;
-  }
+  setVoteDetailsCriteriaVisibility(modalBody, modalFooter, false, false);
 
   modalBody.innerHTML = `
     <div class="d-flex align-items-center justify-content-center py-4">
@@ -362,16 +589,17 @@ async function showCompetitionVotingDetails(categoryId, styleId) {
     const competitions = Array.isArray(data) ? data : (data ? [data] : []);
     if (!competitions.length) {
       modalBody.innerHTML = `<div class="alert alert-info mb-0">${t('no_data')}</div>`;
+      setVoteDetailsCriteriaVisibility(modalBody, modalFooter, false, false);
       return;
     }
 
     const firstCompetition = competitions[0];
-    if (modalTitle && (firstCompetition?.category_name || firstCompetition?.style_name)) {
-      const titleParts = [firstCompetition?.category_name, firstCompetition?.style_name].filter(Boolean);
-      modalTitle.textContent = `${t('voting_details', 'Voting details')}: ${titleParts.join(' - ')}`;
+    if (modalTitle) {
+      modalTitle.innerHTML = renderVotingDetailsModalTitle(firstCompetition);
     }
 
     modalBody.innerHTML = competitions.map(renderCompetitionVotingDetailsTable).join('');
+    setVoteDetailsCriteriaVisibility(modalBody, modalFooter, false, true);
     initVoteDetailsScrollSync(modalBody);
     initVoteDetailsGridHover(modalBody);
     if (!modalEl.dataset.voteDetailsResizeBound) {
@@ -387,6 +615,7 @@ async function showCompetitionVotingDetails(categoryId, styleId) {
   } catch (error) {
     console.error('Error fetching competition voting details:', error);
     modalBody.innerHTML = `<div class="alert alert-danger mb-0">${escapeHtml(error?.message || t('error_title'))}</div>`;
+    setVoteDetailsCriteriaVisibility(modalBody, modalFooter, false, false);
   } finally {
     competitionDetailsInFlight.delete(requestKey);
   }
