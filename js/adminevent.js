@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!response.ok) {
         toggleVisible.checked = !isMakingVisible;
         const errData = await response.json();
-        showMessageModal(errData.error || 'Error updating event', 'Error');
+        showMessageModal(errData.error || t('error_update_event'), t('error_title'));
       }
     } catch (err) {
       console.error('Error al actualizar visibilidad:', err);
@@ -53,6 +53,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   await ensureTranslationsReady();
+  applyCloseButtonAriaLabels();
   await loadEventData(eventId);
 
   document.getElementById('saveEventBtn').addEventListener('click', async () => {
@@ -64,6 +65,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 let currentEventStatus = null;
+
+function applyCloseButtonAriaLabels() {
+  const closeLabel = t('close');
+  document.querySelectorAll('.btn-close[data-i18n-title="close"]').forEach((btn) => {
+    btn.setAttribute('aria-label', closeLabel);
+  });
+}
 
 function initExportEventModal() {
   const exportBtn = document.getElementById('exportEventBtn');
@@ -83,15 +91,15 @@ function initExportEventModal() {
     confirmBtn.disabled = true;
     modal.hide();
 
-    setButtonLoading(exportBtn, true, 'Exporting...');
+    setButtonLoading(exportBtn, true, t('exporting'));
 
     try {
       const id = getEvent()?.id;
-      if (!id) throw new Error('Event not loaded');
+      if (!id) throw new Error(t('error_event_not_loaded'));
 
       const res = await fetch(`${API_BASE_URL}/api/events/${id}/planb`, { method: 'GET' });
       if (!res.ok) {
-        let message = 'Error exporting event';
+        let message = t('error_export_event');
         try {
           const data = await res.json();
           message = data?.error || data?.message || message;
@@ -107,7 +115,7 @@ function initExportEventModal() {
       downloadBlob(blob, filename);
     } catch (err) {
       console.error('Export error:', err);
-      showMessageModal(err?.message || 'Error exporting event', 'Error');
+      showMessageModal(err?.message || t('error_export_event'), t('error_title'));
     } finally {
       setButtonLoading(exportBtn, false);
       confirmBtn.disabled = false;
@@ -132,21 +140,21 @@ function initStatusToggleModal() {
 
     const isFinished = currentEventStatus === 'FIN';
     titleEl.textContent = isFinished
-      ? t('event_status_modal_title_open', 'Abrir evento')
-      : t('event_status_modal_title_finish', 'Finalizar evento');
+      ? t('event_status_modal_title_open')
+      : t('event_status_modal_title_finish');
     messageEl.textContent = isFinished
-      ? t('event_status_modal_msg_open', 'Seguro que quieres abrir este evento?')
-      : t('event_status_modal_msg_finish', 'Seguro que quieres marcar este evento como finalizado?');
+      ? t('event_status_modal_msg_open')
+      : t('event_status_modal_msg_finish');
     if (!isFinished) {
       const details = [
-        t('event_status_finish_detail_1', 'Ya no se podran realizar votaciones por parte de los jueces'),
-        t('event_status_finish_detail_2', 'No se podran modificar datos maestros, jueces, bailarinas y competiciones'),
-        t('event_status_finish_detail_3', 'Se enviara un email a las bailarinas con su codigo de acceso para las estadisticas'),
-        t('event_status_finish_detail_4', 'Si ha habido registro de inscripciones por parte de escuelas, todos los audios subidos a la plataforma se eliminaran de manera permanente')
+        t('event_status_finish_detail_1'),
+        t('event_status_finish_detail_2'),
+        t('event_status_finish_detail_3'),
+        t('event_status_finish_detail_4')
       ];
       const listItems = details.map((item) => `<li>${item}</li>`).join('');
       detailsEl.innerHTML = `
-        <div class="fw-semibold mb-1">${t('event_status_finish_info_title', 'Al marcar el evento como finalizado:')}</div>
+        <div class="fw-semibold mb-1">${t('event_status_finish_info_title')}</div>
         <ul class="mb-0 ps-3">${listItems}</ul>
       `;
       detailsEl.classList.remove('d-none');
@@ -171,17 +179,17 @@ function initStatusToggleModal() {
       const res = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}/${endpoint}`, {
         method: 'POST'
       });
-      if (!res.ok) throw new Error('Error updating event status');
+      if (!res.ok) throw new Error(t('event_status_error_update'));
 
       currentEventStatus = isFinished ? 'OPE' : 'FIN';
       updateEventStatusUI(currentEventStatus);
       modal.hide();
       showAlert('success', isFinished
-        ? t('event_status_success_open', 'Evento abierto correctamente')
-        : t('event_status_success_finish', 'Evento finalizado correctamente'));
+        ? t('event_status_success_open')
+        : t('event_status_success_finish'));
     } catch (err) {
       console.error('Error updating event status:', err);
-      showMessageModal(t('event_status_error_update', 'Error actualizando el estado del evento'), 'Error');
+      showMessageModal(t('event_status_error_update'), t('error_title'));
     } finally {
       confirmBtn.disabled = false;
       toggleBtn.disabled = false;
@@ -197,12 +205,12 @@ function updateEventStatusUI(status) {
 
   if (toggleBtn) {
     toggleBtn.textContent = status === 'FIN'
-      ? t('event_status_open_btn', 'Abrir Evento')
-      : t('event_status_finish_btn', 'Marcar evento como finalizado');
+      ? t('event_status_open_btn')
+      : t('event_status_finish_btn');
   }
 }
 
-function setButtonLoading(button, isLoading, loadingText = 'Loading...') {
+function setButtonLoading(button, isLoading, loadingText = t('loading')) {
   if (!button) return;
 
   if (isLoading) {
@@ -226,7 +234,7 @@ function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename || 'download.zip';
+  a.download = filename || t('download_default_filename');
   a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
@@ -235,9 +243,9 @@ function downloadBlob(blob, filename) {
 }
 
 function makeExportFilename(event) {
-  const baseName = (event?.name || 'Event').trim();
-  const safeBase = sanitizeFilename(baseName) || 'Event';
-  return `${safeBase} - Export.zip`;
+  const baseName = (event?.name || t('event_default_name')).trim();
+  const safeBase = sanitizeFilename(baseName) || t('event_default_name');
+  return `${safeBase} - ${t('export_file_suffix')}`;
 }
 
 function sanitizeFilename(name) {
@@ -269,7 +277,7 @@ function initQrModal() {
     const dataUrl = downloadBtn.dataset.qrDataUrl;
     const filename = downloadBtn.dataset.qrFilename;
     if (!dataUrl) return;
-    downloadDataUrl(dataUrl, filename || 'qr.png');
+    downloadDataUrl(dataUrl, filename || t('qr_default_filename'));
   });
 
   modalEl.addEventListener('hidden.bs.modal', () => {
@@ -289,10 +297,10 @@ function initQrModal() {
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}/qr?width=300`);
-      if (!res.ok) throw new Error('Error loading QR');
+      if (!res.ok) throw new Error(t('error_loading_qr'));
       const data = await res.json();
 
-      if (!data?.dataUrl) throw new Error('Invalid QR response');
+      if (!data?.dataUrl) throw new Error(t('error_invalid_qr_response'));
 
       qrImage.src = data.dataUrl;
       downloadBtn.dataset.qrDataUrl = data.dataUrl;
@@ -300,7 +308,7 @@ function initQrModal() {
       downloadBtn.disabled = false;
     } catch (err) {
       console.error('Error loading QR:', err);
-      showMessageModal('Error loading QR', 'Error');
+      showMessageModal(err?.message || t('error_loading_qr'), t('error_title'));
     }
   });
 }
@@ -317,7 +325,7 @@ function downloadDataUrl(dataUrl, filename) {
 async function loadEventData(eventId) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}`);
-    if (!res.ok) throw new Error('Error loading event data');
+    if (!res.ok) throw new Error(t('error_loading_event_data'));
     const data = await res.json();
 
     const f = id => document.getElementById(id);
@@ -329,10 +337,10 @@ async function loadEventData(eventId) {
       if (!input) continue;
 
       if (dateFields.includes(key) && data[key]) {
-        // Campo de fecha → tomar solo YYYY-MM-DD
+        // Campo de fecha -> tomar solo YYYY-MM-DD
         input.value = data[key].slice(0, 10);
       } else {
-        // Todo lo demás → asignar tal cual o vacío
+        // Todo lo demas -> asignar tal cual o vacio
         input.value = data[key] ?? '';
       }
     }
@@ -356,7 +364,7 @@ async function loadEventData(eventId) {
 
     updateLogoPreview();
   } catch (err) {
-    showAlert('danger', 'Error loading event information');
+    showAlert('danger', t('error_loading_event_information'));
     console.error(err);
   }
 }
@@ -394,11 +402,11 @@ async function saveEventData(eventId) {
       body: JSON.stringify(payload),
     });
 
-    if (!res.ok) throw new Error('Error saving event data');
+    if (!res.ok) throw new Error(t('error_saving_event_data'));
 
-    showAlert('success', '✅ Event updated successfully!');
+    showAlert('success', t('success_event_updated'));
   } catch (err) {
-    showAlert('danger', '❌ Failed to update event');
+    showAlert('danger', t('error_event_update_failed'));
     console.error(err);
   } finally {
     setButtonLoading(saveBtn, false);
@@ -479,4 +487,5 @@ function showVisibilityModal(message, showCheckbox = false) {
     modal.show();
   });
 }
+
 
