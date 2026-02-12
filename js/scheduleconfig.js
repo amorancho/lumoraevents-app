@@ -15,7 +15,6 @@ let selectedBlockId = null;
 let detailSortable = null;
 let confirmDeleteCallback = null;
 let activeDetailId = null;
-let activeCompetitionId = null;
 let competitionModal = null;
 let breakModal = null;
 let confirmDeleteModal = null;
@@ -91,23 +90,33 @@ function bindScheduleConfigEvents() {
     const button = event.target.closest('.btn-add-competition');
     if (!button) return;
 
-    if (!getSelectedBlock()) {
+    const block = getSelectedBlock();
+    if (!block) {
       showMessageModal(t('no_block_selected'), t('error'));
       return;
     }
 
-    activeCompetitionId = button.dataset.id;
+    const competitionId = button.dataset.id;
+    const competition = competitions.find(item => String(item.id) === String(competitionId));
+    const defaultTimePerDancer = getCompetitionMaxTimeSeconds(competition);
+    if (!Number.isFinite(defaultTimePerDancer) || defaultTimePerDancer <= 0) {
+      showMessageModal(
+        t('competition_max_time_missing', 'This competition has no maximum time configured.'),
+        t('error')
+      );
+      return;
+    }
+
+    block.details.push({
+      id: `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      block_type: 'COMP',
+      competition_id: competitionId,
+      time_per_dancer: defaultTimePerDancer
+    });
+
     activeDetailId = null;
-
-    document.getElementById('competitionModalTitle').textContent = t('competition_modal_title_add');
-    document.getElementById('timePerDancerInput').value = '';
-    document.getElementById('timeBeforeStartInput').value = '';
-
-    const competitionModalEl = document.getElementById('competitionModal');
-    competitionModalEl.addEventListener('shown.bs.modal', () => {
-      document.getElementById('timePerDancerInput').focus();
-    }, { once: true });
-    competitionModal.show();
+    markBlockDirty(block);
+    renderScheduleConfig();
   });
 
   document.getElementById('addBreakBtn').addEventListener('click', () => {
@@ -158,8 +167,13 @@ function bindScheduleConfigEvents() {
         breakModal.show();
       } else {
         document.getElementById('competitionModalTitle').textContent = t('competition_modal_title_edit');
-        document.getElementById('timePerDancerInput').value = detail.time_per_dancer || '';
-        document.getElementById('timeBeforeStartInput').value = detail.time_before_start || '';
+        const timePerDancerInput = document.getElementById('timePerDancerInput');
+        timePerDancerInput.value = secondsToMmSs(detail.time_per_dancer);
+        timePerDancerInput.classList.remove('is-invalid');
+        const competitionModalEl = document.getElementById('competitionModal');
+        competitionModalEl.addEventListener('shown.bs.modal', () => {
+          timePerDancerInput.focus();
+        }, { once: true });
         competitionModal.show();
       }
     }
@@ -177,6 +191,10 @@ function bindScheduleConfigEvents() {
       confirmDeleteCallback = null;
     }
     confirmDeleteModal.hide();
+  });
+
+  document.getElementById('timePerDancerInput').addEventListener('input', (event) => {
+    event.target.classList.remove('is-invalid');
   });
 }
 
@@ -251,7 +269,6 @@ function normalizeDetail(detail) {
     block_type: blockType,
     competition_id: detail.competition_id ?? detail.competitionId ?? null,
     time_per_dancer: toNumber(detail.time_per_dancer ?? detail.timePerDancer),
-    time_before_start: toNumber(detail.time_before_start ?? detail.timeBeforeStart),
     break_name: detail.break_name ?? detail.breakName ?? '',
     break_time: toNumber(detail.break_time ?? detail.breakTime),
     category_name: detail.category_name ?? detail.category,
@@ -662,9 +679,7 @@ function renderDetails() {
     const title = isBreak ? (detail.break_name || t('break_label')) : `${category} ${style ? `/ ${style}` : ''}`;
     const metaItems = [];
     if (!isBreak) {
-      //metaItems.push(`${t('dancers')}: <span class="badge bg-secondary">${dancers}</span>`);
-      metaItems.push(`${t('time_before_start')}: ${detail.time_before_start ?? 0}s`);
-      metaItems.push(`${t('time_per_dancer')}: ${detail.time_per_dancer ?? 0}s`);
+      metaItems.push(`${t('time_per_dancer')}: ${secondsToMmSs(detail.time_per_dancer)}`);
     } else {
       metaItems.push(`${t('break_time')}: ${detail.break_time ?? 0} ${t('minutes_short')}`);
     }
@@ -889,36 +904,34 @@ async function deleteSelectedBlock() {
 }
 
 function saveCompetitionDetailFromModal() {
-  const timePerDancer = toNumber(document.getElementById('timePerDancerInput').value);
-  const timeBeforeStart = toNumber(document.getElementById('timeBeforeStartInput').value);
+  const timePerDancerInput = document.getElementById('timePerDancerInput');
+  const timePerDancerRaw = timePerDancerInput.value.trim();
+  const normalizedTimePerDancer = normalizeMmSsValue(timePerDancerRaw);
+  const timePerDancer = mmSsToSeconds(normalizedTimePerDancer);
   const block = getSelectedBlock();
 
   if (!block) return;
-  if (timePerDancer <= 0) {
+  if (!timePerDancerRaw) {
+    timePerDancerInput.classList.add('is-invalid');
     showMessageModal(t('time_per_dancer_missing'), t('error'));
     return;
   }
-
-  if (activeDetailId) {
-    const detail = block.details.find(d => String(d.id) === String(activeDetailId));
-    if (detail) {
-      detail.time_per_dancer = timePerDancer;
-      detail.time_before_start = timeBeforeStart;
-    }
-  } else {
-    if (!activeCompetitionId) return;
-    block.details.push({
-      id: `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      block_type: 'COMP',
-      competition_id: activeCompetitionId,
-      time_per_dancer: timePerDancer,
-      time_before_start: timeBeforeStart
-    });
+  if (!normalizedTimePerDancer || !Number.isFinite(timePerDancer) || timePerDancer <= 0) {
+    timePerDancerInput.classList.add('is-invalid');
+    showMessageModal(t('time_per_dancer_invalid', 'Enter a valid time in mm:ss format.'), t('error'));
+    return;
   }
+  timePerDancerInput.classList.remove('is-invalid');
+  timePerDancerInput.value = normalizedTimePerDancer;
+
+  if (!activeDetailId) return;
+
+  const detail = block.details.find(d => String(d.id) === String(activeDetailId));
+  if (!detail) return;
+  detail.time_per_dancer = timePerDancer;
 
   competitionModal.hide();
   activeDetailId = null;
-  activeCompetitionId = null;
 
   markBlockDirty(block);
   renderScheduleConfig();
@@ -1053,7 +1066,6 @@ function serializeDetails(details) {
     block_type: detail.block_type,
     competition_id: detail.competition_id || null,
     time_per_dancer: detail.time_per_dancer || null,
-    time_before_start: detail.time_before_start || null,
     break_name: detail.break_name || null,
     break_time: detail.break_time || null,
     order: index + 1
@@ -1099,9 +1111,6 @@ function computeBlockSchedule(block) {
     }
 
     if (detail.block_type === 'COMP' && detail.competition_id) {
-      const preSeconds = toNumber(detail.time_before_start);
-      offsetSeconds += preSeconds;
-
       if (offsetSeconds % 60 !== 0) {
         offsetSeconds = Math.ceil(offsetSeconds / 60) * 60;
       }
@@ -1141,6 +1150,59 @@ function formatDuration(totalSeconds) {
     return `${minutes}m ${remaining}s`;
   }
   return `${remaining}s`;
+}
+
+function normalizeMmSsValue(value) {
+  const match = String(value || '').trim().match(/^(\d{1,3}):([0-5]\d)$/);
+  if (!match) return null;
+
+  const minutes = Number(match[1]);
+  const seconds = Number(match[2]);
+  if (!Number.isFinite(minutes) || !Number.isFinite(seconds) || minutes < 0 || seconds < 0 || seconds > 59) {
+    return null;
+  }
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function mmSsToSeconds(normalizedValue) {
+  if (!normalizedValue) return null;
+
+  const [minutesPart, secondsPart] = String(normalizedValue).split(':');
+  const minutes = Number(minutesPart);
+  const seconds = Number(secondsPart);
+  if (!Number.isFinite(minutes) || !Number.isFinite(seconds) || minutes < 0 || seconds < 0 || seconds > 59) {
+    return null;
+  }
+
+  return (minutes * 60) + seconds;
+}
+
+function secondsToMmSs(totalSeconds) {
+  const parsedSeconds = Number(totalSeconds);
+  if (!Number.isFinite(parsedSeconds) || parsedSeconds < 0) return '00:00';
+
+  const minutes = Math.floor(parsedSeconds / 60);
+  const seconds = parsedSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function getCompetitionMaxTimeSeconds(competition) {
+  if (!competition) return null;
+
+  const numericValue = Number(competition.max_time ?? competition.maxTime);
+  if (Number.isFinite(numericValue) && numericValue > 0) {
+    return numericValue;
+  }
+
+  const textValue = competition.max_time_form || competition.max_time_text || competition.max_time_display;
+  const normalizedText = normalizeMmSsValue(textValue);
+  const parsedSeconds = mmSsToSeconds(normalizedText);
+  if (Number.isFinite(parsedSeconds) && parsedSeconds > 0) {
+    return parsedSeconds;
+  }
+
+  return null;
 }
 
 function toDatetimeLocalValue(value) {

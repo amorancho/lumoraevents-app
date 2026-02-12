@@ -19,6 +19,14 @@
       max-height: 55vh;
       overflow-y: auto;
     }
+    .max-times-selection-list {
+      max-height: 260px;
+      overflow-y: auto;
+    }
+    .create-comps-results {
+      max-height: 220px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -55,43 +63,32 @@
 
 
     <div class="row justify-content-center align-items-start g-3">
-      <div class="col-lg-9">
+      <div class="col-12">
         <div class="card mb-3">
           <div class="card-body bg-light">
-            <div class="row g-3 align-items-center">
-              <div class="col-md-4">
-                <div class="d-flex align-items-center gap-2">
-                  <label for="categoryDropdown" class="col-form-label fw-semibold mb-0" data-i18n="category">CategorÃ­a</label>
-                  <select class="form-select" id="categoryDropdown">
-                    <option selected disabled value="" data-i18n="select_category">Choose a Category</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="d-flex align-items-center gap-2">
-                  <label for="styleDropdown" class="col-form-label fw-semibold mb-0" data-i18n="style">Estilo</label>
-                  <select class="form-select" id="styleDropdown">
-                    <option selected disabled value="" data-i18n="select_style">Choose a Style</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-4 text-center">
-                <button id="createBtn" class="btn btn-primary w-100" data-i18n="create_competition" onclick="addCompt()">
-                  Create Competition
+            <div class="row g-2">
+              <div class="col-12 col-md-6 col-lg-3">
+                <button type="button" class="btn btn-primary w-100" id="createCompetitionsBtn" data-i18n="create_competitions_button">
+                  Crear Competiciones
                 </button>
+              </div>
+              <div class="col-12 col-md-6 col-lg-3">
+                <button type="button" class="btn btn-primary w-100" id="maxTimesAssignmentBtn" data-i18n="max_times_button">
+                  Asignar Tiempos Máximos
+                </button>
+              </div>
+              <div class="col-12 col-md-6 col-lg-3">
+                <button type="button" class="btn btn-primary w-100" id="judgesAssignmentBtn" data-i18n="judges_assignment">
+                  AsignaciÃ³n Jueces
+                </button>
+              </div>
+              <div class="col-12 col-md-6 col-lg-3">
+                <a href="" class="btn btn-primary w-100" id="scheduleconfigUrl" data-i18n="menu_schedule_config">
+                  Schedule Configurator
+                </a>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div class="col-lg-3">
-        <div class="d-grid gap-2 mb-3">
-          <a href="" class="btn btn-outline-warning" id="scheduleconfigUrl" data-i18n="menu_schedule_config">
-            Schedule Configurator
-          </a>
-          <button type="button" class="btn btn-outline-warning" id="judgesAssignmentBtn" data-i18n="judges_assignment">
-            AsignaciÃ³n Jueces
-          </button>
         </div>
       </div>
     </div>
@@ -221,6 +218,19 @@
                 <option value="" data-i18n="ninguno">Ninguno</option>
               </select>
             </div>
+            <div class="mb-3">
+              <label for="editMaxTime" class="form-label" data-i18n="max_times_label">Tiempo máximo</label>
+              <input
+                type="text"
+                class="form-control"
+                id="editMaxTime"
+                placeholder="mm:ss"
+                data-i18n-placeholder="max_times_placeholder"
+                inputmode="numeric"
+                maxlength="6"
+                pattern="^\d{1,3}:[0-5]\d$">
+              <div class="form-text" data-i18n="max_times_format_hint">Formato: mm:ss (ejemplo 03:30).</div>
+            </div>
             <!--div class="row">
               <div class="col-md-6 mb-3">
                 <label class="form-label">Jueces que deben votar</label>
@@ -277,6 +287,97 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
           <button type="button" class="btn btn-primary" id="confirmScheduleConfigOverrideBtn">Continuar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="maxTimesModal" tabindex="-1" aria-labelledby="maxTimesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="maxTimesModalLabel" data-i18n="max_times_title">Asignar Tiempos Máximos</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="max_times_categories">Categorías</h6>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="maxTimesSelectAllCategories">
+                <label class="form-check-label fw-semibold" for="maxTimesSelectAllCategories" data-i18n="max_times_select_all_categories">Seleccionar todas las categorías</label>
+              </div>
+              <div id="maxTimesCategoriesList" class="list-group max-times-selection-list"></div>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="max_times_styles">Estilos</h6>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="maxTimesSelectAllStyles">
+                <label class="form-check-label fw-semibold" for="maxTimesSelectAllStyles" data-i18n="max_times_select_all_styles">Seleccionar todos los estilos</label>
+              </div>
+              <div id="maxTimesStylesList" class="list-group max-times-selection-list"></div>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <label for="maxTimesValue" class="form-label fw-semibold mb-1" data-i18n="max_times_label">Tiempo Máximo</label>
+            <input
+              type="text"
+              class="form-control"
+              id="maxTimesValue"
+              placeholder="mm:ss"
+              data-i18n-placeholder="max_times_placeholder"
+              inputmode="numeric"
+              maxlength="6"
+              pattern="^\d{1,3}:[0-5]\d$">
+            <div class="form-text" data-i18n="max_times_format_hint">Formato: mm:ss (ejemplo 03:30).</div>
+          </div>
+          <div id="maxTimesSelectionSummary" class="small text-muted mt-3"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="assignMaxTimesBtn" data-i18n="max_times_apply">Asignar tiempos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="createCompetitionsModal" tabindex="-1" aria-labelledby="createCompetitionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="createCompetitionsModalLabel" data-i18n="create_competitions_modal_title">Crear competiciones</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="create_competitions_categories">Categorías</h6>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="createCompsSelectAllCategories">
+                <label class="form-check-label fw-semibold" for="createCompsSelectAllCategories" data-i18n="create_competitions_select_all_categories">Seleccionar todas las categorías</label>
+              </div>
+              <div id="createCompsCategoriesList" class="list-group max-times-selection-list"></div>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="create_competitions_styles">Estilos</h6>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="createCompsSelectAllStyles">
+                <label class="form-check-label fw-semibold" for="createCompsSelectAllStyles" data-i18n="create_competitions_select_all_styles">Seleccionar todos los estilos</label>
+              </div>
+              <div id="createCompsStylesList" class="list-group max-times-selection-list"></div>
+            </div>
+          </div>
+
+          <div id="createCompsSelectionSummary" class="small text-muted mt-3"></div>
+
+          <div id="createCompsResultPanel" class="mt-3 d-none">
+            <div class="fw-semibold mb-2" data-i18n="create_competitions_results_title">Resumen</div>
+            <div id="createCompsResultSummary" class="small mb-2"></div>
+            <div id="createCompsResultList" class="list-group create-comps-results"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="createCompetitionsApplyBtn" data-i18n="create_competitions_apply">Crear competiciones</button>
         </div>
       </div>
     </div>

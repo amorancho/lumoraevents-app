@@ -125,12 +125,16 @@
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label class="form-label" for="timePerDancerInput" data-i18n="time_per_dancer">Time per dancer (seconds)</label>
-            <input type="number" class="form-control" id="timePerDancerInput" min="1">
-          </div>
-          <div class="mb-3">
-            <label class="form-label" for="timeBeforeStartInput" data-i18n="time_before_start">Time before start (seconds)</label>
-            <input type="number" class="form-control" id="timeBeforeStartInput" min="0">
+            <label class="form-label" for="timePerDancerInput" data-i18n="time_per_dancer">Time per dancer (mm:ss)</label>
+            <input
+              type="text"
+              class="form-control"
+              id="timePerDancerInput"
+              placeholder="mm:ss"
+              inputmode="numeric"
+              maxlength="6"
+              pattern="^\d{1,3}:[0-5]\d$">
+            <div class="form-text" data-i18n="time_per_dancer_format_hint">Format: mm:ss (example 03:30).</div>
           </div>
         </div>
         <div class="modal-footer">

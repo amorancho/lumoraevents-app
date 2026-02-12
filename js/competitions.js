@@ -1,5 +1,7 @@
 var competitions = [];
 var masters = [];
+var categoriesCatalog = [];
+var stylesCatalog = [];
 
 const convertStatus = {
   'OPE': 'OPEN',
@@ -54,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (editForm) {
     editForm.addEventListener("submit", (e) => {
-      e.preventDefault(); // evita recarga/redirección
+      e.preventDefault(); // evita recarga/redirecciÃ³n
     });
   }
 
@@ -98,7 +100,7 @@ function loadCompetitions() {
       btnDisabled = 'disabled';
     }
 
-    // Botón de estado
+    // BotÃ³n de estado
     let statusBtn;
     if (isFinished) {
       statusBtn = `
@@ -175,7 +177,7 @@ function loadCompetitions() {
       countEl.textContent = competitions.length;
   }
 
-  // Activar tooltips de Bootstrap después de crear los elementos
+  // Activar tooltips de Bootstrap despuÃ©s de crear los elementos
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
 
@@ -185,7 +187,7 @@ function loadCompetitions() {
       const compId = row.dataset.id;
       const action = btn.dataset.action; // ahora usamos data-action
 
-      if (!action) return; // botón disabled (finished), no hacemos nada
+      if (!action) return; // botÃ³n disabled (finished), no hacemos nada
 
       try {
         const response = await fetch(`${API_BASE_URL}/api/competitions/${compId}/changestatus`, {
@@ -210,7 +212,7 @@ function loadCompetitions() {
           newStatus = 'CLO';
         }
 
-        // Actualizamos la competición en el array local
+        // Actualizamos la competiciÃ³n en el array local
         const compIndex = competitions.findIndex(c => c.id == compId);
         if (compIndex !== -1) {
           competitions[compIndex].status = newStatus;
@@ -224,7 +226,7 @@ function loadCompetitions() {
           badge.classList.add(newStatus === 'OPE' ? 'bg-success' : 'bg-danger');
         }
 
-        // Actualizamos el botón
+        // Actualizamos el botÃ³n
         btn.dataset.action = newStatus === 'OPE' ? 'close' : 'open';
         btn.title = newStatus === 'OPE' ? t('close_competition') : t('open_competition');
         btn.querySelector('i').className = newStatus === 'OPE' ? 'bi bi-lock' : 'bi bi-unlock';
@@ -240,6 +242,43 @@ function loadCompetitions() {
 }
 
 
+async function createCompetitionRequest(categoryId, styleId) {
+  const payload = {
+    event_id: getEvent().id,
+    category_id: categoryId,
+    style_id: styleId,
+    startTime: '',
+    status: 'CLO'
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        ok: false,
+        message: data?.error || t('create_competitions_error_save', 'Error saving competition')
+      };
+    }
+
+    return { ok: true, message: data?.message || t('create_competitions_result_ok', 'Created') };
+  } catch (error) {
+    console.error('Error creating competition:', error);
+    return {
+      ok: false,
+      message: error?.message || t('create_competitions_result_error', 'Unexpected error')
+    };
+  }
+}
+
+
 async function addCompt() {
   
   const inputCat = document.getElementById('categoryDropdown');
@@ -249,35 +288,19 @@ async function addCompt() {
 
   if (valueCat !== "" && valueSty !== "") {
 
-    // Deshabilitar botón para evitar múltiples envíos
+    // Deshabilitar botÃ³n para evitar mÃºltiples envÃ­os
     const addBtn = document.getElementById('createBtn');
     if (addBtn.disabled) return;
     addBtn.disabled = true;
     addBtn.textContent = "Adding...";
 
-
-    const newComp = {
-      event_id: getEvent().id,
-      category_id: valueCat,
-      style_id: valueSty,
-      startTime: '',
-      status: 'CLO'
-    };
-
     try {
-      const response = await fetch(`${API_BASE_URL}/api/competitions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(newComp)
-      });
+      const createResult = await createCompetitionRequest(valueCat, valueSty);
 
-      if (!response.ok) {
-        const errData = await response.json();
+      if (!createResult.ok) {
         inputCat.value = '';
         inputSty.value = '';
-        showMessageModal(errData.error || 'Error saving competition', 'Error');
+        showMessageModal(createResult.message, t('error_title', 'Error'));
         return;
       }
 
@@ -330,6 +353,31 @@ async function saveCompetitionEdits(editModal) {
   const inputStatus = document.getElementById('editStatus');
   const inputJudges = Array.from(document.getElementById('editJudges').selectedOptions).map(opt => opt.value);
   const inputReserveJudge = document.getElementById('editJudgeReserve');
+  const inputMaxTime = document.getElementById('editMaxTime');
+  const maxTimeRaw = (inputMaxTime?.value || '').trim();
+
+  let maxTimeSeconds = null;
+  if (maxTimeRaw) {
+    const normalizedMaxTime = normalizeMaxTimeValue(maxTimeRaw);
+    const parsedMaxTimeSeconds = maxTimeToSeconds(normalizedMaxTime);
+
+    if (!normalizedMaxTime || !Number.isFinite(parsedMaxTimeSeconds)) {
+      if (inputMaxTime) inputMaxTime.classList.add('is-invalid');
+      showMessageModal(
+        t('max_times_invalid_format', 'Enter a valid time in mm:ss format.'),
+        t('error_title', 'Error')
+      );
+      return;
+    }
+
+    if (inputMaxTime) {
+      inputMaxTime.classList.remove('is-invalid');
+      inputMaxTime.value = normalizedMaxTime;
+    }
+    maxTimeSeconds = parsedMaxTimeSeconds;
+  } else if (inputMaxTime) {
+    inputMaxTime.classList.remove('is-invalid');
+  }
 
   const competitionData = {
     category_id: categoryId,
@@ -338,6 +386,7 @@ async function saveCompetitionEdits(editModal) {
     status: inputStatus.value,
     judges: inputJudges,
     judge_reserve: inputReserveJudge ? (inputReserveJudge.value || null) : null,
+    max_time: maxTimeSeconds,
     event_id: getEvent().id
   };
 
@@ -365,6 +414,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const dancersOrderModal = new bootstrap.Modal(document.getElementById('dancersOrderModal'));
     const judgesAssignmentModalEl = document.getElementById('judgesAssignmentModal');
     const judgesAssignmentModal = judgesAssignmentModalEl ? new bootstrap.Modal(judgesAssignmentModalEl) : null;
+    const maxTimesModalEl = document.getElementById('maxTimesModal');
+    const maxTimesModal = maxTimesModalEl ? new bootstrap.Modal(maxTimesModalEl) : null;
+    const createCompetitionsModalEl = document.getElementById('createCompetitionsModal');
+    const createCompetitionsModal = createCompetitionsModalEl ? new bootstrap.Modal(createCompetitionsModalEl) : null;
+    const editMaxTimeInput = document.getElementById('editMaxTime');
 
     document.addEventListener('click', (event) => {
 
@@ -409,6 +463,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (reserveSelect) {
           const reserveJudge = judges.find(j => j.reserve);
           reserveSelect.value = reserveJudge ? String(reserveJudge.id) : '';
+        }
+        if (editMaxTimeInput) {
+          const existingMaxTimeSeconds = getCompetitionMaxTimeSeconds(competition);
+          editMaxTimeInput.value = maxTimeSecondsToNormalized(existingMaxTimeSeconds) || '';
+          editMaxTimeInput.classList.remove('is-invalid');
         }
 
         editModal.show();
@@ -455,6 +514,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       await saveCompetitionEdits(editModal);
     });
+
+    if (editMaxTimeInput) {
+      editMaxTimeInput.addEventListener('input', () => {
+        editMaxTimeInput.classList.remove('is-invalid');
+      });
+    }
 
     const sortable = new Sortable(document.getElementById('sortableDancers'), {
       animation: 150,
@@ -586,30 +651,294 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
       });
     }
+
+    const createCompetitionsBtn = document.getElementById('createCompetitionsBtn');
+    const createCompsSelectAllCategories = document.getElementById('createCompsSelectAllCategories');
+    const createCompsSelectAllStyles = document.getElementById('createCompsSelectAllStyles');
+    const createCompetitionsApplyBtn = document.getElementById('createCompetitionsApplyBtn');
+
+    if (createCompetitionsBtn && createCompetitionsModal) {
+      createCompetitionsBtn.addEventListener('click', async () => {
+        await ensureCreateCompsSourceOptionsLoaded();
+        renderCreateCompetitionsSelectionLists();
+        updateCreateCompsSelectAllState('category');
+        updateCreateCompsSelectAllState('style');
+        updateCreateCompsSelectionSummary();
+        clearCreateCompsResultPanel();
+        createCompetitionsModal.show();
+      });
+    }
+
+    if (createCompsSelectAllCategories) {
+      createCompsSelectAllCategories.addEventListener('change', () => {
+        setCreateCompsOptionsChecked('category', createCompsSelectAllCategories.checked);
+        updateCreateCompsSelectAllState('category');
+        updateCreateCompsSelectionSummary();
+      });
+    }
+
+    if (createCompsSelectAllStyles) {
+      createCompsSelectAllStyles.addEventListener('change', () => {
+        setCreateCompsOptionsChecked('style', createCompsSelectAllStyles.checked);
+        updateCreateCompsSelectAllState('style');
+        updateCreateCompsSelectionSummary();
+      });
+    }
+
+    if (createCompetitionsModalEl) {
+      createCompetitionsModalEl.addEventListener('change', (event) => {
+        if (!event.target.classList.contains('create-comps-option')) return;
+        updateCreateCompsSelectAllState('category');
+        updateCreateCompsSelectAllState('style');
+        updateCreateCompsSelectionSummary();
+      });
+    }
+
+    if (createCompetitionsApplyBtn) {
+      createCompetitionsApplyBtn.addEventListener('click', async () => {
+        const selectedCategories = getSelectedCreateCompsValues('category');
+        const selectedStyles = getSelectedCreateCompsValues('style');
+
+        if (!selectedCategories.length) {
+          showMessageModal(
+            t('create_competitions_missing_categories', 'Select at least one category.'),
+            t('error_title', 'Error')
+          );
+          return;
+        }
+
+        if (!selectedStyles.length) {
+          showMessageModal(
+            t('create_competitions_missing_styles', 'Select at least one style.'),
+            t('error_title', 'Error')
+          );
+          return;
+        }
+
+        createCompetitionsApplyBtn.disabled = true;
+        const originalText = createCompetitionsApplyBtn.textContent;
+        createCompetitionsApplyBtn.textContent = t('create_competitions_creating', 'Creating...');
+
+        const combinations = [];
+        selectedCategories.forEach((categoryId) => {
+          selectedStyles.forEach((styleId) => {
+            combinations.push({
+              categoryId,
+              styleId,
+              categoryName: getSelectOptionLabel('categoryDropdown', categoryId),
+              styleName: getSelectOptionLabel('styleDropdown', styleId)
+            });
+          });
+        });
+
+        const results = [];
+        for (const combo of combinations) {
+          const result = await createCompetitionRequest(combo.categoryId, combo.styleId);
+          results.push({
+            ...combo,
+            ok: result.ok,
+            message: result.message
+          });
+        }
+
+        renderCreateCompsResults(results);
+        await fetchCompetitionsFromAPI();
+
+        createCompetitionsApplyBtn.disabled = false;
+        createCompetitionsApplyBtn.textContent = originalText;
+      });
+    }
+
+    const maxTimesAssignmentBtn = document.getElementById('maxTimesAssignmentBtn');
+    const maxTimesSelectAllCategories = document.getElementById('maxTimesSelectAllCategories');
+    const maxTimesSelectAllStyles = document.getElementById('maxTimesSelectAllStyles');
+    const assignMaxTimesBtn = document.getElementById('assignMaxTimesBtn');
+    const maxTimesValueInput = document.getElementById('maxTimesValue');
+
+    if (maxTimesAssignmentBtn && maxTimesModal) {
+      maxTimesAssignmentBtn.addEventListener('click', async () => {
+        await ensureCreateCompsSourceOptionsLoaded();
+        renderMaxTimesSelectionLists();
+        if (maxTimesValueInput) {
+          maxTimesValueInput.value = '';
+          maxTimesValueInput.classList.remove('is-invalid');
+        }
+        updateMaxTimesSelectAllState('category');
+        updateMaxTimesSelectAllState('style');
+        updateMaxTimesSelectionSummary();
+        maxTimesModal.show();
+      });
+    }
+
+    if (maxTimesSelectAllCategories) {
+      maxTimesSelectAllCategories.addEventListener('change', () => {
+        setMaxTimesOptionsChecked('category', maxTimesSelectAllCategories.checked);
+        updateMaxTimesSelectAllState('category');
+        updateMaxTimesSelectionSummary();
+      });
+    }
+
+    if (maxTimesSelectAllStyles) {
+      maxTimesSelectAllStyles.addEventListener('change', () => {
+        setMaxTimesOptionsChecked('style', maxTimesSelectAllStyles.checked);
+        updateMaxTimesSelectAllState('style');
+        updateMaxTimesSelectionSummary();
+      });
+    }
+
+    if (maxTimesModalEl) {
+      maxTimesModalEl.addEventListener('change', (event) => {
+        if (!event.target.classList.contains('max-times-option')) return;
+        updateMaxTimesSelectAllState('category');
+        updateMaxTimesSelectAllState('style');
+        updateMaxTimesSelectionSummary();
+      });
+    }
+
+    if (maxTimesValueInput) {
+      maxTimesValueInput.addEventListener('input', () => {
+        maxTimesValueInput.classList.remove('is-invalid');
+      });
+    }
+
+    if (assignMaxTimesBtn) {
+      assignMaxTimesBtn.addEventListener('click', async () => {
+        const selectedCategories = getSelectedMaxTimesValues('category');
+        const selectedStyles = getSelectedMaxTimesValues('style');
+        const maxTimeRaw = (maxTimesValueInput?.value || '').trim();
+        const normalizedMaxTime = normalizeMaxTimeValue(maxTimeRaw);
+        const maxTimeSeconds = maxTimeToSeconds(normalizedMaxTime);
+
+        if (!selectedCategories.length) {
+          showMessageModal(
+            t('max_times_missing_categories', 'Select at least one category.'),
+            t('error_title', 'Error')
+          );
+          return;
+        }
+        if (!selectedStyles.length) {
+          showMessageModal(
+            t('max_times_missing_styles', 'Selecciona al menos un estilo.'),
+            t('error_title', 'Error')
+          );
+          return;
+        }
+        if (!normalizedMaxTime) {
+          if (maxTimesValueInput) maxTimesValueInput.classList.add('is-invalid');
+          showMessageModal(
+            t('max_times_invalid_format', 'Enter a valid time in mm:ss format.'),
+            t('error_title', 'Error')
+          );
+          return;
+        }
+        if (!Number.isFinite(maxTimeSeconds)) {
+          if (maxTimesValueInput) maxTimesValueInput.classList.add('is-invalid');
+          showMessageModal(
+            t('max_times_invalid_format', 'Enter a valid time in mm:ss format.'),
+            t('error_title', 'Error')
+          );
+          return;
+        }
+
+        if (maxTimesValueInput) {
+          maxTimesValueInput.classList.remove('is-invalid');
+          maxTimesValueInput.value = normalizedMaxTime;
+        }
+
+        const originalText = assignMaxTimesBtn.textContent;
+        assignMaxTimesBtn.disabled = true;
+        assignMaxTimesBtn.textContent = t('max_times_status_updating', 'Updating...');
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/competitions/bulk-max-time`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event_id: getEvent().id,
+              category_list: selectedCategories,
+              styles_list: selectedStyles,
+              max_time: maxTimeSeconds
+            })
+          });
+
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            showMessageModal(
+              data?.error || t('max_times_request_error', 'Error assigning maximum times.'),
+              t('error_title', 'Error')
+            );
+            return;
+          }
+
+          const successTemplate = t(
+            'max_times_assignment_success',
+            'Maximum time {time} ({seconds}s) assigned. Updated {updated} of {requested} combinations.'
+          );
+          const successMessage = successTemplate
+            .replace('{time}', normalizedMaxTime)
+            .replace('{seconds}', String(maxTimeSeconds))
+            .replace('{updated}', String(data?.updated_competitions ?? 0))
+            .replace('{requested}', String(data?.requested_pairs ?? (selectedCategories.length * selectedStyles.length)));
+
+          showMessageModal(successMessage, t('max_times_info_title', 'Information'));
+          maxTimesModal.hide();
+          await fetchCompetitionsFromAPI();
+        } catch (error) {
+          console.error('Error assigning bulk max time:', error);
+          showMessageModal(
+            t('max_times_request_error', 'Error assigning maximum times.'),
+            t('error_title', 'Error')
+          );
+        } finally {
+          assignMaxTimesBtn.disabled = false;
+          assignMaxTimesBtn.textContent = originalText;
+        }
+      });
+    }
   });
 
 
 async function loadCategories() {
   const categorySelect = document.getElementById('categoryDropdown');
-  //categorySelect.innerHTML = ''; // Limpiar opciones anteriores
-
   const categoryFilter = document.getElementById('categoryFilter');
+  const defaultFilterOption = categoryFilter?.querySelector('option[value=""]')?.cloneNode(true);
+
+  if (categorySelect) {
+    categorySelect.innerHTML = '';
+  }
+  if (categoryFilter) {
+    categoryFilter.innerHTML = '';
+    if (defaultFilterOption) {
+      categoryFilter.appendChild(defaultFilterOption);
+    }
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching categories');
     const categories = await response.json();
+    categoriesCatalog = categories.map(category => ({
+      value: String(category?.id ?? category),
+      label: String(category?.name ?? category)
+    }));
 
     categories.forEach(category => {
-      const option1 = document.createElement('option');
-      option1.value = category.id || category; // por si es string directo
-      option1.textContent = category.name || category;
-      categorySelect.appendChild(option1);
+      const value = category.id || category;
+      const label = category.name || category;
 
-      const option2 = document.createElement('option');
-      option2.value = category.name || category; // por si es string directo
-      option2.textContent = category.name || category;
-      categoryFilter.appendChild(option2);
+      if (categorySelect) {
+        const option1 = document.createElement('option');
+        option1.value = value;
+        option1.textContent = label;
+        categorySelect.appendChild(option1);
+      }
+
+      if (categoryFilter) {
+        const option2 = document.createElement('option');
+        option2.value = label;
+        option2.textContent = label;
+        categoryFilter.appendChild(option2);
+      }
     });
   } catch (err) {
     console.error('Failed to load categories:', err);
@@ -618,18 +947,26 @@ async function loadCategories() {
 
 async function loadStyles() {
   const styleSelect = document.getElementById('styleDropdown');
-  //styleSelect.innerHTML = ''; // Limpiar opciones anteriores
+  if (styleSelect) {
+    styleSelect.innerHTML = '';
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/styles?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching styles');
     const styles = await response.json();
+    stylesCatalog = styles.map(style => ({
+      value: String(style?.id ?? style),
+      label: String(style?.name ?? style)
+    }));
 
     styles.forEach(style => {
-      const option = document.createElement('option');
-      option.value = style.id || style;
-      option.textContent = style.name || style;
-      styleSelect.appendChild(option);
+      if (styleSelect) {
+        const option = document.createElement('option');
+        option.value = style.id || style;
+        option.textContent = style.name || style;
+        styleSelect.appendChild(option);
+      }
     });
   } catch (err) {
     console.error('Failed to load styles:', err);
@@ -674,12 +1011,12 @@ async function deleteCompetition(competitionIdToDelete) {
     });
     const data = await res.json();
     if (!res.ok) {
-      showMessageModal(data.error || 'Unknown error', 'Error eliminando la competición');
+      showMessageModal(data.error || 'Unknown error', 'Error eliminando la competiciÃ³n');
       return;
     }
 
   } catch (error) {
-    console.error('Error al eliminar la competición:', error);
+    console.error('Error al eliminar la competiciÃ³n:', error);
   }
 }
 
@@ -688,7 +1025,7 @@ function applyCategoryFilter() {
   const filter = document.getElementById('categoryFilter');
   const table = document.getElementById('competitionsTable');
 
-  if (!filter || !table) return; // seguridad por si aún no existen en el DOM
+  if (!filter || !table) return; // seguridad por si aÃºn no existen en el DOM
 
   const selected = filter.value.toLowerCase();
   const rows = table.querySelectorAll('tr');
@@ -813,6 +1150,352 @@ function getSelectedAssignmentCompetitions() {
     .map(input => input.dataset.compId);
 }
 
+function renderMaxTimesSelectionListFromSelect(selectId, targetId, type) {
+  const targetList = document.getElementById(targetId);
+  if (!targetList) return;
+
+  targetList.innerHTML = '';
+
+  let options = [];
+  const sourceSelect = document.getElementById(selectId);
+  if (sourceSelect) {
+    options = Array.from(sourceSelect.options)
+      .filter(opt => !opt.disabled && String(opt.value || '').trim() !== '')
+      .map(opt => ({ value: String(opt.value), label: opt.textContent || opt.label || String(opt.value) }));
+  } else {
+    const catalog = type === 'category' ? categoriesCatalog : stylesCatalog;
+    options = catalog.map(item => ({ value: String(item.value), label: item.label }));
+  }
+
+  if (!options.length) {
+    const empty = document.createElement('div');
+    empty.className = 'text-muted small';
+    empty.textContent = t('max_times_no_items', 'No hay elementos disponibles.');
+    targetList.appendChild(empty);
+    return;
+  }
+
+  options.forEach((option, index) => {
+    const label = document.createElement('label');
+    label.className = 'list-group-item d-flex align-items-center gap-2';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'form-check-input max-times-option';
+    checkbox.dataset.type = type;
+    checkbox.value = option.value;
+    checkbox.id = `max-times-${type}-${index}`;
+
+    const text = document.createElement('span');
+    text.textContent = option.label;
+
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    targetList.appendChild(label);
+  });
+}
+
+function renderMaxTimesSelectionLists() {
+  renderMaxTimesSelectionListFromSelect('categoryDropdown', 'maxTimesCategoriesList', 'category');
+  renderMaxTimesSelectionListFromSelect('styleDropdown', 'maxTimesStylesList', 'style');
+}
+
+function getMaxTimesSelectAllElement(type) {
+  if (type === 'category') return document.getElementById('maxTimesSelectAllCategories');
+  if (type === 'style') return document.getElementById('maxTimesSelectAllStyles');
+  return null;
+}
+
+function setMaxTimesOptionsChecked(type, checked) {
+  const options = document.querySelectorAll(`#maxTimesModal .max-times-option[data-type="${type}"]`);
+  options.forEach(input => {
+    input.checked = Boolean(checked);
+  });
+}
+
+function updateMaxTimesSelectAllState(type) {
+  const selectAllEl = getMaxTimesSelectAllElement(type);
+  if (!selectAllEl) return;
+
+  const allOptions = Array.from(document.querySelectorAll(`#maxTimesModal .max-times-option[data-type="${type}"]`));
+  if (!allOptions.length) {
+    selectAllEl.checked = false;
+    selectAllEl.indeterminate = false;
+    return;
+  }
+
+  const checkedCount = allOptions.filter(input => input.checked).length;
+  selectAllEl.checked = checkedCount === allOptions.length;
+  selectAllEl.indeterminate = checkedCount > 0 && checkedCount < allOptions.length;
+}
+
+function getSelectedMaxTimesValues(type) {
+  return Array.from(document.querySelectorAll(`#maxTimesModal .max-times-option[data-type="${type}"]:checked`))
+    .map(input => input.value);
+}
+
+function updateMaxTimesSelectionSummary() {
+  const summaryEl = document.getElementById('maxTimesSelectionSummary');
+  if (!summaryEl) return;
+
+  const categoriesCount = getSelectedMaxTimesValues('category').length;
+  const stylesCount = getSelectedMaxTimesValues('style').length;
+  const summaryTemplate = t(
+    'max_times_summary',
+    'Selected: {categories} category(ies), {styles} style(s).'
+  );
+  summaryEl.textContent = summaryTemplate
+    .replace('{categories}', String(categoriesCount))
+    .replace('{styles}', String(stylesCount));
+}
+
+function normalizeMaxTimeValue(rawValue) {
+  const match = String(rawValue || '').trim().match(/^(\d{1,3}):([0-5]\d)$/);
+  if (!match) return null;
+
+  const minutes = Number(match[1]);
+  const seconds = Number(match[2]);
+  if (!Number.isFinite(minutes) || !Number.isFinite(seconds)) return null;
+
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function maxTimeToSeconds(normalizedValue) {
+  if (!normalizedValue) return null;
+
+  const [minutesPart, secondsPart] = String(normalizedValue).split(':');
+  const minutes = Number(minutesPart);
+  const seconds = Number(secondsPart);
+  if (
+    !Number.isFinite(minutes) ||
+    !Number.isFinite(seconds) ||
+    minutes < 0 ||
+    seconds < 0 ||
+    seconds > 59
+  ) {
+    return null;
+  }
+
+  return (minutes * 60) + seconds;
+}
+
+function maxTimeSecondsToNormalized(totalSeconds) {
+  const parsedSeconds = Number(totalSeconds);
+  if (!Number.isFinite(parsedSeconds) || parsedSeconds < 0) return null;
+
+  const minutes = Math.floor(parsedSeconds / 60);
+  const seconds = parsedSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+function getCompetitionMaxTimeSeconds(competition) {
+  if (!competition) return null;
+
+  const maxTimeAsNumber = Number(competition.max_time ?? competition.maxTime);
+  if (Number.isFinite(maxTimeAsNumber) && maxTimeAsNumber >= 0) {
+    return maxTimeAsNumber;
+  }
+
+  const maxTimeAsText = competition.max_time_form || competition.max_time_text || competition.max_time_display;
+  const normalizedMaxTime = normalizeMaxTimeValue(maxTimeAsText);
+  const parsedSeconds = maxTimeToSeconds(normalizedMaxTime);
+  return Number.isFinite(parsedSeconds) ? parsedSeconds : null;
+}
+
+function getSelectOptionLabel(selectId, value) {
+  const selectEl = document.getElementById(selectId);
+  if (selectEl) {
+    const option = Array.from(selectEl.options).find(opt => String(opt.value) === String(value));
+    if (option) {
+      return option.textContent || option.label || String(value);
+    }
+  }
+
+  if (selectId === 'categoryDropdown') {
+    const item = categoriesCatalog.find(cat => String(cat.value) === String(value));
+    if (item) return item.label;
+  }
+
+  if (selectId === 'styleDropdown') {
+    const item = stylesCatalog.find(style => String(style.value) === String(value));
+    if (item) return item.label;
+  }
+
+  return String(value);
+}
+
+async function ensureCreateCompsSourceOptionsLoaded() {
+  const categorySelect = document.getElementById('categoryDropdown');
+  const categoriesLoaded = categoriesCatalog.length > 0 || (categorySelect && categorySelect.options.length > 0);
+  if (!categoriesLoaded) {
+    await loadCategories();
+  }
+
+  const styleSelect = document.getElementById('styleDropdown');
+  const stylesLoaded = stylesCatalog.length > 0 || (styleSelect && styleSelect.options.length > 0);
+  if (!stylesLoaded) {
+    await loadStyles();
+  }
+}
+
+function renderCreateCompsSelectionListFromSelect(selectId, targetId, type) {
+  const targetList = document.getElementById(targetId);
+  if (!targetList) return;
+
+  targetList.innerHTML = '';
+
+  let options = [];
+  const sourceSelect = document.getElementById(selectId);
+  if (sourceSelect) {
+    options = Array.from(sourceSelect.options)
+      .filter(opt => !opt.disabled && String(opt.value || '').trim() !== '')
+      .map(opt => ({ value: String(opt.value), label: opt.textContent || opt.label || String(opt.value) }));
+  } else {
+    const catalog = type === 'category' ? categoriesCatalog : stylesCatalog;
+    options = catalog.map(item => ({ value: String(item.value), label: item.label }));
+  }
+
+  if (!options.length) {
+    const empty = document.createElement('div');
+    empty.className = 'text-muted small';
+    empty.textContent = t('create_competitions_no_items', 'No items available.');
+    targetList.appendChild(empty);
+    return;
+  }
+
+  options.forEach((option, index) => {
+    const label = document.createElement('label');
+    label.className = 'list-group-item d-flex align-items-center gap-2';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'form-check-input create-comps-option';
+    checkbox.dataset.type = type;
+    checkbox.value = option.value;
+    checkbox.id = `create-comps-${type}-${index}`;
+
+    const text = document.createElement('span');
+    text.textContent = option.label;
+
+    label.appendChild(checkbox);
+    label.appendChild(text);
+    targetList.appendChild(label);
+  });
+}
+
+function renderCreateCompetitionsSelectionLists() {
+  renderCreateCompsSelectionListFromSelect('categoryDropdown', 'createCompsCategoriesList', 'category');
+  renderCreateCompsSelectionListFromSelect('styleDropdown', 'createCompsStylesList', 'style');
+}
+
+function getCreateCompsSelectAllElement(type) {
+  if (type === 'category') return document.getElementById('createCompsSelectAllCategories');
+  if (type === 'style') return document.getElementById('createCompsSelectAllStyles');
+  return null;
+}
+
+function setCreateCompsOptionsChecked(type, checked) {
+  const options = document.querySelectorAll(`#createCompetitionsModal .create-comps-option[data-type="${type}"]`);
+  options.forEach(input => {
+    input.checked = Boolean(checked);
+  });
+}
+
+function updateCreateCompsSelectAllState(type) {
+  const selectAllEl = getCreateCompsSelectAllElement(type);
+  if (!selectAllEl) return;
+
+  const allOptions = Array.from(document.querySelectorAll(`#createCompetitionsModal .create-comps-option[data-type="${type}"]`));
+  if (!allOptions.length) {
+    selectAllEl.checked = false;
+    selectAllEl.indeterminate = false;
+    return;
+  }
+
+  const checkedCount = allOptions.filter(input => input.checked).length;
+  selectAllEl.checked = checkedCount === allOptions.length;
+  selectAllEl.indeterminate = checkedCount > 0 && checkedCount < allOptions.length;
+}
+
+function getSelectedCreateCompsValues(type) {
+  return Array.from(document.querySelectorAll(`#createCompetitionsModal .create-comps-option[data-type="${type}"]:checked`))
+    .map(input => input.value);
+}
+
+function updateCreateCompsSelectionSummary() {
+  const summaryEl = document.getElementById('createCompsSelectionSummary');
+  if (!summaryEl) return;
+
+  const categoriesCount = getSelectedCreateCompsValues('category').length;
+  const stylesCount = getSelectedCreateCompsValues('style').length;
+  const summaryTemplate = t(
+    'create_competitions_summary_selection',
+    'Selected: {categories} category(ies), {styles} style(s).'
+  );
+  summaryEl.textContent = summaryTemplate
+    .replace('{categories}', String(categoriesCount))
+    .replace('{styles}', String(stylesCount));
+}
+
+function clearCreateCompsResultPanel() {
+  const panelEl = document.getElementById('createCompsResultPanel');
+  const summaryEl = document.getElementById('createCompsResultSummary');
+  const listEl = document.getElementById('createCompsResultList');
+
+  if (panelEl) panelEl.classList.add('d-none');
+  if (summaryEl) summaryEl.textContent = '';
+  if (listEl) listEl.innerHTML = '';
+}
+
+function renderCreateCompsResults(results) {
+  const panelEl = document.getElementById('createCompsResultPanel');
+  const summaryEl = document.getElementById('createCompsResultSummary');
+  const listEl = document.getElementById('createCompsResultList');
+  if (!panelEl || !summaryEl || !listEl) return;
+
+  const okCount = results.filter(item => item.ok).length;
+  const errorCount = results.length - okCount;
+  const summaryTemplate = t(
+    'create_competitions_results_summary',
+    'Total: {total} | OK: {ok} | Error: {error}'
+  );
+  summaryEl.innerHTML = summaryTemplate
+    .replace('{total}', `<strong>${results.length}</strong>`)
+    .replace('{ok}', `<span class="text-success"><strong>${okCount}</strong></span>`)
+    .replace('{error}', `<span class="text-danger"><strong>${errorCount}</strong></span>`);
+
+  listEl.innerHTML = '';
+  results.forEach((result) => {
+    const row = document.createElement('div');
+    row.className = 'list-group-item d-flex align-items-start justify-content-between gap-3';
+
+    const left = document.createElement('div');
+    const title = document.createElement('div');
+    title.className = 'fw-semibold';
+    title.textContent = `${result.categoryName} / ${result.styleName}`;
+    const message = document.createElement('div');
+    message.className = `small ${result.ok ? 'text-success' : 'text-danger'}`;
+    message.textContent = result.message || (result.ok
+      ? t('create_competitions_result_ok', 'Created')
+      : t('create_competitions_result_error', 'Error'));
+
+    left.appendChild(title);
+    left.appendChild(message);
+
+    const badge = document.createElement('span');
+    badge.className = `badge ${result.ok ? 'bg-success' : 'bg-danger'}`;
+    badge.textContent = result.ok
+      ? t('create_competitions_result_ok_short', 'OK')
+      : t('create_competitions_result_error_short', 'ERROR');
+
+    row.appendChild(left);
+    row.appendChild(badge);
+    listEl.appendChild(row);
+  });
+
+  panelEl.classList.remove('d-none');
+}
+
 function setAssignmentResult(compId, status, message) {
   const resultEl = document.querySelector(`#competitionsAssignmentList input[data-comp-id="${compId}"]`)
     ?.closest('.list-group-item')
@@ -861,6 +1544,7 @@ async function updateCompetitionJudgesAssignment(competition, judgeIds) {
     status: competition.status,
     judges: judgeIds,
     judge_reserve: reserveToSend,
+    max_time: getCompetitionMaxTimeSeconds(competition),
     event_id: getEvent().id
   };
 
@@ -884,4 +1568,5 @@ async function updateCompetitionJudgesAssignment(competition, judgeIds) {
     setAssignmentResult(competition.id, 'error', error?.message || 'Unexpected error');
   }
 }
+
 
