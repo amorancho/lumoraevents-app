@@ -57,5 +57,13 @@
   "results_button": "Results",
   "results_provisional": "Provisional Results",
   "no_votes_yet": "No votes have been recorded yet.",
+  "export_modal_scope_all": "All",
+  "export_modal_scope_categories": "1/N categories",
+  "export_modal_available_categories": "Available categories",
+  "export_modal_categories_selected": "categories selected",
+  "export_modal_all_selected": "Selected: all categories",
+  "export_modal_no_options": "No classification results are available to export.",
+  "export_modal_select_category_validation": "Select at least one category to export.",
+  "exporting": "Exporting...",
   "save_classification": "Save Classification"
 }

@@ -3,6 +3,11 @@ var title = 'Competition Tracking';
 const allowedRoles = ["admin", "organizer"];
 const voteDetailsInFlight = new Set();
 const competitionDetailsInFlight = new Set();
+const classificationExportState = {
+  options: [],
+  mode: 'ALL',
+  categoryIds: []
+};
 
 const categorySelect = document.getElementById('categorySelect');
 
@@ -15,6 +20,333 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
+
+function normalizeClassificationExportOptions(payload) {
+  const categories = Array.isArray(payload?.categories) ? payload.categories : [];
+  const seenCategoryIds = new Set();
+
+  return categories.reduce((acc, entry) => {
+    const rawCategoryId = entry?.category?.id ?? entry?.general?.category_id;
+    const categoryId = Number(rawCategoryId);
+
+    if (!Number.isFinite(categoryId) || seenCategoryIds.has(categoryId)) {
+      return acc;
+    }
+
+    seenCategoryIds.add(categoryId);
+
+    const categoryName = entry?.category?.name
+      || entry?.general?.category_name
+      || `${t('category')} ${categoryId}`;
+
+    acc.push({
+      id: categoryId,
+      name: categoryName,
+      stylesCount: Array.isArray(entry?.styles) ? entry.styles.length : 0
+    });
+
+    return acc;
+  }, []);
+}
+
+function renderClassificationExportOptions(categories) {
+  const modalBody = document.getElementById('classificationExportOptionsBody');
+  if (!modalBody) return;
+
+  const categoriesCount = categories.length;
+  const categoryRows = categories.map((category, index) => {
+    const inputId = `export-category-option-${category.id}-${index}`;
+    return `
+      <div class="form-check mb-2">
+        <input class="form-check-input js-export-category-option" type="checkbox" value="${category.id}" id="${inputId}">
+        <label class="form-check-label" for="${inputId}">
+          ${escapeHtml(category.name)}
+          <span class="text-muted ms-1">(${category.stylesCount} ${escapeHtml(t('style'))})</span>
+        </label>
+      </div>
+    `;
+  }).join('');
+
+  modalBody.innerHTML = `
+    <div class="mb-3">
+      <div class="form-check">
+        <input class="form-check-input js-export-scope-option" type="radio" name="classificationExportScope" id="exportScopeAll" value="ALL" checked>
+        <label class="form-check-label" for="exportScopeAll">${escapeHtml(t('export_modal_scope_all', 'All'))}</label>
+      </div>
+      <div class="form-check">
+        <input class="form-check-input js-export-scope-option" type="radio" name="classificationExportScope" id="exportScopeCategories" value="CATEGORIES">
+        <label class="form-check-label" for="exportScopeCategories">${escapeHtml(t('export_modal_scope_categories', 'Select categories'))}</label>
+      </div>
+    </div>
+    <div id="exportCategoriesWrapper" class="d-none">
+      <p class="fw-semibold mb-2">
+        ${escapeHtml(t('export_modal_available_categories', 'Available categories'))}
+        (${categoriesCount})
+      </p>
+      <div class="border rounded p-3 export-categories-list">
+        ${categoryRows}
+      </div>
+    </div>
+    <div id="exportSelectionValidation" class="alert alert-warning py-2 mt-3 mb-0 d-none"></div>
+    <small class="text-muted d-block mt-3" id="exportSelectionHint"></small>
+  `;
+
+  const scopeInputs = Array.from(modalBody.querySelectorAll('.js-export-scope-option'));
+  const categoryInputs = Array.from(modalBody.querySelectorAll('.js-export-category-option'));
+  const categoriesWrapper = modalBody.querySelector('#exportCategoriesWrapper');
+  const selectionHint = modalBody.querySelector('#exportSelectionHint');
+  const validationEl = modalBody.querySelector('#exportSelectionValidation');
+  const confirmBtn = document.getElementById('classificationExportConfirmBtn');
+
+  const clearValidation = () => {
+    if (!validationEl) return;
+    validationEl.textContent = '';
+    validationEl.classList.add('d-none');
+  };
+
+  const syncSelectionState = () => {
+    const selectedScope = scopeInputs.find(input => input.checked)?.value || 'ALL';
+    const isByCategory = selectedScope === 'CATEGORIES';
+
+    classificationExportState.mode = selectedScope;
+    if (categoriesWrapper) {
+      categoriesWrapper.classList.toggle('d-none', !isByCategory);
+    }
+
+    categoryInputs.forEach(input => {
+      input.disabled = !isByCategory;
+      if (!isByCategory) {
+        input.checked = false;
+      }
+    });
+
+    classificationExportState.categoryIds = isByCategory
+      ? categoryInputs
+        .filter(input => input.checked)
+        .map(input => Number(input.value))
+        .filter(value => Number.isFinite(value))
+      : [];
+
+    if (confirmBtn) {
+      confirmBtn.disabled = isByCategory && classificationExportState.categoryIds.length === 0;
+    }
+
+    if (selectionHint) {
+      selectionHint.textContent = isByCategory
+        ? `${classificationExportState.categoryIds.length}/${categoriesCount} ${t('export_modal_categories_selected', 'categories selected')}`
+        : t('export_modal_all_selected', 'Selected: all categories');
+    }
+
+    clearValidation();
+  };
+
+  scopeInputs.forEach(input => input.addEventListener('change', syncSelectionState));
+  categoryInputs.forEach(input => input.addEventListener('change', syncSelectionState));
+  syncSelectionState();
+}
+
+function setButtonLoading(button, isLoading, loadingText = t('loading')) {
+  if (!button) return;
+
+  if (isLoading) {
+    if (!button.dataset.originalHtml) {
+      button.dataset.originalHtml = button.innerHTML;
+    }
+    button.innerHTML = `
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span>${escapeHtml(loadingText)}</span>
+    `;
+    button.disabled = true;
+    return;
+  }
+
+  if (button.dataset.originalHtml) {
+    button.innerHTML = button.dataset.originalHtml;
+    delete button.dataset.originalHtml;
+  }
+  button.disabled = false;
+}
+
+function getFilenameFromContentDisposition(dispositionHeader) {
+  if (!dispositionHeader || typeof dispositionHeader !== 'string') return null;
+
+  const utf8Match = dispositionHeader.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim());
+    } catch {
+      // ignore malformed uri encoding
+    }
+  }
+
+  const asciiMatch = dispositionHeader.match(/filename=\"?([^\";]+)\"?/i);
+  return asciiMatch?.[1]?.trim() || null;
+}
+
+function downloadBlobFile(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename || 'results-export.pdf';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function initClassificationExportOptions() {
+  const exportBtn = document.getElementById('exportBtn');
+  const modalEl = document.getElementById('classificationExportOptionsModal');
+  const modalBody = document.getElementById('classificationExportOptionsBody');
+  const confirmBtn = document.getElementById('classificationExportConfirmBtn');
+
+  if (!exportBtn || !modalEl || !modalBody || !confirmBtn) return;
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  confirmBtn.disabled = true;
+
+  exportBtn.addEventListener('click', async () => {
+    if (exportBtn.disabled) return;
+
+    const originalContent = exportBtn.innerHTML;
+    exportBtn.disabled = true;
+    exportBtn.innerHTML = `
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      ${t('loading')}
+    `;
+
+    modalBody.innerHTML = `
+      <div class="d-flex align-items-center justify-content-center py-4">
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        <span>${t('loading')}</span>
+      </div>
+    `;
+    confirmBtn.disabled = true;
+
+    modal.show();
+
+    try {
+      const eventId = getEvent()?.id;
+      if (!eventId) {
+        throw new Error(t('error_title'));
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/competitions/classification-export-options?event_id=${eventId}`);
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(payload?.error || t('error_title'));
+      }
+
+      const categories = normalizeClassificationExportOptions(payload);
+
+      classificationExportState.options = categories;
+      classificationExportState.mode = 'ALL';
+      classificationExportState.categoryIds = [];
+
+      if (!categories.length) {
+        modalBody.innerHTML = `
+          <div class="alert alert-info mb-0">
+            ${escapeHtml(t('export_modal_no_options', 'No classification results are available to export.'))}
+          </div>
+        `;
+        confirmBtn.disabled = true;
+        return;
+      }
+
+      renderClassificationExportOptions(categories);
+      confirmBtn.disabled = false;
+    } catch (error) {
+      console.error('Error loading classification export options:', error);
+      classificationExportState.options = [];
+      classificationExportState.mode = 'ALL';
+      classificationExportState.categoryIds = [];
+
+      modalBody.innerHTML = `
+        <div class="alert alert-danger mb-0">
+          ${escapeHtml(error?.message || t('error_title'))}
+        </div>
+      `;
+      confirmBtn.disabled = true;
+    } finally {
+      exportBtn.innerHTML = originalContent;
+      exportBtn.disabled = false;
+    }
+  });
+
+  confirmBtn.addEventListener('click', async () => {
+    if (confirmBtn.disabled) return;
+
+    const eventId = getEvent()?.id;
+    if (!eventId) {
+      showMessageModal(t('error_title'), t('error_title'));
+      return;
+    }
+
+    const validationEl = modalBody.querySelector('#exportSelectionValidation');
+    const all = classificationExportState.mode === 'ALL';
+    const categories = all ? [] : [...classificationExportState.categoryIds];
+
+    if (!all && categories.length === 0) {
+      if (validationEl) {
+        validationEl.textContent = t('export_modal_select_category_validation', 'Select at least one category to export.');
+        validationEl.classList.remove('d-none');
+      }
+      return;
+    }
+
+    if (validationEl) {
+      validationEl.textContent = '';
+      validationEl.classList.add('d-none');
+    }
+
+    setButtonLoading(confirmBtn, true, t('exporting', 'Exporting...'));
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/competitions/results/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_id: eventId,
+          all,
+          categories
+        })
+      });
+
+      if (!response.ok) {
+        let message = t('error_title');
+        try {
+          const data = await response.json();
+          message = data?.error || data?.message || message;
+        } catch {
+          // ignore non-json errors
+        }
+        throw new Error(message);
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get('Content-Disposition');
+      const filename = getFilenameFromContentDisposition(disposition) || `results-event-${eventId}.pdf`;
+
+      downloadBlobFile(blob, filename);
+      modal.hide();
+    } catch (error) {
+      console.error('Error exporting results:', error);
+      showMessageModal(error?.message || t('error_title'), t('error_title'));
+    } finally {
+      setButtonLoading(confirmBtn, false);
+    }
+  });
+}
+
+function getClassificationExportSelection() {
+  return {
+    mode: classificationExportState.mode,
+    categoryIds: [...classificationExportState.categoryIds]
+  };
+}
+
+window.getClassificationExportSelection = getClassificationExportSelection;
 
 function getCompetitionJudges(competition) {
   const directJudges = Array.isArray(competition?.judges) ? competition.judges.filter(Boolean) : [];
@@ -761,6 +1093,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const data = await loadCategoriesAndStyles();
   populateCategorySelect(data, categorySelect);
+  initClassificationExportOptions();
 
   categorySelect.addEventListener('change', () => {
     populateStyleSelect(categorySelect.value, data, styleSelect);

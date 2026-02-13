@@ -285,6 +285,10 @@
     #voteDetailsBody:not(.vote-details-show-criteria) .vote-details-criteria-col {
       display: none;
     }
+    #classificationExportOptionsModal .export-categories-list {
+      max-height: 320px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -313,6 +317,10 @@
         <!-- Button -->
         <div class="col-12 col-sm-8 col-md-3 col-lg-2 d-flex align-items-end">
           <button class="btn btn-primary w-100" id="getCompetitionsBtn" type="button" data-i18n="get_competitions">Get Competitions</button>
+        </div>
+
+        <div class="col-12 col-sm-8 col-md-3 col-lg-2 d-flex align-items-end">
+          <button class="btn btn-warning w-100" id="exportBtn" type="button" data-i18n="export">Export Results</button>
         </div>
       </div>
 
@@ -362,6 +370,27 @@
           <div class="modal-body" id="resultsModalBody"></div>
           <div class="modal-footer">
             <button type="button" class="btn btn-primary d-none" id="saveClassificationBtn" data-i18n="save_classification">Save Classification</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="classificationExportOptionsModal" tabindex="-1" aria-labelledby="classificationExportOptionsModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title" id="classificationExportOptionsModalLabel">Export Results</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="classificationExportOptionsBody">
+            <div class="d-flex align-items-center justify-content-center py-4">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <span data-i18n="loading">Loading...</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary btn-sm" id="classificationExportConfirmBtn" data-i18n="export">Export</button>
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
           </div>
         </div>

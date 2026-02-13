@@ -57,6 +57,14 @@
   "results_button": "Resultats",
   "results_provisional": "Résultats provisoires",
   "no_votes_yet": "Aucun vote n'a encore été enregistré.",
+  "export_modal_scope_all": "Tout",
+  "export_modal_scope_categories": "1/N categories",
+  "export_modal_available_categories": "Categories disponibles",
+  "export_modal_categories_selected": "categories selectionnees",
+  "export_modal_all_selected": "Selection: toutes les categories",
+  "export_modal_no_options": "Aucun classement disponible pour l'export.",
+  "export_modal_select_category_validation": "Selectionnez au moins une categorie a exporter.",
+  "exporting": "Exportation...",
   "save_classification": "Enregistrer le classement"
 }
 
