@@ -215,6 +215,24 @@
     </div>
   </div>
 
+  <div class="modal fade" id="exportScheduleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="schedule_export_title">Export schedule</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" data-i18n="schedule_export_confirm">
+          Are you sure you want to generate the full event schedule in PDF format?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmExportPdfBtn" data-i18n="schedule_export_confirm_button">Export PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="unsavedChangesModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
