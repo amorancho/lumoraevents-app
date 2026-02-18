@@ -68,7 +68,6 @@ async function fetchCompetitionsFromAPI() {
     if (!response.ok) throw new Error('Error fetching dancers');
     competitions = await response.json();
     loadCompetitions();
-    applyCategoryFilter();
   } catch (error) {
     console.error('Failed to fetch dancers:', error);
   }
@@ -171,11 +170,7 @@ function loadCompetitions() {
     competitionsTable.appendChild(row);
   });
 
-  // actualizar contador
-  const countEl = document.getElementById(`count-competitions`);
-  if (countEl) {
-      countEl.textContent = competitions.length;
-  }
+  applyCategoryFilter();
 
   // Activar tooltips de Bootstrap despuÃ©s de crear los elementos
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
@@ -1041,7 +1036,21 @@ function applyCategoryFilter() {
 
   // Mostrar o no el empty state
   const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
+  updateCompetitionsCounter(rows.length, visibleRows.length);
   document.getElementById('emptyState')?.classList.toggle('d-none', visibleRows.length > 0);
+}
+
+function updateCompetitionsCounter(totalCount, visibleCount) {
+  const countEl = document.getElementById('count-competitions');
+  if (!countEl) return;
+
+  const hasActiveFilter = Boolean(document.getElementById('categoryFilter')?.value || '');
+  if (hasActiveFilter) {
+    countEl.textContent = `${visibleCount} / ${totalCount}`;
+    return;
+  }
+
+  countEl.textContent = `${totalCount}`;
 }
 
 function renderJudgesAssignmentList() {

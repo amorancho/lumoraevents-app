@@ -10,6 +10,28 @@
   <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>  
+  <style>
+    .import-dropzone {
+      border: 2px dashed var(--bs-secondary-border-subtle);
+      border-radius: 0.5rem;
+      background: var(--bs-light);
+      padding: 0.65rem 0.75rem;
+      text-align: center;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
+    .import-dropzone p {
+      margin-bottom: 0.3rem;
+    }
+    .import-dropzone p:last-of-type {
+      margin-bottom: 0.5rem;
+    }
+    .import-dropzone.is-dragover {
+      border-color: var(--bs-primary);
+      background: #eef4ff;
+    }
+  </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
   <div id="header"></div>
@@ -44,10 +66,15 @@
     </div>
 
 
-    <div class="row justify-content-center my-3">
+    <div class="row justify-content-center my-3 g-2">
       <div class="col-12 col-md-4 text-center">
         <button id="createNewDancerBtn" class="btn btn-primary btn-lg w-100" data-i18n="create_dancer">
           Create New Dancer
+        </button>
+      </div>
+      <div class="col-12 col-md-4 text-center">
+        <button id="openImportDancersBtn" type="button" class="btn btn-outline-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#importDancersModal" data-i18n="import_dancers">
+          Import Dancers
         </button>
       </div>
     </div>
@@ -214,6 +241,95 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteBtn" data-i18n="delete">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="importDancersModal" tabindex="-1" aria-labelledby="importDancersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="importDancersModalLabel" data-i18n="import_dancers_modal_title">Import Dancers from WOP file</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <div class="row g-2 align-items-stretch">
+              <div class="col-12 col-md">
+                <div id="importDropzone" class="import-dropzone h-100">
+                  <p class="small fw-semibold" data-i18n="import_drop_excel">Drop an Excel file here</p>
+                  <p class="text-muted small" data-i18n="import_drop_excel_hint">Allowed formats: .xls, .xlsx</p>
+                  <button type="button" id="selectImportFileBtn" class="btn btn-outline-secondary btn-sm" data-i18n="import_select_file">Select file</button>
+                  <input id="importFileInput" type="file" class="d-none" accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                </div>
+              </div>
+              <div class="col-12 col-md-auto d-flex">
+                <button id="analyzeParticipantsFileBtn" type="button" class="btn btn-primary w-100" disabled data-i18n="analyze_file">
+                  Analyze file
+                </button>
+              </div>
+            </div>
+            <div id="importSelectedFileName" class="form-text mt-1"></div>
+          </div>
+
+          <div id="importAnalyzeResults" class="d-none">
+            <hr>
+            <div class="row g-3 mb-3">
+              <div class="col-12 col-md-6">
+                <h6 class="fw-semibold mb-2" data-i18n="import_categories_detected">Detected categories</h6>
+                <div id="importCategoriesList" class="list-group"></div>
+              </div>
+              <div class="col-12 col-md-6">
+                <h6 class="fw-semibold mb-2" data-i18n="import_styles_detected">Detected styles</h6>
+                <div id="importStylesList" class="list-group"></div>
+              </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+              <div class="col-12 col-md-6">
+                <div class="border rounded p-3 bg-light h-100">
+                  <div class="small text-muted mb-2" data-i18n="import_existing_participants">existing participants</div>
+                  <span id="importExistingCount" class="badge text-bg-secondary fs-5 px-3 py-2">0</span>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <div class="border rounded p-3 bg-light h-100">
+                  <div class="small text-muted mb-2" data-i18n="import_participants_to_create">participants to create</div>
+                  <span id="importToCreateCount" class="badge text-bg-success fs-5 px-3 py-2">0</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="importCreateMissingCategoriesCheck" checked>
+              <label class="form-check-label" for="importCreateMissingCategoriesCheck" data-i18n="import_create_missing_categories">
+                Create missing categories and styles
+              </label>
+            </div>
+
+            <div class="d-flex justify-content-end">
+              <button id="importParticipantsBtn" type="button" class="btn btn-success" disabled data-i18n="import_participants">
+                Import participants
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="importWarningModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="import_warning_title">Unmapped categories/styles</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="importWarningMessage"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="confirmImportWarningBtn" data-i18n="continue_btn">Continue</button>
         </div>
       </div>
     </div>
