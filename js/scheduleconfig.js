@@ -19,6 +19,7 @@ let competitionModal = null;
 let breakModal = null;
 let confirmDeleteModal = null;
 let previewScheduleModal = null;
+let exportScheduleModal = null;
 let unsavedChangesModal = null;
 let beforeUnloadHandlerBound = false;
 let allowNavigateWithoutPrompt = false;
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   breakModal = new bootstrap.Modal(document.getElementById('breakModal'));
   confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
   previewScheduleModal = new bootstrap.Modal(document.getElementById('previewScheduleModal'));
+  exportScheduleModal = new bootstrap.Modal(document.getElementById('exportScheduleModal'));
   unsavedChangesModal = new bootstrap.Modal(document.getElementById('unsavedChangesModal'));
 
   initColorSelect();
@@ -139,6 +141,10 @@ function bindScheduleConfigEvents() {
   document.getElementById('saveCompetitionDetailBtn').addEventListener('click', saveCompetitionDetailFromModal);
   document.getElementById('saveBreakDetailBtn').addEventListener('click', saveBreakDetailFromModal);
   document.getElementById('previewScheduleBtn').addEventListener('click', openPreviewSchedule);
+  document.getElementById('exportPdfBtn').addEventListener('click', () => {
+    if (exportScheduleModal) exportScheduleModal.show();
+  });
+  document.getElementById('confirmExportPdfBtn').addEventListener('click', exportSchedulePdf);
   document.getElementById('backToCompetitionsBtn').addEventListener('click', handleBackToCompetitions);
   document.getElementById('confirmLeaveBtn').addEventListener('click', () => {
     if (unsavedChangesModal) unsavedChangesModal.hide();
@@ -1060,6 +1066,45 @@ function confirmDelete(message, callback) {
   confirmDeleteModal.show();
 }
 
+async function exportSchedulePdf() {
+  const exportButton = document.getElementById('confirmExportPdfBtn');
+  const triggerButton = document.getElementById('exportPdfBtn');
+  if (!exportButton) return;
+
+  exportButton.disabled = true;
+  if (triggerButton) triggerButton.disabled = true;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitions/schedule/export?event_id=${encodeURIComponent(getEvent().id)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_id: getEvent().id })
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      showMessageModal(data.error || t('schedule_export_error', 'Error exporting schedule'), t('error'));
+      return;
+    }
+
+    const blob = await response.blob();
+    const disposition = getResponseHeaderCaseInsensitive(response.headers, 'content-disposition');
+    console.log('response.headers:', response.headers);
+    console.log('Content-Disposition header:', disposition);
+    const filename = getFilenameFromContentDisposition(disposition) || `schedule-event-${getEvent().id}.pdf`;
+    console.log('Determined filename:', filename);
+    downloadBlobFile(blob, filename);
+
+    if (exportScheduleModal) exportScheduleModal.hide();
+  } catch (error) {
+    console.error('Failed to export schedule PDF:', error);
+    showMessageModal(error?.message || t('schedule_export_error', 'Error exporting schedule'), t('error'));
+  } finally {
+    exportButton.disabled = false;
+    if (triggerButton) triggerButton.disabled = false;
+  }
+}
+
 function serializeDetails(details) {
   return (details || []).map((detail, index) => ({
     id: isTempId(detail.id) ? null : detail.id,
@@ -1275,6 +1320,55 @@ function toNumber(value) {
   const parsed = Number(value);
   if (Number.isNaN(parsed)) return 0;
   return parsed;
+}
+
+function getFilenameFromContentDisposition(dispositionHeader) {
+  if (!dispositionHeader || typeof dispositionHeader !== 'string') return null;
+
+  const parts = dispositionHeader.split(';').map(part => part.trim());
+  const filenameStar = parts.find(part => /^filename\*\s*=/i.test(part));
+  if (filenameStar) {
+    const value = filenameStar.split('=').slice(1).join('=').trim();
+    const cleaned = value.replace(/^["']|["']$/g, '');
+    const match = cleaned.match(/^([^']*)'[^']*'(.*)$/);
+    const encoded = match ? match[2] : cleaned.replace(/^UTF-8''/i, '');
+    try {
+      return decodeURIComponent(encoded.trim());
+    } catch {
+      // ignore malformed uri encoding
+    }
+  }
+
+  const filenamePart = parts.find(part => /^filename\s*=/i.test(part));
+  if (!filenamePart) return null;
+  const rawValue = filenamePart.split('=').slice(1).join('=').trim();
+  return rawValue.replace(/^["']|["']$/g, '').trim() || null;
+}
+
+function downloadBlobFile(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename || 'schedule-export.pdf';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function getResponseHeaderCaseInsensitive(headers, name) {
+  if (!headers || !name) return null;
+  const direct = headers.get(name);
+  if (direct) return direct;
+  const lowerName = String(name).toLowerCase();
+  let found = null;
+  headers.forEach((value, key) => {
+    if (!found && String(key).toLowerCase() === lowerName) {
+      found = value;
+    }
+  });
+  return found;
 }
 
 

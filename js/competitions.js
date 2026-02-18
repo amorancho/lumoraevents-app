@@ -338,7 +338,7 @@ function toDatetimeLocalFormat(str) {
          `${minute.toString().padStart(2, '0')}`;
 }
 
-async function saveCompetitionEdits(editModal) {
+async function saveCompetitionEdits(editModal, recalculateSchedule = false) {
   const editForm = document.getElementById('editForm');
   const competitionId = editForm.dataset.id;
   const categoryId = editForm.dataset.cat_id;
@@ -382,7 +382,8 @@ async function saveCompetitionEdits(editModal) {
     judges: inputJudges,
     judge_reserve: inputReserveJudge ? (inputReserveJudge.value || null) : null,
     max_time: maxTimeSeconds,
-    event_id: getEvent().id
+    event_id: getEvent().id,
+    recalculate_schedule: Boolean(recalculateSchedule)
   };
 
   const response = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}`, {
@@ -406,6 +407,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
     const scheduleConfigWarningModalEl = document.getElementById('scheduleConfigWarningModal');
     const scheduleConfigWarningModal = scheduleConfigWarningModalEl ? new bootstrap.Modal(scheduleConfigWarningModalEl) : null;
+    const recalculateScheduleModalEl = document.getElementById('recalculateScheduleModal');
+    const recalculateScheduleModal = recalculateScheduleModalEl ? new bootstrap.Modal(recalculateScheduleModalEl) : null;
     const dancersOrderModal = new bootstrap.Modal(document.getElementById('dancersOrderModal'));
     const judgesAssignmentModalEl = document.getElementById('judgesAssignmentModal');
     const judgesAssignmentModal = judgesAssignmentModalEl ? new bootstrap.Modal(judgesAssignmentModalEl) : null;
@@ -414,6 +417,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const createCompetitionsModalEl = document.getElementById('createCompetitionsModal');
     const createCompetitionsModal = createCompetitionsModalEl ? new bootstrap.Modal(createCompetitionsModalEl) : null;
     const editMaxTimeInput = document.getElementById('editMaxTime');
+
+    const confirmRecalculateSchedule = () => new Promise(resolve => {
+      if (!recalculateScheduleModal || !recalculateScheduleModalEl) {
+        resolve(false);
+        return;
+      }
+
+      const confirmBtn = document.getElementById('confirmRecalculateScheduleBtn');
+      const onConfirm = () => {
+        cleanup();
+        resolve(true);
+        recalculateScheduleModal.hide();
+      };
+      const onHidden = () => {
+        cleanup();
+        resolve(false);
+      };
+      const cleanup = () => {
+        confirmBtn?.removeEventListener('click', onConfirm);
+        recalculateScheduleModalEl.removeEventListener('hidden.bs.modal', onHidden);
+      };
+
+      confirmBtn?.addEventListener('click', onConfirm, { once: true });
+      recalculateScheduleModalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
+      recalculateScheduleModal.show();
+    });
 
     document.addEventListener('click', (event) => {
 
@@ -461,8 +490,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (editMaxTimeInput) {
           const existingMaxTimeSeconds = getCompetitionMaxTimeSeconds(competition);
-          editMaxTimeInput.value = maxTimeSecondsToNormalized(existingMaxTimeSeconds) || '';
+          const existingMaxTimeNormalized = maxTimeSecondsToNormalized(existingMaxTimeSeconds) || '';
+          editMaxTimeInput.value = existingMaxTimeNormalized;
           editMaxTimeInput.classList.remove('is-invalid');
+          editForm.dataset.original_max_time = existingMaxTimeNormalized;
         }
 
         editModal.show();
@@ -496,18 +527,28 @@ document.addEventListener('DOMContentLoaded', () => {
       const hasScheduleConfig = Boolean(editForm.dataset.schedule_config);
       const originalStart = editForm.dataset.original_estimated_start || '';
       const currentStart = document.getElementById('editStartTime').value || '';
+      const originalMaxTime = editForm.dataset.original_max_time || '';
+      const maxTimeInput = document.getElementById('editMaxTime');
+      const maxTimeRaw = (maxTimeInput?.value || '').trim();
+      const currentMaxTime = maxTimeRaw ? normalizeMaxTimeValue(maxTimeRaw) : '';
+      const maxTimeChanged = currentMaxTime !== null && currentMaxTime !== originalMaxTime;
+      let recalculateSchedule = false;
 
       if (hasScheduleConfig && originalStart !== currentStart && scheduleConfigWarningModal) {
         const confirmButton = document.getElementById('confirmScheduleConfigOverrideBtn');
         confirmButton.onclick = async () => {
-          await saveCompetitionEdits(editModal);
+          await saveCompetitionEdits(editModal, recalculateSchedule);
           scheduleConfigWarningModal.hide();
         };
         scheduleConfigWarningModal.show();
         return;
       }
 
-      await saveCompetitionEdits(editModal);
+      if (hasScheduleConfig && maxTimeChanged) {
+        recalculateSchedule = await confirmRecalculateSchedule();
+      }
+
+      await saveCompetitionEdits(editModal, recalculateSchedule);
     });
 
     if (editMaxTimeInput) {
