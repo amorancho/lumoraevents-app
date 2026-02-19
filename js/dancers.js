@@ -24,11 +24,31 @@ countries.forEach(c => {
 });
 
 // Inicializamos Tom Select
-new TomSelect("#nationality", {
+const nationalityTomSelect = new TomSelect("#nationality", {
   maxOptions: 200,
   placeholder: "Type to search...",
   allowEmptyOption: true
 });
+
+function applyFlagsVisibility() {
+  const showFlags = shouldShowDancerFlags();
+
+  const nationalityFieldCol = document.getElementById('nationalityFieldCol');
+  if (nationalityFieldCol) {
+    nationalityFieldCol.classList.toggle('d-none', !showFlags);
+  }
+
+  const masterFieldCol = document.getElementById('masterFieldCol');
+  if (masterFieldCol) {
+    masterFieldCol.classList.remove('col-md-6', 'col-md-12');
+    masterFieldCol.classList.add(showFlags ? 'col-md-6' : 'col-md-12');
+  }
+
+  const nationalityHeader = document.getElementById('nationalityHeader');
+  if (nationalityHeader) {
+    nationalityHeader.classList.toggle('d-none', !showFlags);
+  }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -36,6 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   //await eventReadyPromise;
   await WaitEventLoaded();
+  applyFlagsVisibility();
 
   updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
@@ -150,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('dancerLanguage').value = dancer.language;
       document.getElementById('editCategory').value = dancer.category_id;
       document.getElementById('editMaster').value = dancer.master_id;
-      document.getElementById('nationality').tomselect.setValue(dancer.nationality); 
+      document.getElementById('nationality').tomselect.setValue(dancer.nationality || '');
       document.getElementById('editClub').value = dancer.club_id;     
 
       const stylesOptions = document.getElementById('editStyles').options;
@@ -218,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function () {
       category_id: parseInt(inputCategory.value, 10),
       styles: selectedValues,
       master_id: inputMaster.value ? parseInt(inputMaster.value, 10) : null,
-      nationality: inputNationality.value.trim().toUpperCase(),
+      nationality: inputNationality.value.trim().toUpperCase() || null,
       event_id: getEvent().id,
       email: inputEmail.value.trim().toLowerCase(),
       language: inputLanguage.value,
@@ -342,6 +363,7 @@ async function fetchDancersFromAPI() {
 }
 
 function loadDancers() {
+  const showFlags = shouldShowDancerFlags();
   const dancersTable = document.getElementById('dancersTable');
   dancersTable.innerHTML = ''; // Clear existing rows
   dancers.forEach(dancer => {
@@ -362,7 +384,7 @@ function loadDancers() {
     row.innerHTML = `
       <td class="align-middle">
         <div class="d-flex align-items-center">
-          <img src="https://flagsapi.com/${dancer.nationality}/shiny/24.png" class="me-2" style="vertical-align: middle;">
+          ${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'vertical-align: middle;' })}
           <span>${dancer.name}</span>
         </div>
       </td>
@@ -372,7 +394,7 @@ function loadDancers() {
         <i class="bi bi-people me-1 text-muted"></i>
         ${dancer.master_name || ''}
       </td>
-      <td class="align-middle">${dancer.nationality}</td>
+      ${showFlags ? `<td class="align-middle">${dancer.nationality || ''}</td>` : ''}
       <td class="text-center align-middle">
           <div class="btn-group" role="group">
               <button type="button" class="btn btn-outline-primary btn-sm btn-edit-dancer" title="Edit" ${btnDisabled}>
@@ -1183,4 +1205,3 @@ function showImportWarningModal(message) {
     modal.show();
   });
 }
-

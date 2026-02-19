@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               ${escapeHtml(categoryName || '-')} - ${escapeHtml(styleObj.style_name || '-')}
             </div>
             <div class="d-flex align-items-center gap-2">
-              <img src="https://flagsapi.com/${dancerData.dancer_nationality}/shiny/24.png" width="24" height="24" alt="${dancerData.dancer_nationality}">
+              ${getDancerFlagImgHtml(dancerData.dancer_nationality, { width: 24, height: 24 })}
               <strong class="fs-5">${escapeHtml(dancerData.dancer_name || '-')}</strong>
             </div>
           </div>
@@ -326,7 +326,7 @@ function renderGeneralClassification(general) {
               <div class="card-header bg-${colors[i]} text-${i === 2 ? "dark" : "white"} fs-4">${medals[i]} ${i+1}º ${t('place')}</div>
               <div class="card-body">
                 <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-                  <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" width="24" height="24" alt="${d.dancer_nationality}">
+                  ${getDancerFlagImgHtml(d.dancer_nationality, { width: 24, height: 24 })}
                   <h3 class="mb-0 dancer-result">${escapeHtml(d.dancer_name)}</h3>
                 </div>
                 <p class="card-text fs-4">
@@ -344,7 +344,7 @@ function renderGeneralClassification(general) {
       html += `
         <div class="list-group-item d-flex justify-content-between align-items-center fs-6">
           <span class="me-2">${d.position}</span>
-          <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
+          ${getDancerFlagImgHtml(d.dancer_nationality, { className: 'me-2' })}
           <span class="me-auto dancer-result">${escapeHtml(d.dancer_name)}</span>
           <span class="mx-2 text-muted small">
             (${t('total_score')}: ${d.total_score ?? 0})
@@ -386,7 +386,7 @@ function renderStyleClassification(style) {
     html += `
       <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${bg} fs-6 ${fw} dancer-result" data-dancer-id="${d.dancer_id}">
         <span class="me-2">${i+1}</span>
-        <img src="https://flagsapi.com/${d.dancer_nationality}/shiny/24.png" class="me-2" alt="${d.dancer_nationality}">
+        ${getDancerFlagImgHtml(d.dancer_nationality, { className: 'me-2' })}
         <span class="me-auto">${escapeHtml(d.dancer_name)} ${i<3 ? medals[i] : ""}</span>
         <span class="badge bg-light text-dark rounded-pill">${Number(d.total_score).toFixed(1)}</span>
         ${shouldShowAvgPlaceBadge() ? `

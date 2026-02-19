@@ -797,8 +797,7 @@ function renderDancersTable(dancers, compStatus) {
     tdDancer.innerHTML = `
       <div class="d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center">
-          <img src="https://flagsapi.com/${d.nationality}/shiny/24.png" 
-               class="me-2" style="vertical-align: middle;">
+          ${getDancerFlagImgHtml(d.nationality, { className: 'me-2', style: 'vertical-align: middle;' })}
           <span>${d.name}</span>
         </div>
         <span class="badge bg-info">#${d.position}</span>

@@ -589,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
           li.innerHTML = `
             <span class="me-3 text-muted drag-icon"><i class="bi bi-grip-vertical"></i></span>
             <span class="me-2 order-number">${dancer.position}.</span>
-            <img src="https://flagsapi.com/${dancer.nationality}/shiny/24.png" class="me-2" style="width: 24px;" />
+            ${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'width: 24px;' })}
             <span class="dancer-name">${dancer.dancer_name}</span>
           `;
 

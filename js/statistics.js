@@ -119,7 +119,12 @@ function buildPersonalCard(personalData) {
   const card = document.createElement('div');
   card.className = 'col-12 col-lg-10';
 
-  const flagUrl = nationality ? `https://flagsapi.com/${nationality}/shiny/48.png` : null;
+  const flagHtml = getDancerFlagImgHtml(nationality, {
+    size: 48,
+    width: 48,
+    height: 36,
+    className: 'rounded shadow-sm'
+  });
 
   card.innerHTML = `
     <div class="card shadow-sm border-0 overflow-hidden">
@@ -127,7 +132,7 @@ function buildPersonalCard(personalData) {
         <div class="d-flex flex-column align-items-center gap-2">
           <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
             <h3 class="mb-0 text-uppercase fw-bold">${name ?? 'Dancer'}</h3>
-            ${flagUrl ? `<img src="${flagUrl}" alt="${nationality}" class="rounded shadow-sm" style="width:48px;height:36px;">` : ''}
+            ${flagHtml}
           </div>
           <div class="d-flex flex-wrap justify-content-center gap-2 mt-2">
             <span class="badge bg-light text-primary fw-semibold fs-6 px-3 py-2"><i class="bi bi-bookmark-star me-1"></i>${category_name ?? 'Category'}</span>

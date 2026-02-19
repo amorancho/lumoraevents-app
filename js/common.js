@@ -140,7 +140,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         registrationEnd: data.registration_end,
         criteriaConfig: data.criteria_config,
         totalSystem: data.total_system,
-        canDecidePositions: data.can_decide_positions === 1
+        canDecidePositions: data.can_decide_positions === 1,
+        showFlags: data.show_flags === 1
       };
 
     }
@@ -286,6 +287,73 @@ function updateFlag(lang) {
   }
 }
 
+const DEFAULT_DANCER_FLAG_SIZE = 24;
+const DEFAULT_DANCER_FLAG_CODE = 'XX';
+const GENERIC_DANCER_FLAG_SVG = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect x='0' y='4' width='24' height='16' rx='2' fill='#e9ecef'/><path d='M0 4h24v5.333H0z' fill='#adb5bd'/><path d='M0 14.667h24V20H0z' fill='#adb5bd'/><circle cx='12' cy='12' r='3.2' fill='#6c757d'/><path d='M12 9.8l.62 1.27 1.4.2-1.01.98.24 1.38L12 12.97l-1.25.66.24-1.38-1.01-.98 1.4-.2z' fill='#f8f9fa'/></svg>";
+const GENERIC_DANCER_FLAG_URL = `data:image/svg+xml;utf8,${encodeURIComponent(GENERIC_DANCER_FLAG_SVG)}`;
+
+function shouldShowDancerFlags() {
+  const event = getEvent();
+  if (!event || event.showFlags === undefined || event.showFlags === null) {
+    return true;
+  }
+  return Boolean(event.showFlags);
+}
+
+function normalizeDancerNationalityCode(nationality) {
+  return String(nationality || '').trim().toUpperCase();
+}
+
+function hasValidNationalityCode(nationality) {
+  const normalizedCode = normalizeDancerNationalityCode(nationality);
+  return /^[A-Z]{2}$/.test(normalizedCode) && normalizedCode !== DEFAULT_DANCER_FLAG_CODE;
+}
+
+function sanitizeFlagSize(rawSize) {
+  const parsed = Number(rawSize);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_DANCER_FLAG_SIZE;
+  }
+  return Math.round(parsed);
+}
+
+function escapeAttributeValue(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+function getDancerFlagUrl(nationality, size = DEFAULT_DANCER_FLAG_SIZE) {
+  if (!hasValidNationalityCode(nationality)) {
+    return GENERIC_DANCER_FLAG_URL;
+  }
+
+  const safeCode = normalizeDancerNationalityCode(nationality);
+  const safeSize = sanitizeFlagSize(size);
+  return `https://flagsapi.com/${safeCode}/shiny/${safeSize}.png`;
+}
+
+function getDancerFlagImgHtml(nationality, options = {}) {
+  if (!shouldShowDancerFlags()) {
+    return '';
+  }
+
+  const safeSize = sanitizeFlagSize(options.size);
+  const safeWidth = sanitizeFlagSize(options.width || safeSize);
+  const safeHeight = sanitizeFlagSize(options.height || safeSize);
+  const safeClassName = options.className ? escapeAttributeValue(options.className) : '';
+  const safeStyle = options.style ? escapeAttributeValue(options.style) : '';
+  const safeNationality = normalizeDancerNationalityCode(nationality);
+  const altValue = options.alt || (hasValidNationalityCode(safeNationality) ? safeNationality : 'N/A');
+  const safeAlt = escapeAttributeValue(
+    altValue
+  );
+
+  return `<img src="${getDancerFlagUrl(nationality, safeSize)}"${safeClassName ? ` class="${safeClassName}"` : ''}${safeStyle ? ` style="${safeStyle}"` : ''} width="${safeWidth}" height="${safeHeight}" alt="${safeAlt}">`;
+}
+
 function showMessageModal(message, title = "Mensaje") {
   // Establece el título y el cuerpo del modal
   document.getElementById('messageModalLabel').textContent = title;
@@ -318,5 +386,8 @@ async function WaitEventLoaded() {
 
 // 5. Hacer la función global para usarla desde cualquier script inline o externo
 window.showMessageModal = showMessageModal;
+window.shouldShowDancerFlags = shouldShowDancerFlags;
+window.getDancerFlagUrl = getDancerFlagUrl;
+window.getDancerFlagImgHtml = getDancerFlagImgHtml;
 
 

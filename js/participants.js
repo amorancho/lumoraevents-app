@@ -26,9 +26,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       noticePanel.style.display = 'block';
   }
 
+  applyParticipantsSummaryLayout();
+
   await ensureTranslationsReady();
   loadParticipants(); 
 });
+
+function applyParticipantsSummaryLayout() {
+  const showFlags = shouldShowDancerFlags();
+  const statCols = ['statsColCat', 'statsColSty', 'statsColPar'];
+
+  statCols.forEach((colId) => {
+    const colEl = document.getElementById(colId);
+    if (!colEl) return;
+    colEl.classList.remove('col-md-2', 'col-md-4');
+    colEl.classList.add(showFlags ? 'col-md-2' : 'col-md-4');
+  });
+
+  const natCol = document.getElementById('statsColNat');
+  if (natCol) {
+    natCol.classList.toggle('d-none', !showFlags);
+  }
+
+  const natDistributionSection = document.getElementById('natDistributionSection');
+  if (natDistributionSection) {
+    natDistributionSection.classList.toggle('d-none', !showFlags);
+  }
+}
 
 async function loadParticipants() {
   const participantsContainer = document.getElementById('participantsContainer');
@@ -50,6 +74,7 @@ async function loadParticipants() {
 
 function renderData(data) {
 
+  const showFlags = shouldShowDancerFlags();
   const numCategories = document.getElementById('numCat');
   const numStyles = document.getElementById('numSty');
   const numParticipants = document.getElementById('numPar');
@@ -68,10 +93,11 @@ function renderData(data) {
     cat.styles.forEach(s => totals.styles.add(s.name));
 
     cat.participants.forEach(p => {
+      const participantNatCode = String(p.nationality || 'XX').trim().toUpperCase() || 'XX';
       totals.participants++;
-      totals.nationalities.add(p.nationality);
-      totals.participantsByNat[p.nationality] =
-        (totals.participantsByNat[p.nationality] || 0) + 1;
+      totals.nationalities.add(participantNatCode);
+      totals.participantsByNat[participantNatCode] =
+        (totals.participantsByNat[participantNatCode] || 0) + 1;
     });
   });
 
@@ -79,7 +105,7 @@ function renderData(data) {
   numCategories.textContent = totals.categories;
   numStyles.textContent = totals.styles.size;
   numParticipants.textContent = totals.participants;
-  numNationalities.textContent = totals.nationalities.size;
+  numNationalities.textContent = showFlags ? totals.nationalities.size : '';
 
   // Mostrar banderas + número (sin recuadro)
   parByNat.innerHTML = ''; // limpiar contenedor
@@ -90,15 +116,21 @@ function renderData(data) {
     const div = document.createElement('div');
     div.className = 'd-flex align-items-center';
 
-    const img = document.createElement('img');
-    img.className = 'me-1';
-    img.src = `https://flagsapi.com/${nat}/shiny/24.png`;
-    img.alt = nat;
+    if (showFlags) {
+      const img = document.createElement('img');
+      img.className = 'me-1';
+      img.src = getDancerFlagUrl(nat, 24);
+      img.alt = nat;
+      img.width = 24;
+      img.height = 24;
+      div.appendChild(img);
+    } else {
+      return;
+    }
 
     const span = document.createElement('span');
     span.textContent = count;
 
-    div.appendChild(img);
     div.appendChild(span);
     parByNat.appendChild(div);
   });
@@ -262,14 +294,18 @@ function createCategoryItem(category, categoryData, index) {
     const leftDiv = document.createElement('div');
     leftDiv.className = 'd-flex align-items-center';
 
-    const imgCountry = document.createElement('img');
-    imgCountry.className = 'me-2';
-    imgCountry.src = `https://flagsapi.com/${participant.nationality}/shiny/24.png`;
+    if (shouldShowDancerFlags()) {
+      const imgCountry = document.createElement('img');
+      imgCountry.className = 'me-2';
+      imgCountry.src = getDancerFlagUrl(participant.nationality, 24);
+      imgCountry.width = 24;
+      imgCountry.height = 24;
+      leftDiv.appendChild(imgCountry);
+    }
 
     const spanDancer = document.createElement('span');
     spanDancer.textContent = participant.name;
 
-    leftDiv.appendChild(imgCountry);
     leftDiv.appendChild(spanDancer);
 
     // Badge derecha
@@ -381,7 +417,7 @@ document.addEventListener('click', async (event) => {
       li.className = 'list-group-item d-flex align-items-center';
       li.innerHTML = `        
         <span class="badge bg-info me-2 ">#${dancer.position}</span>
-        <img src="https://flagsapi.com/${dancer.nationality}/shiny/24.png" class="me-2" style="width: 24px;" />
+        ${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'width: 24px;' })}
         <span class="dancer-name">${dancer.name || dancer.dancer_name}</span>
       `;
       list.appendChild(li);

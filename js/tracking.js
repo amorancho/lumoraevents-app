@@ -1359,14 +1359,15 @@ function renderCompetitions(competitions) {
       `;
 
       comp.dancers.forEach(d => {
-        const flagUrl = d.nationality
-          ? `https://flagsapi.com/${d.nationality}/shiny/24.png`
-          : `https://flagsapi.com/XX/shiny/24.png`;
+        const dancerFlagHtml = getDancerFlagImgHtml(d.nationality, {
+          className: 'me-2',
+          style: 'vertical-align: middle;'
+        });
 
         const dancerCell = `
           <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center">
-              <img src="${flagUrl}" class="me-2" style="vertical-align: middle;">
+              ${dancerFlagHtml}
               <span>${d.dancer_name}</span>
             </div>
             <div class="d-flex align-items-center gap-2">
@@ -1999,12 +2000,14 @@ async function showResults(categoryId, styleId, status) {
     }
 
     const rows = results.map((r, index) => {
-      const flagCode = r.dancer_nationality || 'XX';
-      const flagUrl = `https://flagsapi.com/${flagCode}/shiny/24.png`;
+      const dancerFlagHtml = getDancerFlagImgHtml(r.dancer_nationality, {
+        className: 'me-2',
+        style: 'vertical-align: middle;'
+      });
       const dancerCell = `
         <div class="d-flex align-items-center gap-2 results-dancer-row">
           <div class="d-flex align-items-center results-dancer-content">
-            <img src="${flagUrl}" class="me-2" style="vertical-align: middle;">
+            ${dancerFlagHtml}
             <span class="results-dancer-name">${r.dancer_name}</span>
           </div>
         </div>

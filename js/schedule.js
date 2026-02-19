@@ -163,7 +163,7 @@ function renderSchedule(data) {
                         li.className = 'list-group-item d-flex align-items-center';
                         li.innerHTML = `
                         <span class="badge bg-info me-2">#${dancer.position}</span>
-                        <img src="https://flagsapi.com/${dancer.nationality}/shiny/24.png" class="me-2" style="width: 24px;" />
+                        ${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'width: 24px;' })}
                         <span class="dancer-name">${dancer.name || dancer.dancer_name}</span>
                         `;
                         list.appendChild(li);

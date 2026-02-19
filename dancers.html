@@ -117,7 +117,7 @@
                       <th scope="col" style="width: 15%;" data-i18n="col_category">Category</th>
                       <th scope="col" style="width: 35%;" data-i18n="col_styles">Styles</th>
                       <th scope="col" style="width: 15%;" data-i18n="col_master">Master</th>
-                      <th scope="col" style="width: 5%;" data-i18n="col_nationality">Nationality</th>
+                      <th id="nationalityHeader" scope="col" style="width: 5%;" data-i18n="col_nationality">Nationality</th>
                       <th scope="col" style="width: 5%;" class="text-center" data-i18n="col_actions">Actions</th>
                   </tr>
                 </thead>
@@ -185,13 +185,13 @@
               </div>              
             </div>
             <div class="row">
-              <div class="col-md-6 mb-3">
+              <div id="masterFieldCol" class="col-md-6 mb-3">
                 <label class="form-label" data-i18n="col_master">Master</label>
                 <select class="form-select" id="editMaster">
                   <option selected disabled value=""></option>
                 </select>
               </div>
-              <div class="col-md-6 mb-3">
+              <div id="nationalityFieldCol" class="col-md-6 mb-3">
                 <label for="nationality" class="form-label" data-i18n="col_nationality">
                   Nationality
                   <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" title="Use the 2-letter country code (e.g.: FR, ES, RU)"></i>
