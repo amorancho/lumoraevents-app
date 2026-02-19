@@ -94,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const editModal = new bootstrap.Modal(editModalElement);
   const filterCategory = document.getElementById('categoryFilter');
   const filterClub = document.getElementById('clubFilter');
+  const filterStyle = document.getElementById('styleFilter');
   const codeLabel = document.getElementById('dancerCodeLabel');
   const currentUser = getUserFromToken();
   const isAdmin = currentUser && currentUser.role === 'admin';
@@ -121,6 +122,10 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   filterClub.addEventListener('change', () => {
+    applyFilter();
+  });
+
+  filterStyle.addEventListener('change', () => {
     applyFilter();
   });
 
@@ -376,6 +381,12 @@ function loadDancers() {
     const row = document.createElement('tr');
     row.dataset.id = dancer.id;
     row.dataset.club_id = dancer.club_id;
+    row.dataset.style_ids = Array.isArray(dancer.styles)
+      ? dancer.styles
+        .map(style => String(style.id ?? style).trim())
+        .filter(Boolean)
+        .join(',')
+      : '';
 
     let stylesSpans = Array.isArray(dancer.styles) && dancer.styles.length > 0
       ? dancer.styles.map(style => `<span class="badge bg-warning text-dark me-1">${style.name}</span>`).join('')
@@ -460,6 +471,15 @@ async function loadCategories() {
 async function loadStyles() {
   const styleSelect = document.getElementById('editStyles');
   styleSelect.innerHTML = ''; // Limpiar opciones anteriores
+  const styleFilter = document.getElementById('styleFilter');
+  const selectedStyleFilterValue = styleFilter ? styleFilter.value : '';
+  if (styleFilter) {
+    styleFilter.innerHTML = '';
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = t('all_styles', 'All Styles');
+    styleFilter.appendChild(defaultOption);
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/styles?event_id=${getEvent().id}`);
@@ -471,7 +491,19 @@ async function loadStyles() {
       option.value = style.id || style;
       option.textContent = style.name || style;
       styleSelect.appendChild(option);
+
+      if (styleFilter) {
+        const optionFilter = document.createElement('option');
+        optionFilter.value = String(style.id || style);
+        optionFilter.textContent = style.name || style;
+        styleFilter.appendChild(optionFilter);
+      }
     });
+
+    if (styleFilter) {
+      const hasPreviousSelection = selectedStyleFilterValue && styleFilter.querySelector(`option[value="${selectedStyleFilterValue}"]`);
+      styleFilter.value = hasPreviousSelection ? selectedStyleFilterValue : '';
+    }
   } catch (err) {
     console.error('Failed to load styles:', err);
   }
@@ -567,13 +599,19 @@ async function deleteDancer(dancerIdToDelete) {
 function applyFilter() {
   const filterCategory = document.getElementById('categoryFilter').value.toLowerCase();
   const filterClub = document.getElementById('clubFilter').value;
+  const filterStyle = document.getElementById('styleFilter').value;
   const rows = document.querySelectorAll('#dancersTable tr');
 
   rows.forEach(row => {
     const category = row.children[1]?.textContent.trim().toLowerCase();
     const club_id = row.dataset.club_id;
+    const styleIds = (row.dataset.style_ids || '').split(',').filter(Boolean);
 
-    if ((!filterCategory || category === filterCategory) && (!filterClub || club_id === filterClub)) {
+    if (
+      (!filterCategory || category === filterCategory) &&
+      (!filterClub || club_id === filterClub) &&
+      (!filterStyle || styleIds.includes(filterStyle))
+    ) {
       row.classList.remove('d-none');
     } else {
       row.classList.add('d-none');
@@ -592,7 +630,8 @@ function updateDancersCounter(totalCount, visibleCount) {
 
   const categoryFilterValue = document.getElementById('categoryFilter')?.value || '';
   const clubFilterValue = document.getElementById('clubFilter')?.value || '';
-  const hasActiveFilters = Boolean(categoryFilterValue || clubFilterValue);
+  const styleFilterValue = document.getElementById('styleFilter')?.value || '';
+  const hasActiveFilters = Boolean(categoryFilterValue || clubFilterValue || styleFilterValue);
 
   if (hasActiveFilters) {
     countEl.textContent = `${visibleCount} / ${totalCount}`;
