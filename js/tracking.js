@@ -1844,7 +1844,8 @@ function updateResultsPositions(tbody) {
   });
 }
 
-function initResultsTieSorting(bodyEl) {
+function initResultsTieSorting(bodyEl, status) {
+  if (status !== 'FIN') return;
   if (!getEvent().canDecidePositions || !window.Sortable) return;
 
   const tbody = bodyEl.querySelector('tbody');
@@ -2050,7 +2051,7 @@ async function showResults(categoryId, styleId, status) {
       </div>
     `;
 
-    initResultsTieSorting(bodyEl);
+    initResultsTieSorting(bodyEl, status);
   } catch (err) {
     console.error('Error fetching results:', err);
     bodyEl.innerHTML = `
