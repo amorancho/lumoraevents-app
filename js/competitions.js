@@ -338,7 +338,7 @@ function toDatetimeLocalFormat(str) {
          `${minute.toString().padStart(2, '0')}`;
 }
 
-async function saveCompetitionEdits(editModal, recalculateSchedule = false) {
+async function saveCompetitionEdits(editModal) {
   const editForm = document.getElementById('editForm');
   const competitionId = editForm.dataset.id;
   const categoryId = editForm.dataset.cat_id;
@@ -382,8 +382,7 @@ async function saveCompetitionEdits(editModal, recalculateSchedule = false) {
     judges: inputJudges,
     judge_reserve: inputReserveJudge ? (inputReserveJudge.value || null) : null,
     max_time: maxTimeSeconds,
-    event_id: getEvent().id,
-    recalculate_schedule: Boolean(recalculateSchedule)
+    event_id: getEvent().id
   };
 
   const response = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}`, {
@@ -407,8 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
     const scheduleConfigWarningModalEl = document.getElementById('scheduleConfigWarningModal');
     const scheduleConfigWarningModal = scheduleConfigWarningModalEl ? new bootstrap.Modal(scheduleConfigWarningModalEl) : null;
-    const recalculateScheduleModalEl = document.getElementById('recalculateScheduleModal');
-    const recalculateScheduleModal = recalculateScheduleModalEl ? new bootstrap.Modal(recalculateScheduleModalEl) : null;
     const dancersOrderModal = new bootstrap.Modal(document.getElementById('dancersOrderModal'));
     const judgesAssignmentModalEl = document.getElementById('judgesAssignmentModal');
     const judgesAssignmentModal = judgesAssignmentModalEl ? new bootstrap.Modal(judgesAssignmentModalEl) : null;
@@ -417,32 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const createCompetitionsModalEl = document.getElementById('createCompetitionsModal');
     const createCompetitionsModal = createCompetitionsModalEl ? new bootstrap.Modal(createCompetitionsModalEl) : null;
     const editMaxTimeInput = document.getElementById('editMaxTime');
-
-    const confirmRecalculateSchedule = () => new Promise(resolve => {
-      if (!recalculateScheduleModal || !recalculateScheduleModalEl) {
-        resolve(false);
-        return;
-      }
-
-      const confirmBtn = document.getElementById('confirmRecalculateScheduleBtn');
-      const onConfirm = () => {
-        cleanup();
-        resolve(true);
-        recalculateScheduleModal.hide();
-      };
-      const onHidden = () => {
-        cleanup();
-        resolve(false);
-      };
-      const cleanup = () => {
-        confirmBtn?.removeEventListener('click', onConfirm);
-        recalculateScheduleModalEl.removeEventListener('hidden.bs.modal', onHidden);
-      };
-
-      confirmBtn?.addEventListener('click', onConfirm, { once: true });
-      recalculateScheduleModalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
-      recalculateScheduleModal.show();
-    });
+    const scheduleConfigWarningMessageEl = document.getElementById('scheduleConfigWarningMessage');
 
     document.addEventListener('click', (event) => {
 
@@ -532,23 +504,24 @@ document.addEventListener('DOMContentLoaded', () => {
       const maxTimeRaw = (maxTimeInput?.value || '').trim();
       const currentMaxTime = maxTimeRaw ? normalizeMaxTimeValue(maxTimeRaw) : '';
       const maxTimeChanged = currentMaxTime !== null && currentMaxTime !== originalMaxTime;
-      let recalculateSchedule = false;
+      const startChanged = originalStart !== currentStart;
 
-      if (hasScheduleConfig && originalStart !== currentStart && scheduleConfigWarningModal) {
+      if (hasScheduleConfig && (startChanged || maxTimeChanged) && scheduleConfigWarningModal) {
+        if (scheduleConfigWarningMessageEl) {
+          scheduleConfigWarningMessageEl.textContent = startChanged
+            ? t('schedule_config_warning_message')
+            : t('schedule_config_warning_max_time_message');
+        }
         const confirmButton = document.getElementById('confirmScheduleConfigOverrideBtn');
         confirmButton.onclick = async () => {
-          await saveCompetitionEdits(editModal, recalculateSchedule);
+          await saveCompetitionEdits(editModal);
           scheduleConfigWarningModal.hide();
         };
         scheduleConfigWarningModal.show();
         return;
       }
 
-      if (hasScheduleConfig && maxTimeChanged) {
-        recalculateSchedule = await confirmRecalculateSchedule();
-      }
-
-      await saveCompetitionEdits(editModal, recalculateSchedule);
+      await saveCompetitionEdits(editModal);
     });
 
     if (editMaxTimeInput) {
@@ -1292,11 +1265,24 @@ function updateMaxTimesSelectionSummary() {
   const stylesCount = getSelectedMaxTimesValues('style').length;
   const summaryTemplate = t(
     'max_times_summary',
-    'Selected: {categories} category(ies), {styles} style(s).'
+    '{categories} category(ies) selected · {styles} style(s) selected'
   );
-  summaryEl.textContent = summaryTemplate
+  const summaryText = summaryTemplate
     .replace('{categories}', String(categoriesCount))
     .replace('{styles}', String(stylesCount));
+
+  const categoryBadge = summaryEl.querySelector('[data-role="max-times-categories"]');
+  const styleBadge = summaryEl.querySelector('[data-role="max-times-styles"]');
+  if (categoryBadge) {
+    categoryBadge.textContent = t('max_times_summary_categories', '{count} categories')
+      .replace('{count}', String(categoriesCount));
+  }
+  if (styleBadge) {
+    styleBadge.textContent = t('max_times_summary_styles', '{count} styles')
+      .replace('{count}', String(stylesCount));
+  }
+  summaryEl.setAttribute('aria-label', summaryText);
+  summaryEl.classList.remove('d-none');
 }
 
 function normalizeMaxTimeValue(rawValue) {

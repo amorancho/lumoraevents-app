@@ -77,6 +77,7 @@
   "confirm_delete_competition": "Tem certeza de que deseja excluir a competição para",
   "schedule_config_warning_title": "Aviso",
   "schedule_config_warning_message": "Você alterou manualmente o horário estimado de início. Esta competição será removida da configuração do Configurador de Programação.",
+  "schedule_config_warning_max_time_message": "Você alterou o tempo máximo. O bloco do Configurador de Programação ao qual esta competição pertence será recalculado.",
   "schedule_config_warning_continue": "Continuar",
   "recalculate_schedule_title": "Recalcular programação",
   "recalculate_schedule_confirm": "Esta competição está incluída em um bloco do Configurador de Programação. Deseja aplicar o novo Tempo Máximo e recalcular a programação?",
@@ -99,5 +100,9 @@
   "max_times_assignment_success": "Tempo máximo {time} ({seconds}s) atribuído. {updated} de {requested} combinações atualizadas.",
   "max_times_request_error": "Erro ao atribuir os tempos máximos.",
   "max_times_info_title": "Informação",
-  "max_times_summary": "Selecionados: {categories} categoria(s), {styles} estilo(s)."
+  "max_times_summary": "Selecionados: {categories} categoria(s), {styles} estilo(s).",
+  "max_times_summary_label": "Selecionados:",
+  "max_times_summary_categories": "{count} categorias",
+  "max_times_summary_styles": "{count} estilos",
+  "max_times_recalculate_notice": "Se uma competição (categoria/estilo) que pertence a um bloco do Configurador de Programação for modificada, os blocos afetados serão recalculados."
 }
