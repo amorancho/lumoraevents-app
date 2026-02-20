@@ -4,7 +4,7 @@
   "menu_general": "⚙️ Config. General",
   "menu_master": "🌐 Datos Maestros",
   "menu_judges": "⚖️ Jueces",
-  "menu_dancers": "💃 Bailarinas",
+  "menu_dancers": "💃 Participantes",
   "menu_competitions": "🚀 Competiciones",
   "alert_start_event": "El festival ha dado comienzo. Si modifica estos datos puede provocar inconsistencias en los datos.",
   "alert_end_event": "El festival ha finalizado. No se pueden modificar los datos.",
