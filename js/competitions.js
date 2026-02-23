@@ -82,6 +82,8 @@ function loadCompetitions() {
     row.dataset.id = comp.id;
     row.dataset.cat_id = comp.category_id;
     row.dataset.style_id = comp.style_id;
+    const maxTimeSeconds = getCompetitionMaxTimeSeconds(comp);
+    const maxTimeDisplay = maxTimeSecondsToNormalized(maxTimeSeconds) || t('not_defined', 'Not defined');
 
     let colorBg = statusColor[comp.status];
     let statusText = convertStatus[comp.status];
@@ -125,6 +127,7 @@ function loadCompetitions() {
       <td><span class="badge bg-info fs-6">${comp.category_name}</span></td>
       <td><span class="badge bg-warning text-dark fs-6">${comp.style_name}</span></td>
       <td><i class="bi bi-clock me-1 text-muted"></i>${comp.estimated_start_form ?? 'Not defined'}</td>
+      <td><i class="bi bi-stopwatch me-1 text-muted"></i>${maxTimeDisplay}</td>
       <td data-status><span class="badge bg-${colorBg}">${statusText}</span></td>
       <td>
         <i class="bi bi-people me-1 text-muted"></i>
