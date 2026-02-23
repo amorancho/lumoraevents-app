@@ -1,5 +1,6 @@
 {
   "title": "Configuration de l'Événement",
+  "organization_private_zone": "🔒 Accès Organisation - Zone Privée",
   "card_title_general": "Configuration Générale",
   "card_text_general": "Configurez l'événement.",
   "card_title_master": "Données Maîtres",

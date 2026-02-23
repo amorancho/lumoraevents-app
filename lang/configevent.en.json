@@ -1,9 +1,10 @@
 {
   "title": "Event Configuration",
+  "organization_private_zone": "🔒 Organization Access - Private Zone",
   "card_title_general": "General Configuration",
   "card_text_general": "Configure the Event.",
   "card_title_master": "Master Data",
-  "card_text_master": "Configure Cotegories, Styles and Criterias.",
+  "card_text_master": "Configure Categories, Styles and Criterias.",
   "card_title_judges": "Judges",
   "card_text_judges": "Configure Judges.",
   "card_title_dancers": "Participants",
