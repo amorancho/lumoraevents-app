@@ -70,7 +70,7 @@
   "export_event_title": "Exportar evento",
   "export_event_confirm": "Seguro que quieres exportar este evento?",
   "export_event_info": "La exportacion generara un PDF para cada juez, para que puedan completar la votacion en papel en caso de perdida de conexion a internet y la app no pueda utilizarse el dia del evento. Este proceso puede tardar unos segundos. No cierres ni recargues la pagina durante la exportacion.",
-  "export_event_confirm_btn": "Si, exportar",
+  "export_event_confirm_btn": "Sí, exportar",
   "event_status_modal_default_title": "Confirmar accion",
   "error_title": "Error",
   "error_update_event": "Error actualizando el evento",
