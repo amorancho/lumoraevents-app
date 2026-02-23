@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Competitions",
   "menu_config": "⚙️ Event Configuration",
   "menu_general": "⚙️ General Settings",
@@ -54,7 +54,7 @@
   "col_status": "Status",
   "col_judges": "Judges",
   "col_num_judges": "#Judges",
-  "col_num_dancers": "#Dancers",
+  "col_num_dancers": "#Participants",
   "col_actions": "Actions",
   "no_competitions": "No competitions created yet",
   "create_first_competition": "Create your first competition using the form above.",
@@ -65,7 +65,7 @@
   "col_judge_reserve": "Reserve Judge",
   "ninguno": "None",
   "save_changes": "Save Changes",
-  "dancers_order_modal_title": "Order Dancers",
+  "dancers_order_modal_title": "Order Participants",
   "save_dancer_order": "Save Order",
   "close": "Close",
   "close_competition": "Close Competition",

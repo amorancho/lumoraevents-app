@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Competizioni",
   "menu_config": "⚙️ Configurazione Evento",
   "menu_general": "⚙️ Config. Generale",
@@ -54,7 +54,7 @@
   "col_status": "Stato",
   "col_judges": "Giudici",
   "col_num_judges": "#Giudici",
-  "col_num_dancers": "#Ballerine",
+  "col_num_dancers": "#Partecipanti",
   "col_actions": "Azioni",
   "no_competitions": "Nessuna competizione creata",
   "create_first_competition": "Crea la tua prima competizione utilizzando il modulo sopra.",
@@ -65,7 +65,7 @@
   "col_judge_reserve": "Giudice di Riserva",
   "ninguno": "Nessuno",
   "save_changes": "Salva Modifiche",
-  "dancers_order_modal_title": "Ordina Ballerine",
+  "dancers_order_modal_title": "Ordina Partecipanti",
   "save_dancer_order": "Salva Ordine",
   "close": "Chiudi",
   "close_competition": "Chiudi Competizione",

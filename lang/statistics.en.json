@@ -1,6 +1,6 @@
 {
   "title": "Statistics",
-  "enter_dancer_code": "Enter dancer code",
+  "enter_dancer_code": "Enter participant code",
   "get_stats": "Get Stats",
   "valid_code": "Enter a valid code to continue.",
   "loading": "Loading...",

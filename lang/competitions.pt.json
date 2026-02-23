@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Competições",
   "menu_config": "⚙️ Configuração do Evento",
   "menu_general": "⚙️ Config. Geral",
@@ -54,7 +54,7 @@
   "col_status": "Estado",
   "col_judges": "Jurados",
   "col_num_judges": "#Jurados",
-  "col_num_dancers": "#Bailarinas",
+  "col_num_dancers": "#Participantes",
   "col_actions": "Ações",
   "no_competitions": "Nenhuma competição criada ainda",
   "create_first_competition": "Crie sua primeira competição usando o formulário acima.",
@@ -65,7 +65,7 @@
   "col_judge_reserve": "Jurado Reserva",
   "ninguno": "Nenhum",
   "save_changes": "Salvar Alterações",
-  "dancers_order_modal_title": "Ordenar Bailarinas",
+  "dancers_order_modal_title": "Ordenar Participantes",
   "save_dancer_order": "Salvar Ordem",
   "close": "Fechar",
   "close_competition": "Fechar Competição",

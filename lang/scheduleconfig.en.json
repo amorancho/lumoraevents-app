@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Schedule Configurator",
   "schedule_blocks_title": "Schedule Blocks",
   "block_select_label": "Active block",
@@ -29,7 +29,7 @@
   "competition_modal_title_edit": "Edit competition",
   "break_modal_title_add": "Add break",
   "break_modal_title_edit": "Edit break",
-  "time_per_dancer": "Time per dancer (mm:ss)",
+  "time_per_dancer": "Time per participant (mm:ss)",
   "time_per_dancer_format_hint": "Format: mm:ss (example 03:30).",
   "time_before_start": "Time before start (seconds)",
   "break_name": "Name",
@@ -41,7 +41,7 @@
   "edit": "Edit",
   "estimated_start": "Estimated start",
   "duration": "Duration",
-  "dancers": "Dancers",
+  "dancers": "Participants",
   "category": "Category",
   "style": "Style",
   "competition_label": "Competition",
@@ -66,7 +66,7 @@
   "saved": "Saved",
   "save_all_error": "Error saving schedule blocks.",
   "no_blocks_to_save": "There are no blocks to save.",
-  "time_per_dancer_missing": "Enter time per dancer in mm:ss format.",
+  "time_per_dancer_missing": "Enter time per participant in mm:ss format.",
   "time_per_dancer_invalid": "Enter a valid time in mm:ss format.",
   "competition_max_time_missing": "This competition has no maximum time configured.",
   "break_name_missing": "Enter a break name.",

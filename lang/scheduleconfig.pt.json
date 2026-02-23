@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Configurador de Programação",
   "schedule_blocks_title": "Blocos de programação",
   "block_select_label": "Bloco ativo",
@@ -28,7 +28,7 @@
   "competition_modal_title_edit": "Editar competição",
   "break_modal_title_add": "Adicionar pausa",
   "break_modal_title_edit": "Editar pausa",
-  "time_per_dancer": "Tempo por bailarina (mm:ss)",
+  "time_per_dancer": "Tempo por participante (mm:ss)",
   "time_per_dancer_format_hint": "Formato: mm:ss (exemplo 03:30).",
   "time_before_start": "Tempo antes de começar (segundos)",
   "break_name": "Nome",
@@ -40,7 +40,7 @@
   "edit": "Editar",
   "estimated_start": "Hora estimada",
   "duration": "Duração",
-  "dancers": "Bailarinas",
+  "dancers": "Participantes",
   "category": "Categoria",
   "style": "Estilo",
   "competition_label": "Competição",
@@ -65,7 +65,7 @@
   "saved": "Guardado",
   "save_all_error": "Erro ao guardar os blocos.",
   "no_blocks_to_save": "Não há blocos para guardar.",
-  "time_per_dancer_missing": "Introduza o tempo por bailarina no formato mm:ss.",
+  "time_per_dancer_missing": "Introduza o tempo por participante no formato mm:ss.",
   "time_per_dancer_invalid": "Introduza um tempo válido no formato mm:ss.",
   "competition_max_time_missing": "Esta competição não tem um tempo máximo configurado.",
   "break_name_missing": "Introduza o nome da pausa.",

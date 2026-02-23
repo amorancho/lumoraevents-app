@@ -1,4 +1,4 @@
-﻿{
+{
   "title": "Compétitions",
   "menu_config": "⚙️ Configuration de l'Événement",
   "menu_general": "⚙️ Config. Générale",
@@ -54,7 +54,7 @@
   "col_status": "Statut",
   "col_judges": "Juges",
   "col_num_judges": "#Juges",
-  "col_num_dancers": "#Danseuses",
+  "col_num_dancers": "#Participantes",
   "col_actions": "Actions",
   "no_competitions": "Aucune compétition créée",
   "create_first_competition": "Créez votre première compétition en utilisant le formulaire ci-dessus.",
@@ -65,7 +65,7 @@
   "col_judge_reserve": "Juge Remplaçant",
   "ninguno": "Aucun",
   "save_changes": "Enregistrer les Modifications",
-  "dancers_order_modal_title": "Ordonner les Danseuses",
+  "dancers_order_modal_title": "Ordonner les participantes",
   "save_dancer_order": "Enregistrer l'Ordre",
   "close": "Fermer",
   "close_competition": "Fermer la Compétition",

@@ -2,7 +2,7 @@
   "title": "Risultati",
   "refresh": "Aggiorna",
   "auto_refresh": "Aggiornamento automatico",
-  "info_click_dancer": "Clicca su una ballerina per vedere più dettagli",
+  "info_click_dancer": "Clicca su una partecipante per vedere più dettagli",
   "voting_details": "Dettagli della votazione",
   "cerrar": "Chiudi",
   "select_category": "Seleziona Categoria",
@@ -11,6 +11,6 @@
   "general_classification": "Classifica Generale",
   "place": "Posizione",
   "total_score": "Punteggio Totale",
-  "no_voting_details": "Non ci sono dettagli di votazione disponibili per questa ballerina in questo stile.",
+  "no_voting_details": "Non ci sono dettagli di votazione disponibili per questa partecipante in questo stile.",
   "page_not_visible": "Questa pagina non è visibile in questo momento."
 }
