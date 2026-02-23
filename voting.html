@@ -66,21 +66,18 @@
       
     <div class="container" id="voteContainer">
       <div class="row g-3 align-items-end mb-4 justify-content-center">
-        <div class="col-md-3">
-          <label for="categorySelect" class="form-label fw-semibold" data-i18n="category">Category</label>
-          <select class="form-select" id="categorySelect">
-            <option selected disabled>Select a category</option>
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label for="styleSelect" class="form-label fw-semibold" data-i18n="style">Style</label>
-          <select class="form-select" id="styleSelect" disabled>
-            <option selected disabled data-i18n="select_style">Select a style</option>
+        <div class="col-md-6">
+          <label for="competitionSelect" class="form-label fw-semibold" data-i18n="competition">Competition</label>
+          <select class="form-select" id="competitionSelect" disabled>
+            <option selected disabled value="" data-i18n="select_competition">Select a competition</option>
           </select>
         </div>
         
         <div class="col-md-1">
           <button class="btn btn-primary" id="refreshBtn" data-i18n="refresh" disabled>Refresh</button>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-primary" id="nextCompetitionBtn" data-i18n="next_competition" disabled>Next Competition</button>
         </div>
       </div>
 

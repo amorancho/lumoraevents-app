@@ -1158,6 +1158,7 @@ async function executeGetCompetitions(categoryId, styleId) {
 
   trackingUiState.selectedCategoryId = String(categoryId);
   trackingUiState.selectedStyleId = String(styleId);
+  updateSidebarSelectedCompetition(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
   await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
 }
 
@@ -1194,7 +1195,8 @@ async function changeCompetitionStatus(compId, action, options = {}) {
 }
 
 
-async function loadCompetitions(categoryId, styleId) {
+async function loadCompetitions(categoryId, styleId, options = {}) {
+  const { reloadSidebar = false } = options;
   try {
     trackingUiState.selectedCategoryId = String(categoryId);
     trackingUiState.selectedStyleId = String(styleId);
@@ -1209,7 +1211,9 @@ async function loadCompetitions(categoryId, styleId) {
     }
     const competitions = await response.json();
     renderCompetitions(competitions);
-    await loadCompetitionSidebar();
+    if (reloadSidebar) {
+      await loadCompetitionSidebar();
+    }
 
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
@@ -1230,6 +1234,54 @@ function getCompetitionListStatusBadgeClass(status) {
   if (status === 'CLO') return 'bg-danger';
   if (status === 'FIN') return 'bg-success';
   return 'bg-secondary';
+}
+
+function getCompetitionStatusFromAction(action) {
+  if (action === 'open') return 'OPE';
+  if (action === 'close') return 'CLO';
+  return null;
+}
+
+function updateSidebarCompetitionStatus(button, nextStatus) {
+  if (!button || !nextStatus) return;
+
+  const isOpen = nextStatus === 'OPE';
+  const nextAction = isOpen ? 'close' : 'open';
+  const nextBadgeClass = getCompetitionListStatusBadgeClass(nextStatus);
+  const nextStatusLabel = getCompetitionListStatusLabel(nextStatus);
+  const listItem = button.closest('.list-group-item');
+  const statusBadge = listItem?.querySelector('.js-sidebar-status-badge');
+
+  if (statusBadge) {
+    statusBadge.className = `badge ${nextBadgeClass} js-sidebar-status-badge`;
+    statusBadge.textContent = nextStatusLabel;
+  }
+
+  button.dataset.action = nextAction;
+  button.classList.remove('btn-outline-warning', 'btn-outline-success');
+  button.classList.add(`btn-outline-${isOpen ? 'warning' : 'success'}`);
+  button.innerHTML = `
+    <i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'} me-1"></i>
+    ${isOpen ? t('close_competition') : t('open_competition')}
+  `;
+}
+
+function updateSidebarSelectedCompetition(categoryId, styleId) {
+  const container = document.getElementById('competitionsSidebarList');
+  if (!container) return;
+
+  const selectedCategoryId = String(categoryId ?? '');
+  const selectedStyleId = String(styleId ?? '');
+
+  container.querySelectorAll('.js-sidebar-competition-item').forEach(item => {
+    const itemCategoryId = String(item.dataset.categoryId ?? '');
+    const itemStyleId = String(item.dataset.styleId ?? '');
+    const listItem = item.closest('.list-group-item');
+    if (!listItem) return;
+
+    const isSelected = itemCategoryId === selectedCategoryId && itemStyleId === selectedStyleId;
+    listItem.classList.toggle('sidebar-competition-item-active', isSelected);
+  });
 }
 
 function renderCompetitionSidebar(competitions) {
@@ -1286,7 +1338,7 @@ function renderCompetitionSidebar(competitions) {
             data-style-id="${styleId}">
             <div class="fw-semibold">${escapeHtml(categoryName)} / ${escapeHtml(styleName)}</div>
             <small class="text-muted">
-              <span class="badge ${statusBadgeClass}">${escapeHtml(status)}</span>
+              <span class="badge ${statusBadgeClass} js-sidebar-status-badge">${escapeHtml(status)}</span>
               - ${escapeHtml(estimatedStart)}
             </small>
           </button>
@@ -1318,15 +1370,21 @@ function renderCompetitionSidebar(competitions) {
       btn.disabled = true;
       try {
         await changeCompetitionStatus(compId, action);
-        if (categoryId && styleId) {
-          await executeGetCompetitions(categoryId, styleId);
-        } else {
-          await loadCompetitionSidebar();
+        const nextStatus = getCompetitionStatusFromAction(action);
+        updateSidebarCompetitionStatus(btn, nextStatus);
+
+        const isSelectedCompetition = String(trackingUiState.selectedCategoryId) === String(categoryId)
+          && String(trackingUiState.selectedStyleId) === String(styleId);
+        if (isSelectedCompetition) {
+          await reloadSelectedCompetition();
         }
       } catch (error) {
         console.error('Error changing competition status:', error);
         showMessageModal(error?.message || t('error_change_competition_status'), t('error_title'));
-        btn.disabled = false;
+      } finally {
+        if (btn.isConnected) {
+          btn.disabled = false;
+        }
       }
     });
   });

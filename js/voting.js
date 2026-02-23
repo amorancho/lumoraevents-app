@@ -10,6 +10,8 @@ const CRITERIA_COL_VIS_STORAGE_PREFIX = 'lumora.voting.criteriaColumnsVisible';
 let modal, criteriaContainer;
 let commentsModal, commentsTextarea, saveCommentsBtn, clearCommentsBtn;
 let commentsContext = { competitionId: null, dancerId: null };
+let competitionSelect, competitionInfo, dancersTableContainer, refreshBtn, nextCompetitionBtn;
+let availableCompetitions = [];
 
 const DEFAULT_MIN_SCORE = 1;
 const DEFAULT_MAX_SCORE = 10;
@@ -43,14 +45,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   criteriaColumnsVisible = loadCriteriaColumnsVisibility();
 
-  const categorySelect = document.getElementById('categorySelect');
-  const styleSelect = document.getElementById('styleSelect');
-  const competitionInfo = document.getElementById('competitionInfo');
-  const dancersTableContainer = document.getElementById('dancersTableContainer');
-  const refreshBtn = document.getElementById('refreshBtn');
+  competitionSelect = document.getElementById('competitionSelect');
+  competitionInfo = document.getElementById('competitionInfo');
+  dancersTableContainer = document.getElementById('dancersTableContainer');
+  refreshBtn = document.getElementById('refreshBtn');
+  nextCompetitionBtn = document.getElementById('nextCompetitionBtn');
   const toggleCriteriaBtn = document.getElementById('toggleCriteriaBtn');
 
   refreshBtn.disabled = true;
+  if (nextCompetitionBtn) nextCompetitionBtn.disabled = true;
 
   if (toggleCriteriaBtn) {
     toggleCriteriaBtn.addEventListener('click', () => {
@@ -60,22 +63,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await ensureTranslationsReady();
 
-  const data = await loadCategoriesAndStyles();
-  populateCategorySelect(data, categorySelect);
-  applyTranslations();
-
-  categorySelect.addEventListener('change', () => {
-    populateStyleSelect(categorySelect.value, data, styleSelect);
-  });
-
-  styleSelect.addEventListener('change', () => {
+  competitionSelect.addEventListener('change', () => {
     loadCompetitionAndDancers();
-    refreshBtn.disabled = false;
+    refreshBtn.disabled = !competitionSelect.value;
   });
 
   refreshBtn.addEventListener('click', () => {
-    styleSelect.dispatchEvent(new Event('change'));
+    competitionSelect.dispatchEvent(new Event('change'));
   });
+
+  if (nextCompetitionBtn) {
+    nextCompetitionBtn.addEventListener('click', async () => {
+      if (nextCompetitionBtn.disabled) return;
+      nextCompetitionBtn.disabled = true;
+      try {
+        await reloadCompetitionsAndSelectFirstOpen();
+      } finally {
+        if (nextCompetitionBtn) {
+          nextCompetitionBtn.disabled = availableCompetitions.length === 0;
+        }
+      }
+    });
+  }
+
+  await reloadCompetitionsAndSelectFirstOpen();
 
   syncCriteriaToggleButtonState();
 
@@ -235,8 +246,13 @@ async function upsertComments(competitionId, dancerId, comments) {
 }
 
 async function loadCompetitionAndDancers() {
-  const category = categorySelect.value;
-  const style = styleSelect.value;
+  const selectedCompetitionId = competitionSelect?.value;
+  if (!selectedCompetitionId) return;
+
+  const selectedCompetition = availableCompetitions
+    .find(comp => String(comp?.id) === String(selectedCompetitionId));
+  const category = selectedCompetition?.category_id;
+  const style = selectedCompetition?.style_id;
   if (!category || !style) return;
 
   const data = await fetchVoting(category, style);
@@ -963,42 +979,81 @@ function getUserId() {
   return userId;
 }
 
-async function loadCategoriesAndStyles() {
+function formatCompetitionEstimatedStart(competition) {
+  if (!competition) return t('not_defined', 'NOT DEFINED');
+
+  const rawValue = competition.estimated_start_form ?? competition.estimated_start;
+  if (!rawValue) {
+    return t('not_defined', 'NOT DEFINED');
+  }
+
+  const value = String(rawValue).trim();
+
+  // Preserve backend hour/minute exactly, without timezone conversion.
+  const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (isoMatch) {
+    const [, year, month, day, hour, minute] = isoMatch;
+    return `${day}/${month}/${year} ${hour}:${minute}`;
+  }
+
+  return value;
+}
+
+function getCompetitionStatusText(status) {
+  if (status === 'OPE') return 'OPEN';
+  if (status === 'CLO') return 'CLOSED';
+  if (status === 'FIN') return 'FINISHED';
+  return status || '-';
+}
+
+async function loadCompetitionsForJudge() {
   try {
     const judgeId = getUserId();
-    const res = await fetch(`${API_BASE_URL}/api/competitions/categories-and-styles?event_id=${getEvent().id}&judge_id=${judgeId}`);
+    const res = await fetch(`${API_BASE_URL}/api/voting/competitions?event_id=${getEvent().id}&judge_id=${judgeId}`);
+    if (!res.ok) {
+      throw new Error('Error loading competitions');
+    }
     const data = await res.json();
-    return data; // array de { category: {...}, styles: [...] }
+    return Array.isArray(data) ? data : [];
   } catch (err) {
-    console.error('Error loading categories and styles', err);
+    console.error('Error loading competitions', err);
     return [];
   }
 }
 
-function populateCategorySelect(data, categorySelect) {
-  categorySelect.innerHTML = '<option selected disabled data-i18n="select_category">Select a category</option>';
-  data.forEach(item => {
-    const option = document.createElement('option');
-    option.value = item.category.id;
-    option.textContent = item.category.name;
-    categorySelect.appendChild(option);
-  });
+async function reloadCompetitionsAndSelectFirstOpen() {
+  availableCompetitions = await loadCompetitionsForJudge();
+  populateCompetitionSelect(availableCompetitions, competitionSelect);
+
+  const firstOpenCompetition = availableCompetitions.find(comp => comp?.status === 'OPE');
+  if (firstOpenCompetition) {
+    competitionSelect.value = String(firstOpenCompetition.id);
+    refreshBtn.disabled = false;
+    refreshBtn.click();
+  } else {
+    competitionSelect.value = '';
+    refreshBtn.disabled = true;
+  }
+
+  if (nextCompetitionBtn) {
+    nextCompetitionBtn.disabled = availableCompetitions.length === 0;
+  }
 }
 
-function populateStyleSelect(selectedCategoryId, data, styleSelect) {
-  const categoryData = data.find(item => item.category.id == selectedCategoryId);
-  styleSelect.innerHTML = '<option selected disabled data-i18n="select_style">Select a style</option>';
-  if (categoryData) {
-    categoryData.styles.forEach(style => {
-      const option = document.createElement('option');
-      option.value = style.id;
-      option.textContent = style.name;
-      styleSelect.appendChild(option);
-    });
-    styleSelect.disabled = false;
-  } else {
-    styleSelect.disabled = true;
-  }
+function populateCompetitionSelect(competitions, selectElement) {
+  if (!selectElement) return;
+
+  selectElement.innerHTML = '<option selected disabled value="" data-i18n="select_competition">Select a competition</option>';
+  competitions.forEach(item => {
+    const option = document.createElement('option');
+    option.value = String(item.id);
+    const estimatedStartText = formatCompetitionEstimatedStart(item);
+    const statusText = getCompetitionStatusText(item?.status);
+    option.textContent = `${item.category_name || '-'} / ${item.style_name || '-'} (${estimatedStartText} - ${statusText})`;
+    selectElement.appendChild(option);
+  });
+
+  selectElement.disabled = competitions.length === 0;
   applyTranslations();
 }
 
