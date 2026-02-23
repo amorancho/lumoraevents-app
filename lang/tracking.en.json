@@ -10,6 +10,7 @@
   "votes": "Votes",
   "close": "Close",
   "clear_confirm_title": "Clear Voting Confirmation",
+  "confirm_action_title": "Confirm action",
   "clear_confirm_text": "Are you sure you want to clear this voting?",
   "cancel": "Cancel",
   "confirm": "Confirm",
@@ -65,5 +66,9 @@
   "export_modal_no_options": "No classification results are available to export.",
   "export_modal_select_category_validation": "Select at least one category to export.",
   "exporting": "Exporting...",
+  "classification_visible": "Result visible",
+  "confirm_classification_visible_on": "Are you sure you want to make the result visible?",
+  "confirm_classification_visible_off": "Are you sure you want to hide the result?",
+  "error_set_classification_visible": "Error updating result visibility.",
   "save_classification": "Save Classification"
 }

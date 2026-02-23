@@ -10,6 +10,7 @@
   "votes": "Votes",
   "close": "Fermer",
   "clear_confirm_title": "Confirmation de suppression des votes",
+  "confirm_action_title": "Confirmer l'action",
   "clear_confirm_text": "�`tes-vous sûr de vouloir supprimer cette votation ?",
   "cancel": "Annuler",
   "confirm": "Confirmer",
@@ -65,7 +66,9 @@
   "export_modal_no_options": "Aucun classement disponible pour l'export.",
   "export_modal_select_category_validation": "Selectionnez au moins une categorie a exporter.",
   "exporting": "Exportation...",
+  "classification_visible": "Resultat visible",
+  "confirm_classification_visible_on": "Voulez-vous rendre le resultat visible ?",
+  "confirm_classification_visible_off": "Voulez-vous masquer le resultat ?",
+  "error_set_classification_visible": "Erreur lors de la mise a jour de la visibilite du resultat.",
   "save_classification": "Enregistrer le classement"
 }
-
-

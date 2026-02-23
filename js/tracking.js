@@ -21,6 +21,15 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function parseClassificationVisible(value) {
+  if (value === true || value === 1) return true;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
+}
+
 function normalizeClassificationExportOptions(payload) {
   const categories = Array.isArray(payload?.categories) ? payload.categories : [];
   const seenCategoryIds = new Set();
@@ -1229,6 +1238,7 @@ function renderCompetitions(competitions) {
     }
     const isFinished = comp.status === 'FIN';
     const isOpen = comp.status === 'OPE';
+    const isClassificationVisible = parseClassificationVisible(comp.clasification_visible);
     const statusActionButton = !isFinished
       ? `
         <button type="button"
@@ -1274,6 +1284,20 @@ function renderCompetitions(competitions) {
                   </button>
                 </div>
               </div>
+              ${isFinished ? `
+                <div class="form-check mt-2 text-start">
+                  <input
+                    class="form-check-input js-classification-visible-toggle"
+                    type="checkbox"
+                    id="classificationVisible-${comp.id}"
+                    data-category-id="${comp.category_id}"
+                    data-style-id="${comp.style_id}"
+                    ${isClassificationVisible ? 'checked' : ''}>
+                  <label class="form-check-label small" for="classificationVisible-${comp.id}">
+                    ${t('classification_visible', 'Resultado visible')}
+                  </label>
+                </div>
+              ` : ''}
             </div>
           </div>
           <div class="col-6 col-md-2">
@@ -1554,6 +1578,57 @@ function renderCompetitions(competitions) {
     });
   });
 
+  container.querySelectorAll('.js-classification-visible-toggle').forEach(toggle => {
+    toggle.addEventListener('change', async () => {
+      if (toggle.disabled) return;
+
+      const nextVisible = Boolean(toggle.checked);
+      const categoryId = Number(toggle.dataset.categoryId);
+      const styleId = Number(toggle.dataset.styleId);
+
+      if (!Number.isFinite(categoryId) || !Number.isFinite(styleId)) {
+        toggle.checked = !nextVisible;
+        showMessageModal(t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
+        return;
+      }
+
+      const confirmMessage = nextVisible
+        ? t('confirm_classification_visible_on', 'Are you sure you want to make the result visible?')
+        : t('confirm_classification_visible_off', 'Are you sure you want to hide the result?');
+
+      const confirmed = await showModal(confirmMessage);
+      if (!confirmed) {
+        toggle.checked = !nextVisible;
+        return;
+      }
+
+      toggle.disabled = true;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/competitions/set-classification-visible`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event_id: Number(getEvent().id),
+            category_id: categoryId,
+            style_id: styleId,
+            visible: nextVisible
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error || t('error_set_classification_visible', 'Error updating result visibility.'));
+        }
+      } catch (error) {
+        toggle.checked = !nextVisible;
+        showMessageModal(error?.message || t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
+      } finally {
+        toggle.disabled = false;
+      }
+    });
+  });
+
   initActionDropdowns(container);
 }
 
@@ -1746,18 +1821,33 @@ async function markDisqualified(categoryId, styleId, dancerId, dancerName) {
 }
 
 function showModal(message) {
-    return new Promise((resolve) => {
-    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
-    document.getElementById('deleteModalMessage').textContent = message;
-    
+  return new Promise((resolve) => {
+    const modalEl = document.getElementById('deleteModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
     const confirmBtn = document.getElementById('confirmDeleteBtn');
-    confirmBtn.onclick = () => {
-        modal.hide();
-        resolve(true);
+    const titleEl = modalEl.querySelector('.modal-title');
+    if (titleEl) {
+      titleEl.textContent = t('confirm_action_title', 'Confirm action');
+    }
+    document.getElementById('deleteModalMessage').textContent = message;
+
+    let confirmed = false;
+
+    const onConfirm = () => {
+      confirmed = true;
+      modal.hide();
     };
-    
+
+    const onHidden = () => {
+      confirmBtn.removeEventListener('click', onConfirm);
+      modalEl.removeEventListener('hidden.bs.modal', onHidden);
+      resolve(confirmed);
+    };
+
+    confirmBtn.addEventListener('click', onConfirm);
+    modalEl.addEventListener('hidden.bs.modal', onHidden);
     modal.show();
-    });
+  });
 }
 
 async function loadCategoriesAndStyles() {
