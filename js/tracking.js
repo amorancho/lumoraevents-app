@@ -8,8 +8,10 @@ const classificationExportState = {
   mode: 'ALL',
   categoryIds: []
 };
-
-const categorySelect = document.getElementById('categorySelect');
+const trackingUiState = {
+  selectedCategoryId: null,
+  selectedStyleId: null
+};
 
 function escapeHtml(value) {
   if (value === null || value === undefined) return '';
@@ -1091,40 +1093,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
 
-  const getCompetitionsBtn = document.getElementById('getCompetitionsBtn');
-  const categorySelect = document.getElementById('categorySelect');
-  const styleSelect = document.getElementById('styleSelect');
-
-  getCompetitionsBtn.disabled = true;
-
-  //await eventReadyPromise;
   await WaitEventLoaded();
-
-  const data = await loadCategoriesAndStyles();
-  populateCategorySelect(data, categorySelect);
   initClassificationExportOptions();
-
-  categorySelect.addEventListener('change', () => {
-    populateStyleSelect(categorySelect.value, data, styleSelect);
-
-    getCompetitionsBtn.disabled = !categorySelect.value;
-  });
-
-  getCompetitionsBtn.addEventListener('click', async () => {
-
-    const originalContent = getCompetitionsBtn.innerHTML;
-    getCompetitionsBtn.innerHTML = `
-      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${t('loading')}
-    `;
-    getCompetitionsBtn.disabled = true;
-    try {
-      await loadCompetitions(categorySelect.value, styleSelect.value);
-    } finally {
-      // Restaurar contenido original
-      getCompetitionsBtn.innerHTML = originalContent;
-      getCompetitionsBtn.disabled = !categorySelect.value; // volver a habilitar si hay categoría
-    }
-  });
+  await loadCompetitionSidebar();
 
   const saveClassificationBtn = document.getElementById('saveClassificationBtn');
   if (saveClassificationBtn) {
@@ -1169,11 +1140,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
 
-        const currentCategory = document.getElementById('categorySelect')?.value;
-        const currentStyle = document.getElementById('styleSelect')?.value;
-        if (currentCategory) {
-          await loadCompetitions(currentCategory, currentStyle);
-        }
+        await reloadSelectedCompetition();
       } catch (err) {
         showMessageModal(err.message || t('error_title'), t('error_title'));
       } finally {
@@ -1185,9 +1152,53 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 });
 
+async function executeGetCompetitions(categoryId, styleId) {
+  if (categoryId === undefined || categoryId === null || categoryId === '') return;
+  if (styleId === undefined || styleId === null || styleId === '') return;
+
+  trackingUiState.selectedCategoryId = String(categoryId);
+  trackingUiState.selectedStyleId = String(styleId);
+  await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
+}
+
+async function reloadSelectedCompetition() {
+  if (!trackingUiState.selectedCategoryId || !trackingUiState.selectedStyleId) return;
+  await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
+}
+
+async function changeCompetitionStatus(compId, action, options = {}) {
+  const {
+    reloadMain = false,
+    reloadSidebar = false
+  } = options;
+
+  const response = await fetch(`${API_BASE_URL}/api/competitions/${compId}/changestatus`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event_id: getEvent().id, action })
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || t('error_change_competition_status'));
+  }
+
+  if (reloadMain) {
+    await reloadSelectedCompetition();
+    return;
+  }
+
+  if (reloadSidebar) {
+    await loadCompetitionSidebar();
+  }
+}
+
 
 async function loadCompetitions(categoryId, styleId) {
   try {
+    trackingUiState.selectedCategoryId = String(categoryId);
+    trackingUiState.selectedStyleId = String(styleId);
+
     let url = `${API_BASE_URL}/api/competitions/tracking?event_id=${getEvent().id}&category_id=${categoryId}`;
     if (styleId) {
       url += `&style_id=${styleId}`;
@@ -1198,11 +1209,160 @@ async function loadCompetitions(categoryId, styleId) {
     }
     const competitions = await response.json();
     renderCompetitions(competitions);
+    await loadCompetitionSidebar();
 
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
   } catch (error) {
     console.error('Error fetching competitions:', error);
+  }
+}
+
+function getCompetitionListStatusLabel(status) {
+  if (status === 'OPE') return 'OPEN';
+  if (status === 'CLO') return 'CLOSED';
+  if (status === 'FIN') return 'FINISHED';
+  return status || '-';
+}
+
+function getCompetitionListStatusBadgeClass(status) {
+  if (status === 'OPE') return 'bg-warning text-dark';
+  if (status === 'CLO') return 'bg-danger';
+  if (status === 'FIN') return 'bg-success';
+  return 'bg-secondary';
+}
+
+function renderCompetitionSidebar(competitions) {
+  const container = document.getElementById('competitionsSidebarList');
+  if (!container) return;
+
+  if (!Array.isArray(competitions) || competitions.length === 0) {
+    container.innerHTML = `
+      <div class="list-group-item text-center text-muted py-3">
+        ${escapeHtml(t('no_competitions_found'))}
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = competitions.map(comp => {
+    const categoryName = comp?.category_name || '-';
+    const styleName = comp?.style_name || '-';
+    const categoryId = comp?.category_id ?? comp?.category?.id ?? '';
+    const styleId = comp?.style_id ?? comp?.style?.id ?? '';
+    const compId = comp?.id ?? '';
+    const status = getCompetitionListStatusLabel(comp?.status);
+    const isFinished = comp?.status === 'FIN';
+    const isOpen = comp?.status === 'OPE';
+    const btnDisabled = getEvent().status === 'finished' ? 'disabled' : '';
+    const statusBadgeClass = getCompetitionListStatusBadgeClass(comp?.status);
+    const estimatedStart = comp?.estimated_start_form || t('not_defined');
+    const statusActionButton = !isFinished
+      ? `
+        <button
+          type="button"
+          class="btn btn-outline-${isOpen ? 'warning' : 'success'} btn-sm btn-toggle-status-sidebar"
+          data-action="${isOpen ? 'close' : 'open'}"
+          data-comp-id="${compId}"
+          data-category-id="${categoryId}"
+          data-style-id="${styleId}" ${btnDisabled}>
+          <i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'} me-1"></i>
+          ${isOpen ? t('close_competition') : t('open_competition')}
+        </button>
+      `
+      : '';
+    const isSelected = String(trackingUiState.selectedCategoryId) === String(categoryId)
+      && String(trackingUiState.selectedStyleId) === String(styleId);
+    const itemClassName = isSelected ? 'list-group-item sidebar-competition-item-active' : 'list-group-item';
+
+    return `
+      <div class="${itemClassName}">
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <button
+            type="button"
+            class="btn btn-link text-start text-decoration-none p-0 border-0 flex-grow-1 js-sidebar-competition-item"
+            data-competition-id="${compId}"
+            data-category-id="${categoryId}"
+            data-style-id="${styleId}">
+            <div class="fw-semibold">${escapeHtml(categoryName)} / ${escapeHtml(styleName)}</div>
+            <small class="text-muted">
+              <span class="badge ${statusBadgeClass}">${escapeHtml(status)}</span>
+              - ${escapeHtml(estimatedStart)}
+            </small>
+          </button>
+          ${statusActionButton}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.js-sidebar-competition-item').forEach(item => {
+    item.addEventListener('click', async () => {
+      const categoryId = item.dataset.categoryId;
+      const styleId = item.dataset.styleId;
+      if (!categoryId || !styleId) return;
+      await executeGetCompetitions(categoryId, styleId);
+    });
+  });
+
+  container.querySelectorAll('.btn-toggle-status-sidebar').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+
+      const compId = btn.dataset.compId;
+      const action = btn.dataset.action;
+      const categoryId = btn.dataset.categoryId;
+      const styleId = btn.dataset.styleId;
+      if (!compId || !action) return;
+
+      btn.disabled = true;
+      try {
+        await changeCompetitionStatus(compId, action);
+        if (categoryId && styleId) {
+          await executeGetCompetitions(categoryId, styleId);
+        } else {
+          await loadCompetitionSidebar();
+        }
+      } catch (error) {
+        console.error('Error changing competition status:', error);
+        showMessageModal(error?.message || t('error_change_competition_status'), t('error_title'));
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+async function loadCompetitionSidebar() {
+  const container = document.getElementById('competitionsSidebarList');
+  if (!container) return;
+
+  container.innerHTML = `
+    <div class="list-group-item d-flex align-items-center justify-content-center py-3">
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span>${escapeHtml(t('loading'))}</span>
+    </div>
+  `;
+
+  try {
+    const eventId = getEvent()?.id;
+    if (!eventId) {
+      throw new Error('Missing event id');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/competitions?event_id=${eventId}`);
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+
+    const competitions = await response.json();
+    renderCompetitionSidebar(competitions);
+  } catch (error) {
+    console.error('Error loading competition sidebar:', error);
+    container.innerHTML = `
+      <div class="list-group-item text-danger text-center py-3">
+        ${escapeHtml(t('error_title'))}
+      </div>
+    `;
   }
 }
 
@@ -1237,19 +1397,7 @@ function renderCompetitions(competitions) {
       statusText = comp.status;
     }
     const isFinished = comp.status === 'FIN';
-    const isOpen = comp.status === 'OPE';
     const isClassificationVisible = parseClassificationVisible(comp.clasification_visible);
-    const statusActionButton = !isFinished
-      ? `
-        <button type="button"
-          class="btn btn-outline-${isOpen ? 'warning' : 'success'} btn-sm w-100 btn-toggle-status"
-          data-action="${isOpen ? 'close' : 'open'}"
-          data-comp-id="${comp.id}" ${btnDisabled}>
-          <i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'} me-1"></i>
-          ${isOpen ? t('close_competition') : t('open_competition')}
-        </button>
-      `
-      : '';
     // Card con info de competición
     const card = document.createElement('div');
     card.className = 'card mb-4';
@@ -1261,7 +1409,6 @@ function renderCompetitions(competitions) {
         <div class="row text-center align-items-stretch">
           <div class="col-12 col-md-2 d-flex">
             <div class="d-grid gap-2 w-100">
-              ${statusActionButton}
               <div class="row g-2">
                 <div class="col-6">
                   <button type="button"
@@ -1503,43 +1650,6 @@ function renderCompetitions(competitions) {
     }
   });
 
-  container.querySelectorAll('.btn-toggle-status').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      if (btn.disabled) return;
-
-      const compId = btn.dataset.compId;
-      const action = btn.dataset.action;
-      if (!compId || !action) return;
-
-      btn.disabled = true;
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/competitions/${compId}/changestatus`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event_id: getEvent().id, action })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          showMessageModal(data.error || t('error_change_competition_status'), t('error_title'));
-          btn.disabled = false;
-          return;
-        }
-
-        await loadCompetitions(
-          document.getElementById('categorySelect').value,
-          document.getElementById('styleSelect').value
-        );
-      } catch (error) {
-        console.error('Error changing competition status:', error);
-        showMessageModal(t('error_change_competition_status'), t('error_title'));
-        btn.disabled = false;
-      }
-    });
-  });
-
   container.querySelectorAll('.js-no-show').forEach(btn => {
     btn.addEventListener('click', async () => {
       if (btn.disabled) return;
@@ -1745,9 +1855,7 @@ async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerNa
     const data = await res.json();
     
     if (data.success) {
-
-      loadCompetitions(document.getElementById('categorySelect').value, document.getElementById('styleSelect').value);
-
+      await reloadSelectedCompetition();
     }
 
 
@@ -1779,10 +1887,7 @@ async function markNoShow(categoryId, styleId, dancerId, dancerName) {
       return;
     }
 
-    await loadCompetitions(
-      document.getElementById('categorySelect').value,
-      document.getElementById('styleSelect').value
-    );
+    await reloadSelectedCompetition();
   } catch (err) {
     showMessageModal(err.message || t('error_mark_no_show'), t('error_title'));
   }
@@ -1811,10 +1916,7 @@ async function markDisqualified(categoryId, styleId, dancerId, dancerName) {
       return;
     }
 
-    await loadCompetitions(
-      document.getElementById('categorySelect').value,
-      document.getElementById('styleSelect').value
-    );
+    await reloadSelectedCompetition();
   } catch (err) {
     showMessageModal(err.message || t('error_set_disqualified'), t('error_title'));
   }
@@ -1848,43 +1950,6 @@ function showModal(message) {
     modalEl.addEventListener('hidden.bs.modal', onHidden);
     modal.show();
   });
-}
-
-async function loadCategoriesAndStyles() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/competitions/categories-and-styles?event_id=${getEvent().id}`);
-    const data = await res.json();
-    return data; // array de { category: {...}, styles: [...] }
-  } catch (err) {
-    console.error('Error loading categories and styles', err);
-    return [];
-  }
-}
-
-function populateCategorySelect(data, categorySelect) {
-  categorySelect.innerHTML = `<option selected disabled>${t('select_category')}</option>`;
-  data.forEach(item => {
-    const option = document.createElement('option');
-    option.value = item.category.id;
-    option.textContent = item.category.name;
-    categorySelect.appendChild(option);
-  });
-}
-
-function populateStyleSelect(selectedCategoryId, data, styleSelect) {
-  const categoryData = data.find(item => item.category.id == selectedCategoryId);
-  styleSelect.innerHTML = `<option selected value="">${t('all_styles')}</option>`;
-  if (categoryData) {
-    categoryData.styles.forEach(style => {
-      const option = document.createElement('option');
-      option.value = style.id;
-      option.textContent = style.name;
-      styleSelect.appendChild(option);
-    });
-    styleSelect.disabled = false;
-  } else {
-    styleSelect.disabled = true;
-  }
 }
 
 function formatResultScore(totalScore) {
@@ -2152,4 +2217,6 @@ async function showResults(categoryId, styleId, status) {
     `;
   }
 }
+
+
 

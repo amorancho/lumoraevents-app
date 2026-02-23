@@ -289,42 +289,51 @@
       max-height: 320px;
       overflow-y: auto;
     }
+    .tracking-center-column {
+      min-width: 0;
+    }
+    .tracking-left-column {
+      align-self: flex-start;
+    }
+    .tracking-left-card {
+      position: sticky;
+      top: 1rem;
+    }
+    #competitionsSidebarList {
+      max-height: 72vh;
+      overflow-y: auto;
+    }
+    .sidebar-competition-item-active {
+      border-left: 4px solid var(--bs-primary);
+      background-color: #eaf3ff;
+    }
+    .sidebar-competition-item-active .js-sidebar-competition-item {
+      color: var(--bs-primary) !important;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
 
   <div id="header"></div>
 
-  <div class="container py-4">        
-    <div class="container my-4" id="trackingContainer">
-      <div class="row g-3 justify-content-center mb-4">
-        <!-- Category -->
-        <div class="col-12 col-sm-8 col-md-5 col-lg-4">
-          <label for="categorySelect" class="form-label fw-semibold" data-i18n="category">Category</label>
-          <select class="form-select" id="categorySelect">
-            <option selected data-i18n="select_category" disabled>Select a category</option>
-          </select>
+  <div class="container-fluid py-4">        
+    <div class="my-2" id="trackingContainer">
+      <div class="row g-4 align-items-start">
+        <div class="col-12 col-xl-3 tracking-left-column">
+          <div class="card tracking-left-card">
+            <div class="card-header d-flex justify-content-between align-items-center gap-2">
+              <span class="fw-semibold">Competiciones</span>
+              <button class="btn btn-warning btn-sm" id="exportBtn" type="button" data-i18n="export">Export Results</button>
+            </div>
+            <div class="card-body p-0">
+              <div id="competitionsSidebarList" class="list-group list-group-flush"></div>
+            </div>
+          </div>
         </div>
-
-        <!-- Style -->
-        <div class="col-12 col-sm-8 col-md-5 col-lg-4">
-          <label for="styleSelect" class="form-label fw-semibold" data-i18n="style_optional">Style (optional)</label>
-          <select class="form-select" id="styleSelect" disabled>
-            <option selected data-i18n="all_styles" value="">All styles</option>
-          </select>
-        </div>
-
-        <!-- Button -->
-        <div class="col-12 col-sm-8 col-md-3 col-lg-2 d-flex align-items-end">
-          <button class="btn btn-primary w-100" id="getCompetitionsBtn" type="button" data-i18n="get_competitions">Get Competitions</button>
-        </div>
-
-        <div class="col-12 col-sm-8 col-md-3 col-lg-2 d-flex align-items-end">
-          <button class="btn btn-warning w-100" id="exportBtn" type="button" data-i18n="export">Export Results</button>
+        <div class="col-12 col-xl-9 tracking-center-column">
+          <div id="competitionsContainer"></div>
         </div>
       </div>
-
-      <div id="competitionsContainer"></div>
     </div>
 
 
