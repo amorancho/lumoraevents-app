@@ -529,11 +529,7 @@ function renderCompetitionCriteriaLeadersSummary(competition, criteria) {
   }
 
   const criteriaRows = criteria.map((criteriaRef) => {
-    const epsilon = 0.0001;
-    let maxTotal = null;
-    let leaders = [];
-
-    dancers.forEach((dancer) => {
+    const dancerScores = dancers.map((dancer) => {
       const votes = Array.isArray(dancer?.votes) ? dancer.votes : [];
       let dancerTotal = 0;
       let hasAnyScore = false;
@@ -546,38 +542,55 @@ function renderCompetitionCriteriaLeadersSummary(competition, criteria) {
         hasAnyScore = true;
       });
 
-      if (!hasAnyScore) return;
-
-      if (maxTotal === null || dancerTotal > (maxTotal + epsilon)) {
-        maxTotal = dancerTotal;
-        leaders = [dancer];
-        return;
-      }
-
-      if (Math.abs(dancerTotal - maxTotal) <= epsilon) {
-        leaders.push(dancer);
-      }
+      return {
+        name: dancer?.dancer_name || t('dancer'),
+        total: dancerTotal,
+        hasAnyScore
+      };
     });
 
-    const criteriaName = escapeHtml(criteriaRef?.criteria_name || t('criteria', 'Criterio'));
-    const leadersText = leaders.length
-      ? leaders.map((dancer) => escapeHtml(dancer?.dancer_name || t('dancer'))).join(', ')
+    dancerScores.sort((a, b) => {
+      if (a.hasAnyScore !== b.hasAnyScore) {
+        return a.hasAnyScore ? -1 : 1;
+      }
+      if (a.hasAnyScore && b.hasAnyScore && a.total !== b.total) {
+        return b.total - a.total;
+      }
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
+
+    const criteriaName = escapeHtml(criteriaRef?.criteria_name || t('criteria', 'Criteria'));
+    const rankingText = dancerScores.length
+      ? dancerScores.map((entry) => {
+        const dancerName = escapeHtml(entry?.name || t('dancer'));
+        const scoreText = entry.hasAnyScore ? formatVoteTotalScore(entry.total) : '-';
+        return `${dancerName} <span class="text-muted">(${scoreText})</span>`;
+      }).join(', ')
       : '-';
-    const totalText = formatVoteTotalScore(maxTotal);
 
     return `
       <div class="vote-details-criteria-leader-item">
         <span class="vote-details-criteria-leader-name">${criteriaName}:</span>
-        <span class="vote-details-criteria-leader-value">${leadersText} <span class="text-muted">(${totalText})</span></span>
+        <span class="vote-details-criteria-leader-value">${rankingText}</span>
       </div>
     `;
   }).join('');
 
   return `
     <div class="vote-details-criteria-leaders">
-      <div class="vote-details-criteria-leaders-title">${t('top_by_criteria', 'Mejor puntuación por criterio')}</div>
-      <div class="vote-details-criteria-leaders-list">
-        ${criteriaRows}
+      <div class="accordion" id="voteDetailsCriteriaLeadersAccordion">
+        <div class="accordion-item vote-details-criteria-leaders-accordion-item">
+          <h2 class="accordion-header" id="voteDetailsCriteriaLeadersHeader">
+            <button class="accordion-button collapsed vote-details-criteria-leaders-title" type="button" data-bs-toggle="collapse" data-bs-target="#voteDetailsCriteriaLeadersCollapse" aria-expanded="false" aria-controls="voteDetailsCriteriaLeadersCollapse">
+              ${t('top_by_criteria', 'Top score by criteria')}
+            </button>
+          </h2>
+          <div id="voteDetailsCriteriaLeadersCollapse" class="accordion-collapse collapse" aria-labelledby="voteDetailsCriteriaLeadersHeader" data-bs-parent="#voteDetailsCriteriaLeadersAccordion">
+            <div class="accordion-body vote-details-criteria-leaders-list">
+              ${criteriaRows}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   `;

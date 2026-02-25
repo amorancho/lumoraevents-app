@@ -75,5 +75,6 @@
   "confirm_classification_visible_on": "Are you sure you want to make the result visible?",
   "confirm_classification_visible_off": "Are you sure you want to hide the result?",
   "error_set_classification_visible": "Error updating result visibility.",
+  "top_by_criteria": "Ranking by criteria",
   "save_classification": "Save Classification"
 }
