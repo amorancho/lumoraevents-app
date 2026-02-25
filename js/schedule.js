@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Si el evento no tiene visibleParticipants y el usuario no es ni admin ni organizer, redirigir a home
     if (!getEvent().visibleSchedule && role !== 'admin' && role !== 'organizer') {
         //alert('Esta página no es visible en estos momentos');
+        //alert('Esta página no es visible en estos momentos');
         alert(t('page_not_visible'));
         window.location.href = 'home.html?eventId='+eventId;
         return;

@@ -55,6 +55,11 @@ function bindScheduleConfigEvents() {
   const blockColor = document.getElementById('blockColor');
 
   blockSelect.addEventListener('change', async (e) => {
+    if (hasPendingChanges()) {
+      e.target.value = selectedBlockId ? String(selectedBlockId) : '';
+      return;
+    }
+
     selectedBlockId = e.target.value || null;
     await ensureBlockDetailsLoaded();
     renderScheduleConfig();
@@ -101,19 +106,20 @@ function bindScheduleConfigEvents() {
     const competitionId = button.dataset.id;
     const competition = competitions.find(item => String(item.id) === String(competitionId));
     const defaultTimePerDancer = getCompetitionMaxTimeSeconds(competition);
-    if (!Number.isFinite(defaultTimePerDancer) || defaultTimePerDancer <= 0) {
+    const hasValidMaxTime = Number.isFinite(defaultTimePerDancer) && defaultTimePerDancer > 0;
+    const resolvedTimePerDancer = hasValidMaxTime ? defaultTimePerDancer : 0;
+    if (!hasValidMaxTime) {
       showMessageModal(
         t('competition_max_time_missing', 'This competition has no maximum time configured.'),
-        t('error')
+        t('warning', 'Warning')
       );
-      return;
     }
 
     block.details.push({
       id: `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       block_type: 'COMP',
       competition_id: competitionId,
-      time_per_dancer: defaultTimePerDancer
+      time_per_dancer: resolvedTimePerDancer
     });
 
     activeDetailId = null;
@@ -368,16 +374,13 @@ function updateBlockForm() {
   const block = getSelectedBlock();
   const startInput = document.getElementById('blockStart');
   const colorSelect = document.getElementById('blockColor');
-  const updateButton = document.getElementById('updateBlockBtn');
-  const deleteButton = document.getElementById('deleteBlockBtn');
   const addBreakButton = document.getElementById('addBreakBtn');
 
   if (!block) {
     startInput.value = '';
     colorSelect.value = '';
-    updateButton.disabled = true;
-    deleteButton.disabled = true;
     addBreakButton.disabled = true;
+    updateBlockDirtyState();
     updateColorPreview();
     updateSelectedBlockMeta();
     return;
@@ -391,7 +394,6 @@ function updateBlockForm() {
   }
 
   updateBlockDirtyState();
-  deleteButton.disabled = false;
   addBreakButton.disabled = false;
 
   updateColorPreview();
@@ -922,7 +924,7 @@ function saveCompetitionDetailFromModal() {
     showMessageModal(t('time_per_dancer_missing'), t('error'));
     return;
   }
-  if (!normalizedTimePerDancer || !Number.isFinite(timePerDancer) || timePerDancer <= 0) {
+  if (!normalizedTimePerDancer || !Number.isFinite(timePerDancer) || timePerDancer < 0) {
     timePerDancerInput.classList.add('is-invalid');
     showMessageModal(t('time_per_dancer_invalid', 'Enter a valid time in mm:ss format.'), t('error'));
     return;
@@ -1022,7 +1024,26 @@ function updateBlockDirtyState() {
   const updateButton = document.getElementById('updateBlockBtn');
   if (!updateButton) return;
   const block = getSelectedBlock();
-  updateButton.disabled = !block || !block.dirty;
+  const hasBlock = Boolean(block);
+  const hasPending = Boolean(block && block.dirty);
+  updateButton.disabled = !hasPending;
+  updateButton.classList.toggle('btn-warning', hasPending);
+  updateButton.classList.toggle('btn-outline-primary', !hasPending);
+
+  const blockSelect = document.getElementById('blockSelect');
+  if (blockSelect) {
+    blockSelect.disabled = hasPending;
+  }
+
+  const addButton = document.getElementById('addBlockBtn');
+  if (addButton) {
+    addButton.disabled = hasPending;
+  }
+
+  const deleteButton = document.getElementById('deleteBlockBtn');
+  if (deleteButton) {
+    deleteButton.disabled = !hasBlock || hasPending;
+  }
 }
 
 function hasPendingChanges() {
@@ -1110,7 +1131,7 @@ function serializeDetails(details) {
     id: isTempId(detail.id) ? null : detail.id,
     block_type: detail.block_type,
     competition_id: detail.competition_id || null,
-    time_per_dancer: detail.time_per_dancer || null,
+    time_per_dancer: detail.time_per_dancer ?? null,
     break_name: detail.break_name || null,
     break_time: detail.break_time || null,
     order: index + 1
