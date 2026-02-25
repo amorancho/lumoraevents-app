@@ -70,6 +70,8 @@
   "export_modal_select_category_validation": "Selecciona al menos una categoría para exportar.",
   "exporting": "Exportando...",
   "classification_visible": "Resultado visible",
+  "classification_visibility_hide_results": "Ocultar Resultados",
+  "classification_visibility_show_results": "Resultados Visibles",
   "confirm_classification_visible_on": "¿Seguro que quieres mostrar el resultado?",
   "confirm_classification_visible_off": "¿Seguro que quieres ocultar el resultado?",
   "error_set_classification_visible": "Error al actualizar la visibilidad del resultado.",

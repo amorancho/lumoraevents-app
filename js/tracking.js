@@ -1606,6 +1606,140 @@ async function loadCompetitionSidebar() {
   }
 }
 
+function computeCompetitionProgress(comp) {
+  const dancers = Array.isArray(comp?.dancers) ? comp.dancers : [];
+  const totalDancers = dancers.length;
+  if (!totalDancers) {
+    return {
+      completed: 0,
+      total: 0,
+      percentage: 0
+    };
+  }
+
+  const pendingCount = dancers.filter(dancer => {
+    const votes = Array.isArray(dancer?.votes) ? dancer.votes : [];
+    return votes.some(vote => vote?.status === 'Pending');
+  }).length;
+
+  const completed = Math.max(0, totalDancers - pendingCount);
+  const percentage = Math.round((completed / totalDancers) * 100);
+  return {
+    completed,
+    total: totalDancers,
+    percentage
+  };
+}
+
+function getClassificationVisibleButtonLabel(isVisible) {
+  return isVisible
+    ? t('classification_visibility_hide_results', 'Ocultar Resultados')
+    : t('classification_visibility_show_results', 'Resultados Visibles');
+}
+
+function getClassificationVisibleButtonIcon(isVisible) {
+  return isVisible ? 'bi-eye-slash' : 'bi-eye-fill';
+}
+
+function getClassificationVisibleButtonClass(isVisible) {
+  return isVisible ? 'btn-success' : 'btn-outline-secondary';
+}
+
+function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificationVisible, btnDisabled) {
+  const statusBadgeClass = getCompetitionListStatusBadgeClass(comp.status);
+  const progress = computeCompetitionProgress(comp);
+  const progressBarColorClass = progress.percentage >= 100 ? 'bg-success' : 'bg-warning';
+  const progressTextClass = progress.percentage >= 100 ? 'text-white' : 'text-dark';
+  const progressText = `${progress.completed}/${progress.total} (${progress.percentage}%)`;
+  const visibilityButtonDisabled = (!isFinished || Boolean(btnDisabled)) ? 'disabled' : '';
+  const visibilityButtonClass = getClassificationVisibleButtonClass(isClassificationVisible);
+  const visibilityIcon = getClassificationVisibleButtonIcon(isClassificationVisible);
+  const visibilityLabel = getClassificationVisibleButtonLabel(isClassificationVisible);
+
+  const card = document.createElement('div');
+  card.className = 'card mb-4 border-primary-subtle';
+  card.innerHTML = `
+    <div class="card-body">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="badge bg-secondary fs-5 px-3 py-2">${escapeHtml(comp.category_name || '-')}</span>
+          <span class="badge bg-secondary fs-5 px-3 py-2">${escapeHtml(comp.style_name || '-')}</span>
+          <span class="badge ${statusBadgeClass} fs-5 px-3 py-2">${escapeHtml(statusText || '-')}</span>
+        </div>
+        <div class="d-flex align-items-center gap-3 mx-3 flex-grow-1" style="min-width: 340px; flex-basis: 460px;">
+          <div class="progress flex-grow-1 position-relative" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.percentage}" style="height: 30px;">
+            <div class="progress-bar progress-bar-striped ${progressBarColorClass}" style="width: ${progress.percentage}%"></div>
+            <span class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap ${progressTextClass}">
+              ${progressText}
+            </span>
+          </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 ms-auto">
+          <button type="button"
+            class="btn btn-outline-secondary btn-sm btn-competition-details"
+            data-category-id="${comp.category_id}"
+            data-style-id="${comp.style_id}"
+            data-status="${comp.status}">
+            <i class="bi bi-info-circle me-1"></i>
+            ${t('view_details')}
+          </button>
+          <button type="button"
+            class="btn btn-outline-primary btn-sm btn-view-results"
+            data-category-id="${comp.category_id}"
+            data-style-id="${comp.style_id}"
+            data-status="${comp.status}">
+            <i class="bi bi-trophy me-1"></i>
+            ${t('results_button', 'Results')}
+          </button>
+          <button type="button"
+            class="btn btn-sm ${visibilityButtonClass} js-classification-visible-btn"
+            data-category-id="${comp.category_id}"
+            data-style-id="${comp.style_id}"
+            data-visible="${isClassificationVisible ? '1' : '0'}"
+            ${visibilityButtonDisabled}>
+            <i class="bi ${visibilityIcon} me-1"></i>
+            ${visibilityLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return card;
+}
+
+function syncClassificationVisibilityControls(categoryId, styleId, isVisible) {
+  const normalizedCategoryId = String(categoryId);
+  const normalizedStyleId = String(styleId);
+
+  document.querySelectorAll('.js-classification-visible-btn').forEach(button => {
+    if (String(button.dataset.categoryId) !== normalizedCategoryId) return;
+    if (String(button.dataset.styleId) !== normalizedStyleId) return;
+    button.dataset.visible = isVisible ? '1' : '0';
+    button.classList.remove('btn-success', 'btn-outline-secondary');
+    button.classList.add(getClassificationVisibleButtonClass(isVisible));
+    button.innerHTML = `<i class="bi ${getClassificationVisibleButtonIcon(isVisible)} me-1"></i>${getClassificationVisibleButtonLabel(isVisible)}`;
+  });
+}
+
+async function setClassificationVisibility(categoryId, styleId, nextVisible) {
+  const response = await fetch(`${API_BASE_URL}/api/competitions/set-classification-visible`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      event_id: Number(getEvent().id),
+      category_id: Number(categoryId),
+      style_id: Number(styleId),
+      visible: nextVisible
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || t('error_set_classification_visible', 'Error updating result visibility.'));
+  }
+}
+
 function renderCompetitions(competitions) {
   const container = document.getElementById('competitionsContainer');
   container.innerHTML = '';
@@ -1638,107 +1772,9 @@ function renderCompetitions(competitions) {
     }
     const isFinished = comp.status === 'FIN';
     const isClassificationVisible = parseClassificationVisible(comp.clasification_visible);
-    // Card con info de competición
-    const card = document.createElement('div');
-    card.className = 'card mb-4';
-    card.innerHTML = `
-      <div class="card-header">
-        <h5 class="mb-0 text-center w-85">${comp.category_name} - ${comp.style_name}</h5>
-      </div>
-      <div class="card-body">
-        <div class="row text-center align-items-stretch">
-          <div class="col-12 col-md-2 d-flex">
-            <div class="d-grid gap-2 w-100">
-              <div class="row g-2">
-                <div class="col-6">
-                  <button type="button"
-                    class="btn btn-outline-secondary btn-sm w-100 btn-competition-details"
-                    data-category-id="${comp.category_id}"
-                    data-style-id="${comp.style_id}"
-                    data-status="${comp.status}">
-                    <i class="bi bi-info-circle me-1"></i>
-                    ${t('view_details')}
-                  </button>
-                </div>
-                <div class="col-6">
-                  <button type="button"
-                    class="btn btn-outline-primary btn-sm w-100 btn-view-results"
-                    data-category-id="${comp.category_id}"
-                    data-style-id="${comp.style_id}"
-                    data-status="${comp.status}">
-                    <i class="bi bi-trophy me-1"></i>
-                    ${t('results_button', 'Results')}
-                  </button>
-                </div>
-              </div>
-              ${isFinished ? `
-                <div class="form-check mt-2 text-start">
-                  <input
-                    class="form-check-input js-classification-visible-toggle"
-                    type="checkbox"
-                    id="classificationVisible-${comp.id}"
-                    data-category-id="${comp.category_id}"
-                    data-style-id="${comp.style_id}"
-                    ${isClassificationVisible ? 'checked' : ''}>
-                  <label class="form-check-label small" for="classificationVisible-${comp.id}">
-                    ${t('classification_visible', 'Resultado visible')}
-                  </label>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-          <div class="col-6 col-md-2">
-            <p class="mb-1 fw-semibold">${t('category')}</p>
-            <p><span class="badge bg-secondary">${comp.category_name}</span></p>
-          </div>
-          <div class="col-6 col-md-2">
-            <p class="mb-1 fw-semibold">${t('style')}</p>
-            <p><span class="badge bg-secondary">${comp.style_name}</span></p>
-          </div>
-          <div class="col-6 col-md-2">
-            <p class="mb-1 fw-semibold">${t('stimated_time')}</p>
-            <p>${comp.estimated_start_form ?? '<span class="badge bg-dark">' + t('not_defined') + '</span>'}</p>
-          </div>
-          <div class="col-6 col-md-1">
-            <p class="mb-1 fw-semibold">${t('status')}</p>
-            <p>
-              <span class="badge bg-${
-                comp.status === 'OPE'
-                  ? 'warning'
-                  : comp.status === 'CLO'
-                  ? 'danger'
-                  : 'success'
-              }">
-                ${statusText}
-              </span>
-            </p>
 
-          </div>                  
-          <div class="col-6 col-md-1">
-            <p class="mb-1 fw-semibold">${t('judges')}</p>
-            <p class="text-nowrap">
-              <span class="badge bg-primary">${comp.judge_number}</span>
-              <span>/</span>
-              <span class="badge bg-warning"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="${t('reserve_judges')}">
-                ${comp.judge_number_reserve}
-              </span>
-            </p>
-          </div>
-          <div class="col-6 col-md-1">
-            <p class="mb-1 fw-semibold">${t('dancers')}</p>
-            <p><span class="badge bg-primary">${comp.num_dancers}</span></p>
-          </div>
-          <div class="col-6 col-md-1">
-            <p class="mb-1 fw-semibold">${t('pending')}</p>
-            <p><span class="badge bg-warning">${comp.dancers.filter(d => d.votes.some(v => v.status === 'Pending')).length}</span></p>
-          </div>
-        </div>
-      </div>
-    `;
-    container.appendChild(card);
+    const comparisonCard = buildComparisonSummaryCard(comp, statusText, isFinished, isClassificationVisible, btnDisabled);
+    container.appendChild(comparisonCard);
 
     // Tabla de votaciones
     if (!comp.judges.length || !comp.dancers.length) {
@@ -1928,16 +1964,16 @@ function renderCompetitions(competitions) {
     });
   });
 
-  container.querySelectorAll('.js-classification-visible-toggle').forEach(toggle => {
-    toggle.addEventListener('change', async () => {
-      if (toggle.disabled) return;
+  container.querySelectorAll('.js-classification-visible-btn').forEach(button => {
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
 
-      const nextVisible = Boolean(toggle.checked);
-      const categoryId = Number(toggle.dataset.categoryId);
-      const styleId = Number(toggle.dataset.styleId);
+      const categoryId = Number(button.dataset.categoryId);
+      const styleId = Number(button.dataset.styleId);
+      const currentVisible = button.dataset.visible === '1';
+      const nextVisible = !currentVisible;
 
       if (!Number.isFinite(categoryId) || !Number.isFinite(styleId)) {
-        toggle.checked = !nextVisible;
         showMessageModal(t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
         return;
       }
@@ -1947,34 +1983,18 @@ function renderCompetitions(competitions) {
         : t('confirm_classification_visible_off', 'Are you sure you want to hide the result?');
 
       const confirmed = await showModal(confirmMessage);
-      if (!confirmed) {
-        toggle.checked = !nextVisible;
-        return;
-      }
+      if (!confirmed) return;
 
-      toggle.disabled = true;
-
+      button.disabled = true;
       try {
-        const response = await fetch(`${API_BASE_URL}/api/competitions/set-classification-visible`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            event_id: Number(getEvent().id),
-            category_id: categoryId,
-            style_id: styleId,
-            visible: nextVisible
-          })
-        });
-
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(data.error || t('error_set_classification_visible', 'Error updating result visibility.'));
-        }
+        await setClassificationVisibility(categoryId, styleId, nextVisible);
+        syncClassificationVisibilityControls(categoryId, styleId, nextVisible);
       } catch (error) {
-        toggle.checked = !nextVisible;
         showMessageModal(error?.message || t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
       } finally {
-        toggle.disabled = false;
+        if (button.isConnected) {
+          button.disabled = false;
+        }
       }
     });
   });
@@ -2457,6 +2477,7 @@ async function showResults(categoryId, styleId, status) {
     `;
   }
 }
+
 
 
 
