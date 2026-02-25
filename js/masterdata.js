@@ -5,6 +5,7 @@ const allowedRoles = ["admin", "organizer"];
 let categoriesList = [];
 let stylesList = [];
 let criteriaList = [];
+let clubsList = [];
 let criteriaConfigList = [];
 let filteredCriteriaConfigIds = [];
 
@@ -36,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     setupCriteriaConfigTab();
     bindCriteriaConfigEvents();
+    bindSchoolsEvents();
     await loadAll();
 
 });
@@ -63,9 +65,10 @@ async function loadAll() {
         loadTable("categories"),
         loadTable("styles"),
         loadTable("criteria"),
-        loadTable("penalties"),
-        loadTable("clubs")
+        loadTable("penalties")
     ]);
+
+    await loadSchoolsTable();
 
     if (shouldShowCriteriaConfigTab()) {
         populateCriteriaConfigOptions();
@@ -112,7 +115,7 @@ function renderTable(table, fullData) {
         const leftDiv = document.createElement("div");
         leftDiv.className = "d-flex align-items-center gap-2";
 
-        if ((getEvent().status !== 'finished') && (table !== 'clubs')) {
+        if (getEvent().status !== 'finished') {
 
             const dragHandle = document.createElement("i");
             dragHandle.className = "bi bi-grip-vertical text-muted drag-handle";
@@ -198,6 +201,235 @@ async function addEntry(table) {
         } finally {
             input.focus();
         }
+    }
+}
+
+function bindSchoolsEvents() {
+    const createBtn = document.getElementById('createNewSchoolBtn');
+    const saveBtn = document.getElementById('saveSchoolBtn');
+    const tableBody = document.getElementById('clubsTable');
+    const modalEl = document.getElementById('schoolModal');
+    const form = document.getElementById('schoolForm');
+
+    if (!createBtn || !saveBtn || !tableBody || !modalEl || !form) {
+        return;
+    }
+
+    const schoolModal = new bootstrap.Modal(modalEl);
+
+    createBtn.addEventListener('click', () => {
+        openSchoolModal({ modal: schoolModal, action: 'create' });
+    });
+
+    tableBody.addEventListener('click', async (event) => {
+        const editBtn = event.target.closest('.btn-edit-school');
+        if (editBtn) {
+            const id = editBtn.closest('tr')?.dataset?.id;
+            const school = clubsList.find((item) => String(item.id) === String(id));
+            if (!school) return;
+            openSchoolModal({ modal: schoolModal, action: 'edit', school });
+            return;
+        }
+
+        const deleteBtn = event.target.closest('.btn-delete-school');
+        if (!deleteBtn) return;
+
+        const id = deleteBtn.closest('tr')?.dataset?.id;
+        const school = clubsList.find((item) => String(item.id) === String(id));
+        if (!school) return;
+
+        const confirmed = await showModal(`${t('delete')} "${school.name}" ${t('from')} <strong>${t('clubs')}</strong>?`);
+        if (!confirmed) return;
+
+        await deleteSchool(id);
+    });
+
+    saveBtn.addEventListener('click', async () => {
+        const action = form.dataset.action || 'create';
+        const schoolId = form.dataset.id || null;
+        await saveSchool(action, schoolId, schoolModal, saveBtn);
+    });
+
+    modalEl.addEventListener('shown.bs.modal', () => {
+        document.getElementById('schoolNameInput')?.focus();
+    });
+}
+
+function openSchoolModal({ modal, action, school = null }) {
+    const form = document.getElementById('schoolForm');
+    const title = document.getElementById('schoolModalTitle');
+    const nameInput = document.getElementById('schoolNameInput');
+    const locationInput = document.getElementById('schoolLocationInput');
+    if (!form || !title || !nameInput || !locationInput) return;
+
+    form.dataset.action = action;
+    if (action === 'edit' && school) {
+        form.dataset.id = school.id;
+        nameInput.value = school.name || '';
+        locationInput.value = school.location || '';
+        title.textContent = t('school_modal_edit', 'Edit school');
+    } else {
+        delete form.dataset.id;
+        nameInput.value = '';
+        locationInput.value = '';
+        title.textContent = t('school_modal_create', 'Create school');
+    }
+
+    modal.show();
+}
+
+async function loadSchoolsTable() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs?event_id=${getEvent().id}`);
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            showMessageModal(err.error || t('schools_load_error', 'Error loading schools.'), t('error'));
+            return;
+        }
+        const data = await response.json();
+        clubsList = Array.isArray(data) ? data : [];
+        clubsList.sort((a, b) => {
+            if (a?.position !== undefined || b?.position !== undefined) {
+                return (a?.position ?? 9999) - (b?.position ?? 9999);
+            }
+            return String(a?.name || '').localeCompare(String(b?.name || ''));
+        });
+        renderSchoolsTable();
+    } catch (error) {
+        console.error('Failed to load schools:', error);
+        showMessageModal(t('schools_load_error', 'Error loading schools.'), t('error'));
+    }
+}
+
+function renderSchoolsTable() {
+    const tableBody = document.getElementById('clubsTable');
+    if (!tableBody) return;
+    tableBody.innerHTML = '';
+
+    clubsList.forEach((school) => {
+        const row = document.createElement('tr');
+        row.dataset.id = school.id;
+
+        const isFinished = getEvent().status === 'finished';
+        const schoolName = school?.name || '-';
+        const schoolLocation = school?.location || '-';
+        const nameCell = document.createElement('td');
+        nameCell.textContent = schoolName;
+
+        const locationCell = document.createElement('td');
+        locationCell.textContent = schoolLocation;
+
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'text-center align-middle';
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group';
+        btnGroup.setAttribute('role', 'group');
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn btn-outline-primary btn-sm btn-edit-school';
+        editBtn.title = t('edit', 'Edit');
+        editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+        editBtn.disabled = isFinished;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn btn-outline-danger btn-sm btn-delete-school';
+        deleteBtn.title = t('delete');
+        deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+        deleteBtn.disabled = isFinished;
+
+        btnGroup.appendChild(editBtn);
+        btnGroup.appendChild(deleteBtn);
+        actionsCell.appendChild(btnGroup);
+
+        row.appendChild(nameCell);
+        row.appendChild(locationCell);
+        row.appendChild(actionsCell);
+
+        tableBody.appendChild(row);
+    });
+
+    const countEl = document.getElementById('count-clubs');
+    if (countEl) {
+        countEl.textContent = clubsList.length;
+    }
+
+    const emptyState = document.getElementById('schoolsEmptyState');
+    if (emptyState) {
+        emptyState.classList.toggle('d-none', clubsList.length > 0);
+    }
+}
+
+async function saveSchool(action, schoolId, schoolModal, saveBtn) {
+    const nameInput = document.getElementById('schoolNameInput');
+    const locationInput = document.getElementById('schoolLocationInput');
+    if (!nameInput || !locationInput) return;
+
+    const name = nameInput.value.trim();
+    const location = locationInput.value.trim();
+
+    if (!name) {
+        showMessageModal(t('school_name_required', 'School name is required.'), t('error'));
+        nameInput.focus();
+        return;
+    }
+
+    const payload = {
+        event_id: getEvent().id,
+        name,
+        location: location || null
+    };
+
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = t('guardando', 'Saving...');
+
+    try {
+        let res;
+        if (action === 'edit' && schoolId) {
+            res = await fetch(`${API_BASE_URL}/api/clubs/${schoolId}`, {
+                method: 'PUT',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            res = await fetch(`${API_BASE_URL}/api/clubs`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showMessageModal(err.error || t('schools_save_error', 'Error saving school.'), t('error'));
+            return;
+        }
+
+        schoolModal.hide();
+        await loadSchoolsTable();
+    } catch (error) {
+        console.error('Error saving school:', error);
+        showMessageModal(t('schools_save_error', 'Error saving school.'), t('error'));
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText || t('save', 'Save');
+    }
+}
+
+async function deleteSchool(id) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/clubs/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showMessageModal(err.error || t('schools_delete_error', 'Error deleting school.'), t('error'));
+            return;
+        }
+        await loadSchoolsTable();
+    } catch (error) {
+        console.error('Error deleting school:', error);
+        showMessageModal(t('schools_delete_error', 'Error deleting school.'), t('error'));
     }
 }
 

@@ -1,4 +1,5 @@
 let dancers = [];
+let clubsById = new Map();
 var title = 'Dancers';
 
 const allowedRoles = ["admin", "organizer"];
@@ -380,7 +381,7 @@ function loadDancers() {
 
     const row = document.createElement('tr');
     row.dataset.id = dancer.id;
-    row.dataset.club_id = dancer.club_id;
+    row.dataset.club_id = dancer.club_id ? String(dancer.club_id) : '';
     row.dataset.style_ids = Array.isArray(dancer.styles)
       ? dancer.styles
         .map(style => String(style.id ?? style).trim())
@@ -391,6 +392,7 @@ function loadDancers() {
     let stylesSpans = Array.isArray(dancer.styles) && dancer.styles.length > 0
       ? dancer.styles.map(style => `<span class="badge bg-warning text-dark me-1">${style.name}</span>`).join('')
       : `<span class="badge bg-secondary" data-i18n="no_styles">${t('no_styles')}</span>`;
+    const clubName = dancer.club_name || clubsById.get(String(dancer.club_id || '')) || '';
 
     row.innerHTML = `
       <td class="align-middle">
@@ -401,6 +403,7 @@ function loadDancers() {
       </td>
       <td class="align-middle">${dancer.category_name}</td>
       <td class="align-middle">${stylesSpans}</td>
+      <td class="align-middle">${clubName}</td>
       <td class="align-middle">
         <i class="bi bi-people me-1 text-muted"></i>
         ${dancer.master_name || ''}
@@ -541,6 +544,7 @@ async function loadClubs() {
   clubSelect.innerHTML = ''; // Limpiar opciones anteriores
 
   const clubFilter = document.getElementById('clubFilter');
+  clubsById = new Map();
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/clubs?event_id=${getEvent().id}`);
@@ -553,6 +557,8 @@ async function loadClubs() {
     clubSelect.appendChild(emptyOption1);
 
     clubs.forEach(club => {
+      clubsById.set(String(club.id || club), club.name || club);
+
       const option1 = document.createElement('option');
       option1.value = club.id || club; // por si es string directo
       option1.textContent = club.name || club;
@@ -563,6 +569,10 @@ async function loadClubs() {
       option2.textContent = club.name || club;
       clubFilter.appendChild(option2);
     });
+
+    if (Array.isArray(dancers) && dancers.length > 0) {
+      loadDancers();
+    }
   } catch (err) {
     console.error('Failed to load clubs:', err);
   }

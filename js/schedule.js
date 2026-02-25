@@ -47,6 +47,13 @@ async function loadSchedule() {
     }
 }
 
+function getParticipantClubLabel(participant) {
+    const clubName = String(participant?.club_name || '').trim();
+    const clubLocation = String(participant?.club_location || '').trim();
+    if (!clubName) return '';
+    return clubLocation ? `${clubName} (${clubLocation})` : clubName;
+}
+
 function renderSchedule(data) {
     lang = localStorage.getItem('lang') || 'en';
     const container = document.getElementById('scheduleContainer');
@@ -160,12 +167,15 @@ function renderSchedule(data) {
                     // Añadimos los bailarines a la lista
                     const list = subAccordionCol.querySelector('ul');
                     item.dancersList.forEach(dancer => {
+                        const dancerName = dancer.name || dancer.dancer_name || '';
+                        const clubLabel = getParticipantClubLabel(dancer);
                         const li = document.createElement('li');
                         li.className = 'list-group-item d-flex align-items-center';
                         li.innerHTML = `
                         <span class="badge bg-info me-2">#${dancer.position}</span>
                         ${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'width: 24px;' })}
-                        <span class="dancer-name">${dancer.name || dancer.dancer_name}</span>
+                        <span class="dancer-name">${escapeHtml(dancerName)}</span>
+                        ${clubLabel ? `<span class="ms-2 small text-muted">${escapeHtml(clubLabel)}</span>` : ''}
                         `;
                         list.appendChild(li);
                     });
@@ -220,5 +230,15 @@ function getStatusBadge(status) {
     }
 
     return `<span class="badge ${badgeClass}">${text}</span>`;
+}
+
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 

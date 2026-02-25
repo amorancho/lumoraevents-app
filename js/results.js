@@ -14,6 +14,13 @@ function formatAvgPlace(avgPlace) {
   return Number.isNaN(num) ? avgPlace : num;
 }
 
+function getDancerClubLabel(dancer) {
+  const clubName = String(dancer?.club_name || '').trim();
+  const clubLocation = String(dancer?.club_location || '').trim();
+  if (!clubName) return '';
+  return clubLocation ? `${clubName} (${clubLocation})` : clubName;
+}
+
 
 document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
@@ -106,6 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const dancerData = (styleObj.clasification || []).find(d => Number(d.dancer_id) === dancerId);
     if (!dancerData) return;
+    const clubLabel = getDancerClubLabel(dancerData);
 
     // --- Contenido del modal ---
     detailsContainer.innerHTML = '';
@@ -123,7 +131,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div class="d-flex align-items-center gap-2">
               ${getDancerFlagImgHtml(dancerData.dancer_nationality, { width: 24, height: 24 })}
-              <strong class="fs-5">${escapeHtml(dancerData.dancer_name || '-')}</strong>
+              <div class="d-flex align-items-baseline flex-wrap gap-2">
+                <strong class="fs-5">${escapeHtml(dancerData.dancer_name || '-')}</strong>
+                ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
+              </div>
             </div>
           </div>
           <!-- DERECHA: Total Score -->
@@ -318,6 +329,7 @@ function renderGeneralClassification(general) {
   general.forEach((d, i) => {
     const medals = ["🥇", "🥈", "🥉"];
     const colors = ["warning", "secondary", "warning-subtle"];
+    const clubLabel = getDancerClubLabel(d);
     if (i < 3) {
       html += `
         <div class="row my-2">
@@ -327,7 +339,10 @@ function renderGeneralClassification(general) {
               <div class="card-body">
                 <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
                   ${getDancerFlagImgHtml(d.dancer_nationality, { width: 24, height: 24 })}
-                  <h3 class="mb-0 dancer-result">${escapeHtml(d.dancer_name)}</h3>
+                  <div class="d-flex align-items-baseline flex-wrap gap-2">
+                    <h3 class="mb-0 dancer-result">${escapeHtml(d.dancer_name)}</h3>
+                    ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
+                  </div>
                 </div>
                 <p class="card-text fs-4">
                   🥇 ${d.num_oros || 0} &nbsp;|&nbsp; 🥈 ${d.num_platas || 0} &nbsp;|&nbsp; 🥉 ${d.num_bronces || 0}
@@ -345,7 +360,10 @@ function renderGeneralClassification(general) {
         <div class="list-group-item d-flex justify-content-between align-items-center fs-6">
           <span class="me-2">${d.position}</span>
           ${getDancerFlagImgHtml(d.dancer_nationality, { className: 'me-2' })}
-          <span class="me-auto dancer-result">${escapeHtml(d.dancer_name)}</span>
+          <span class="me-auto d-flex align-items-baseline flex-wrap gap-1 dancer-result">
+            <span>${escapeHtml(d.dancer_name)}</span>
+            ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
+          </span>
           <span class="mx-2 text-muted small">
             (${t('total_score')}: ${d.total_score ?? 0})
           </span>
@@ -382,12 +400,16 @@ function renderStyleClassification(style) {
     const medals = ["🥇", "🥈", "🥉"];
     const bg = i === 0 ? "bg-warning" : i === 1 ? "bg-secondary-subtle" : i === 2 ? "bg-warning-subtle" : "";
     const fw = i < 3 ? "fw-bold" : "";
+    const clubLabel = getDancerClubLabel(d);
 
     html += `
       <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${bg} fs-6 ${fw} dancer-result" data-dancer-id="${d.dancer_id}">
         <span class="me-2">${i+1}</span>
         ${getDancerFlagImgHtml(d.dancer_nationality, { className: 'me-2' })}
-        <span class="me-auto">${escapeHtml(d.dancer_name)} ${i<3 ? medals[i] : ""}</span>
+        <span class="me-auto d-flex align-items-baseline flex-wrap gap-1">
+          <span>${escapeHtml(d.dancer_name)} ${i<3 ? medals[i] : ""}</span>
+          ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
+        </span>
         <span class="badge bg-light text-dark rounded-pill">${Number(d.total_score).toFixed(1)}</span>
         ${shouldShowAvgPlaceBadge() ? `
           <span class="badge bg-info text-dark rounded-pill ms-2">${formatAvgPlace(d.avg_place)}</span>

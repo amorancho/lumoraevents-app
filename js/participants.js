@@ -54,6 +54,13 @@ function applyParticipantsSummaryLayout() {
   }
 }
 
+function getParticipantClubLabel(participant) {
+  const clubName = String(participant?.club_name || '').trim();
+  const clubLocation = String(participant?.club_location || '').trim();
+  if (!clubName) return '';
+  return clubLocation ? `${clubName} (${clubLocation})` : clubName;
+}
+
 async function loadParticipants() {
   const participantsContainer = document.getElementById('participantsContainer');
   
@@ -305,8 +312,15 @@ function createCategoryItem(category, categoryData, index) {
 
     const spanDancer = document.createElement('span');
     spanDancer.textContent = participant.name;
+    const clubLabel = getParticipantClubLabel(participant);
 
     leftDiv.appendChild(spanDancer);
+    if (clubLabel) {
+      const spanClub = document.createElement('span');
+      spanClub.className = 'ms-2 small text-muted';
+      spanClub.textContent = clubLabel;
+      leftDiv.appendChild(spanClub);
+    }
 
     // Badge derecha
     const badge = document.createElement('span');
