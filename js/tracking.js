@@ -1660,13 +1660,13 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
   card.className = 'card mb-4 border-primary-subtle';
   card.innerHTML = `
     <div class="card-body">
-      <div class="d-flex flex-nowrap align-items-center gap-2" style="overflow-x: auto; overflow-y: hidden;">
-        <div class="d-flex align-items-center gap-2 flex-shrink-0">
-          <span class="badge bg-secondary fs-5 px-3 py-2">${escapeHtml(comp.category_name || '-')}</span>
-          <span class="badge bg-secondary fs-5 px-3 py-2">${escapeHtml(comp.style_name || '-')}</span>
-          <span class="badge ${statusBadgeClass} fs-5 px-3 py-2">${escapeHtml(statusText || '-')}</span>
+      <div class="d-flex flex-wrap flex-lg-nowrap align-items-center gap-2">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.category_name || '-')}</span>
+          <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.style_name || '-')}</span>
+          <span class="badge ${statusBadgeClass} fs-6 px-2 py-1">${escapeHtml(statusText || '-')}</span>
         </div>
-        <div class="d-flex align-items-center gap-3 mx-3 flex-grow-1" style="min-width: 260px;">
+        <div class="d-flex align-items-center gap-3 mx-lg-3 my-1 my-lg-0 flex-grow-1" style="min-width: 220px;">
           <div class="progress flex-grow-1 position-relative" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.percentage}" style="height: 30px;">
             <div class="progress-bar progress-bar-striped ${progressBarColorClass}" style="width: ${progress.percentage}%"></div>
             <span class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap ${progressTextClass}">
@@ -1674,9 +1674,9 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
             </span>
           </div>
         </div>
-        <div class="d-flex gap-2 ms-auto flex-shrink-0">
+        <div class="d-flex flex-wrap gap-2 ms-lg-auto">
           <button type="button"
-            class="btn btn-outline-secondary btn-sm btn-competition-details text-nowrap"
+            class="btn btn-outline-secondary btn-sm btn-competition-details"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
             data-status="${comp.status}">
@@ -1684,7 +1684,7 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
             ${t('view_details')}
           </button>
           <button type="button"
-            class="btn btn-outline-primary btn-sm btn-view-results text-nowrap"
+            class="btn btn-outline-primary btn-sm btn-view-results"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
             data-status="${comp.status}">
@@ -1692,7 +1692,7 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
             ${t('results_button', 'Results')}
           </button>
           <button type="button"
-            class="btn btn-sm ${visibilityButtonClass} js-classification-visible-btn text-nowrap"
+            class="btn btn-sm ${visibilityButtonClass} js-classification-visible-btn"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
             data-visible="${isClassificationVisible ? '1' : '0'}"
