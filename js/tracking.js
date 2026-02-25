@@ -10,7 +10,13 @@ const classificationExportState = {
 };
 const trackingUiState = {
   selectedCategoryId: null,
-  selectedStyleId: null
+  selectedStyleId: null,
+  sidebarCompetitions: [],
+  sidebarFilters: {
+    category: '',
+    style: '',
+    status: ''
+  }
 };
 
 function escapeHtml(value) {
@@ -1095,6 +1101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await WaitEventLoaded();
   initClassificationExportOptions();
+  bindSidebarFilters();
   await loadCompetitionSidebar();
 
   const saveClassificationBtn = document.getElementById('saveClassificationBtn');
@@ -1242,30 +1249,6 @@ function getCompetitionStatusFromAction(action) {
   return null;
 }
 
-function updateSidebarCompetitionStatus(button, nextStatus) {
-  if (!button || !nextStatus) return;
-
-  const isOpen = nextStatus === 'OPE';
-  const nextAction = isOpen ? 'close' : 'open';
-  const nextBadgeClass = getCompetitionListStatusBadgeClass(nextStatus);
-  const nextStatusLabel = getCompetitionListStatusLabel(nextStatus);
-  const listItem = button.closest('.list-group-item');
-  const statusBadge = listItem?.querySelector('.js-sidebar-status-badge');
-
-  if (statusBadge) {
-    statusBadge.className = `badge ${nextBadgeClass} js-sidebar-status-badge`;
-    statusBadge.textContent = nextStatusLabel;
-  }
-
-  button.dataset.action = nextAction;
-  button.classList.remove('btn-outline-warning', 'btn-outline-success');
-  button.classList.add(`btn-outline-${isOpen ? 'warning' : 'success'}`);
-  button.innerHTML = `
-    <i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'} me-1"></i>
-    ${isOpen ? t('close_competition') : t('open_competition')}
-  `;
-}
-
 function updateSidebarSelectedCompetition(categoryId, styleId) {
   const container = document.getElementById('competitionsSidebarList');
   if (!container) return;
@@ -1284,11 +1267,204 @@ function updateSidebarSelectedCompetition(categoryId, styleId) {
   });
 }
 
-function renderCompetitionSidebar(competitions) {
+function normalizeSidebarCompetitionStatus(status) {
+  const value = String(status || '').trim().toUpperCase();
+  if (!value) return '';
+  if (value === 'OPEN') return 'OPE';
+  if (value === 'CLOSED') return 'CLO';
+  if (value === 'FINISHED') return 'FIN';
+  return value;
+}
+
+function getSidebarCompetitionCategoryLabel(comp) {
+  return String(comp?.category_name ?? comp?.category?.name ?? '').trim();
+}
+
+function getSidebarCompetitionStyleLabel(comp) {
+  return String(comp?.style_name ?? comp?.style?.name ?? '').trim();
+}
+
+function getSidebarCompetitionCategoryKey(comp) {
+  const categoryId = comp?.category_id ?? comp?.category?.id;
+  if (categoryId !== undefined && categoryId !== null && String(categoryId).trim() !== '') {
+    return `id:${String(categoryId).trim()}`;
+  }
+  const label = getSidebarCompetitionCategoryLabel(comp);
+  return label ? `name:${label.toLowerCase()}` : '';
+}
+
+function getSidebarCompetitionStyleKey(comp) {
+  const styleId = comp?.style_id ?? comp?.style?.id;
+  if (styleId !== undefined && styleId !== null && String(styleId).trim() !== '') {
+    return `id:${String(styleId).trim()}`;
+  }
+  const label = getSidebarCompetitionStyleLabel(comp);
+  return label ? `name:${label.toLowerCase()}` : '';
+}
+
+function getSidebarCompetitionStatusKey(comp) {
+  return normalizeSidebarCompetitionStatus(comp?.status);
+}
+
+function syncSidebarFilterLabels() {
+  const categorySelect = document.getElementById('trackingCategoryFilter');
+  const styleSelect = document.getElementById('trackingStyleFilter');
+  const statusSelect = document.getElementById('trackingStatusFilter');
+
+  if (categorySelect) {
+    const label = t('category', 'Categoria');
+    categorySelect.setAttribute('aria-label', label);
+    categorySelect.setAttribute('title', label);
+  }
+  if (styleSelect) {
+    const label = t('style', 'Estilo');
+    styleSelect.setAttribute('aria-label', label);
+    styleSelect.setAttribute('title', label);
+  }
+  if (statusSelect) {
+    const label = t('status', 'Estado');
+    statusSelect.setAttribute('aria-label', label);
+    statusSelect.setAttribute('title', label);
+  }
+}
+
+function populateSidebarFilterSelect(select, options, selectedValue, allLabel) {
+  if (!select) return;
+  select.innerHTML = '';
+
+  const allOption = document.createElement('option');
+  allOption.value = '';
+  allOption.textContent = allLabel;
+  select.appendChild(allOption);
+
+  options.forEach(({ value, label }) => {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = label;
+    select.appendChild(option);
+  });
+
+  const hasSelection = selectedValue && options.some(item => String(item.value) === String(selectedValue));
+  select.value = hasSelection ? selectedValue : '';
+}
+
+function getDistinctSidebarOptions(list, getKey, getLabel) {
+  const map = new Map();
+  (Array.isArray(list) ? list : []).forEach(comp => {
+    const key = getKey(comp);
+    const label = getLabel(comp);
+    if (!key || !label) return;
+    if (!map.has(key)) {
+      map.set(key, label);
+    }
+  });
+
+  return Array.from(map.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => String(a.label).localeCompare(String(b.label), undefined, { sensitivity: 'base' }));
+}
+
+function getDistinctSidebarStatusOptions(list) {
+  const map = new Map();
+  (Array.isArray(list) ? list : []).forEach(comp => {
+    const statusKey = getSidebarCompetitionStatusKey(comp);
+    if (!statusKey) return;
+    if (!map.has(statusKey)) {
+      map.set(statusKey, getCompetitionListStatusLabel(statusKey));
+    }
+  });
+
+  const order = ['OPE', 'CLO', 'FIN'];
+  return Array.from(map.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => {
+      const aOrder = order.indexOf(a.value);
+      const bOrder = order.indexOf(b.value);
+      if (aOrder !== -1 || bOrder !== -1) {
+        if (aOrder === -1) return 1;
+        if (bOrder === -1) return -1;
+        return aOrder - bOrder;
+      }
+      return String(a.label).localeCompare(String(b.label), undefined, { sensitivity: 'base' });
+    });
+}
+
+function renderSidebarFilters(competitions = trackingUiState.sidebarCompetitions) {
+  const categorySelect = document.getElementById('trackingCategoryFilter');
+  const styleSelect = document.getElementById('trackingStyleFilter');
+  const statusSelect = document.getElementById('trackingStatusFilter');
+  if (!categorySelect || !styleSelect || !statusSelect) return;
+
+  syncSidebarFilterLabels();
+
+  const categories = getDistinctSidebarOptions(
+    competitions,
+    getSidebarCompetitionCategoryKey,
+    getSidebarCompetitionCategoryLabel
+  );
+  const styles = getDistinctSidebarOptions(
+    competitions,
+    getSidebarCompetitionStyleKey,
+    getSidebarCompetitionStyleLabel
+  );
+  const statuses = getDistinctSidebarStatusOptions(competitions);
+  const allCategoriesLabel = t('tracking_filters_all_categories', 'Todas Categorías');
+  const allStylesLabel = t('tracking_filters_all_styles', 'Todos Estilos');
+  const allStatusesLabel = t('tracking_filters_all_statuses', 'Todos Estados');
+
+  populateSidebarFilterSelect(categorySelect, categories, trackingUiState.sidebarFilters.category, allCategoriesLabel);
+  populateSidebarFilterSelect(styleSelect, styles, trackingUiState.sidebarFilters.style, allStylesLabel);
+  populateSidebarFilterSelect(statusSelect, statuses, trackingUiState.sidebarFilters.status, allStatusesLabel);
+
+  trackingUiState.sidebarFilters.category = categorySelect.value || '';
+  trackingUiState.sidebarFilters.style = styleSelect.value || '';
+  trackingUiState.sidebarFilters.status = statusSelect.value || '';
+}
+
+function bindSidebarFilters() {
+  const categorySelect = document.getElementById('trackingCategoryFilter');
+  const styleSelect = document.getElementById('trackingStyleFilter');
+  const statusSelect = document.getElementById('trackingStatusFilter');
+  if (!categorySelect || !styleSelect || !statusSelect) return;
+
+  syncSidebarFilterLabels();
+
+  [categorySelect, styleSelect, statusSelect].forEach(select => {
+    select.addEventListener('change', () => {
+      trackingUiState.sidebarFilters.category = categorySelect.value || '';
+      trackingUiState.sidebarFilters.style = styleSelect.value || '';
+      trackingUiState.sidebarFilters.status = statusSelect.value || '';
+      renderCompetitionSidebar();
+    });
+  });
+}
+
+function getFilteredSidebarCompetitions(competitions = trackingUiState.sidebarCompetitions) {
+  const filters = trackingUiState.sidebarFilters || {};
+  return (Array.isArray(competitions) ? competitions : []).filter(comp => {
+    if (filters.category && getSidebarCompetitionCategoryKey(comp) !== filters.category) return false;
+    if (filters.style && getSidebarCompetitionStyleKey(comp) !== filters.style) return false;
+    if (filters.status && getSidebarCompetitionStatusKey(comp) !== filters.status) return false;
+    return true;
+  });
+}
+
+function updateSidebarCompetitionStatusInState(compId, nextStatus) {
+  const normalized = normalizeSidebarCompetitionStatus(nextStatus);
+  if (!normalized || !Array.isArray(trackingUiState.sidebarCompetitions)) return;
+
+  const target = trackingUiState.sidebarCompetitions.find(comp => String(comp?.id) === String(compId));
+  if (target) {
+    target.status = normalized;
+  }
+}
+
+function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetitions) {
   const container = document.getElementById('competitionsSidebarList');
   if (!container) return;
 
-  if (!Array.isArray(competitions) || competitions.length === 0) {
+  const filteredCompetitions = getFilteredSidebarCompetitions(competitions);
+  if (!Array.isArray(filteredCompetitions) || filteredCompetitions.length === 0) {
     container.innerHTML = `
       <div class="list-group-item text-center text-muted py-3">
         ${escapeHtml(t('no_competitions_found'))}
@@ -1297,7 +1473,7 @@ function renderCompetitionSidebar(competitions) {
     return;
   }
 
-  container.innerHTML = competitions.map(comp => {
+  container.innerHTML = filteredCompetitions.map(comp => {
     const categoryName = comp?.category_name || '-';
     const styleName = comp?.style_name || '-';
     const categoryId = comp?.category_id ?? comp?.category?.id ?? '';
@@ -1371,7 +1547,9 @@ function renderCompetitionSidebar(competitions) {
       try {
         await changeCompetitionStatus(compId, action);
         const nextStatus = getCompetitionStatusFromAction(action);
-        updateSidebarCompetitionStatus(btn, nextStatus);
+        updateSidebarCompetitionStatusInState(compId, nextStatus);
+        renderSidebarFilters();
+        renderCompetitionSidebar();
 
         const isSelectedCompetition = String(trackingUiState.selectedCategoryId) === String(categoryId)
           && String(trackingUiState.selectedStyleId) === String(styleId);
@@ -1413,9 +1591,13 @@ async function loadCompetitionSidebar() {
     }
 
     const competitions = await response.json();
-    renderCompetitionSidebar(competitions);
+    trackingUiState.sidebarCompetitions = Array.isArray(competitions) ? competitions : [];
+    renderSidebarFilters(trackingUiState.sidebarCompetitions);
+    renderCompetitionSidebar();
   } catch (error) {
     console.error('Error loading competition sidebar:', error);
+    trackingUiState.sidebarCompetitions = [];
+    renderSidebarFilters(trackingUiState.sidebarCompetitions);
     container.innerHTML = `
       <div class="list-group-item text-danger text-center py-3">
         ${escapeHtml(t('error_title'))}
