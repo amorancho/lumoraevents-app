@@ -87,7 +87,7 @@ function renderStats(data) {
   const fragment = document.createDocumentFragment();
 
   if (data.personalData) {
-    fragment.appendChild(buildPersonalCard(data.personalData));
+    fragment.appendChild(buildPersonalCard(data.personalData, data.results));
   }
 
   if (Array.isArray(data.results?.styles) && data.results.styles.length > 0) {
@@ -114,8 +114,14 @@ function renderStats(data) {
   container.appendChild(fragment);
 }
 
-function buildPersonalCard(personalData) {
+function buildPersonalCard(personalData, results) {
   const { id, name, nationality, category_name, category_position } = personalData;
+  const hasGeneralClassification = Boolean(
+    results?.general &&
+    typeof results.general === 'object' &&
+    !Array.isArray(results.general) &&
+    Object.keys(results.general).length > 0
+  );
   const card = document.createElement('div');
   card.className = 'col-12 col-lg-10';
 
@@ -136,7 +142,9 @@ function buildPersonalCard(personalData) {
           </div>
           <div class="d-flex flex-wrap justify-content-center gap-2 mt-2">
             <span class="badge bg-light text-primary fw-semibold fs-6 px-3 py-2"><i class="bi bi-bookmark-star me-1"></i>${category_name ?? 'Category'}</span>
-            <span class="badge bg-warning text-dark fw-semibold fs-6 px-3 py-2"><i class="bi bi-trophy me-1"></i>Pos. ${category_position ?? '-'}</span>
+            ${hasGeneralClassification
+              ? `<span class="badge bg-warning text-dark fw-semibold fs-6 px-3 py-2"><i class="bi bi-trophy me-1"></i>Pos. ${category_position ?? '-'}</span>`
+              : ''}
           </div>
         </div>
       </div>
