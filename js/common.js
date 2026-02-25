@@ -141,7 +141,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         criteriaConfig: data.criteria_config,
         totalSystem: data.total_system,
         canDecidePositions: data.can_decide_positions === 1,
-        showFlags: data.show_flags === 1
+        showFlags: data.show_flags === 1,
+        hideJudges: data.hide_judges === 1
       };
 
     }

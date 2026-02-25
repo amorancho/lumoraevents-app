@@ -79,6 +79,7 @@ function renderStats(data) {
   const container = statsContainer();
   if (!container) return;
   container.innerHTML = '';
+  const hideJudges = isEventHideJudgesEnabled();
 
   if (!data) {
     return;
@@ -98,7 +99,7 @@ function renderStats(data) {
     fragment.appendChild(buildStylesCard(data.styleStats));
   }
 
-  if (Array.isArray(data.judgesStats) && data.judgesStats.length > 0) {
+  if (!hideJudges && Array.isArray(data.judgesStats) && data.judgesStats.length > 0) {
     fragment.appendChild(buildJudgesCard(data.judgesStats));
   }
 
@@ -112,6 +113,16 @@ function renderStats(data) {
   }
 
   container.appendChild(fragment);
+}
+
+function isEventHideJudgesEnabled() {
+  const value = getEvent()?.hideJudges;
+  if (value === true || value === 1) return true;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
 }
 
 function buildPersonalCard(personalData, results) {
