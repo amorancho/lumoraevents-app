@@ -14,8 +14,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     //await eventReadyPromise;
     await WaitEventLoaded();
 
-    //setPenaltysVisibility();
-
     updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
     updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
     updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
@@ -36,39 +34,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     setupCriteriaConfigTab();
+    setupClubsTab();
+    setupPenaltiesTab();
     bindCriteriaConfigEvents();
     bindSchoolsEvents();
     await loadAll();
 
 });
 
-function setPenaltysVisibility() {
-    const hasPenalties = getEvent().has_penalties;
-    const penaltyBox = document.getElementById('penalty_box');
-    
-    // Si tiene penalizaciones, la clase col-lg-3, si no tiene, col-lg-4
-    const sizeClass = hasPenalties ? 'col-lg-3' : 'col-lg-4';
-    document.getElementById('category_box').className = `col-12 ${sizeClass}`;
-    document.getElementById('style_box').className = `col-12 ${sizeClass}`;
-    document.getElementById('criteria_box').className = `col-12 ${sizeClass}`;
-    document.getElementById('penalty_box').className = `col-12 ${sizeClass}`;
-
-    if (hasPenalties) {
-        penaltyBox.style.display = 'block';
-    } else {
-        penaltyBox.style.display = 'none';
-    }
-}
-
 async function loadAll() {
-    await Promise.all([
+    const tablesToLoad = [
         loadTable("categories"),
         loadTable("styles"),
-        loadTable("criteria"),
-        loadTable("penalties")
-    ]);
+        loadTable("criteria")
+    ];
 
-    await loadSchoolsTable();
+    if (shouldShowPenaltiesTab()) {
+        tablesToLoad.push(loadTable("penalties"));
+    }
+
+    await Promise.all(tablesToLoad);
+
+    if (shouldShowClubsTab()) {
+        await loadSchoolsTable();
+    }
 
     if (shouldShowCriteriaConfigTab()) {
         populateCriteriaConfigOptions();
@@ -205,6 +194,10 @@ async function addEntry(table) {
 }
 
 function bindSchoolsEvents() {
+    if (!shouldShowClubsTab()) {
+        return;
+    }
+
     const createBtn = document.getElementById('createNewSchoolBtn');
     const saveBtn = document.getElementById('saveSchoolBtn');
     const tableBody = document.getElementById('clubsTable');
@@ -253,6 +246,46 @@ function bindSchoolsEvents() {
     modalEl.addEventListener('shown.bs.modal', () => {
         document.getElementById('schoolNameInput')?.focus();
     });
+}
+
+function shouldShowClubsTab() {
+    const rawHasClubs = getEvent()?.hasClubs;
+    if (rawHasClubs === true || rawHasClubs === 1) return true;
+    if (typeof rawHasClubs === 'string') {
+        const normalized = rawHasClubs.trim().toLowerCase();
+        return normalized === '1' || normalized === 'true' || normalized === 'yes';
+    }
+    return false;
+}
+
+function setupClubsTab() {
+    const tab = document.getElementById('tab-clubs-tab');
+    const pane = document.getElementById('tab-clubs');
+    if (!tab || !pane) return;
+
+    const showClubs = shouldShowClubsTab();
+    tab.classList.toggle('d-none', !showClubs);
+    pane.classList.toggle('d-none', !showClubs);
+}
+
+function shouldShowPenaltiesTab() {
+    const rawHasPenalties = getEvent()?.has_penalties;
+    if (rawHasPenalties === true || rawHasPenalties === 1) return true;
+    if (typeof rawHasPenalties === 'string') {
+        const normalized = rawHasPenalties.trim().toLowerCase();
+        return normalized === '1' || normalized === 'true' || normalized === 'yes';
+    }
+    return false;
+}
+
+function setupPenaltiesTab() {
+    const tab = document.getElementById('tab-penalties-tab');
+    const pane = document.getElementById('tab-penalties');
+    if (!tab || !pane) return;
+
+    const showPenalties = shouldShowPenaltiesTab();
+    tab.classList.toggle('d-none', !showPenalties);
+    pane.classList.toggle('d-none', !showPenalties);
 }
 
 function openSchoolModal({ modal, action, school = null }) {

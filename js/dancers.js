@@ -31,6 +31,38 @@ const nationalityTomSelect = new TomSelect("#nationality", {
   allowEmptyOption: true
 });
 
+function shouldShowDancerClubs() {
+  const rawHasClubs = getEvent()?.hasClubs;
+  if (rawHasClubs === true || rawHasClubs === 1) return true;
+  if (typeof rawHasClubs === 'string') {
+    const normalized = rawHasClubs.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
+}
+
+function applyClubsVisibility() {
+  const showClubs = shouldShowDancerClubs();
+
+  const clubFilter = document.getElementById('clubFilter');
+  if (clubFilter) {
+    clubFilter.classList.toggle('d-none', !showClubs);
+    if (!showClubs) {
+      clubFilter.value = '';
+    }
+  }
+
+  const clubHeader = document.getElementById('clubHeader');
+  if (clubHeader) {
+    clubHeader.classList.toggle('d-none', !showClubs);
+  }
+
+  const editClubRow = document.getElementById('editClubRow');
+  if (editClubRow) {
+    editClubRow.classList.toggle('d-none', !showClubs);
+  }
+}
+
 function applyFlagsVisibility() {
   const showFlags = shouldShowDancerFlags();
 
@@ -58,6 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
   await WaitEventLoaded();
   applyFlagsVisibility();
+  applyClubsVisibility();
 
   updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
@@ -82,7 +115,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadCategories();
   loadStyles();
   loadMasters(); 
-  loadClubs();
+  if (shouldShowDancerClubs()) {
+    loadClubs();
+  }
 
   await ensureTranslationsReady();
   fetchDancersFromAPI();
@@ -122,9 +157,11 @@ document.addEventListener('DOMContentLoaded', function () {
     applyFilter();
   });
 
-  filterClub.addEventListener('change', () => {
-    applyFilter();
-  });
+  if (filterClub) {
+    filterClub.addEventListener('change', () => {
+      applyFilter();
+    });
+  }
 
   filterStyle.addEventListener('change', () => {
     applyFilter();
@@ -147,7 +184,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('editCategory').selectedIndex = 0;
     document.getElementById('editMaster').selectedIndex = 0;
     document.getElementById('nationality').tomselect.setValue('');
-    document.getElementById('editClub').selectedIndex = 0;
+    const editClubSelect = document.getElementById('editClub');
+    if (editClubSelect) {
+      editClubSelect.selectedIndex = 0;
+    }
     document.getElementById('editStyles').selectedIndex = -1; // Deseleccionar todos los estilos
     setCodeLabel('', false);
     
@@ -178,7 +218,9 @@ document.addEventListener('DOMContentLoaded', function () {
       document.getElementById('editCategory').value = dancer.category_id;
       document.getElementById('editMaster').value = dancer.master_id;
       document.getElementById('nationality').tomselect.setValue(dancer.nationality || '');
-      document.getElementById('editClub').value = dancer.club_id;     
+      if (shouldShowDancerClubs()) {
+        document.getElementById('editClub').value = dancer.club_id;
+      }
 
       const stylesOptions = document.getElementById('editStyles').options;
     
@@ -249,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function () {
       event_id: getEvent().id,
       email: inputEmail.value.trim().toLowerCase(),
       language: inputLanguage.value,
-      club_id: inputClub.value ? parseInt(inputClub.value, 10) : null
+      club_id: shouldShowDancerClubs() && inputClub.value ? parseInt(inputClub.value, 10) : null
     };
 
     try {
@@ -370,6 +412,7 @@ async function fetchDancersFromAPI() {
 
 function loadDancers() {
   const showFlags = shouldShowDancerFlags();
+  const showClubs = shouldShowDancerClubs();
   const dancersTable = document.getElementById('dancersTable');
   dancersTable.innerHTML = ''; // Clear existing rows
   dancers.forEach(dancer => {
@@ -403,7 +446,7 @@ function loadDancers() {
       </td>
       <td class="align-middle">${dancer.category_name}</td>
       <td class="align-middle">${stylesSpans}</td>
-      <td class="align-middle">${clubName}</td>
+      ${showClubs ? `<td class="align-middle">${clubName}</td>` : ''}
       <td class="align-middle">
         <i class="bi bi-people me-1 text-muted"></i>
         ${dancer.master_name || ''}
@@ -540,6 +583,11 @@ async function loadMasters() {
 }
 
 async function loadClubs() {
+  if (!shouldShowDancerClubs()) {
+    clubsById = new Map();
+    return;
+  }
+
   const clubSelect = document.getElementById('editClub');
   clubSelect.innerHTML = ''; // Limpiar opciones anteriores
 
@@ -608,7 +656,8 @@ async function deleteDancer(dancerIdToDelete) {
 
 function applyFilter() {
   const filterCategory = document.getElementById('categoryFilter').value.toLowerCase();
-  const filterClub = document.getElementById('clubFilter').value;
+  const hasClubs = shouldShowDancerClubs();
+  const filterClub = hasClubs ? (document.getElementById('clubFilter')?.value || '') : '';
   const filterStyle = document.getElementById('styleFilter').value;
   const rows = document.querySelectorAll('#dancersTable tr');
 
@@ -639,7 +688,7 @@ function updateDancersCounter(totalCount, visibleCount) {
   if (!countEl) return;
 
   const categoryFilterValue = document.getElementById('categoryFilter')?.value || '';
-  const clubFilterValue = document.getElementById('clubFilter')?.value || '';
+  const clubFilterValue = shouldShowDancerClubs() ? (document.getElementById('clubFilter')?.value || '') : '';
   const styleFilterValue = document.getElementById('styleFilter')?.value || '';
   const hasActiveFilters = Boolean(categoryFilterValue || clubFilterValue || styleFilterValue);
 

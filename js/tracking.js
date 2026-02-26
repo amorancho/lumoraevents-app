@@ -1308,6 +1308,16 @@ function getCompetitionListStatusBadgeClass(status) {
   return 'bg-secondary';
 }
 
+function shouldShowTrackingPenaltyAction() {
+  const rawHasPenalties = getEvent()?.has_penalties;
+  if (rawHasPenalties === true || rawHasPenalties === 1) return true;
+  if (typeof rawHasPenalties === 'string') {
+    const normalized = rawHasPenalties.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
+}
+
 function getCompetitionStatusFromAction(action) {
   if (action === 'open') return 'OPE';
   if (action === 'close') return 'CLO';
@@ -1840,6 +1850,7 @@ async function setClassificationVisibility(categoryId, styleId, nextVisible) {
 
 function renderCompetitions(competitions) {
   const container = document.getElementById('competitionsContainer');
+  const showPenaltyAction = shouldShowTrackingPenaltyAction();
   container.innerHTML = '';
 
   let btnDisabled = '';
@@ -1944,7 +1955,7 @@ function renderCompetitions(competitions) {
                       ${t('disqualify')}
                     </button>
                   </li>
-                  <li><button class="dropdown-item" type="button" ${btnDisabled}>${t('penalty')}</button></li>
+                  ${showPenaltyAction ? `<li><button class="dropdown-item" type="button" ${btnDisabled}>${t('penalty')}</button></li>` : ''}
                 </ul>
               </div>
               <span class="badge bg-info">#${d.position}</span>

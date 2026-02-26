@@ -418,6 +418,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('visible_schedule').checked = (Number(eventObj.visible_schedule) === 1);
   document.getElementById('visible_results').checked = (Number(eventObj.visible_results) === 1);
   document.getElementById('visible_statistics').checked = (Number(eventObj.visible_statistics) === 1);
+  document.getElementById('has_clubs').checked = (Number(eventObj.has_clubs) === 1);
   document.getElementById('has_penalties').checked = (Number(eventObj.has_penalties) === 1);
   document.getElementById('has_registrations').checked = (Number(eventObj.has_registrations) === 1);
   document.getElementById('show_flags').checked = (Number(eventObj.show_flags) === 1);
@@ -477,6 +478,7 @@ async function saveEvent() {
     visible_schedule: document.getElementById('visible_schedule').checked ? 1 : 0,
     visible_results: document.getElementById('visible_results').checked ? 1 : 0,
     visible_statistics: document.getElementById('visible_statistics').checked ? 1 : 0,
+    has_clubs: document.getElementById('has_clubs').checked ? 1 : 0,
     has_penalties: document.getElementById('has_penalties').checked ? 1 : 0,
     has_registrations: document.getElementById('has_registrations').checked ? 1 : 0,
     registration_start: document.getElementById('registration_start').value || null,
