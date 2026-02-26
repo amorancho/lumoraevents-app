@@ -212,6 +212,45 @@ function downloadBlobFile(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+async function exportClassificationResults(eventId, { all = true, categories = [] } = {}) {
+  if (!eventId) {
+    throw new Error(t('error_title'));
+  }
+
+  const normalizedCategories = Array.isArray(categories)
+    ? categories
+      .map(value => Number(value))
+      .filter(value => Number.isFinite(value))
+    : [];
+
+  const response = await fetch(`${API_BASE_URL}/api/competitions/results/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      event_id: eventId,
+      all: Boolean(all),
+      categories: all ? [] : normalizedCategories
+    })
+  });
+
+  if (!response.ok) {
+    let message = t('error_title');
+    try {
+      const data = await response.json();
+      message = data?.error || data?.message || message;
+    } catch {
+      // ignore non-json errors
+    }
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get('Content-Disposition');
+  const filename = getFilenameFromContentDisposition(disposition) || `results-event-${eventId}.pdf`;
+
+  downloadBlobFile(blob, filename);
+}
+
 function initClassificationExportOptions() {
   const exportBtn = document.getElementById('exportBtn');
   const modalEl = document.getElementById('classificationExportOptionsModal');
@@ -320,32 +359,7 @@ function initClassificationExportOptions() {
 
     setButtonLoading(confirmBtn, true, t('exporting', 'Exporting...'));
     try {
-      const response = await fetch(`${API_BASE_URL}/api/competitions/results/export`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event_id: eventId,
-          all,
-          categories
-        })
-      });
-
-      if (!response.ok) {
-        let message = t('error_title');
-        try {
-          const data = await response.json();
-          message = data?.error || data?.message || message;
-        } catch {
-          // ignore non-json errors
-        }
-        throw new Error(message);
-      }
-
-      const blob = await response.blob();
-      const disposition = response.headers.get('Content-Disposition');
-      const filename = getFilenameFromContentDisposition(disposition) || `results-event-${eventId}.pdf`;
-
-      downloadBlobFile(blob, filename);
+      await exportClassificationResults(eventId, { all, categories });
       modal.hide();
     } catch (error) {
       console.error('Error exporting results:', error);
@@ -1658,6 +1672,13 @@ function getClassificationVisibleButtonClass(isVisible) {
   return isVisible ? 'btn-success' : 'btn-outline-secondary';
 }
 
+function renderClassificationVisibleButtonContent(isVisible) {
+  return `
+    <i class="bi ${getClassificationVisibleButtonIcon(isVisible)} me-1"></i>
+    <span class="tracking-summary-btn-label">${getClassificationVisibleButtonLabel(isVisible)}</span>
+  `;
+}
+
 function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificationVisible) {
   const statusBadgeClass = getCompetitionListStatusBadgeClass(comp.status);
   const progress = computeCompetitionProgress(comp);
@@ -1665,53 +1686,63 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
   const progressTextClass = progress.percentage >= 100 ? 'text-white' : 'text-dark';
   const progressText = `${progress.completed}/${progress.total} (${progress.percentage}%)`;
   const visibilityButtonDisabled = !isFinished ? 'disabled' : '';
+  const exportButtonDisabled = !isFinished ? 'disabled' : '';
   const visibilityButtonClass = getClassificationVisibleButtonClass(isClassificationVisible);
-  const visibilityIcon = getClassificationVisibleButtonIcon(isClassificationVisible);
-  const visibilityLabel = getClassificationVisibleButtonLabel(isClassificationVisible);
 
   const card = document.createElement('div');
   card.className = 'card mb-4 border-primary-subtle';
   card.innerHTML = `
     <div class="card-body">
-      <div class="d-flex flex-wrap flex-lg-nowrap align-items-center gap-2">
-        <div class="d-flex flex-wrap align-items-center gap-2">
-          <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.category_name || '-')}</span>
-          <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.style_name || '-')}</span>
-          <span class="badge ${statusBadgeClass} fs-6 px-2 py-1">${escapeHtml(statusText || '-')}</span>
-        </div>
-        <div class="d-flex align-items-center gap-3 mx-lg-3 my-1 my-lg-0 flex-grow-1" style="min-width: 220px;">
-          <div class="progress flex-grow-1 position-relative" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.percentage}" style="height: 30px;">
-            <div class="progress-bar progress-bar-striped ${progressBarColorClass}" style="width: ${progress.percentage}%"></div>
-            <span class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap ${progressTextClass}">
-              ${progressText}
-            </span>
+      <div class="tracking-summary-layout">
+        <div class="tracking-summary-top">
+          <div class="tracking-summary-badges">
+            <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.category_name || '-')}</span>
+            <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.style_name || '-')}</span>
+            <span class="badge ${statusBadgeClass} fs-6 px-2 py-1">${escapeHtml(statusText || '-')}</span>
+          </div>
+          <div class="d-flex align-items-center gap-3 tracking-summary-progress">
+            <div class="progress flex-grow-1 position-relative" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.percentage}" style="height: 30px;">
+              <div class="progress-bar progress-bar-striped ${progressBarColorClass}" style="width: ${progress.percentage}%"></div>
+              <span class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap ${progressTextClass}">
+                ${progressText}
+              </span>
+            </div>
           </div>
         </div>
-        <div class="d-flex flex-wrap gap-2 ms-lg-auto">
+        <div class="tracking-summary-actions">
           <button type="button"
-            class="btn btn-outline-secondary btn-sm btn-competition-details"
+            class="btn btn-outline-secondary btn-sm btn-competition-details tracking-summary-btn"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
             data-status="${comp.status}">
             <i class="bi bi-info-circle me-1"></i>
-            ${t('view_details')}
+            <span class="tracking-summary-btn-label">${t('view_details')}</span>
           </button>
           <button type="button"
-            class="btn btn-outline-primary btn-sm btn-view-results"
+            class="btn btn-outline-primary btn-sm btn-view-results tracking-summary-btn"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
             data-status="${comp.status}">
             <i class="bi bi-trophy me-1"></i>
-            ${t('results_button', 'Results')}
+            <span class="tracking-summary-btn-label">${t('results_button', 'Results')}</span>
           </button>
           <button type="button"
-            class="btn btn-sm ${visibilityButtonClass} js-classification-visible-btn"
+            class="btn btn-sm ${visibilityButtonClass} js-classification-visible-btn tracking-summary-btn"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
             data-visible="${isClassificationVisible ? '1' : '0'}"
             ${visibilityButtonDisabled}>
-            <i class="bi ${visibilityIcon} me-1"></i>
-            ${visibilityLabel}
+            ${renderClassificationVisibleButtonContent(isClassificationVisible)}
+          </button>
+          <button type="button"
+            class="btn btn-warning btn-sm btn-export-category-results tracking-summary-btn"
+            data-category-id="${comp.category_id}"
+            data-style-id="${comp.style_id}"
+            data-category-name="${escapeHtml(comp.category_name || '-')}"
+            data-style-name="${escapeHtml(comp.style_name || '-')}"
+            ${exportButtonDisabled}>
+            <i class="bi bi-filetype-pdf me-1"></i>
+            <span class="tracking-summary-btn-label">${t('export_results_button', 'Export Results')}</span>
           </button>
         </div>
       </div>
@@ -1731,7 +1762,7 @@ function syncClassificationVisibilityControls(categoryId, styleId, isVisible) {
     button.dataset.visible = isVisible ? '1' : '0';
     button.classList.remove('btn-success', 'btn-outline-secondary');
     button.classList.add(getClassificationVisibleButtonClass(isVisible));
-    button.innerHTML = `<i class="bi ${getClassificationVisibleButtonIcon(isVisible)} me-1"></i>${getClassificationVisibleButtonLabel(isVisible)}`;
+    button.innerHTML = renderClassificationVisibleButtonContent(isVisible);
   });
 }
 
@@ -2007,6 +2038,44 @@ function renderCompetitions(competitions) {
       } finally {
         if (button.isConnected) {
           button.disabled = false;
+        }
+      }
+    });
+  });
+
+  container.querySelectorAll('.btn-export-category-results').forEach(button => {
+    button.addEventListener('click', async () => {
+      if (button.disabled) return;
+
+      const eventId = Number(getEvent()?.id);
+      const categoryId = Number(button.dataset.categoryId);
+      const categoryName = button.dataset.categoryName || '-';
+      const styleName = button.dataset.styleName || '-';
+      const competitionLabel = `${categoryName}-${styleName}`;
+
+      if (!Number.isFinite(eventId) || !Number.isFinite(categoryId)) {
+        showMessageModal(t('error_title'), t('error_title'));
+        return;
+      }
+
+      const confirmTemplate = t(
+        'confirm_export_category_pdf',
+        'Are you sure you want to export to PDF the full category for competition {competition}?'
+      );
+      const confirmMessage = confirmTemplate.replace('{competition}', competitionLabel);
+
+      const confirmed = await showModal(confirmMessage);
+      if (!confirmed) return;
+
+      setButtonLoading(button, true, t('exporting', 'Exporting...'));
+      try {
+        await exportClassificationResults(eventId, { all: false, categories: [categoryId] });
+      } catch (error) {
+        console.error('Error exporting category results:', error);
+        showMessageModal(error?.message || t('error_title'), t('error_title'));
+      } finally {
+        if (button.isConnected) {
+          setButtonLoading(button, false);
         }
       }
     });

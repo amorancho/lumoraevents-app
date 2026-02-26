@@ -325,6 +325,94 @@
     .sidebar-competition-item-active .js-sidebar-competition-item {
       color: var(--bs-primary) !important;
     }
+    .tracking-summary-layout {
+      display: flex;
+      flex-direction: column;
+      row-gap: 0.6rem;
+    }
+    .tracking-summary-top {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+    .tracking-summary-badges {
+      flex: 0 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      width: fit-content;
+      max-width: 100%;
+      min-width: 0;
+    }
+    .tracking-summary-progress {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .tracking-summary-progress .progress {
+      width: 100%;
+      min-width: 0;
+    }
+    .tracking-summary-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      align-items: stretch;
+      align-content: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+    .tracking-summary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.25rem;
+      min-height: 31px;
+      min-width: 8rem;
+      max-width: 12.5rem;
+      flex: 0 1 auto;
+    }
+    .tracking-summary-btn i {
+      flex: 0 0 auto;
+      margin-right: 0 !important;
+    }
+    .tracking-summary-btn-label {
+      display: block;
+      min-width: 0;
+      line-height: 1.1;
+      text-align: center;
+      white-space: normal;
+      word-break: break-word;
+    }
+    @media (min-width: 1400px) {
+      .tracking-summary-layout {
+        flex-direction: row;
+        align-items: center;
+        column-gap: 0.75rem;
+      }
+      .tracking-summary-top {
+        flex: 1 1 auto;
+      }
+      .tracking-summary-badges {
+        flex: 0 1 auto;
+      }
+      .tracking-summary-progress {
+        flex: 1 1 260px;
+      }
+      .tracking-summary-actions {
+        margin-left: auto;
+        justify-content: flex-end;
+        flex-wrap: nowrap;
+      }
+      .tracking-summary-btn {
+        flex: 0 0 auto;
+        min-width: auto;
+        max-width: none;
+      }
+      .tracking-summary-btn-label {
+        white-space: nowrap;
+      }
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
