@@ -197,7 +197,7 @@ function initJudgeManagement() {
     const judgeId = document.getElementById('editForm').dataset.id;
   
     if (!judgeId) {
-      showMessageModal('No judge selected.');
+      showMessageModal('No judge selected.', undefined, 'warning');
       return;
     }
   
@@ -231,7 +231,7 @@ function initJudgeManagement() {
   
     } catch (err) {
       console.error(err);
-      showMessageModal('Error sending welcome email.');
+      showMessageModal('Error sending welcome email.', undefined, 'danger');
     } finally {
       // Quitar spinner y restaurar botón
       spinner.remove();
@@ -245,7 +245,7 @@ function initJudgeManagement() {
     const judgeId = document.getElementById('editForm').dataset.id;
   
     if (!judgeId) {
-      showMessageModal('No judge selected.');
+      showMessageModal('No judge selected.', undefined, 'warning');
       return;
     }
   
@@ -275,7 +275,7 @@ function initJudgeManagement() {
   
     } catch (err) {
       console.error(err);
-      showMessageModal('Error sending welcome email.');
+      showMessageModal('Error sending welcome email.', undefined, 'danger');
     } finally {
       // Quitar spinner y restaurar botón
       spinner.remove();
@@ -314,7 +314,7 @@ function initJudgeManagement() {
   
     } catch (err) {
       console.error(err);
-      showMessageModal('Error sending welcome emails.');
+      showMessageModal('Error sending welcome emails.', undefined, 'danger');
     } finally {
       btn.innerHTML = originalText;
       btn.disabled = false;

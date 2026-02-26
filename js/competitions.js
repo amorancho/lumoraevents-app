@@ -945,7 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace('{updated}', String(data?.updated_competitions ?? 0))
             .replace('{requested}', String(data?.requested_pairs ?? (selectedCategories.length * selectedStyles.length)));
 
-          showMessageModal(successMessage, t('max_times_info_title', 'Information'));
+          showMessageModal(successMessage, t('max_times_info_title', 'Information'), 'success');
           maxTimesModal.hide();
           await fetchCompetitionsFromAPI();
         } catch (error) {

@@ -1941,6 +1941,22 @@ function renderCompetitions(competitions) {
           className: 'me-2',
           style: 'vertical-align: middle;'
         });
+        const penaltiesCount = Number(d?.num_penalties) || 0;
+        const hasPenalties = penaltiesCount > 0;
+        const penaltiesTooltip = escapeHtml(t('dancer_has_penalties_tooltip', 'Tiene penalizaciones'));
+        const penaltiesIndicatorHtml = hasPenalties
+          ? `
+              <span
+                class="tracking-penalties-indicator"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="${penaltiesTooltip}"
+                aria-label="${penaltiesTooltip}">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+                <span>${penaltiesCount}</span>
+              </span>
+            `
+          : '';
 
         const dancerCell = `
           <div class="d-flex align-items-center justify-content-between">
@@ -1949,6 +1965,7 @@ function renderCompetitions(competitions) {
               <span>${d.dancer_name}</span>
             </div>
             <div class="d-flex align-items-center gap-2">
+              ${penaltiesIndicatorHtml}
               <div class="dropdown">
                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
                   type="button"
@@ -1987,6 +2004,7 @@ function renderCompetitions(competitions) {
                         data-dancer-id="${d.dancer_id ?? d.id}"
                         data-dancer-name="${escapeHtml(d.dancer_name || '')}"
                         data-competition-label="${escapeHtml(competitionLabel)}"
+                        data-assigned-by="O"
                         ${btnDisabled}>
                         ${t('penalty')}
                       </button>
@@ -2104,7 +2122,8 @@ function renderCompetitions(competitions) {
         styleId: btn.dataset.styleId,
         dancerId: btn.dataset.dancerId,
         dancerName: btn.dataset.dancerName,
-        competitionLabel: btn.dataset.competitionLabel
+        competitionLabel: btn.dataset.competitionLabel,
+        assignedBy: btn.dataset.assignedBy
       });
     });
   });
@@ -2429,10 +2448,13 @@ function normalizePenaltyDefinition(rawPenalty) {
 function normalizeCompetitionPenalty(rawPenalty) {
   const penaltyId = parseOptionalNumber(rawPenalty?.penalty_id ?? rawPenalty?.id);
   if (penaltyId === null) return null;
+  const rawAssignedBy = String(rawPenalty?.assigned_by || '').trim().toUpperCase();
+  const assignedBy = (rawAssignedBy === 'O' || rawAssignedBy === 'J') ? rawAssignedBy : null;
 
   return {
     penaltyId,
-    score: parseOptionalNumber(rawPenalty?.penalty_score)
+    score: parseOptionalNumber(rawPenalty?.penalty_score),
+    assignedBy
   };
 }
 
@@ -2619,15 +2641,44 @@ function collectPenaltyAssignmentsFromModal() {
   return { isValid, assignments };
 }
 
+async function saveCompetitionPenalties({ eventId, competitionId, dancerId, assignedBy = 'O', penalties = [] } = {}) {
+  const normalizedAssignedBy = String(assignedBy).trim().toUpperCase() === 'J' ? 'J' : 'O';
+  const response = await fetch(`${API_BASE_URL}/api/competitions/penalties`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      event_id: Number(eventId),
+      competition_id: Number(competitionId),
+      dancer_id: Number(dancerId),
+      assigned_by: normalizedAssignedBy,
+      penalties
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      payload?.error
+      || payload?.message
+      || t('penalty_modal_save_error', 'Error saving penalties.')
+    );
+  }
+
+  return payload;
+}
+
 function renderPenaltyAssignmentModalContent() {
   const bodyEl = document.getElementById('penaltyAssignmentModalBody');
   if (!bodyEl) return;
 
   const context = penaltyAssignmentState.context || {};
   const penalties = Array.isArray(penaltyAssignmentState.penalties) ? penaltyAssignmentState.penalties : [];
-  const competitionPenalties = Array.isArray(penaltyAssignmentState.competitionPenalties)
+  const allCompetitionPenalties = Array.isArray(penaltyAssignmentState.competitionPenalties)
     ? penaltyAssignmentState.competitionPenalties
     : [];
+  const competitionPenalties = context?.assignedBy === 'J'
+    ? allCompetitionPenalties.filter(item => item?.assignedBy === 'J')
+    : allCompetitionPenalties;
 
   if (!penalties.length) {
     bodyEl.innerHTML = `
@@ -2657,6 +2708,11 @@ function renderPenaltyAssignmentModalContent() {
     const fixedBadge = penalty.isFixedScore
       ? `<span class="badge text-bg-warning text-dark penalty-fixed-badge">${escapeHtml(t('penalty_modal_fixed_score', 'Fixed'))}</span>`
       : '';
+    const assignedByBadge = selectedPenalty?.assignedBy === 'O'
+      ? `<span class="badge bg-primary">${escapeHtml(t('penalty_modal_assigned_by_org', 'ORGANIZATION'))}</span>`
+      : selectedPenalty?.assignedBy === 'J'
+        ? `<span class="badge bg-dark">${escapeHtml(t('penalty_modal_assigned_by_jury', 'JURY'))}</span>`
+        : '<span class="text-muted">-</span>';
     const forJudgesIcon = penalty.forJudges
       ? '<i class="bi bi-check-circle-fill text-success"></i>'
       : '<i class="bi bi-dash-circle text-muted"></i>';
@@ -2675,6 +2731,9 @@ function renderPenaltyAssignmentModalContent() {
         </td>
         <td class="align-middle penalty-col-name">
           <div class="fw-semibold">${escapeHtml(penalty.name)}</div>
+        </td>
+        <td class="text-center align-middle penalty-col-assigned-by">
+          ${assignedByBadge}
         </td>
         <td class="text-center align-middle penalty-col-for-judges" title="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}">
           ${forJudgesIcon}
@@ -2718,6 +2777,7 @@ function renderPenaltyAssignmentModalContent() {
           <tr>
             <th class="text-center penalty-col-apply">${escapeHtml(t('penalty_modal_apply', 'Apply'))}</th>
             <th class="penalty-col-name">${escapeHtml(t('penalty_modal_name', 'Penalty'))}</th>
+            <th class="text-center penalty-col-assigned-by">${escapeHtml(t('penalty_modal_assigned_by', 'Asignado por'))}</th>
             <th class="text-center penalty-col-for-judges">${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}</th>
             <th class="text-center penalty-col-range">${escapeHtml(t('penalty_modal_range', 'Range'))}</th>
             <th class="penalty-col-score">${escapeHtml(t('penalty_modal_score', 'Score'))}</th>
@@ -2766,7 +2826,7 @@ function initPenaltyAssignmentModal() {
     clearPenaltyAssignmentValidationMessage();
   });
 
-  saveBtn.addEventListener('click', () => {
+  saveBtn.addEventListener('click', async () => {
     const { isValid, assignments } = collectPenaltyAssignmentsFromModal();
     if (!isValid) {
       setPenaltyAssignmentValidationMessage(
@@ -2775,13 +2835,51 @@ function initPenaltyAssignmentModal() {
       return;
     }
 
+    const context = penaltyAssignmentState.context || {};
+    const eventId = parseOptionalNumber(context?.eventId);
+    const competitionId = parseOptionalNumber(context?.competitionId);
+    const dancerId = parseOptionalNumber(context?.dancerId);
+    const assignedBy = String(context?.assignedBy || 'O').trim().toUpperCase() === 'J' ? 'J' : 'O';
+    if (eventId === null || competitionId === null || dancerId === null) {
+      showMessageModal(t('error_title'), t('error_title'));
+      return;
+    }
+
     clearPenaltyAssignmentValidationMessage();
-    const messageTemplate = t(
-      'penalty_modal_save_not_available',
-      'Saving penalties is not available yet. Selected penalties: {count}.'
-    );
-    const message = messageTemplate.replace('{count}', String(assignments.length));
-    showMessageModal(message, t('penalty'));
+    setButtonLoading(saveBtn, true, t('loading'));
+
+    try {
+      const result = await saveCompetitionPenalties({
+        eventId,
+        competitionId,
+        dancerId,
+        assignedBy,
+        penalties: assignments
+      });
+
+      penaltyAssignmentState.competitionPenalties = assignments.map(item => ({
+        penaltyId: item.penalty_id,
+        score: item.penalty_score,
+        assignedBy
+      }));
+
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.hide();
+      await reloadSelectedCompetition();
+
+      const fallbackMessage = result?.changed
+        ? t('penalty_modal_saved', 'Penalties saved successfully.')
+        : t('penalty_modal_no_changes', 'No penalty changes detected.');
+      showMessageModal(result?.message || fallbackMessage, t('penalty'), 'success');
+    } catch (error) {
+      console.error('Error saving competition penalties:', error);
+      showMessageModal(
+        error?.message || t('penalty_modal_save_error', 'Error saving penalties.'),
+        t('error_title')
+      );
+    } finally {
+      setButtonLoading(saveBtn, false);
+    }
   });
 
   modalEl.addEventListener('hidden.bs.modal', () => {
@@ -2796,7 +2894,7 @@ function initPenaltyAssignmentModal() {
   modalEl.dataset.initialized = '1';
 }
 
-async function openPenaltyAssignmentModal({ competitionId, dancerId, dancerName, competitionLabel = '' } = {}) {
+async function openPenaltyAssignmentModal({ competitionId, dancerId, dancerName, competitionLabel = '', assignedBy = 'O' } = {}) {
   const modalEl = document.getElementById('penaltyAssignmentModal');
   const bodyEl = document.getElementById('penaltyAssignmentModalBody');
   const modalTitleEl = document.getElementById('penaltyAssignmentModalLabel');
@@ -2816,7 +2914,8 @@ async function openPenaltyAssignmentModal({ competitionId, dancerId, dancerName,
     competitionId: parsedCompetitionId,
     dancerId: parsedDancerId,
     dancerName: dancerName || t('dancer'),
-    competitionLabel
+    competitionLabel,
+    assignedBy: String(assignedBy).trim().toUpperCase() === 'J' ? 'J' : 'O'
   };
 
   modalTitleEl.textContent = t('penalty_modal_title', 'Penalties');

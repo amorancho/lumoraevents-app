@@ -329,13 +329,16 @@
     }
     #penaltyAssignmentModal .penalty-assignment-table {
       table-layout: fixed;
-      min-width: 760px;
+      min-width: 860px;
     }
     #penaltyAssignmentModal .penalty-col-apply {
       width: 72px;
     }
     #penaltyAssignmentModal .penalty-col-name {
       width: auto;
+    }
+    #penaltyAssignmentModal .penalty-col-assigned-by {
+      width: 130px;
     }
     #penaltyAssignmentModal .penalty-col-for-judges {
       width: 100px;
@@ -349,6 +352,34 @@
     #penaltyAssignmentModal .penalty-fixed-badge {
       font-size: 0.68rem;
       line-height: 1;
+    }
+    .tracking-penalties-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: 999px;
+      background: #dc3545;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1;
+      box-shadow: 0 0 0 0.16rem rgba(220, 53, 69, 0.22);
+      animation: trackingPenaltyPulse 1.7s ease-in-out infinite;
+    }
+    .tracking-penalties-indicator i {
+      font-size: 0.75rem;
+      line-height: 1;
+    }
+    @keyframes trackingPenaltyPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0.16rem rgba(220, 53, 69, 0.22);
+      }
+      50% {
+        transform: scale(1.04);
+        box-shadow: 0 0 0 0.28rem rgba(220, 53, 69, 0.1);
+      }
     }
     .tracking-center-column {
       min-width: 0;

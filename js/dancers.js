@@ -1261,7 +1261,7 @@ async function handleImportParticipantsClick() {
     await fetchDancersFromAPI();
     applyFilter();
 
-    showMessageModal(successMessage, t('import_dancers', 'Import dancers'));
+    showMessageModal(successMessage, t('import_dancers', 'Import dancers'), 'success');
   } catch (error) {
     console.error('Error creating participants:', error);
     showMessageModal(error.message || t('import_create_error', 'Could not create participants.'), t('error', 'Error'));

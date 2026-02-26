@@ -356,13 +356,37 @@ function getDancerFlagImgHtml(nationality, options = {}) {
   return `<img src="${getDancerFlagUrl(nationality, safeSize)}"${safeClassName ? ` class="${safeClassName}"` : ''}${safeStyle ? ` style="${safeStyle}"` : ''} width="${safeWidth}" height="${safeHeight}" alt="${safeAlt}">`;
 }
 
-function showMessageModal(message, title = "Mensaje") {
-  // Establece el título y el cuerpo del modal
+function showMessageModal(message, title = "Mensaje", variant = 'danger') {
+  const modalEl = document.getElementById('messageModal');
+  const headerEl = modalEl?.querySelector('.modal-header');
+  const closeBtn = headerEl?.querySelector('.btn-close');
+
+  if (headerEl) {
+    headerEl.classList.remove('bg-danger', 'bg-success', 'bg-primary', 'bg-warning', 'text-white', 'text-dark');
+    if (closeBtn) {
+      closeBtn.classList.remove('btn-close-white');
+    }
+
+    const resolvedVariant = variant;
+
+    if (resolvedVariant === 'success') {
+      headerEl.classList.add('bg-success', 'text-white');
+      if (closeBtn) closeBtn.classList.add('btn-close-white');
+    } else if (resolvedVariant === 'warning') {
+      headerEl.classList.add('bg-warning', 'text-dark');
+    } else if (resolvedVariant === 'danger') {
+      headerEl.classList.add('bg-danger', 'text-white');
+      if (closeBtn) closeBtn.classList.add('btn-close-white');
+    } else {
+      headerEl.classList.add('bg-primary', 'text-white');
+      if (closeBtn) closeBtn.classList.add('btn-close-white');
+    }
+  }
+
   document.getElementById('messageModalLabel').textContent = title;
   document.getElementById('messageModalBody').textContent = message;
 
-  // Muestra el modal (requiere Bootstrap 5)
-  const modal = new bootstrap.Modal(document.getElementById('messageModal'));
+  const modal = new bootstrap.Modal(modalEl);
   modal.show();
 }
 
@@ -391,5 +415,6 @@ window.showMessageModal = showMessageModal;
 window.shouldShowDancerFlags = shouldShowDancerFlags;
 window.getDancerFlagUrl = getDancerFlagUrl;
 window.getDancerFlagImgHtml = getDancerFlagImgHtml;
+
 
 
