@@ -4,6 +4,7 @@ const allowedRoles = ["admin", "organizer"];
 const voteDetailsInFlight = new Set();
 const competitionDetailsInFlight = new Set();
 const SIDEBAR_STATUS_FILTER_NOT_FINISHED = '__NOT_FINISHED__';
+const TRACKING_SIDEBAR_FILTERS_STORAGE_PREFIX = 'lumora.tracking.sidebarFilters';
 const classificationExportState = {
   options: [],
   mode: 'ALL',
@@ -19,6 +20,41 @@ const trackingUiState = {
     status: ''
   }
 };
+
+function getTrackingSidebarFiltersStorageKey() {
+  const eventId = typeof getEvent === 'function' ? (getEvent()?.id ?? 'no_event') : 'no_event';
+  const userId = typeof getUserId === 'function' ? (getUserId() ?? 'no_user') : 'no_user';
+  return `${TRACKING_SIDEBAR_FILTERS_STORAGE_PREFIX}:${eventId}:${userId}`;
+}
+
+function normalizeTrackingSidebarFilters(filters) {
+  return {
+    category: typeof filters?.category === 'string' ? filters.category : '',
+    style: typeof filters?.style === 'string' ? filters.style : '',
+    status: typeof filters?.status === 'string' ? filters.status : ''
+  };
+}
+
+function loadTrackingSidebarFilters() {
+  try {
+    const raw = localStorage.getItem(getTrackingSidebarFiltersStorageKey());
+    if (!raw) return normalizeTrackingSidebarFilters({});
+
+    const parsed = JSON.parse(raw);
+    return normalizeTrackingSidebarFilters(parsed);
+  } catch {
+    return normalizeTrackingSidebarFilters({});
+  }
+}
+
+function saveTrackingSidebarFilters(filters = trackingUiState.sidebarFilters) {
+  try {
+    const normalized = normalizeTrackingSidebarFilters(filters);
+    localStorage.setItem(getTrackingSidebarFiltersStorageKey(), JSON.stringify(normalized));
+  } catch {
+    // ignore
+  }
+}
 
 function escapeHtml(value) {
   if (value === null || value === undefined) return '';
@@ -1128,6 +1164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   validateRoles(allowedRoles);
 
   await WaitEventLoaded();
+  trackingUiState.sidebarFilters = loadTrackingSidebarFilters();
   initClassificationExportOptions();
   bindSidebarFilters();
   await loadCompetitionSidebar();
@@ -1454,6 +1491,7 @@ function renderSidebarFilters(competitions = trackingUiState.sidebarCompetitions
   trackingUiState.sidebarFilters.category = categorySelect.value || '';
   trackingUiState.sidebarFilters.style = styleSelect.value || '';
   trackingUiState.sidebarFilters.status = statusSelect.value || '';
+  saveTrackingSidebarFilters();
 }
 
 function bindSidebarFilters() {
@@ -1469,6 +1507,7 @@ function bindSidebarFilters() {
       trackingUiState.sidebarFilters.category = categorySelect.value || '';
       trackingUiState.sidebarFilters.style = styleSelect.value || '';
       trackingUiState.sidebarFilters.status = statusSelect.value || '';
+      saveTrackingSidebarFilters();
       renderCompetitionSidebar();
     });
   });
@@ -1750,7 +1789,7 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
             ${renderClassificationVisibleButtonContent(isClassificationVisible)}
           </button>
           <button type="button"
-            class="btn btn-warning btn-sm btn-export-category-results tracking-summary-btn"
+            class="btn btn-outline-warning btn-sm btn-export-category-results tracking-summary-btn"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
             data-category-name="${escapeHtml(comp.category_name || '-')}"
