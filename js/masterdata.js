@@ -6,6 +6,7 @@ let categoriesList = [];
 let stylesList = [];
 let criteriaList = [];
 let clubsList = [];
+let penaltiesList = [];
 let criteriaConfigList = [];
 let filteredCriteriaConfigIds = [];
 
@@ -38,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupPenaltiesTab();
     bindCriteriaConfigEvents();
     bindSchoolsEvents();
+    bindPenaltiesEvents();
     await loadAll();
 
 });
@@ -49,11 +51,11 @@ async function loadAll() {
         loadTable("criteria")
     ];
 
-    if (shouldShowPenaltiesTab()) {
-        tablesToLoad.push(loadTable("penalties"));
-    }
-
     await Promise.all(tablesToLoad);
+
+    if (shouldShowPenaltiesTab()) {
+        await loadPenaltiesTable();
+    }
 
     if (shouldShowClubsTab()) {
         await loadSchoolsTable();
@@ -248,6 +250,61 @@ function bindSchoolsEvents() {
     });
 }
 
+function bindPenaltiesEvents() {
+    if (!shouldShowPenaltiesTab()) {
+        return;
+    }
+
+    const createBtn = document.getElementById('createNewPenaltyBtn');
+    const saveBtn = document.getElementById('savePenaltyBtn');
+    const tableBody = document.getElementById('penaltiesTable');
+    const modalEl = document.getElementById('penaltyModal');
+    const form = document.getElementById('penaltyForm');
+
+    if (!createBtn || !saveBtn || !tableBody || !modalEl || !form) {
+        return;
+    }
+
+    const penaltyModal = new bootstrap.Modal(modalEl);
+
+    createBtn.addEventListener('click', () => {
+        openPenaltyModal({ modal: penaltyModal, action: 'create' });
+    });
+
+    tableBody.addEventListener('click', async (event) => {
+        const editBtn = event.target.closest('.btn-edit-penalty');
+        if (editBtn) {
+            const id = editBtn.closest('tr')?.dataset?.id;
+            const penalty = penaltiesList.find((item) => String(item.id) === String(id));
+            if (!penalty) return;
+            openPenaltyModal({ modal: penaltyModal, action: 'edit', penalty });
+            return;
+        }
+
+        const deleteBtn = event.target.closest('.btn-delete-penalty');
+        if (!deleteBtn) return;
+
+        const id = deleteBtn.closest('tr')?.dataset?.id;
+        const penalty = penaltiesList.find((item) => String(item.id) === String(id));
+        if (!penalty) return;
+
+        const confirmed = await showModal(`${t('delete')} "${penalty.name}" ${t('from')} <strong>${t('penalties')}</strong>?`);
+        if (!confirmed) return;
+
+        await deletePenalty(id);
+    });
+
+    saveBtn.addEventListener('click', async () => {
+        const action = form.dataset.action || 'create';
+        const penaltyId = form.dataset.id || null;
+        await savePenalty(action, penaltyId, penaltyModal, saveBtn);
+    });
+
+    modalEl.addEventListener('shown.bs.modal', () => {
+        document.getElementById('penaltyNameInput')?.focus();
+    });
+}
+
 function shouldShowClubsTab() {
     const rawHasClubs = getEvent()?.hasClubs;
     if (rawHasClubs === true || rawHasClubs === 1) return true;
@@ -286,6 +343,240 @@ function setupPenaltiesTab() {
     const showPenalties = shouldShowPenaltiesTab();
     tab.classList.toggle('d-none', !showPenalties);
     pane.classList.toggle('d-none', !showPenalties);
+}
+
+function parseBooleanValue(value) {
+    if (value === true || value === 1) return true;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        return normalized === '1' || normalized === 'true' || normalized === 'yes';
+    }
+    return false;
+}
+
+function openPenaltyModal({ modal, action, penalty = null }) {
+    const form = document.getElementById('penaltyForm');
+    const title = document.getElementById('penaltyModalTitle');
+    const nameInput = document.getElementById('penaltyNameInput');
+    const forJudgesInput = document.getElementById('penaltyForJudgesInput');
+    const minInput = document.getElementById('penaltyMinInput');
+    const maxInput = document.getElementById('penaltyMaxInput');
+
+    if (!form || !title || !nameInput || !forJudgesInput || !minInput || !maxInput) {
+        return;
+    }
+
+    form.dataset.action = action;
+    if (action === 'edit' && penalty) {
+        form.dataset.id = penalty.id;
+        nameInput.value = penalty.name || '';
+        forJudgesInput.checked = parseBooleanValue(penalty.for_judges);
+        minInput.value = penalty.min_penalty ?? '';
+        maxInput.value = penalty.max_penalty ?? '';
+        title.textContent = t('penalty_modal_edit', 'Edit penalty');
+    } else {
+        delete form.dataset.id;
+        nameInput.value = '';
+        forJudgesInput.checked = false;
+        minInput.value = '';
+        maxInput.value = '';
+        title.textContent = t('penalty_modal_create', 'Create penalty');
+    }
+
+    modal.show();
+}
+
+async function loadPenaltiesTable() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/penalties?event_id=${getEvent().id}`);
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            showMessageModal(err.error || t('penalties_load_error', 'Error loading penalties.'), t('error'));
+            return;
+        }
+
+        const data = await response.json();
+        penaltiesList = Array.isArray(data) ? data : [];
+        penaltiesList.sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
+        renderPenaltiesTable();
+    } catch (error) {
+        console.error('Failed to load penalties:', error);
+        showMessageModal(t('penalties_load_error', 'Error loading penalties.'), t('error'));
+    }
+}
+
+function renderPenaltiesTable() {
+    const tableBody = document.getElementById('penaltiesTable');
+    if (!tableBody) return;
+    tableBody.innerHTML = '';
+
+    penaltiesList.forEach((penalty) => {
+        const row = document.createElement('tr');
+        row.dataset.id = penalty.id;
+
+        const isFinished = getEvent().status === 'finished';
+        const nameCell = document.createElement('td');
+        nameCell.textContent = penalty?.name || '-';
+
+        const forJudgesCell = document.createElement('td');
+        forJudgesCell.className = 'text-center';
+        const enabledForJudges = parseBooleanValue(penalty?.for_judges);
+        forJudgesCell.innerHTML = enabledForJudges
+            ? '<i class="bi bi-check-circle-fill text-success"></i>'
+            : '<i class="bi bi-dash-circle text-muted"></i>';
+
+        const minCell = document.createElement('td');
+        minCell.textContent = penalty?.min_penalty ?? '-';
+
+        const maxCell = document.createElement('td');
+        maxCell.textContent = penalty?.max_penalty ?? '-';
+
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'text-center align-middle';
+        const btnGroup = document.createElement('div');
+        btnGroup.className = 'btn-group';
+        btnGroup.setAttribute('role', 'group');
+
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'btn btn-outline-primary btn-sm btn-edit-penalty';
+        editBtn.title = t('edit', 'Edit');
+        editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+        editBtn.disabled = isFinished;
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn btn-outline-danger btn-sm btn-delete-penalty';
+        deleteBtn.title = t('delete');
+        deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+        deleteBtn.disabled = isFinished;
+
+        btnGroup.appendChild(editBtn);
+        btnGroup.appendChild(deleteBtn);
+        actionsCell.appendChild(btnGroup);
+
+        row.appendChild(nameCell);
+        row.appendChild(forJudgesCell);
+        row.appendChild(minCell);
+        row.appendChild(maxCell);
+        row.appendChild(actionsCell);
+
+        tableBody.appendChild(row);
+    });
+
+    const countEl = document.getElementById('count-penalties');
+    if (countEl) {
+        countEl.textContent = penaltiesList.length;
+    }
+
+    const emptyState = document.getElementById('penaltiesEmptyState');
+    if (emptyState) {
+        emptyState.classList.toggle('d-none', penaltiesList.length > 0);
+    }
+}
+
+async function savePenalty(action, penaltyId, penaltyModal, saveBtn) {
+    const nameInput = document.getElementById('penaltyNameInput');
+    const forJudgesInput = document.getElementById('penaltyForJudgesInput');
+    const minInput = document.getElementById('penaltyMinInput');
+    const maxInput = document.getElementById('penaltyMaxInput');
+
+    if (!nameInput || !forJudgesInput || !minInput || !maxInput) return;
+
+    const name = nameInput.value.trim();
+    if (!name) {
+        showMessageModal(t('penalty_name_required', 'Penalty name is required.'), t('error'));
+        nameInput.focus();
+        return;
+    }
+
+    const minRaw = minInput.value.trim();
+    if (!minRaw) {
+        showMessageModal(t('penalty_min_required', 'Minimum penalty is required.'), t('error'));
+        minInput.focus();
+        return;
+    }
+
+    const maxRaw = maxInput.value.trim();
+    if (!maxRaw) {
+        showMessageModal(t('penalty_max_required', 'Maximum penalty is required.'), t('error'));
+        maxInput.focus();
+        return;
+    }
+
+    const minPenalty = Number(minRaw);
+    const maxPenalty = Number(maxRaw);
+
+    const minPenaltyIsValid = Number.isInteger(minPenalty) && minPenalty >= 1 && minPenalty <= 999;
+    const maxPenaltyIsValid = Number.isInteger(maxPenalty) && maxPenalty >= 1 && maxPenalty <= 999;
+    if (!minPenaltyIsValid || !maxPenaltyIsValid) {
+        showMessageModal(t('penalty_values_invalid', 'Penalty values must be integers between 1 and 999.'), t('error'));
+        return;
+    }
+
+    if (minPenalty > maxPenalty) {
+        showMessageModal(t('penalty_range_invalid', 'Minimum penalty cannot be greater than maximum penalty.'), t('error'));
+        return;
+    }
+
+    const payload = {
+        event_id: getEvent().id,
+        name,
+        for_judges: forJudgesInput.checked ? 1 : 0,
+        min_penalty: minPenalty,
+        max_penalty: maxPenalty
+    };
+
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = t('guardando', 'Saving...');
+
+    try {
+        let res;
+        if (action === 'edit' && penaltyId) {
+            res = await fetch(`${API_BASE_URL}/api/penalties/${penaltyId}`, {
+                method: 'PUT',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            res = await fetch(`${API_BASE_URL}/api/penalties`, {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showMessageModal(err.error || t('penalties_save_error', 'Error saving penalty.'), t('error'));
+            return;
+        }
+
+        penaltyModal.hide();
+        await loadPenaltiesTable();
+    } catch (error) {
+        console.error('Error saving penalty:', error);
+        showMessageModal(t('penalties_save_error', 'Error saving penalty.'), t('error'));
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText || t('save', 'Save');
+    }
+}
+
+async function deletePenalty(id) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/penalties/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            showMessageModal(err.error || t('penalties_delete_error', 'Error deleting penalty.'), t('error'));
+            return;
+        }
+        await loadPenaltiesTable();
+    } catch (error) {
+        console.error('Error deleting penalty:', error);
+        showMessageModal(t('penalties_delete_error', 'Error deleting penalty.'), t('error'));
+    }
 }
 
 function openSchoolModal({ modal, action, school = null }) {

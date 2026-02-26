@@ -43,6 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.querySelectorAll('input, button').forEach(el => el.disabled = true);
   }
 
+  setupHeadJudgeFieldVisibility();
+
   const filter = document.getElementById('categoryFilter');
 
   filter.addEventListener('change', applyCategoryFilter);
@@ -70,6 +72,40 @@ async function fetchCompetitionsFromAPI() {
     loadCompetitions();
   } catch (error) {
     console.error('Failed to fetch dancers:', error);
+  }
+}
+
+function isJudgeFlagEnabled(value) {
+  if (value === true || value === 1) return true;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
+}
+
+function shouldShowHeadJudgeField() {
+  const rawHasPenalties = getEvent()?.has_penalties;
+  if (rawHasPenalties === true || rawHasPenalties === 1) return true;
+  if (typeof rawHasPenalties === 'string') {
+    const normalized = rawHasPenalties.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
+}
+
+function setupHeadJudgeFieldVisibility() {
+  const section = document.getElementById('editJudgeHeadSection');
+  if (!section) return;
+
+  const showHeadJudge = shouldShowHeadJudgeField();
+  section.classList.toggle('d-none', !showHeadJudge);
+
+  if (!showHeadJudge) {
+    const headSelect = document.getElementById('editJudgeHead');
+    if (headSelect) {
+      headSelect.value = '';
+    }
   }
 }
 
@@ -132,11 +168,16 @@ function loadCompetitions() {
       <td>
         <i class="bi bi-people me-1 text-muted"></i>
         ${comp.judges
-          .map(j => 
-            j.reserve
-              ? `${j.name} <span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="${t('judge_in_reserve')}">R</span>`
-              : j.name
-          )
+          .map(j => {
+            const badges = [];
+            if (isJudgeFlagEnabled(j.reserve)) {
+              badges.push(`<span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="${t('judge_in_reserve')}">R</span>`);
+            }
+            if (isJudgeFlagEnabled(j.head)) {
+              badges.push(`<span class="badge bg-dark ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="${t('judge_is_head')}">H</span>`);
+            }
+            return badges.length ? `${j.name} ${badges.join(' ')}` : j.name;
+          })
           .join(', ')
         }
       </td>
@@ -351,6 +392,7 @@ async function saveCompetitionEdits(editModal) {
   const inputStatus = document.getElementById('editStatus');
   const inputJudges = Array.from(document.getElementById('editJudges').selectedOptions).map(opt => opt.value);
   const inputReserveJudge = document.getElementById('editJudgeReserve');
+  const inputHeadJudge = document.getElementById('editJudgeHead');
   const inputMaxTime = document.getElementById('editMaxTime');
   const maxTimeRaw = (inputMaxTime?.value || '').trim();
 
@@ -387,6 +429,10 @@ async function saveCompetitionEdits(editModal) {
     max_time: maxTimeSeconds,
     event_id: getEvent().id
   };
+
+  if (shouldShowHeadJudgeField()) {
+    competitionData.judge_head = inputHeadJudge ? (inputHeadJudge.value || null) : null;
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}`, {
     method: 'PUT',
@@ -452,6 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const judgeOptions = document.getElementById('editJudges').options;
         const reserveSelect = document.getElementById('editJudgeReserve');
+        const headSelect = document.getElementById('editJudgeHead');
         
         const judgeIds = judges.map(j => String(j.id)); // ids como strings para comparar
 
@@ -460,8 +507,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (reserveSelect) {
-          const reserveJudge = judges.find(j => j.reserve);
+          const reserveJudge = judges.find(j => isJudgeFlagEnabled(j.reserve));
           reserveSelect.value = reserveJudge ? String(reserveJudge.id) : '';
+        }
+        if (headSelect && shouldShowHeadJudgeField()) {
+          const headJudge = judges.find(j => isJudgeFlagEnabled(j.head));
+          headSelect.value = headJudge ? String(headJudge.id) : '';
+        } else if (headSelect) {
+          headSelect.value = '';
         }
         if (editMaxTimeInput) {
           const existingMaxTimeSeconds = getCompetitionMaxTimeSeconds(competition);
@@ -988,9 +1041,13 @@ async function loadStyles() {
 async function loadMasters() {
   const masterSelect = document.getElementById('editJudges');
   const reserveSelect = document.getElementById('editJudgeReserve');
+  const headSelect = document.getElementById('editJudgeHead');
   masterSelect.innerHTML = ''; // Limpiar opciones anteriores
   if (reserveSelect) {
     reserveSelect.innerHTML = `<option value=\"\">${t('ninguno')}</option>`;
+  }
+  if (headSelect && shouldShowHeadJudgeField()) {
+    headSelect.innerHTML = `<option value=\"\">${t('ninguno')}</option>`;
   }
 
   try {
@@ -1009,6 +1066,13 @@ async function loadMasters() {
         reserveOption.value = master.id;
         reserveOption.textContent = master.name;
         reserveSelect.appendChild(reserveOption);
+      }
+
+      if (headSelect && shouldShowHeadJudgeField()) {
+        const headOption = document.createElement('option');
+        headOption.value = master.id;
+        headOption.textContent = master.name;
+        headSelect.appendChild(headOption);
       }
     });
   } catch (err) {
@@ -1572,7 +1636,7 @@ async function updateCompetitionJudgesAssignment(competition, judgeIds) {
 
   setAssignmentResult(competition.id, 'updating');
 
-  const reserveJudge = (competition.judges || []).find(j => j.reserve);
+  const reserveJudge = (competition.judges || []).find(j => isJudgeFlagEnabled(j.reserve));
   const reserveId = reserveJudge ? String(reserveJudge.id) : null;
   const reserveToSend = reserveId && judgeIds.includes(reserveId) ? reserveId : null;
 
@@ -1586,6 +1650,13 @@ async function updateCompetitionJudgesAssignment(competition, judgeIds) {
     max_time: getCompetitionMaxTimeSeconds(competition),
     event_id: getEvent().id
   };
+
+  if (shouldShowHeadJudgeField()) {
+    const headJudge = (competition.judges || []).find(j => isJudgeFlagEnabled(j.head));
+    const headId = headJudge ? String(headJudge.id) : null;
+    const headToSend = headId && judgeIds.includes(headId) ? headId : null;
+    competitionData.judge_head = headToSend;
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/competitions/${competition.id}`, {

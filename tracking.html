@@ -304,6 +304,13 @@
       max-height: 320px;
       overflow-y: auto;
     }
+    #penaltyAssignmentModal .modal-dialog {
+      max-width: 760px;
+    }
+    #penaltyAssignmentModal .modal-body {
+      max-height: 70vh;
+      overflow-y: auto;
+    }
     .tracking-center-column {
       min-width: 0;
     }
@@ -522,6 +529,27 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-primary btn-sm" id="classificationExportConfirmBtn" data-i18n="export">Export</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="penaltyAssignmentModal" tabindex="-1" aria-labelledby="penaltyAssignmentModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="penaltyAssignmentModalLabel" data-i18n="penalty_modal_title">Penalties</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="penaltyAssignmentModalBody">
+            <div class="d-flex align-items-center justify-content-center py-4">
+              <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+              <span data-i18n="loading">Loading...</span>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary btn-sm" id="penaltyAssignmentSaveBtn" data-i18n="penalty_modal_save">Save</button>
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
           </div>
         </div>

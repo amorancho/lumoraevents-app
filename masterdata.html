@@ -158,23 +158,46 @@
       </div>
 
       <div class="tab-pane fade" id="tab-penalties" role="tabpanel" aria-labelledby="tab-penalties-tab" tabindex="0">
-
-        <div class="col-12 col-lg-6" id="penalty_box">
-          <div class="card shadow-sm bg-light" id="penalty-card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0" data-i18n="penalties">Penalties</h5>
-                <span id="count-penalties" class="badge bg-secondary rounded-pill">0</span>
-              </div>
-              <div class="input-group mb-3 mt-4">
-                <input type="text" id="input-penalties" class="form-control" placeholder="New Penalty" data-i18n-placeholder="new_penalty" maxlength="40" />
-                <button class="btn btn-primary" onclick="addEntry('penalties')" data-i18n="add">Add</button>
-              </div>
-              <ul class="list-group" id="list-penalties"></ul>
-            </div>
+        <div class="row justify-content-center my-3">
+          <div class="col-12 col-md-4 text-center">
+            <button id="createNewPenaltyBtn" class="btn btn-primary btn-lg w-100" data-i18n="penalty_create">
+              Add penalty
+            </button>
           </div>
         </div>
 
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10" id="penalty_box">
+            <div class="card shadow-sm bg-light" id="penalty-card">
+              <div class="card-header d-flex align-items-center">
+                <h5 class="mb-0 me-auto" data-i18n="penalties">Penalties</h5>
+                <span id="count-penalties" class="badge bg-secondary rounded-pill">0</span>
+              </div>
+              <div class="card-body p-2">
+                <div class="table-responsive">
+                  <table class="table table-hover mb-0 align-middle">
+                    <thead class="table">
+                      <tr>
+                        <th data-i18n="penalty_name">Name</th>
+                        <th class="text-center" data-i18n="penalty_for_judges">For judges</th>
+                        <th data-i18n="penalty_min">Min penalty</th>
+                        <th data-i18n="penalty_max">Max penalty</th>
+                        <th class="text-center" data-i18n="criteria_config_actions">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="penaltiesTable"></tbody>
+                  </table>
+                </div>
+
+                <div id="penaltiesEmptyState" class="text-center py-5 d-none">
+                  <i class="bi bi-exclamation-circle text-muted" style="font-size: 3rem;"></i>
+                  <h5 class="text-muted mt-3" data-i18n="penalties_empty_title">No penalties created</h5>
+                  <p class="text-muted" data-i18n="penalties_empty_subtitle">Create your first penalty using the button above.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="tab-pane fade" id="tab-clubs" role="tabpanel" aria-labelledby="tab-clubs-tab" tabindex="0">
@@ -367,6 +390,43 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
           <button type="button" class="btn btn-primary" id="saveSchoolBtn" data-i18n="save">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="penaltyModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title fw-bold text-primary" id="penaltyModalTitle" data-i18n="penalty_modal_create">Create penalty</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="penaltyForm" data-action="create">
+            <div class="mb-3">
+              <label class="form-label" for="penaltyNameInput" data-i18n="penalty_name">Name</label>
+              <input type="text" id="penaltyNameInput" class="form-control" maxlength="80" required>
+            </div>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="penaltyForJudgesInput">
+              <label class="form-check-label" for="penaltyForJudgesInput" data-i18n="penalty_for_judges">
+                For judges
+              </label>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="penaltyMinInput" data-i18n="penalty_min">Min penalty</label>
+              <input type="number" id="penaltyMinInput" class="form-control" min="1" max="999" step="1" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="penaltyMaxInput" data-i18n="penalty_max">Max penalty</label>
+              <input type="number" id="penaltyMaxInput" class="form-control" min="1" max="999" step="1" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+          <button type="button" class="btn btn-primary" id="savePenaltyBtn" data-i18n="save">Save</button>
         </div>
       </div>
     </div>

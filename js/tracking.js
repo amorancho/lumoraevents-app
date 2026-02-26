@@ -20,6 +20,11 @@ const trackingUiState = {
     status: ''
   }
 };
+const penaltyAssignmentState = {
+  context: null,
+  penalties: [],
+  competitionPenalties: []
+};
 
 function getTrackingSidebarFiltersStorageKey() {
   const eventId = typeof getEvent === 'function' ? (getEvent()?.id ?? 'no_event') : 'no_event';
@@ -67,6 +72,15 @@ function escapeHtml(value) {
 }
 
 function parseClassificationVisible(value) {
+  if (value === true || value === 1) return true;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
+}
+
+function parseJudgeFlag(value) {
   if (value === true || value === 1) return true;
   if (typeof value === 'string') {
     const normalized = value.trim().toLowerCase();
@@ -708,12 +722,15 @@ function renderCompetitionVotingDetailsTable(competition) {
   }).join('');
 
   const judgeHeaderCells = judges.map((judge) => {
-    const reserveBadge = judge?.reserve
+    const reserveBadge = parseJudgeFlag(judge?.reserve)
       ? `<span class="badge bg-secondary ms-1" title="${t('judge_in_reserve')}">R</span>`
+      : '';
+    const headBadge = parseJudgeFlag(judge?.head)
+      ? `<span class="badge bg-dark ms-1" title="${t('judge_is_head', 'Head Judge')}">H</span>`
       : '';
     return `
       <th class="text-center vote-details-judge-group-head" colspan="${detailColumnsPerJudge}" data-colspan-expanded="${detailColumnsPerJudge}">
-        ${escapeHtml(judge?.name || '')}${reserveBadge}
+        ${escapeHtml(judge?.name || '')}${reserveBadge}${headBadge}
       </th>
     `;
   }).join('');
@@ -1166,6 +1183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
   trackingUiState.sidebarFilters = loadTrackingSidebarFilters();
   initClassificationExportOptions();
+  initPenaltyAssignmentModal();
   bindSidebarFilters();
   await loadCompetitionSidebar();
 
@@ -1903,7 +1921,8 @@ function renderCompetitions(competitions) {
               ${comp.judges.map(j => `
                 <th class="text-center">
                   ${j.name}
-                  ${j.reserve ? `<span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="${t('judge_in_reserve')}">R</span>` : ''}
+                  ${parseJudgeFlag(j.reserve) ? `<span class="badge bg-secondary ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="${t('judge_in_reserve')}">R</span>` : ''}
+                  ${parseJudgeFlag(j.head) ? `<span class="badge bg-dark ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="${t('judge_is_head', 'Head Judge')}">H</span>` : ''}
                 </th>
               `).join('')}              
               <th>${t('voted')}</th>
@@ -1913,6 +1932,9 @@ function renderCompetitions(competitions) {
           </thead>
           <tbody>
       `;
+
+      const competitionId = comp.id ?? comp.competition_id ?? '';
+      const competitionLabel = `${comp.category_name || ''}${comp.style_name ? ` - ${comp.style_name}` : ''}`.trim();
 
       comp.dancers.forEach(d => {
         const dancerFlagHtml = getDancerFlagImgHtml(d.nationality, {
@@ -1955,7 +1977,21 @@ function renderCompetitions(competitions) {
                       ${t('disqualify')}
                     </button>
                   </li>
-                  ${showPenaltyAction ? `<li><button class="dropdown-item" type="button" ${btnDisabled}>${t('penalty')}</button></li>` : ''}
+                  ${showPenaltyAction ? `
+                    <li>
+                      <button class="dropdown-item js-penalty-action"
+                        type="button"
+                        data-competition-id="${competitionId}"
+                        data-category-id="${comp.category_id}"
+                        data-style-id="${comp.style_id}"
+                        data-dancer-id="${d.dancer_id ?? d.id}"
+                        data-dancer-name="${escapeHtml(d.dancer_name || '')}"
+                        data-competition-label="${escapeHtml(competitionLabel)}"
+                        ${btnDisabled}>
+                        ${t('penalty')}
+                      </button>
+                    </li>
+                  ` : ''}
                 </ul>
               </div>
               <span class="badge bg-info">#${d.position}</span>
@@ -2056,6 +2092,20 @@ function renderCompetitions(competitions) {
         btn.dataset.dancerId,
         btn.dataset.dancerName
       );
+    });
+  });
+
+  container.querySelectorAll('.js-penalty-action').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      await openPenaltyAssignmentModal({
+        competitionId: btn.dataset.competitionId,
+        categoryId: btn.dataset.categoryId,
+        styleId: btn.dataset.styleId,
+        dancerId: btn.dataset.dancerId,
+        dancerName: btn.dataset.dancerName,
+        competitionLabel: btn.dataset.competitionLabel
+      });
     });
   });
 
@@ -2326,6 +2376,469 @@ async function markDisqualified(categoryId, styleId, dancerId, dancerName) {
     await reloadSelectedCompetition();
   } catch (err) {
     showMessageModal(err.message || t('error_set_disqualified'), t('error_title'));
+  }
+}
+
+function parseOptionalNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function extractArrayPayload(payload, candidateKeys = []) {
+  if (Array.isArray(payload)) return payload;
+  for (const key of candidateKeys) {
+    if (Array.isArray(payload?.[key])) {
+      return payload[key];
+    }
+  }
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.rows)) return payload.rows;
+  return [];
+}
+
+function normalizePenaltyDefinition(rawPenalty) {
+  const id = parseOptionalNumber(rawPenalty?.id ?? rawPenalty?.penalty_id);
+  if (id === null) return null;
+
+  let minPenalty = parseOptionalNumber(rawPenalty?.min_penalty);
+  let maxPenalty = parseOptionalNumber(rawPenalty?.max_penalty);
+
+  if (minPenalty === null && maxPenalty !== null) minPenalty = maxPenalty;
+  if (maxPenalty === null && minPenalty !== null) maxPenalty = minPenalty;
+  if (minPenalty === null && maxPenalty === null) {
+    minPenalty = 0;
+    maxPenalty = 0;
+  }
+
+  const safeMin = Math.min(minPenalty, maxPenalty);
+  const safeMax = Math.max(minPenalty, maxPenalty);
+  const name = String(rawPenalty?.name || '').trim() || `${t('penalty', 'Penalty')} #${id}`;
+
+  return {
+    id,
+    name,
+    forJudges: parseJudgeFlag(rawPenalty?.for_judges),
+    minPenalty: safeMin,
+    maxPenalty: safeMax,
+    isFixedScore: safeMin === safeMax
+  };
+}
+
+function normalizeCompetitionPenalty(rawPenalty) {
+  const penaltyId = parseOptionalNumber(rawPenalty?.penalty_id ?? rawPenalty?.id);
+  if (penaltyId === null) return null;
+
+  return {
+    penaltyId,
+    score: parseOptionalNumber(rawPenalty?.penalty_score)
+  };
+}
+
+async function fetchPenaltyDefinitionsForEvent(eventId) {
+  const response = await fetch(`${API_BASE_URL}/api/penalties?event_id=${eventId}`);
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload?.error || t('penalty_modal_load_error', 'Error loading penalties.'));
+  }
+
+  const penaltyItems = extractArrayPayload(payload, ['penalties']);
+  const uniqueById = new Map();
+
+  penaltyItems.forEach((item) => {
+    const normalized = normalizePenaltyDefinition(item);
+    if (!normalized) return;
+    uniqueById.set(String(normalized.id), normalized);
+  });
+
+  return Array.from(uniqueById.values())
+    .sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
+}
+
+async function fetchCompetitionPenaltiesForDancer(eventId, competitionId, dancerId) {
+  const url = `${API_BASE_URL}/api/competitions/penalties?event_id=${eventId}&competition_id=${competitionId}&dancer_id=${dancerId}`;
+  const response = await fetch(url);
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error(payload?.error || t('penalty_modal_load_error', 'Error loading penalties.'));
+  }
+
+  const competitionPenaltyItems = extractArrayPayload(payload, ['competition_penalties', 'penalties']);
+  const uniqueByPenaltyId = new Map();
+
+  competitionPenaltyItems.forEach((item) => {
+    const normalized = normalizeCompetitionPenalty(item);
+    if (!normalized) return;
+    uniqueByPenaltyId.set(String(normalized.penaltyId), normalized);
+  });
+
+  return Array.from(uniqueByPenaltyId.values());
+}
+
+function renderPenaltyAssignmentLoadingState() {
+  return `
+    <div class="d-flex align-items-center justify-content-center py-4">
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span>${escapeHtml(t('loading'))}</span>
+    </div>
+  `;
+}
+
+function setPenaltyAssignmentSaveDisabled(disabled) {
+  const saveBtn = document.getElementById('penaltyAssignmentSaveBtn');
+  if (!saveBtn) return;
+  saveBtn.disabled = Boolean(disabled);
+}
+
+function clearPenaltyAssignmentValidationMessage() {
+  const validationEl = document.getElementById('penaltyAssignmentValidation');
+  if (!validationEl) return;
+  validationEl.textContent = '';
+  validationEl.classList.add('d-none');
+}
+
+function setPenaltyAssignmentValidationMessage(message) {
+  const validationEl = document.getElementById('penaltyAssignmentValidation');
+  if (!validationEl) return;
+  validationEl.textContent = message || '';
+  validationEl.classList.toggle('d-none', !message);
+}
+
+function syncPenaltyAssignmentSelectionSummary() {
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  const summaryEl = document.getElementById('penaltyAssignmentSummary');
+  if (!bodyEl || !summaryEl) return;
+
+  const selectedCount = bodyEl.querySelectorAll('.js-penalty-toggle:checked').length;
+  summaryEl.textContent = `${selectedCount} ${t('penalty_modal_selected_count', 'selected')}`;
+}
+
+function syncPenaltyAssignmentRow(rowEl) {
+  if (!rowEl) return;
+
+  const toggleEl = rowEl.querySelector('.js-penalty-toggle');
+  const scoreInput = rowEl.querySelector('.js-penalty-score');
+  const feedbackEl = rowEl.querySelector('.js-penalty-score-feedback');
+  if (!toggleEl || !scoreInput) return;
+
+  const isChecked = toggleEl.checked;
+  const isFixedScore = rowEl.dataset.fixedScore === '1';
+  const minPenalty = parseOptionalNumber(rowEl.dataset.minPenalty);
+
+  scoreInput.classList.remove('is-invalid');
+  if (feedbackEl) {
+    feedbackEl.textContent = '';
+  }
+
+  if (!isChecked) {
+    scoreInput.disabled = true;
+    scoreInput.readOnly = isFixedScore;
+    scoreInput.value = '';
+    return;
+  }
+
+  if (isFixedScore) {
+    scoreInput.disabled = false;
+    scoreInput.readOnly = true;
+    scoreInput.value = minPenalty !== null ? String(minPenalty) : '';
+    return;
+  }
+
+  scoreInput.disabled = false;
+  scoreInput.readOnly = false;
+  if (scoreInput.value === '' && minPenalty !== null) {
+    scoreInput.value = String(minPenalty);
+  }
+}
+
+function collectPenaltyAssignmentsFromModal() {
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  if (!bodyEl) {
+    return { isValid: false, assignments: [] };
+  }
+
+  const rows = Array.from(bodyEl.querySelectorAll('.js-penalty-row'));
+  const assignments = [];
+  let isValid = true;
+
+  rows.forEach((rowEl) => {
+    const toggleEl = rowEl.querySelector('.js-penalty-toggle');
+    const scoreInput = rowEl.querySelector('.js-penalty-score');
+    const feedbackEl = rowEl.querySelector('.js-penalty-score-feedback');
+    if (!toggleEl || !scoreInput) return;
+
+    scoreInput.classList.remove('is-invalid');
+    if (feedbackEl) feedbackEl.textContent = '';
+
+    if (!toggleEl.checked) return;
+
+    const penaltyId = parseOptionalNumber(rowEl.dataset.penaltyId);
+    const isFixedScore = rowEl.dataset.fixedScore === '1';
+    const minPenalty = parseOptionalNumber(rowEl.dataset.minPenalty);
+    const maxPenalty = parseOptionalNumber(rowEl.dataset.maxPenalty);
+
+    if (penaltyId === null) {
+      isValid = false;
+      return;
+    }
+
+    let score = minPenalty;
+    if (!isFixedScore) {
+      score = parseOptionalNumber(scoreInput.value);
+      if (score === null) {
+        isValid = false;
+        scoreInput.classList.add('is-invalid');
+        if (feedbackEl) {
+          feedbackEl.textContent = t('penalty_modal_score_required', 'Score is required.');
+        }
+        return;
+      }
+      if (
+        (minPenalty !== null && score < minPenalty) ||
+        (maxPenalty !== null && score > maxPenalty)
+      ) {
+        isValid = false;
+        scoreInput.classList.add('is-invalid');
+        if (feedbackEl) {
+          feedbackEl.textContent = t('penalty_modal_score_out_of_range', 'Score must be within range.');
+        }
+        return;
+      }
+    }
+
+    assignments.push({
+      penalty_id: penaltyId,
+      penalty_score: score
+    });
+  });
+
+  return { isValid, assignments };
+}
+
+function renderPenaltyAssignmentModalContent() {
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  if (!bodyEl) return;
+
+  const context = penaltyAssignmentState.context || {};
+  const penalties = Array.isArray(penaltyAssignmentState.penalties) ? penaltyAssignmentState.penalties : [];
+  const competitionPenalties = Array.isArray(penaltyAssignmentState.competitionPenalties)
+    ? penaltyAssignmentState.competitionPenalties
+    : [];
+
+  if (!penalties.length) {
+    bodyEl.innerHTML = `
+      <div class="alert alert-info mb-0">
+        ${escapeHtml(t('penalty_modal_no_penalties', 'No penalties available.'))}
+      </div>
+    `;
+    setPenaltyAssignmentSaveDisabled(true);
+    return;
+  }
+
+  const selectedByPenaltyId = new Map();
+  competitionPenalties.forEach((item) => {
+    if (item?.penaltyId === null || item?.penaltyId === undefined) return;
+    selectedByPenaltyId.set(String(item.penaltyId), item);
+  });
+
+  const rowsHtml = penalties.map((penalty, index) => {
+    const selectedPenalty = selectedByPenaltyId.get(String(penalty.id)) || null;
+    const isSelected = Boolean(selectedPenalty);
+    const scoreValue = isSelected
+      ? (penalty.isFixedScore ? penalty.minPenalty : (selectedPenalty?.score ?? ''))
+      : '';
+    const rangeText = penalty.isFixedScore
+      ? String(penalty.minPenalty)
+      : `${penalty.minPenalty} - ${penalty.maxPenalty}`;
+    const forJudgesBadge = penalty.forJudges
+      ? `<span class="badge bg-secondary ms-1">${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}</span>`
+      : '';
+    const inputId = `penaltyScore_${penalty.id}_${index}`;
+
+    return `
+      <tr
+        class="js-penalty-row"
+        data-penalty-id="${penalty.id}"
+        data-min-penalty="${penalty.minPenalty}"
+        data-max-penalty="${penalty.maxPenalty}"
+        data-fixed-score="${penalty.isFixedScore ? '1' : '0'}"
+      >
+        <td class="text-center align-middle">
+          <input class="form-check-input js-penalty-toggle" type="checkbox" ${isSelected ? 'checked' : ''}>
+        </td>
+        <td class="align-middle">
+          <div class="fw-semibold">${escapeHtml(penalty.name)}</div>
+          ${forJudgesBadge}
+        </td>
+        <td class="text-center align-middle">
+          <span class="badge text-bg-light border">${escapeHtml(rangeText)}</span>
+        </td>
+        <td class="align-middle">
+          <input
+            id="${inputId}"
+            type="number"
+            class="form-control form-control-sm js-penalty-score"
+            min="${penalty.minPenalty}"
+            max="${penalty.maxPenalty}"
+            step="0.1"
+            value="${escapeHtml(scoreValue)}"
+            ${isSelected ? '' : 'disabled'}
+            ${penalty.isFixedScore ? 'readonly' : ''}
+          >
+          <div class="invalid-feedback js-penalty-score-feedback"></div>
+          ${penalty.isFixedScore
+    ? `<small class="text-muted">${escapeHtml(t('penalty_modal_fixed_score', 'Fixed score'))}</small>`
+    : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const dancerName = context?.dancerName || t('dancer');
+  const competitionLabel = String(context?.competitionLabel || '').trim();
+
+  bodyEl.innerHTML = `
+    <div class="mb-3">
+      <div class="small text-muted">
+        ${escapeHtml(t('dancer'))}: <span class="fw-semibold">${escapeHtml(dancerName)}</span>
+      </div>
+      ${competitionLabel ? `<div class="small text-muted">${escapeHtml(competitionLabel)}</div>` : ''}
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered align-middle mb-2">
+        <thead class="table-light">
+          <tr>
+            <th class="text-center" style="width: 72px;">${escapeHtml(t('penalty_modal_apply', 'Apply'))}</th>
+            <th>${escapeHtml(t('penalty_modal_name', 'Penalty'))}</th>
+            <th class="text-center" style="width: 140px;">${escapeHtml(t('penalty_modal_range', 'Range'))}</th>
+            <th style="width: 220px;">${escapeHtml(t('penalty_modal_score', 'Score'))}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+    <div id="penaltyAssignmentValidation" class="alert alert-warning py-2 mb-2 d-none"></div>
+    <small class="text-muted" id="penaltyAssignmentSummary"></small>
+  `;
+
+  Array.from(bodyEl.querySelectorAll('.js-penalty-row')).forEach(syncPenaltyAssignmentRow);
+  syncPenaltyAssignmentSelectionSummary();
+  clearPenaltyAssignmentValidationMessage();
+  setPenaltyAssignmentSaveDisabled(false);
+}
+
+function initPenaltyAssignmentModal() {
+  const modalEl = document.getElementById('penaltyAssignmentModal');
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  const saveBtn = document.getElementById('penaltyAssignmentSaveBtn');
+  if (!modalEl || !bodyEl || !saveBtn) return;
+  if (modalEl.dataset.initialized === '1') return;
+
+  bodyEl.addEventListener('change', (event) => {
+    const toggleEl = event.target.closest('.js-penalty-toggle');
+    if (!toggleEl) return;
+    const rowEl = toggleEl.closest('.js-penalty-row');
+    syncPenaltyAssignmentRow(rowEl);
+    syncPenaltyAssignmentSelectionSummary();
+    clearPenaltyAssignmentValidationMessage();
+  });
+
+  bodyEl.addEventListener('input', (event) => {
+    const scoreInput = event.target.closest('.js-penalty-score');
+    if (!scoreInput) return;
+    scoreInput.classList.remove('is-invalid');
+    const rowEl = scoreInput.closest('.js-penalty-row');
+    const feedbackEl = rowEl?.querySelector('.js-penalty-score-feedback');
+    if (feedbackEl) {
+      feedbackEl.textContent = '';
+    }
+    clearPenaltyAssignmentValidationMessage();
+  });
+
+  saveBtn.addEventListener('click', () => {
+    const { isValid, assignments } = collectPenaltyAssignmentsFromModal();
+    if (!isValid) {
+      setPenaltyAssignmentValidationMessage(
+        t('penalty_modal_validation_error', 'Review penalty scores before continuing.')
+      );
+      return;
+    }
+
+    clearPenaltyAssignmentValidationMessage();
+    const messageTemplate = t(
+      'penalty_modal_save_not_available',
+      'Saving penalties is not available yet. Selected penalties: {count}.'
+    );
+    const message = messageTemplate.replace('{count}', String(assignments.length));
+    showMessageModal(message, t('penalty'));
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    penaltyAssignmentState.context = null;
+    penaltyAssignmentState.penalties = [];
+    penaltyAssignmentState.competitionPenalties = [];
+    bodyEl.innerHTML = renderPenaltyAssignmentLoadingState();
+    setPenaltyAssignmentSaveDisabled(false);
+    clearPenaltyAssignmentValidationMessage();
+  });
+
+  modalEl.dataset.initialized = '1';
+}
+
+async function openPenaltyAssignmentModal({ competitionId, dancerId, dancerName, competitionLabel = '' } = {}) {
+  const modalEl = document.getElementById('penaltyAssignmentModal');
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  const modalTitleEl = document.getElementById('penaltyAssignmentModalLabel');
+  if (!modalEl || !bodyEl || !modalTitleEl) return;
+
+  const eventId = parseOptionalNumber(getEvent()?.id);
+  const parsedCompetitionId = parseOptionalNumber(competitionId);
+  const parsedDancerId = parseOptionalNumber(dancerId);
+
+  if (eventId === null || parsedCompetitionId === null || parsedDancerId === null) {
+    showMessageModal(t('error_title'), t('error_title'));
+    return;
+  }
+
+  penaltyAssignmentState.context = {
+    eventId,
+    competitionId: parsedCompetitionId,
+    dancerId: parsedDancerId,
+    dancerName: dancerName || t('dancer'),
+    competitionLabel
+  };
+
+  modalTitleEl.textContent = t('penalty_modal_title', 'Penalties');
+  bodyEl.innerHTML = renderPenaltyAssignmentLoadingState();
+  clearPenaltyAssignmentValidationMessage();
+  setPenaltyAssignmentSaveDisabled(true);
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+
+  try {
+    const [penalties, competitionPenalties] = await Promise.all([
+      fetchPenaltyDefinitionsForEvent(eventId),
+      fetchCompetitionPenaltiesForDancer(eventId, parsedCompetitionId, parsedDancerId)
+    ]);
+
+    penaltyAssignmentState.penalties = penalties;
+    penaltyAssignmentState.competitionPenalties = competitionPenalties;
+    renderPenaltyAssignmentModalContent();
+  } catch (error) {
+    console.error('Error loading competition penalties:', error);
+    bodyEl.innerHTML = `
+      <div class="alert alert-danger mb-0">
+        ${escapeHtml(error?.message || t('penalty_modal_load_error', 'Error loading penalties.'))}
+      </div>
+    `;
+    setPenaltyAssignmentSaveDisabled(true);
   }
 }
 

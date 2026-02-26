@@ -63,6 +63,8 @@
   "delete": "Delete",
   "form_text_select_multiple": "Use Ctrl (Windows) or Cmd (Mac) to select multiple.",
   "col_judge_reserve": "Reserve Judge",
+  "col_judge_head": "Head",
+  "judge_head_note": "Judge with authority to apply penalties",
   "ninguno": "None",
   "save_changes": "Save Changes",
   "dancers_order_modal_title": "Order Participants",
@@ -71,6 +73,7 @@
   "close_competition": "Close Competition",
   "open_competition": "Open Competition",
   "judge_in_reserve": "Judge in Reserve",
+  "judge_is_head": "Head Judge",
   "reserve_judges": "Reserve Judges",
   "edit": "Edit",
   "error_create_competition": "Select a category and a style to create a competition.",
@@ -106,7 +109,6 @@
   "max_times_summary_styles": "{count} styles",
   "max_times_recalculate_notice": "If you modify a competition (category/style) that belongs to a Schedule Configurator block, affected blocks will be recalculated."
 }
-
 
 
 
