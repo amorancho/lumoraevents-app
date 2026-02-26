@@ -363,8 +363,10 @@ function renderJudges() {
     row.innerHTML = `
       <td>${judge.name}</td>
       <td>${judge.email}</td>
-      <td class="align-middle text-center text-success">
-        ${Number(judge.ismaster) === 1 ? '✓' : ''}
+      <td class="align-middle text-center">
+        ${Number(judge.ismaster) === 1
+          ? '<i class="bi bi-check-circle-fill text-success"></i>'
+          : '<i class="bi bi-dash-circle text-muted"></i>'}
       </td>
       <td class="align-middle text-center">
         <span class="badge ${badgeClass}" ${badgeTooltipAttr}>${badgeLabel}</span>

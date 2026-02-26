@@ -2514,7 +2514,7 @@ function syncPenaltyAssignmentSelectionSummary() {
   if (!bodyEl || !summaryEl) return;
 
   const selectedCount = bodyEl.querySelectorAll('.js-penalty-toggle:checked').length;
-  summaryEl.textContent = `${selectedCount} ${t('penalty_modal_selected_count', 'selected')}`;
+  summaryEl.textContent = `${selectedCount} ${t('penalty_modal_selected_count', 'penalties applied')}`;
 }
 
 function syncPenaltyAssignmentRow(rowEl) {
@@ -2536,14 +2536,14 @@ function syncPenaltyAssignmentRow(rowEl) {
 
   if (!isChecked) {
     scoreInput.disabled = true;
-    scoreInput.readOnly = isFixedScore;
+    scoreInput.readOnly = false;
     scoreInput.value = '';
     return;
   }
 
   if (isFixedScore) {
-    scoreInput.disabled = false;
-    scoreInput.readOnly = true;
+    scoreInput.disabled = true;
+    scoreInput.readOnly = false;
     scoreInput.value = minPenalty !== null ? String(minPenalty) : '';
     return;
   }
@@ -2654,9 +2654,12 @@ function renderPenaltyAssignmentModalContent() {
     const rangeText = penalty.isFixedScore
       ? String(penalty.minPenalty)
       : `${penalty.minPenalty} - ${penalty.maxPenalty}`;
-    const forJudgesBadge = penalty.forJudges
-      ? `<span class="badge bg-secondary ms-1">${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}</span>`
+    const fixedBadge = penalty.isFixedScore
+      ? `<span class="badge text-bg-warning text-dark penalty-fixed-badge">${escapeHtml(t('penalty_modal_fixed_score', 'Fixed'))}</span>`
       : '';
+    const forJudgesIcon = penalty.forJudges
+      ? '<i class="bi bi-check-circle-fill text-success"></i>'
+      : '<i class="bi bi-dash-circle text-muted"></i>';
     const inputId = `penaltyScore_${penalty.id}_${index}`;
 
     return `
@@ -2670,14 +2673,19 @@ function renderPenaltyAssignmentModalContent() {
         <td class="text-center align-middle">
           <input class="form-check-input js-penalty-toggle" type="checkbox" ${isSelected ? 'checked' : ''}>
         </td>
-        <td class="align-middle">
+        <td class="align-middle penalty-col-name">
           <div class="fw-semibold">${escapeHtml(penalty.name)}</div>
-          ${forJudgesBadge}
         </td>
-        <td class="text-center align-middle">
-          <span class="badge text-bg-light border">${escapeHtml(rangeText)}</span>
+        <td class="text-center align-middle penalty-col-for-judges" title="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}">
+          ${forJudgesIcon}
         </td>
-        <td class="align-middle">
+        <td class="text-center align-middle penalty-col-range">
+          <div class="d-inline-flex align-items-center justify-content-center gap-1 flex-wrap">
+            <span class="badge text-bg-light border">${escapeHtml(rangeText)}</span>
+            ${fixedBadge}
+          </div>
+        </td>
+        <td class="align-middle penalty-col-score">
           <input
             id="${inputId}"
             type="number"
@@ -2686,13 +2694,9 @@ function renderPenaltyAssignmentModalContent() {
             max="${penalty.maxPenalty}"
             step="0.1"
             value="${escapeHtml(scoreValue)}"
-            ${isSelected ? '' : 'disabled'}
-            ${penalty.isFixedScore ? 'readonly' : ''}
+            ${(isSelected && !penalty.isFixedScore) ? '' : 'disabled'}
           >
           <div class="invalid-feedback js-penalty-score-feedback"></div>
-          ${penalty.isFixedScore
-    ? `<small class="text-muted">${escapeHtml(t('penalty_modal_fixed_score', 'Fixed score'))}</small>`
-    : ''}
         </td>
       </tr>
     `;
@@ -2702,20 +2706,21 @@ function renderPenaltyAssignmentModalContent() {
   const competitionLabel = String(context?.competitionLabel || '').trim();
 
   bodyEl.innerHTML = `
-    <div class="mb-3">
-      <div class="small text-muted">
-        ${escapeHtml(t('dancer'))}: <span class="fw-semibold">${escapeHtml(dancerName)}</span>
-      </div>
-      ${competitionLabel ? `<div class="small text-muted">${escapeHtml(competitionLabel)}</div>` : ''}
+    <div class="mb-3 penalty-assignment-header">
+      <div class="penalty-assignment-participant fw-semibold">${escapeHtml(dancerName)}</div>
+      ${competitionLabel
+    ? `<span class="badge text-bg-light border penalty-assignment-competition-badge">${escapeHtml(competitionLabel)}</span>`
+    : ''}
     </div>
     <div class="table-responsive">
-      <table class="table table-sm table-bordered align-middle mb-2">
+      <table class="table table-sm table-bordered align-middle mb-2 penalty-assignment-table">
         <thead class="table-light">
           <tr>
-            <th class="text-center" style="width: 72px;">${escapeHtml(t('penalty_modal_apply', 'Apply'))}</th>
-            <th>${escapeHtml(t('penalty_modal_name', 'Penalty'))}</th>
-            <th class="text-center" style="width: 140px;">${escapeHtml(t('penalty_modal_range', 'Range'))}</th>
-            <th style="width: 220px;">${escapeHtml(t('penalty_modal_score', 'Score'))}</th>
+            <th class="text-center penalty-col-apply">${escapeHtml(t('penalty_modal_apply', 'Apply'))}</th>
+            <th class="penalty-col-name">${escapeHtml(t('penalty_modal_name', 'Penalty'))}</th>
+            <th class="text-center penalty-col-for-judges">${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}</th>
+            <th class="text-center penalty-col-range">${escapeHtml(t('penalty_modal_range', 'Range'))}</th>
+            <th class="penalty-col-score">${escapeHtml(t('penalty_modal_score', 'Score'))}</th>
           </tr>
         </thead>
         <tbody>
