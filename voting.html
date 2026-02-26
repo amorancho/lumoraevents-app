@@ -111,6 +111,68 @@
       flex: 1 1 260px;
       min-width: 220px;
     }
+
+    #penaltyAssignmentModal .modal-dialog {
+      width: 96vw;
+      max-width: 980px;
+    }
+
+    #penaltyAssignmentModal .modal-body {
+      max-height: 72vh;
+      overflow-y: auto;
+    }
+
+    #penaltyAssignmentModal .penalty-assignment-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    #penaltyAssignmentModal .penalty-assignment-participant {
+      font-size: 1.3rem;
+      line-height: 1.2;
+    }
+
+    #penaltyAssignmentModal .penalty-assignment-competition-badge {
+      width: fit-content;
+      max-width: 100%;
+      text-align: left;
+      white-space: normal;
+    }
+
+    #penaltyAssignmentModal .penalty-assignment-table {
+      table-layout: fixed;
+      min-width: 860px;
+    }
+
+    #penaltyAssignmentModal .penalty-col-apply {
+      width: 72px;
+    }
+
+    #penaltyAssignmentModal .penalty-col-name {
+      width: auto;
+    }
+
+    #penaltyAssignmentModal .penalty-col-assigned-by {
+      width: 130px;
+    }
+
+    #penaltyAssignmentModal .penalty-col-for-judges {
+      width: 100px;
+    }
+
+    #penaltyAssignmentModal .penalty-col-range {
+      width: 110px;
+    }
+
+    #penaltyAssignmentModal .penalty-col-score {
+      width: 120px;
+    }
+
+    #penaltyAssignmentModal .penalty-fixed-badge {
+      font-size: 0.68rem;
+      line-height: 1;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -201,6 +263,27 @@
               <button type="button" class="btn btn-outline-danger" id="clearCommentsBtn" data-i18n="clear">Clear</button>
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
               <button type="button" class="btn btn-primary" id="saveCommentsBtn" data-i18n="save">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="penaltyAssignmentModal" tabindex="-1" aria-labelledby="penaltyAssignmentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="penaltyAssignmentModalLabel" data-i18n="penalty_modal_title">Penalties</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="penaltyAssignmentModalBody">
+              <div class="d-flex align-items-center justify-content-center py-4">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span data-i18n="loading">Loading...</span>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary btn-sm" id="penaltyAssignmentSaveBtn" data-i18n="penalty_modal_save">Save</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
             </div>
           </div>
         </div>

@@ -13,6 +13,11 @@ let commentsContext = { competitionId: null, dancerId: null };
 let competitionSelect, competitionInfo, dancersTableContainer, refreshBtn, nextCompetitionBtn;
 let competitionTomSelect = null;
 let availableCompetitions = [];
+const penaltyAssignmentState = {
+  context: null,
+  penalties: [],
+  competitionPenalties: []
+};
 
 const DEFAULT_MIN_SCORE = 1;
 const DEFAULT_MAX_SCORE = 10;
@@ -96,6 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   criteriaContainer = document.getElementById('criteriaContainer');
 
   initCommentsModal();
+  initPenaltyAssignmentModal();
 
 });
 
@@ -272,7 +278,8 @@ async function loadCompetitionAndDancers() {
     judgeReserveInfo.style.display = 'none';
   }
 
-  renderDancersTable(data.dancers, data.competition.status);
+
+  renderDancersTable(data.dancers, data.competition.status, Boolean(data?.competition?.judge_head));
 
   competitionInfo.style.display = 'block';
   dancersTableContainer.style.display = 'block';
@@ -801,10 +808,16 @@ async function fetchVoting(category, style) {
   }
 }
 
-function renderDancersTable(dancers, compStatus) {
+function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
   renderDancersTableHeader();
   dancersTableBody.innerHTML = ''; // limpiar
   syncCriteriaToggleButtonState();
+
+  const canShowPenaltiesButton = getEvent()?.status !== 'finished' && Boolean(isJudgeHead);
+  const selectedCompetitionId = getSelectedCompetitionId();
+  const selectedCompetition = availableCompetitions
+    .find(comp => String(comp?.id) === String(selectedCompetitionId));
+  const competitionLabel = `${selectedCompetition?.category_name || '-'} - ${selectedCompetition?.style_name || '-'}`;
 
   dancers.forEach(d => {
     const tr = document.createElement('tr');
@@ -848,19 +861,45 @@ function renderDancersTable(dancers, compStatus) {
     // Columna Actions
     const tdActions = document.createElement('td');
     tdActions.className = 'text-center';
+    const actionsWrap = document.createElement('div');
+    actionsWrap.className = 'd-flex justify-content-center gap-2 flex-wrap';
+    let hasPrimaryAction = false;
 
     if (d.status === 'Completed') {
       const btnDetails = document.createElement('button');
       btnDetails.className = 'btn btn-sm btn-secondary';
       btnDetails.textContent = t('details');
       btnDetails.addEventListener('click', () => showVotesModal(d, "details"));
-      tdActions.appendChild(btnDetails);
+      actionsWrap.appendChild(btnDetails);
+      hasPrimaryAction = true;
     } else if (d.status === 'Pending' && compStatus === 'OPE' && d.can_vote) {
       const btnVote = document.createElement('button');
       btnVote.className = 'btn btn-sm btn-primary';
       btnVote.textContent = t('vote');
       btnVote.addEventListener('click', () => showVotesModal(d, "vote"));
-      tdActions.appendChild(btnVote);
+      actionsWrap.appendChild(btnVote);
+      hasPrimaryAction = true;
+    }
+
+    if (hasPrimaryAction && canShowPenaltiesButton) {
+      const penaltiesCount = Number(d?.num_penalties) || 0;
+      const btnPenalties = document.createElement('button');
+      btnPenalties.className = 'btn btn-sm btn-outline-warning';
+      btnPenalties.textContent = `${t('penalties', 'Penalties')} (${penaltiesCount})`;
+      btnPenalties.addEventListener('click', async () => {
+        await openPenaltyAssignmentModal({
+          competitionId: d?.competition_id ?? selectedCompetition?.id ?? selectedCompetitionId,
+          dancerId: d?.id,
+          dancerName: d?.name || t('dancer', 'Dancer'),
+          competitionLabel,
+          assignedBy: 'J'
+        });
+      });
+      actionsWrap.appendChild(btnPenalties);
+    }
+
+    if (hasPrimaryAction) {
+      tdActions.appendChild(actionsWrap);
     }
 
     tr.appendChild(tdActions);
@@ -1316,5 +1355,621 @@ function renderCompetitionInfo(competition) {
     progressTextEl.textContent = progressText;
     progressTextEl.classList.remove('text-white', 'text-dark');
     progressTextEl.classList.add(isCompleted ? 'text-white' : 'text-dark');
+  }
+}
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function parseJudgeFlag(value) {
+  if (value === true || value === 1) return true;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
+}
+
+function setButtonLoading(button, isLoading, loadingText = t('loading', 'Loading...')) {
+  if (!button) return;
+
+  if (isLoading) {
+    if (!button.dataset.originalHtml) {
+      button.dataset.originalHtml = button.innerHTML;
+    }
+    button.innerHTML = `
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span>${escapeHtml(loadingText)}</span>
+    `;
+    button.disabled = true;
+    return;
+  }
+
+  if (button.dataset.originalHtml) {
+    button.innerHTML = button.dataset.originalHtml;
+    delete button.dataset.originalHtml;
+  }
+  button.disabled = false;
+}
+
+function parseOptionalNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+}
+
+function extractArrayPayload(payload, candidateKeys = []) {
+  if (Array.isArray(payload)) return payload;
+  for (const key of candidateKeys) {
+    if (Array.isArray(payload?.[key])) {
+      return payload[key];
+    }
+  }
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.rows)) return payload.rows;
+  return [];
+}
+
+function normalizePenaltyDefinition(rawPenalty) {
+  const id = parseOptionalNumber(rawPenalty?.id ?? rawPenalty?.penalty_id);
+  if (id === null) return null;
+
+  let minPenalty = parseOptionalNumber(rawPenalty?.min_penalty);
+  let maxPenalty = parseOptionalNumber(rawPenalty?.max_penalty);
+
+  if (minPenalty === null && maxPenalty !== null) minPenalty = maxPenalty;
+  if (maxPenalty === null && minPenalty !== null) maxPenalty = minPenalty;
+  if (minPenalty === null && maxPenalty === null) {
+    minPenalty = 0;
+    maxPenalty = 0;
+  }
+
+  const safeMin = Math.min(minPenalty, maxPenalty);
+  const safeMax = Math.max(minPenalty, maxPenalty);
+  const name = String(rawPenalty?.name || '').trim() || `${t('penalty', 'Penalty')} #${id}`;
+
+  return {
+    id,
+    name,
+    forJudges: parseJudgeFlag(rawPenalty?.for_judges),
+    minPenalty: safeMin,
+    maxPenalty: safeMax,
+    isFixedScore: safeMin === safeMax
+  };
+}
+
+function normalizeCompetitionPenalty(rawPenalty) {
+  const penaltyId = parseOptionalNumber(rawPenalty?.penalty_id ?? rawPenalty?.id);
+  if (penaltyId === null) return null;
+  const rawAssignedBy = String(rawPenalty?.assigned_by || '').trim().toUpperCase();
+  const assignedBy = (rawAssignedBy === 'O' || rawAssignedBy === 'J') ? rawAssignedBy : null;
+
+  return {
+    penaltyId,
+    score: parseOptionalNumber(rawPenalty?.penalty_score),
+    assignedBy
+  };
+}
+
+async function fetchPenaltyDefinitionsForEvent(eventId) {
+  const response = await fetch(`${API_BASE_URL}/api/penalties?event_id=${eventId}`);
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload?.error || t('penalty_modal_load_error', 'Error loading penalties.'));
+  }
+
+  const penaltyItems = extractArrayPayload(payload, ['penalties']);
+  const uniqueById = new Map();
+
+  penaltyItems.forEach((item) => {
+    const normalized = normalizePenaltyDefinition(item);
+    if (!normalized) return;
+    uniqueById.set(String(normalized.id), normalized);
+  });
+
+  return Array.from(uniqueById.values())
+    .sort((a, b) => String(a?.name || '').localeCompare(String(b?.name || '')));
+}
+
+async function fetchCompetitionPenaltiesForDancer(eventId, competitionId, dancerId) {
+  const url = `${API_BASE_URL}/api/competitions/penalties?event_id=${eventId}&competition_id=${competitionId}&dancer_id=${dancerId}`;
+  const response = await fetch(url);
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error(payload?.error || t('penalty_modal_load_error', 'Error loading penalties.'));
+  }
+
+  const competitionPenaltyItems = extractArrayPayload(payload, ['competition_penalties', 'penalties']);
+  const uniqueByPenaltyId = new Map();
+
+  competitionPenaltyItems.forEach((item) => {
+    const normalized = normalizeCompetitionPenalty(item);
+    if (!normalized) return;
+    uniqueByPenaltyId.set(String(normalized.penaltyId), normalized);
+  });
+
+  return Array.from(uniqueByPenaltyId.values());
+}
+
+function renderPenaltyAssignmentLoadingState() {
+  return `
+    <div class="d-flex align-items-center justify-content-center py-4">
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span>${escapeHtml(t('loading', 'Loading...'))}</span>
+    </div>
+  `;
+}
+
+function setPenaltyAssignmentSaveDisabled(disabled) {
+  const saveBtn = document.getElementById('penaltyAssignmentSaveBtn');
+  if (!saveBtn) return;
+  saveBtn.disabled = Boolean(disabled);
+}
+
+function clearPenaltyAssignmentValidationMessage() {
+  const validationEl = document.getElementById('penaltyAssignmentValidation');
+  if (!validationEl) return;
+  validationEl.textContent = '';
+  validationEl.classList.add('d-none');
+}
+
+function setPenaltyAssignmentValidationMessage(message) {
+  const validationEl = document.getElementById('penaltyAssignmentValidation');
+  if (!validationEl) return;
+  validationEl.textContent = message || '';
+  validationEl.classList.toggle('d-none', !message);
+}
+
+function syncPenaltyAssignmentSelectionSummary() {
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  const summaryEl = document.getElementById('penaltyAssignmentSummary');
+  if (!bodyEl || !summaryEl) return;
+
+  const rows = Array.from(bodyEl.querySelectorAll('.js-penalty-row'));
+  const selectedCount = rows.filter((rowEl) => {
+    if (rowEl.dataset.editable !== '1') return false;
+    const toggleEl = rowEl.querySelector('.js-penalty-toggle');
+    return Boolean(toggleEl?.checked);
+  }).length;
+
+  summaryEl.textContent = `${selectedCount} ${t('penalty_modal_selected_count', 'penalties applied')}`;
+}
+
+function syncPenaltyAssignmentRow(rowEl) {
+  if (!rowEl) return;
+
+  const toggleEl = rowEl.querySelector('.js-penalty-toggle');
+  const scoreInput = rowEl.querySelector('.js-penalty-score');
+  const feedbackEl = rowEl.querySelector('.js-penalty-score-feedback');
+  if (!toggleEl || !scoreInput) return;
+
+  const isChecked = toggleEl.checked;
+  const isEditable = rowEl.dataset.editable === '1';
+  const isFixedScore = rowEl.dataset.fixedScore === '1';
+  const minPenalty = parseOptionalNumber(rowEl.dataset.minPenalty);
+
+  scoreInput.classList.remove('is-invalid');
+  if (feedbackEl) {
+    feedbackEl.textContent = '';
+  }
+
+  if (!isEditable) {
+    toggleEl.disabled = true;
+    scoreInput.disabled = true;
+    scoreInput.readOnly = true;
+    return;
+  }
+
+  toggleEl.disabled = false;
+  scoreInput.readOnly = false;
+
+  if (!isChecked) {
+    scoreInput.disabled = true;
+    scoreInput.value = '';
+    return;
+  }
+
+  if (isFixedScore) {
+    scoreInput.disabled = true;
+    scoreInput.value = minPenalty !== null ? String(minPenalty) : '';
+    return;
+  }
+
+  scoreInput.disabled = false;
+  if (scoreInput.value === '' && minPenalty !== null) {
+    scoreInput.value = String(minPenalty);
+  }
+}
+
+function collectPenaltyAssignmentsFromModal() {
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  if (!bodyEl) {
+    return { isValid: false, assignments: [] };
+  }
+
+  const rows = Array.from(bodyEl.querySelectorAll('.js-penalty-row'));
+  const assignments = [];
+  let isValid = true;
+
+  rows.forEach((rowEl) => {
+    if (rowEl.dataset.editable !== '1') return;
+
+    const toggleEl = rowEl.querySelector('.js-penalty-toggle');
+    const scoreInput = rowEl.querySelector('.js-penalty-score');
+    const feedbackEl = rowEl.querySelector('.js-penalty-score-feedback');
+    if (!toggleEl || !scoreInput) return;
+
+    scoreInput.classList.remove('is-invalid');
+    if (feedbackEl) feedbackEl.textContent = '';
+
+    if (!toggleEl.checked) return;
+
+    const penaltyId = parseOptionalNumber(rowEl.dataset.penaltyId);
+    const isFixedScore = rowEl.dataset.fixedScore === '1';
+    const minPenalty = parseOptionalNumber(rowEl.dataset.minPenalty);
+    const maxPenalty = parseOptionalNumber(rowEl.dataset.maxPenalty);
+
+    if (penaltyId === null) {
+      isValid = false;
+      return;
+    }
+
+    let score = minPenalty;
+    if (!isFixedScore) {
+      score = parseOptionalNumber(scoreInput.value);
+      if (score === null) {
+        isValid = false;
+        scoreInput.classList.add('is-invalid');
+        if (feedbackEl) {
+          feedbackEl.textContent = t('penalty_modal_score_required', 'Score is required.');
+        }
+        return;
+      }
+      if (
+        (minPenalty !== null && score < minPenalty) ||
+        (maxPenalty !== null && score > maxPenalty)
+      ) {
+        isValid = false;
+        scoreInput.classList.add('is-invalid');
+        if (feedbackEl) {
+          feedbackEl.textContent = t('penalty_modal_score_out_of_range', 'Score must be within range.');
+        }
+        return;
+      }
+    }
+
+    assignments.push({
+      penalty_id: penaltyId,
+      penalty_score: score
+    });
+  });
+
+  return { isValid, assignments };
+}
+
+async function saveCompetitionPenalties({ eventId, competitionId, dancerId, assignedBy = 'J', penalties = [] } = {}) {
+  const normalizedAssignedBy = String(assignedBy).trim().toUpperCase() === 'O' ? 'O' : 'J';
+  const response = await fetch(`${API_BASE_URL}/api/competitions/penalties`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      event_id: Number(eventId),
+      competition_id: Number(competitionId),
+      dancer_id: Number(dancerId),
+      assigned_by: normalizedAssignedBy,
+      penalties
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      payload?.error
+      || payload?.message
+      || t('penalty_modal_save_error', 'Error saving penalties.')
+    );
+  }
+
+  return payload;
+}
+
+function renderPenaltyAssignmentModalContent() {
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  if (!bodyEl) return;
+
+  const context = penaltyAssignmentState.context || {};
+  const penalties = Array.isArray(penaltyAssignmentState.penalties) ? penaltyAssignmentState.penalties : [];
+  const competitionPenalties = Array.isArray(penaltyAssignmentState.competitionPenalties)
+    ? penaltyAssignmentState.competitionPenalties
+    : [];
+
+  if (!penalties.length) {
+    bodyEl.innerHTML = `
+      <div class="alert alert-info mb-0">
+        ${escapeHtml(t('penalty_modal_no_penalties', 'No penalties available.'))}
+      </div>
+    `;
+    setPenaltyAssignmentSaveDisabled(true);
+    return;
+  }
+
+  const selectedByPenaltyId = new Map();
+  competitionPenalties.forEach((item) => {
+    if (item?.penaltyId === null || item?.penaltyId === undefined) return;
+    selectedByPenaltyId.set(String(item.penaltyId), item);
+  });
+
+  const rowsHtml = penalties.map((penalty, index) => {
+    const selectedPenalty = selectedByPenaltyId.get(String(penalty.id)) || null;
+    const isSelected = Boolean(selectedPenalty);
+    const assignedBy = selectedPenalty?.assignedBy || null;
+    const isEditable = Boolean(
+      penalty.forJudges
+      && (!isSelected || assignedBy === 'J')
+    );
+    const scoreValue = isSelected
+      ? (penalty.isFixedScore ? penalty.minPenalty : (selectedPenalty?.score ?? ''))
+      : '';
+    const rangeText = penalty.isFixedScore
+      ? String(penalty.minPenalty)
+      : `${penalty.minPenalty} - ${penalty.maxPenalty}`;
+    const fixedBadge = penalty.isFixedScore
+      ? `<span class="badge text-bg-warning text-dark penalty-fixed-badge">${escapeHtml(t('penalty_modal_fixed_score', 'Fixed'))}</span>`
+      : '';
+    const assignedByBadge = assignedBy === 'O'
+      ? `<span class="badge bg-primary">${escapeHtml(t('penalty_modal_assigned_by_org', 'ORGANIZATION'))}</span>`
+      : assignedBy === 'J'
+        ? `<span class="badge bg-dark">${escapeHtml(t('penalty_modal_assigned_by_jury', 'JURY'))}</span>`
+        : '<span class="text-muted">-</span>';
+    const forJudgesIcon = penalty.forJudges
+      ? '<i class="bi bi-check-circle-fill text-success"></i>'
+      : '<i class="bi bi-dash-circle text-muted"></i>';
+    const inputId = `penaltyScore_${penalty.id}_${index}`;
+
+    return `
+      <tr
+        class="js-penalty-row ${isEditable ? '' : 'table-light'}"
+        data-penalty-id="${penalty.id}"
+        data-min-penalty="${penalty.minPenalty}"
+        data-max-penalty="${penalty.maxPenalty}"
+        data-fixed-score="${penalty.isFixedScore ? '1' : '0'}"
+        data-editable="${isEditable ? '1' : '0'}"
+      >
+        <td class="text-center align-middle">
+          <input
+            class="form-check-input js-penalty-toggle"
+            type="checkbox"
+            ${isSelected ? 'checked' : ''}
+            ${isEditable ? '' : 'disabled'}
+          >
+        </td>
+        <td class="align-middle penalty-col-name">
+          <div class="fw-semibold">${escapeHtml(penalty.name)}</div>
+        </td>
+        <td class="text-center align-middle penalty-col-assigned-by">
+          ${assignedByBadge}
+        </td>
+        <td class="text-center align-middle penalty-col-for-judges" title="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}">
+          ${forJudgesIcon}
+        </td>
+        <td class="text-center align-middle penalty-col-range">
+          <div class="d-inline-flex align-items-center justify-content-center gap-1 flex-wrap">
+            <span class="badge text-bg-light border">${escapeHtml(rangeText)}</span>
+            ${fixedBadge}
+          </div>
+        </td>
+        <td class="align-middle penalty-col-score">
+          <input
+            id="${inputId}"
+            type="number"
+            class="form-control form-control-sm js-penalty-score"
+            min="${penalty.minPenalty}"
+            max="${penalty.maxPenalty}"
+            step="1"
+            value="${escapeHtml(scoreValue)}"
+            ${(isSelected && !penalty.isFixedScore && isEditable) ? '' : 'disabled'}
+          >
+          <div class="invalid-feedback js-penalty-score-feedback"></div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  const dancerName = context?.dancerName || t('dancer', 'Dancer');
+  const competitionLabel = String(context?.competitionLabel || '').trim();
+
+  bodyEl.innerHTML = `
+    <div class="mb-3 penalty-assignment-header">
+      <div class="penalty-assignment-participant fw-semibold">${escapeHtml(dancerName)}</div>
+      ${competitionLabel
+    ? `<span class="badge text-bg-light border penalty-assignment-competition-badge">${escapeHtml(competitionLabel)}</span>`
+    : ''}
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm table-bordered align-middle mb-2 penalty-assignment-table">
+        <thead class="table-light">
+          <tr>
+            <th class="text-center penalty-col-apply">${escapeHtml(t('penalty_modal_apply', 'Apply'))}</th>
+            <th class="penalty-col-name">${escapeHtml(t('penalty_modal_name', 'Penalty'))}</th>
+            <th class="text-center penalty-col-assigned-by">${escapeHtml(t('penalty_modal_assigned_by', 'Assigned by'))}</th>
+            <th class="text-center penalty-col-for-judges">${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}</th>
+            <th class="text-center penalty-col-range">${escapeHtml(t('penalty_modal_range', 'Range'))}</th>
+            <th class="penalty-col-score">${escapeHtml(t('penalty_modal_score', 'Score'))}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+    <div id="penaltyAssignmentValidation" class="alert alert-warning py-2 mb-2 d-none"></div>
+    <small class="text-muted" id="penaltyAssignmentSummary"></small>
+  `;
+
+  Array.from(bodyEl.querySelectorAll('.js-penalty-row')).forEach(syncPenaltyAssignmentRow);
+  syncPenaltyAssignmentSelectionSummary();
+  clearPenaltyAssignmentValidationMessage();
+  setPenaltyAssignmentSaveDisabled(false);
+}
+
+function initPenaltyAssignmentModal() {
+  const modalEl = document.getElementById('penaltyAssignmentModal');
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  const saveBtn = document.getElementById('penaltyAssignmentSaveBtn');
+  if (!modalEl || !bodyEl || !saveBtn) return;
+  if (modalEl.dataset.initialized === '1') return;
+
+  bodyEl.addEventListener('change', (event) => {
+    const toggleEl = event.target.closest('.js-penalty-toggle');
+    if (!toggleEl) return;
+    const rowEl = toggleEl.closest('.js-penalty-row');
+    if (rowEl?.dataset.editable !== '1') return;
+    syncPenaltyAssignmentRow(rowEl);
+    syncPenaltyAssignmentSelectionSummary();
+    clearPenaltyAssignmentValidationMessage();
+  });
+
+  bodyEl.addEventListener('input', (event) => {
+    const scoreInput = event.target.closest('.js-penalty-score');
+    if (!scoreInput) return;
+    const rowEl = scoreInput.closest('.js-penalty-row');
+    if (rowEl?.dataset.editable !== '1') return;
+    scoreInput.classList.remove('is-invalid');
+    const feedbackEl = rowEl?.querySelector('.js-penalty-score-feedback');
+    if (feedbackEl) {
+      feedbackEl.textContent = '';
+    }
+    clearPenaltyAssignmentValidationMessage();
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    const { isValid, assignments } = collectPenaltyAssignmentsFromModal();
+    if (!isValid) {
+      setPenaltyAssignmentValidationMessage(
+        t('penalty_modal_validation_error', 'Review penalty scores before continuing.')
+      );
+      return;
+    }
+
+    const context = penaltyAssignmentState.context || {};
+    const eventId = parseOptionalNumber(context?.eventId);
+    const competitionId = parseOptionalNumber(context?.competitionId);
+    const dancerId = parseOptionalNumber(context?.dancerId);
+    const assignedBy = 'J';
+
+    if (eventId === null || competitionId === null || dancerId === null) {
+      showMessageModal(t('error_title', 'Error'), t('error_title', 'Error'));
+      return;
+    }
+
+    clearPenaltyAssignmentValidationMessage();
+    setButtonLoading(saveBtn, true, t('loading', 'Loading...'));
+
+    try {
+      const result = await saveCompetitionPenalties({
+        eventId,
+        competitionId,
+        dancerId,
+        assignedBy,
+        penalties: assignments
+      });
+
+      penaltyAssignmentState.competitionPenalties = assignments.map(item => ({
+        penaltyId: item.penalty_id,
+        score: item.penalty_score,
+        assignedBy
+      }));
+
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.hide();
+      await loadCompetitionAndDancers();
+
+      const fallbackMessage = result?.changed
+        ? t('penalty_modal_saved', 'Penalties saved successfully.')
+        : t('penalty_modal_no_changes', 'No penalty changes detected.');
+      showMessageModal(result?.message || fallbackMessage, t('penalty', 'Penalty'), 'success');
+    } catch (error) {
+      console.error('Error saving competition penalties:', error);
+      showMessageModal(
+        error?.message || t('penalty_modal_save_error', 'Error saving penalties.'),
+        t('error_title', 'Error')
+      );
+    } finally {
+      setButtonLoading(saveBtn, false);
+    }
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    penaltyAssignmentState.context = null;
+    penaltyAssignmentState.penalties = [];
+    penaltyAssignmentState.competitionPenalties = [];
+    bodyEl.innerHTML = renderPenaltyAssignmentLoadingState();
+    setPenaltyAssignmentSaveDisabled(false);
+    clearPenaltyAssignmentValidationMessage();
+  });
+
+  modalEl.dataset.initialized = '1';
+}
+
+async function openPenaltyAssignmentModal({ competitionId, dancerId, dancerName, competitionLabel = '', assignedBy = 'J' } = {}) {
+  const modalEl = document.getElementById('penaltyAssignmentModal');
+  const bodyEl = document.getElementById('penaltyAssignmentModalBody');
+  const modalTitleEl = document.getElementById('penaltyAssignmentModalLabel');
+  if (!modalEl || !bodyEl || !modalTitleEl) return;
+
+  const eventId = parseOptionalNumber(getEvent()?.id);
+  const parsedCompetitionId = parseOptionalNumber(competitionId);
+  const parsedDancerId = parseOptionalNumber(dancerId);
+
+  if (eventId === null || parsedCompetitionId === null || parsedDancerId === null) {
+    showMessageModal(t('error_title', 'Error'), t('error_title', 'Error'));
+    return;
+  }
+
+  penaltyAssignmentState.context = {
+    eventId,
+    competitionId: parsedCompetitionId,
+    dancerId: parsedDancerId,
+    dancerName: dancerName || t('dancer', 'Dancer'),
+    competitionLabel,
+    assignedBy: String(assignedBy).trim().toUpperCase() === 'O' ? 'O' : 'J'
+  };
+
+  modalTitleEl.textContent = t('penalty_modal_title', 'Penalties');
+  bodyEl.innerHTML = renderPenaltyAssignmentLoadingState();
+  clearPenaltyAssignmentValidationMessage();
+  setPenaltyAssignmentSaveDisabled(true);
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+
+  try {
+    const [penalties, competitionPenalties] = await Promise.all([
+      fetchPenaltyDefinitionsForEvent(eventId),
+      fetchCompetitionPenaltiesForDancer(eventId, parsedCompetitionId, parsedDancerId)
+    ]);
+
+    penaltyAssignmentState.penalties = penalties;
+    penaltyAssignmentState.competitionPenalties = competitionPenalties;
+    renderPenaltyAssignmentModalContent();
+  } catch (error) {
+    console.error('Error loading competition penalties:', error);
+    bodyEl.innerHTML = `
+      <div class="alert alert-danger mb-0">
+        ${escapeHtml(error?.message || t('penalty_modal_load_error', 'Error loading penalties.'))}
+      </div>
+    `;
+    setPenaltyAssignmentSaveDisabled(true);
   }
 }

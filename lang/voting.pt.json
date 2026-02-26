@@ -21,6 +21,7 @@
   "total": "Total",
   "details": "Detalhes",
   "vote": "Votar",
+  "penalties": "Penalizacoes",
   "votes_for": "Votos para",
   "vote_for": "Votar em",
   "close": "Fechar",
@@ -36,6 +37,7 @@
   "refresh": "Atualizar",
   "next_competition": "Competição seguinte",
   "reserve_alert": "Você é um jurado reserva. Só pode votar em participantes que tenham um jurado como treinador.",
+  "judge_head_penalties_tooltip": "Voce e o jurado principal: pode aplicar penalizacoes nesta competicao.",
   "add_comments": "Adicionar comentários...",
   "clear": "Limpar",
   "save": "Salvar"

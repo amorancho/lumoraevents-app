@@ -21,6 +21,7 @@
   "total": "Total",
   "details": "Détails",
   "vote": "Voter",
+  "penalties": "Penalites",
   "votes_for": "Votes pour",
   "vote_for": "Voter pour",
   "close": "Fermer",
@@ -36,6 +37,7 @@
   "refresh": "Rafraîchir",
   "next_competition": "Competition suivante",
   "reserve_alert": "Vous êtes un juge de réserve. Vous ne pouvez voter que pour les participantes ayant un juge comme coach.",
+  "judge_head_penalties_tooltip": "Vous etes juge principal : vous pouvez appliquer des penalites dans cette competition.",
   "add_comments": "Ajouter des commentaires...",
   "clear": "Effacer",
   "save": "Enregistrer"

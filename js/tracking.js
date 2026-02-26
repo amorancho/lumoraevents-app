@@ -2751,7 +2751,7 @@ function renderPenaltyAssignmentModalContent() {
             class="form-control form-control-sm js-penalty-score"
             min="${penalty.minPenalty}"
             max="${penalty.maxPenalty}"
-            step="0.1"
+            step="1"
             value="${escapeHtml(scoreValue)}"
             ${(isSelected && !penalty.isFixedScore) ? '' : 'disabled'}
           >

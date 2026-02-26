@@ -21,6 +21,7 @@
   "total": "Total",
   "details": "Details",
   "vote": "Vote",
+  "penalties": "Penalties",
   "votes_for": "Votes for",
   "vote_for": "Vote for",
   "close": "Close",
@@ -36,6 +37,7 @@
   "refresh": "Refresh",
   "next_competition": "Next Competition",
   "reserve_alert": "You are a reserve judge. You can only vote for participants who have a judge as their coach.",
+  "judge_head_penalties_tooltip": "You are the head judge: you can apply penalties in this competition.",
   "add_comments": "Add comments...",
   "clear": "Clear",
   "save": "Save"
