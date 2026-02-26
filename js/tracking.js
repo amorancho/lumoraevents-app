@@ -3,6 +3,7 @@ var title = 'Competition Tracking';
 const allowedRoles = ["admin", "organizer"];
 const voteDetailsInFlight = new Set();
 const competitionDetailsInFlight = new Set();
+const SIDEBAR_STATUS_FILTER_NOT_FINISHED = '__NOT_FINISHED__';
 const classificationExportState = {
   options: [],
   mode: 'ALL',
@@ -1435,13 +1436,20 @@ function renderSidebarFilters(competitions = trackingUiState.sidebarCompetitions
     getSidebarCompetitionStyleLabel
   );
   const statuses = getDistinctSidebarStatusOptions(competitions);
+  const statusFilterOptions = [
+    {
+      value: SIDEBAR_STATUS_FILTER_NOT_FINISHED,
+      label: t('tracking_filters_not_finished', 'No finalizados')
+    },
+    ...statuses
+  ];
   const allCategoriesLabel = t('tracking_filters_all_categories', 'Todas Categorías');
   const allStylesLabel = t('tracking_filters_all_styles', 'Todos Estilos');
   const allStatusesLabel = t('tracking_filters_all_statuses', 'Todos Estados');
 
   populateSidebarFilterSelect(categorySelect, categories, trackingUiState.sidebarFilters.category, allCategoriesLabel);
   populateSidebarFilterSelect(styleSelect, styles, trackingUiState.sidebarFilters.style, allStylesLabel);
-  populateSidebarFilterSelect(statusSelect, statuses, trackingUiState.sidebarFilters.status, allStatusesLabel);
+  populateSidebarFilterSelect(statusSelect, statusFilterOptions, trackingUiState.sidebarFilters.status, allStatusesLabel);
 
   trackingUiState.sidebarFilters.category = categorySelect.value || '';
   trackingUiState.sidebarFilters.style = styleSelect.value || '';
@@ -1471,7 +1479,14 @@ function getFilteredSidebarCompetitions(competitions = trackingUiState.sidebarCo
   return (Array.isArray(competitions) ? competitions : []).filter(comp => {
     if (filters.category && getSidebarCompetitionCategoryKey(comp) !== filters.category) return false;
     if (filters.style && getSidebarCompetitionStyleKey(comp) !== filters.style) return false;
-    if (filters.status && getSidebarCompetitionStatusKey(comp) !== filters.status) return false;
+    if (filters.status) {
+      const competitionStatus = getSidebarCompetitionStatusKey(comp);
+      if (filters.status === SIDEBAR_STATUS_FILTER_NOT_FINISHED) {
+        if (competitionStatus === 'FIN') return false;
+      } else if (competitionStatus !== filters.status) {
+        return false;
+      }
+    }
     return true;
   });
 }
