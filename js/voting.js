@@ -1,4 +1,4 @@
-var title = 'Voting';
+﻿var title = 'Voting';
 
 const allowedRoles = ["admin", "judge"];
 
@@ -11,6 +11,7 @@ let modal, criteriaContainer;
 let commentsModal, commentsTextarea, saveCommentsBtn, clearCommentsBtn;
 let commentsContext = { competitionId: null, dancerId: null };
 let competitionSelect, competitionInfo, dancersTableContainer, refreshBtn, nextCompetitionBtn;
+let competitionTomSelect = null;
 let availableCompetitions = [];
 
 const DEFAULT_MIN_SCORE = 1;
@@ -65,11 +66,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   competitionSelect.addEventListener('change', () => {
     loadCompetitionAndDancers();
-    refreshBtn.disabled = !competitionSelect.value;
+    refreshBtn.disabled = !getSelectedCompetitionId();
   });
 
   refreshBtn.addEventListener('click', () => {
-    competitionSelect.dispatchEvent(new Event('change'));
+    loadCompetitionAndDancers();
   });
 
   if (nextCompetitionBtn) {
@@ -246,7 +247,7 @@ async function upsertComments(competitionId, dancerId, comments) {
 }
 
 async function loadCompetitionAndDancers() {
-  const selectedCompetitionId = competitionSelect?.value;
+  const selectedCompetitionId = getSelectedCompetitionId();
   if (!selectedCompetitionId) return;
 
   const selectedCompetition = availableCompetitions
@@ -864,7 +865,7 @@ function renderDancersTable(dancers, compStatus) {
 
     tr.appendChild(tdActions);
 
-    // Columna Comments (última)
+    // Columna Comments (Ãºltima)
     const tdComments = document.createElement('td');
     tdComments.className = 'text-center';
 
@@ -1006,6 +1007,141 @@ function getCompetitionStatusText(status) {
   return status || '-';
 }
 
+function getCompetitionStatusBadgeClass(status) {
+  if (status === 'OPE') return 'bg-warning text-dark';
+  if (status === 'CLO') return 'bg-danger';
+  if (status === 'FIN') return 'bg-success';
+  return 'bg-secondary';
+}
+
+function splitCompetitionDateAndTime(competition) {
+  const estimatedStartText = formatCompetitionEstimatedStart(competition);
+  const match = estimatedStartText.match(/^(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2})$/);
+  if (match) {
+    return {
+      day: match[1],
+      hour: match[2]
+    };
+  }
+  return {
+    day: estimatedStartText,
+    hour: ''
+  };
+}
+
+function buildCompetitionSelectOptionData(competition) {
+  const { day, hour } = splitCompetitionDateAndTime(competition);
+  const statusText = getCompetitionStatusText(competition?.status);
+  return {
+    value: String(competition?.id ?? ''),
+    id: String(competition?.id ?? ''),
+    category: competition?.category_name || '-',
+    style: competition?.style_name || '-',
+    statusText,
+    statusClass: getCompetitionStatusBadgeClass(competition?.status),
+    day,
+    hour,
+    text: `${competition?.category_name || '-'} / ${competition?.style_name || '-'} (${day}${hour ? ` ${hour}` : ''} - ${statusText})`
+  };
+}
+
+function getCompetitionOptionRenderData(item) {
+  const hasRenderableData = Boolean(item?.category || item?.style || item?.statusText || item?.day || item?.hour);
+  if (hasRenderableData) return item || {};
+
+  const candidateId = item?.value ?? item?.id;
+  if (!candidateId) return item || {};
+
+  const competition = availableCompetitions.find(comp => String(comp?.id) === String(candidateId));
+  if (!competition) return item || {};
+
+  const fallback = buildCompetitionSelectOptionData(competition);
+  return {
+    ...item,
+    ...fallback
+  };
+}
+
+function initCompetitionTomSelect() {
+  if (!competitionSelect || typeof TomSelect !== 'function') return;
+
+  if (competitionTomSelect) {
+    competitionTomSelect.destroy();
+    competitionTomSelect = null;
+  }
+
+  competitionTomSelect = new TomSelect(competitionSelect, {
+    dataAttr: 'data-data',
+    valueField: 'value',
+    labelField: 'text',
+    searchField: ['category', 'style', 'statusText', 'day', 'hour'],
+    maxOptions: 200,
+    allowEmptyOption: false,
+    create: false,
+    placeholder: t('select_competition', 'Select a competition'),
+    render: {
+      option: function (item, escape) {
+        const optionData = getCompetitionOptionRenderData(item);
+        return `
+          <div class="competition-option-wrap">
+            <div class="competition-option-badges">
+              <span class="badge badge-neutral-dark">${escape(optionData.category || '-')}</span>
+              <span class="badge badge-neutral-dark">${escape(optionData.style || '-')}</span>
+              <span class="badge ${escape(optionData.statusClass || 'bg-secondary')}">${escape(optionData.statusText || '-')}</span>
+            </div>
+            <div class="competition-option-meta">
+              <i class="bi bi-calendar-event"></i>${escape(optionData.day || '-')}
+              ${optionData.hour ? ` <span class="ms-2"><i class="bi bi-clock"></i>${escape(optionData.hour)}</span>` : ''}
+            </div>
+          </div>
+        `;
+      },
+      item: function (item, escape) {
+        const optionData = getCompetitionOptionRenderData(item);
+        return `
+          <div class="competition-option-badges">
+            <span class="badge badge-neutral-dark">${escape(optionData.category || '-')}</span>
+            <span class="badge badge-neutral-dark">${escape(optionData.style || '-')}</span>
+            <span class="badge ${escape(optionData.statusClass || 'bg-secondary')}">${escape(optionData.statusText || '-')}</span>
+          </div>
+        `;
+      }
+    }
+  });
+
+  if (competitionSelect.disabled) {
+    competitionTomSelect.disable();
+  } else {
+    competitionTomSelect.enable();
+  }
+}
+
+function setCompetitionSelectValue(value, { silent = true } = {}) {
+  if (!competitionSelect) return;
+
+  const normalized = value === undefined || value === null ? '' : String(value);
+
+  if (competitionTomSelect) {
+    if (!normalized) {
+      competitionTomSelect.clear(silent);
+      return;
+    }
+    competitionTomSelect.setValue(normalized, silent);
+    return;
+  }
+
+  competitionSelect.value = normalized;
+}
+
+function getSelectedCompetitionId() {
+  if (competitionTomSelect) {
+    const value = competitionTomSelect.getValue();
+    return value ? String(value) : '';
+  }
+
+  return competitionSelect?.value ? String(competitionSelect.value) : '';
+}
+
 async function loadCompetitionsForJudge() {
   try {
     const judgeId = getUserId();
@@ -1027,11 +1163,11 @@ async function reloadCompetitionsAndSelectFirstOpen() {
 
   const firstOpenCompetition = availableCompetitions.find(comp => comp?.status === 'OPE');
   if (firstOpenCompetition) {
-    competitionSelect.value = String(firstOpenCompetition.id);
+    setCompetitionSelectValue(String(firstOpenCompetition.id), { silent: true });
     refreshBtn.disabled = false;
-    refreshBtn.click();
+    competitionSelect.dispatchEvent(new Event('change'));
   } else {
-    competitionSelect.value = '';
+    setCompetitionSelectValue('', { silent: true });
     refreshBtn.disabled = true;
   }
 
@@ -1043,17 +1179,22 @@ async function reloadCompetitionsAndSelectFirstOpen() {
 function populateCompetitionSelect(competitions, selectElement) {
   if (!selectElement) return;
 
+  const previousValue = String(selectElement.value || '');
   selectElement.innerHTML = '<option selected disabled value="" data-i18n="select_competition">Select a competition</option>';
   competitions.forEach(item => {
     const option = document.createElement('option');
-    option.value = String(item.id);
-    const estimatedStartText = formatCompetitionEstimatedStart(item);
-    const statusText = getCompetitionStatusText(item?.status);
-    option.textContent = `${item.category_name || '-'} / ${item.style_name || '-'} (${estimatedStartText} - ${statusText})`;
+    const optionData = buildCompetitionSelectOptionData(item);
+    option.value = optionData.value;
+    option.textContent = optionData.text;
+    option.setAttribute('data-data', JSON.stringify(optionData));
     selectElement.appendChild(option);
   });
 
   selectElement.disabled = competitions.length === 0;
+  const canRestorePrevious = previousValue && competitions.some(item => String(item?.id) === previousValue);
+  selectElement.value = canRestorePrevious ? previousValue : '';
+
+  initCompetitionTomSelect();
   applyTranslations();
 }
 
@@ -1117,50 +1258,63 @@ function formatScoreForDisplay(value, scoreType) {
 function renderCompetitionInfo(competition) {
   if (!competition) return;
 
-  // Categoría y estilo
-  document.getElementById('compCategory').innerHTML = `<span class="badge bg-secondary">${competition.category_name}</span>`;
-  document.getElementById('compStyle').innerHTML = `<span class="badge bg-secondary">${competition.style_name}</span>`;
+  const categoryEl = document.getElementById('compCategory');
+  const styleEl = document.getElementById('compStyle');
+  const statusEl = document.getElementById('compStatus');
+  const timeEl = document.getElementById('compTime');
+  const progressWrapEl = document.querySelector('#competitionInfo .progress');
+  const progressBarEl = document.getElementById('compProgressBar');
+  const progressTextEl = document.getElementById('compProgressText');
 
-  // Hora estimada
-  document.getElementById('compTime').innerHTML = competition.estimated_start_form || '<span class="badge bg-dark">NOT DEFINED</span>';
-
-  // Estado
-  let statusClass = 'bg-secondary';
-  let statusText;
-  switch (competition.status) {
-    case 'OPE':
-      statusClass = 'bg-warning';
-      statusText = 'OPEN';
-      break;
-    case 'CLO':
-      statusClass = 'bg-danger';
-      statusText = 'CLOSED';
-      break;
-    case 'FIN':
-      statusClass = 'bg-success';
-      statusText = 'FINISHED';
-      break;
+  if (categoryEl) {
+    categoryEl.textContent = competition.category_name || '-';
   }
-  document.getElementById('compStatus').innerHTML = `<span class="badge ${statusClass}">${statusText}</span>`;
 
-  // Número de jueces
-  document.getElementById('compNumJudges').innerHTML = 
-    `<p>
-      <span class="badge bg-primary">${competition.judge_number}</span>
-      <span class="mx-1">/</span>
-      <span class="badge bg-warning"
-                          data-bs-toggle="tooltip"
-                          data-bs-placement="top"
-                          title="Jueces reserva">
-                      ${competition.judge_number_reserve}
-                    </span>
-    </p>`;
+  if (styleEl) {
+    styleEl.textContent = competition.style_name || '-';
+  }
 
-  // Número de bailarinas
-  document.getElementById('compDancers').innerHTML = `<span class="badge bg-primary">${competition.num_dancers}</span>`;
-  document.getElementById('compDancersPend').innerHTML = `<span class="badge bg-warning">${competition.dancersPending}</span>`;
+  const statusText = getCompetitionStatusText(competition.status);
+  const statusClass = getCompetitionStatusBadgeClass(competition.status);
+  if (statusEl) {
+    statusEl.classList.remove('bg-warning', 'bg-danger', 'bg-success', 'bg-secondary', 'text-dark');
+    statusClass.split(' ').forEach(cls => statusEl.classList.add(cls));
+    statusEl.textContent = statusText;
+  }
 
-  const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-  tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+  if (timeEl) {
+    const { day, hour } = splitCompetitionDateAndTime(competition);
+    timeEl.innerHTML = `
+      <i class="bi bi-calendar-event me-1"></i>${day || t('not_defined', 'NOT DEFINED')}
+      ${hour ? `<span class="ms-3"><i class="bi bi-clock me-1"></i>${hour}</span>` : ''}
+    `;
+  }
+
+  const totalDancers = Number(competition?.num_dancers) || 0;
+  const pendingDancersRaw = Number(competition?.dancersPending);
+  const pendingDancers = Number.isFinite(pendingDancersRaw)
+    ? Math.max(0, Math.min(totalDancers, pendingDancersRaw))
+    : 0;
+  const completedDancers = Math.max(0, totalDancers - pendingDancers);
+  const progressPercentage = totalDancers > 0
+    ? Math.round((completedDancers / totalDancers) * 100)
+    : 0;
+  const progressText = `${completedDancers}/${totalDancers} (${progressPercentage}%)`;
+  const isCompleted = progressPercentage >= 100;
+
+  if (progressWrapEl) {
+    progressWrapEl.setAttribute('aria-valuenow', String(progressPercentage));
+  }
+
+  if (progressBarEl) {
+    progressBarEl.style.width = `${progressPercentage}%`;
+    progressBarEl.classList.remove('bg-success', 'bg-warning');
+    progressBarEl.classList.add(isCompleted ? 'bg-success' : 'bg-warning');
+  }
+
+  if (progressTextEl) {
+    progressTextEl.textContent = progressText;
+    progressTextEl.classList.remove('text-white', 'text-dark');
+    progressTextEl.classList.add(isCompleted ? 'text-white' : 'text-dark');
+  }
 }
-
