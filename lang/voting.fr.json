@@ -35,6 +35,7 @@
   "sending": "Envoi en cours",
   "confirm_outlier_scores": "Certaines notes sont très supérieures ou inférieures à la moyenne. Êtes-vous sûr de vouloir envoyer ces notes ?",
   "refresh": "Rafraîchir",
+  "previous_competition": "Competition précédente",
   "next_competition": "Competition suivante",
   "reserve_alert": "Vous êtes un juge de réserve. Vous ne pouvez voter que pour les participantes ayant un juge comme coach.",
   "judge_head_penalties_tooltip": "Vous etes juge principal : vous pouvez appliquer des penalites dans cette competition.",

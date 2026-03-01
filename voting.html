@@ -180,18 +180,29 @@
   <div class="container py-4">
       
     <div class="container" id="voteContainer">
-      <div class="row g-3 align-items-end mb-4 justify-content-center">
+      <div class="row g-3 align-items-start mb-4 justify-content-center">
         <div class="col-md-6">
           <select class="form-select" id="competitionSelect" disabled>
             <option selected disabled value="" data-i18n="select_competition">Select a competition</option>
           </select>
+          <div class="row g-2 mt-2">
+            <div class="col-12 col-md-6">
+              <button class="btn btn-outline-primary w-100 text-start d-flex flex-column justify-content-center" id="previousCompetitionBtn" disabled>
+                <span class="competition-nav-label">Previous Competition</span>
+                <span class="competition-nav-meta small opacity-75 d-none"></span>
+              </button>
+            </div>
+            <div class="col-12 col-md-6">
+              <button class="btn btn-outline-primary w-100 text-start d-flex flex-column justify-content-center" id="nextCompetitionBtn" disabled>
+                <span class="competition-nav-label">Next Competition</span>
+                <span class="competition-nav-meta small opacity-75 d-none"></span>
+              </button>
+            </div>
+          </div>
         </div>
         
         <div class="col-md-1">
           <button class="btn btn-primary" id="refreshBtn" data-i18n="refresh" disabled>Refresh</button>
-        </div>
-        <div class="col-md-2">
-          <button class="btn btn-outline-primary" id="nextCompetitionBtn" data-i18n="next_competition" disabled>Next Competition</button>
         </div>
       </div>
 

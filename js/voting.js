@@ -10,7 +10,7 @@ const CRITERIA_COL_VIS_STORAGE_PREFIX = 'lumora.voting.criteriaColumnsVisible';
 let modal, criteriaContainer;
 let commentsModal, commentsTextarea, saveCommentsBtn, clearCommentsBtn;
 let commentsContext = { competitionId: null, dancerId: null };
-let competitionSelect, competitionInfo, dancersTableContainer, refreshBtn, nextCompetitionBtn;
+let competitionSelect, competitionInfo, dancersTableContainer, refreshBtn, previousCompetitionBtn, nextCompetitionBtn;
 let competitionTomSelect = null;
 let availableCompetitions = [];
 const penaltyAssignmentState = {
@@ -55,10 +55,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   competitionInfo = document.getElementById('competitionInfo');
   dancersTableContainer = document.getElementById('dancersTableContainer');
   refreshBtn = document.getElementById('refreshBtn');
+  previousCompetitionBtn = document.getElementById('previousCompetitionBtn');
   nextCompetitionBtn = document.getElementById('nextCompetitionBtn');
   const toggleCriteriaBtn = document.getElementById('toggleCriteriaBtn');
 
   refreshBtn.disabled = true;
+  if (previousCompetitionBtn) previousCompetitionBtn.disabled = true;
   if (nextCompetitionBtn) nextCompetitionBtn.disabled = true;
 
   if (toggleCriteriaBtn) {
@@ -70,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await ensureTranslationsReady();
 
   competitionSelect.addEventListener('change', () => {
+    updateCompetitionNavigationButtons();
     loadCompetitionAndDancers();
     refreshBtn.disabled = !getSelectedCompetitionId();
   });
@@ -78,17 +81,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadCompetitionAndDancers();
   });
 
+  if (previousCompetitionBtn) {
+    previousCompetitionBtn.addEventListener('click', () => {
+      navigateCompetition(-1);
+    });
+  }
+
   if (nextCompetitionBtn) {
-    nextCompetitionBtn.addEventListener('click', async () => {
-      if (nextCompetitionBtn.disabled) return;
-      nextCompetitionBtn.disabled = true;
-      try {
-        await reloadCompetitionsAndSelectFirstOpen();
-      } finally {
-        if (nextCompetitionBtn) {
-          nextCompetitionBtn.disabled = availableCompetitions.length === 0;
-        }
-      }
+    nextCompetitionBtn.addEventListener('click', () => {
+      navigateCompetition(1);
     });
   }
 
@@ -254,6 +255,7 @@ async function upsertComments(competitionId, dancerId, comments) {
 
 async function loadCompetitionAndDancers() {
   const selectedCompetitionId = getSelectedCompetitionId();
+  updateCompetitionNavigationButtons(selectedCompetitionId);
   if (!selectedCompetitionId) return;
 
   const selectedCompetition = availableCompetitions
@@ -1172,6 +1174,61 @@ function setCompetitionSelectValue(value, { silent = true } = {}) {
   competitionSelect.value = normalized;
 }
 
+function getSelectedCompetitionIndex(selectedCompetitionId = getSelectedCompetitionId()) {
+  if (!selectedCompetitionId) return -1;
+  return availableCompetitions.findIndex(comp => String(comp?.id) === String(selectedCompetitionId));
+}
+
+function formatCompetitionNavigationMeta(competition) {
+  if (!competition) return '';
+  return `${competition?.category_name || '-'} - ${competition?.style_name || '-'}`;
+}
+
+function updateCompetitionNavigationButton(button, labelKey, fallbackLabel, targetCompetition) {
+  if (!button) return;
+
+  const labelEl = button.querySelector('.competition-nav-label');
+  const metaEl = button.querySelector('.competition-nav-meta');
+  const label = t(labelKey, fallbackLabel);
+  const hasTargetCompetition = Boolean(targetCompetition);
+
+  button.disabled = !hasTargetCompetition;
+  button.dataset.competitionId = hasTargetCompetition ? String(targetCompetition.id) : '';
+
+  if (labelEl) {
+    labelEl.textContent = label;
+  } else {
+    button.textContent = label;
+  }
+
+  if (metaEl) {
+    metaEl.textContent = hasTargetCompetition ? formatCompetitionNavigationMeta(targetCompetition) : '';
+    metaEl.classList.toggle('d-none', !hasTargetCompetition);
+  }
+}
+
+function updateCompetitionNavigationButtons(selectedCompetitionId = getSelectedCompetitionId()) {
+  const currentIndex = getSelectedCompetitionIndex(selectedCompetitionId);
+  const previousCompetition = currentIndex > 0 ? availableCompetitions[currentIndex - 1] : null;
+  const nextCompetition = currentIndex >= 0 && currentIndex < availableCompetitions.length - 1
+    ? availableCompetitions[currentIndex + 1]
+    : null;
+
+  updateCompetitionNavigationButton(previousCompetitionBtn, 'previous_competition', 'Previous Competition', previousCompetition);
+  updateCompetitionNavigationButton(nextCompetitionBtn, 'next_competition', 'Next Competition', nextCompetition);
+}
+
+function navigateCompetition(offset) {
+  const currentIndex = getSelectedCompetitionIndex();
+  if (currentIndex < 0) return;
+
+  const targetCompetition = availableCompetitions[currentIndex + offset];
+  if (!targetCompetition) return;
+
+  setCompetitionSelectValue(String(targetCompetition.id), { silent: true });
+  competitionSelect.dispatchEvent(new Event('change'));
+}
+
 function getSelectedCompetitionId() {
   if (competitionTomSelect) {
     const value = competitionTomSelect.getValue();
@@ -1210,9 +1267,7 @@ async function reloadCompetitionsAndSelectFirstOpen() {
     refreshBtn.disabled = true;
   }
 
-  if (nextCompetitionBtn) {
-    nextCompetitionBtn.disabled = availableCompetitions.length === 0;
-  }
+  updateCompetitionNavigationButtons();
 }
 
 function populateCompetitionSelect(competitions, selectElement) {
