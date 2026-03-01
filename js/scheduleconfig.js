@@ -29,6 +29,7 @@ window.renderScheduleConfig = renderScheduleConfig;
 document.addEventListener('DOMContentLoaded', async () => {
   validateRoles(allowedRoles);
   await WaitEventLoaded();
+  await ensureTranslationsReady();
 
   competitionModal = new bootstrap.Modal(document.getElementById('competitionModal'));
   breakModal = new bootstrap.Modal(document.getElementById('breakModal'));

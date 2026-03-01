@@ -1181,6 +1181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   validateRoles(allowedRoles);
 
   await WaitEventLoaded();
+  await ensureTranslationsReady();
   trackingUiState.sidebarFilters = loadTrackingSidebarFilters();
   initClassificationExportOptions();
   initPenaltyAssignmentModal();

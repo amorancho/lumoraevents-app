@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   validateRoles(allowedRoles);
 
   await WaitEventLoaded();
+  await ensureTranslationsReady();
 
   updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${eventId}`);
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
@@ -52,7 +53,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  await ensureTranslationsReady();
   applyCloseButtonAriaLabels();
   await loadEventData(eventId);
 

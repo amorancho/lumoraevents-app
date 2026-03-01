@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
 
   await WaitEventLoaded();
+  await ensureTranslationsReady();
 
   updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
   updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
@@ -451,7 +452,8 @@ async function saveCompetitionEdits(editModal) {
 }
 
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await ensureTranslationsReady();
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
     const scheduleConfigWarningModalEl = document.getElementById('scheduleConfigWarningModal');
     const scheduleConfigWarningModal = scheduleConfigWarningModalEl ? new bootstrap.Modal(scheduleConfigWarningModalEl) : null;

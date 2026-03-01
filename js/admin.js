@@ -11,6 +11,7 @@ let eventModal;
 document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
+  await ensureTranslationsReady();
 
   await loadClients();
   await loadEvents();

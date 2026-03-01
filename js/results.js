@@ -25,6 +25,7 @@ function getDancerClubLabel(dancer) {
 document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
   await WaitEventLoaded();
+  await ensureTranslationsReady();
 
   const user = getUserFromToken();
   const role = user ? user.role : 'guest';
@@ -199,8 +200,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     votingModal.show();
   });
-
-  await ensureTranslationsReady();
 
   // Cargar categorias y preparar eventos
   loadCategories();

@@ -5,6 +5,7 @@ const dancerCodeInput = () => document.getElementById('dancerCode');
 
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
+  await ensureTranslationsReady();
 
   const user = getUserFromToken();
   const role = user ? user.role : 'guest';

@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     validateRoles(allowedRoles);
     //await eventReadyPromise;
     await WaitEventLoaded();
+    await ensureTranslationsReady();
 
     updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
     updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
