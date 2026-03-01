@@ -1253,9 +1253,9 @@ async function executeGetCompetitions(categoryId, styleId) {
   await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
 }
 
-async function reloadSelectedCompetition() {
+async function reloadSelectedCompetition(options = {}) {
   if (!trackingUiState.selectedCategoryId || !trackingUiState.selectedStyleId) return;
-  await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
+  await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId, options);
 }
 
 async function changeCompetitionStatus(compId, action, options = {}) {
@@ -1287,7 +1287,10 @@ async function changeCompetitionStatus(compId, action, options = {}) {
 
 
 async function loadCompetitions(categoryId, styleId, options = {}) {
-  const { reloadSidebar = false } = options;
+  const {
+    reloadSidebar = false,
+    syncSidebarState = false
+  } = options;
   try {
     trackingUiState.selectedCategoryId = String(categoryId);
     trackingUiState.selectedStyleId = String(styleId);
@@ -1304,12 +1307,17 @@ async function loadCompetitions(categoryId, styleId, options = {}) {
     renderCompetitions(competitions);
     if (reloadSidebar) {
       await loadCompetitionSidebar();
+    } else if (syncSidebarState) {
+      syncSelectedCompetitionSidebarState(competitions, categoryId, styleId);
+      rerenderSidebarPreservingScroll();
     }
 
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+    return competitions;
   } catch (error) {
     console.error('Error fetching competitions:', error);
+    return [];
   }
 }
 
@@ -1569,6 +1577,57 @@ function updateSidebarCompetitionStatusInState(compId, nextStatus) {
   }
 }
 
+function findCompetitionByCategoryAndStyle(competitions, categoryId, styleId) {
+  return (Array.isArray(competitions) ? competitions : []).find(comp => {
+    const compCategoryId = comp?.category_id ?? comp?.category?.id ?? '';
+    const compStyleId = comp?.style_id ?? comp?.style?.id ?? '';
+    return String(compCategoryId) === String(categoryId) && String(compStyleId) === String(styleId);
+  }) || null;
+}
+
+function syncSelectedCompetitionSidebarState(competitions, categoryId, styleId) {
+  if (!Array.isArray(trackingUiState.sidebarCompetitions) || trackingUiState.sidebarCompetitions.length === 0) {
+    return false;
+  }
+
+  const selectedCompetition = findCompetitionByCategoryAndStyle(
+    competitions,
+    categoryId ?? trackingUiState.selectedCategoryId,
+    styleId ?? trackingUiState.selectedStyleId
+  );
+  if (!selectedCompetition) return false;
+
+  const sidebarCompetition = trackingUiState.sidebarCompetitions.find(comp => {
+    const sameId = comp?.id !== undefined
+      && comp?.id !== null
+      && selectedCompetition?.id !== undefined
+      && selectedCompetition?.id !== null
+      && String(comp.id) === String(selectedCompetition.id);
+    if (sameId) return true;
+
+    const compCategoryId = comp?.category_id ?? comp?.category?.id ?? '';
+    const compStyleId = comp?.style_id ?? comp?.style?.id ?? '';
+    const selectedCategoryId = selectedCompetition?.category_id ?? selectedCompetition?.category?.id ?? '';
+    const selectedStyleId = selectedCompetition?.style_id ?? selectedCompetition?.style?.id ?? '';
+    return String(compCategoryId) === String(selectedCategoryId)
+      && String(compStyleId) === String(selectedStyleId);
+  });
+  if (!sidebarCompetition) return false;
+
+  sidebarCompetition.status = normalizeSidebarCompetitionStatus(selectedCompetition?.status) || sidebarCompetition.status;
+  return true;
+}
+
+function rerenderSidebarPreservingScroll() {
+  const container = document.getElementById('competitionsSidebarList');
+  const previousScrollTop = container ? container.scrollTop : 0;
+  renderSidebarFilters();
+  renderCompetitionSidebar();
+  if (container) {
+    container.scrollTop = previousScrollTop;
+  }
+}
+
 function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetitions) {
   const container = document.getElementById('competitionsSidebarList');
   if (!container) return;
@@ -1658,8 +1717,7 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
         await changeCompetitionStatus(compId, action);
         const nextStatus = getCompetitionStatusFromAction(action);
         updateSidebarCompetitionStatusInState(compId, nextStatus);
-        renderSidebarFilters();
-        renderCompetitionSidebar();
+        rerenderSidebarPreservingScroll();
 
         const isSelectedCompetition = String(trackingUiState.selectedCategoryId) === String(categoryId)
           && String(trackingUiState.selectedStyleId) === String(styleId);
@@ -2031,7 +2089,7 @@ function renderCompetitions(competitions) {
 
           let ind = `${comp.id}-${d.dancer_id}-${v.judge.id}`; // ID de la fila para localizarla en reset
 
-          if (['Completed', 'No Show'].includes(v.status)) {
+          if (['Completed', 'No Show', 'Disqualified'].includes(v.status)) {
 
             let params = `${comp.category_id}, ${comp.style_id}, ${v.judge.id}, ${d.dancer_id}, '${ind}', '${d.dancer_name}', '${v.judge.name}'`;
             let showEye = v.status === 'Completed';
@@ -2332,7 +2390,7 @@ async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerNa
     const data = await res.json();
     
     if (data.success) {
-      await reloadSelectedCompetition();
+      await reloadSelectedCompetition({ syncSidebarState: true });
     }
 
 
@@ -2364,7 +2422,7 @@ async function markNoShow(categoryId, styleId, dancerId, dancerName) {
       return;
     }
 
-    await reloadSelectedCompetition();
+    await reloadSelectedCompetition({ syncSidebarState: true });
   } catch (err) {
     showMessageModal(err.message || t('error_mark_no_show'), t('error_title'));
   }
@@ -2393,7 +2451,7 @@ async function markDisqualified(categoryId, styleId, dancerId, dancerName) {
       return;
     }
 
-    await reloadSelectedCompetition();
+    await reloadSelectedCompetition({ syncSidebarState: true });
   } catch (err) {
     showMessageModal(err.message || t('error_set_disqualified'), t('error_title'));
   }
