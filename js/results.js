@@ -21,6 +21,44 @@ function getDancerClubLabel(dancer) {
   return clubLocation ? `${clubName} (${clubLocation})` : clubName;
 }
 
+function getValidPenalties(source) {
+  if (!Array.isArray(source)) return [];
+  return source.filter((penalty) => {
+    if (!penalty || typeof penalty !== 'object') return false;
+    const hasName = String(penalty.name || '').trim() !== '';
+    const hasScore = penalty.score !== undefined && penalty.score !== null && penalty.score !== '';
+    return hasName || hasScore;
+  });
+}
+
+function renderPenaltiesCard(penalties, { headerSuffix = '' } = {}) {
+  const validPenalties = getValidPenalties(penalties);
+  if (!validPenalties.length) return null;
+
+  const penaltyCard = document.createElement('div');
+  penaltyCard.className = 'card mb-3 border-warning shadow-sm';
+  penaltyCard.innerHTML = `
+    <div class="card-header d-flex justify-content-between align-items-center bg-warning-subtle">
+      <h6 class="mb-0 text-warning">${escapeHtml(t('penalties', 'Penalties'))}${headerSuffix}</h6>
+      <span class="badge text-bg-warning">${validPenalties.length}</span>
+    </div>
+    <div class="card-body">
+      <div class="row g-2">
+        ${validPenalties.map((penalty) => `
+          <div class="col-12 col-md-6">
+            <div class="border rounded p-2 h-100 bg-light">
+              <div class="fw-semibold">${escapeHtml(penalty.name || '-')}</div>
+              <div class="small text-muted">${escapeHtml(t('total_score', 'Total Score'))}: ${escapeHtml(penalty.score ?? '-')}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  return penaltyCard;
+}
+
 
 document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
@@ -156,9 +194,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
     detailsContainer.appendChild(summaryCard);
 
+    const dancerPenalties = getValidPenalties(dancerData.penalties);
+    const votes = Array.isArray(dancerData.votes) ? dancerData.votes : [];
+    const hasVoteLevelPenalties = votes.some((vote) => getValidPenalties(vote?.penalties).length > 0);
+
+    if (dancerPenalties.length > 0 && !hasVoteLevelPenalties) {
+      const dancerPenaltiesCard = renderPenaltiesCard(dancerPenalties);
+      if (dancerPenaltiesCard) {
+        detailsContainer.appendChild(dancerPenaltiesCard);
+      }
+    }
+
     // Detalle por juez
-    if (Array.isArray(dancerData.votes) && dancerData.votes.length > 0) {
-      dancerData.votes.forEach(vote => {
+    if (votes.length > 0) {
+      votes.forEach(vote => {
+        const votePenalties = getValidPenalties(vote?.penalties);
+        if (votePenalties.length > 0) {
+          const votePenaltiesCard = renderPenaltiesCard(votePenalties, {
+            headerSuffix: vote?.judge_name ? ` - ${escapeHtml(vote.judge_name)}` : ''
+          });
+          if (votePenaltiesCard) {
+            detailsContainer.appendChild(votePenaltiesCard);
+          }
+        }
+
         const totalJudge = (vote.criteria || []).reduce((sum, c) => sum + (Number(c.score) || 0), 0);
 
         const judgeCard = document.createElement('div');
