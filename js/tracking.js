@@ -80,6 +80,12 @@ function parseClassificationVisible(value) {
   return false;
 }
 
+function getClassificationVisibilityText(isVisible) {
+  return isVisible
+    ? t('classification_visibility_state_visible', 'La clasificación es visible')
+    : t('classification_visibility_state_hidden', 'La clasificación no es visible');
+}
+
 function parseJudgeFlag(value) {
   if (value === true || value === 1) return true;
   if (typeof value === 'string') {
@@ -1615,6 +1621,24 @@ function syncSelectedCompetitionSidebarState(competitions, categoryId, styleId) 
   if (!sidebarCompetition) return false;
 
   sidebarCompetition.status = normalizeSidebarCompetitionStatus(selectedCompetition?.status) || sidebarCompetition.status;
+  sidebarCompetition.clasification_visible = parseClassificationVisible(selectedCompetition?.clasification_visible) ? 1 : 0;
+  return true;
+}
+
+function updateSidebarCompetitionClassificationVisibilityInState(categoryId, styleId, isVisible) {
+  if (!Array.isArray(trackingUiState.sidebarCompetitions) || trackingUiState.sidebarCompetitions.length === 0) {
+    return false;
+  }
+
+  const target = trackingUiState.sidebarCompetitions.find(comp => {
+    const compCategoryId = comp?.category_id ?? comp?.category?.id ?? '';
+    const compStyleId = comp?.style_id ?? comp?.style?.id ?? '';
+    return String(compCategoryId) === String(categoryId)
+      && String(compStyleId) === String(styleId);
+  });
+  if (!target) return false;
+
+  target.clasification_visible = isVisible ? 1 : 0;
   return true;
 }
 
@@ -1651,9 +1675,11 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
     const status = getCompetitionListStatusLabel(comp?.status);
     const isFinished = comp?.status === 'FIN';
     const isOpen = comp?.status === 'OPE';
+    const isClassificationVisible = parseClassificationVisible(comp?.clasification_visible);
     const btnDisabled = getEvent().status === 'finished' ? 'disabled' : '';
     const statusBadgeClass = getCompetitionListStatusBadgeClass(comp?.status);
     const estimatedStart = comp?.estimated_start_form || t('not_defined');
+    const visibilityButtonDisabled = !isFinished ? 'disabled' : '';
     const statusActionButton = !isFinished
       ? `
         <button
@@ -1687,7 +1713,25 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
               - ${escapeHtml(estimatedStart)}
             </small>
           </button>
-          ${statusActionButton}
+          <div class="d-flex flex-column align-items-end text-end gap-2 sidebar-competition-actions">
+            ${isFinished ? `
+            <small
+              class="text-muted js-classification-visible-text sidebar-classification-visible-text"
+              data-category-id="${categoryId}"
+              data-style-id="${styleId}">${escapeHtml(getClassificationVisibilityText(isClassificationVisible))}</small>
+            <button
+              type="button"
+              class="btn btn-sm ${getSidebarClassificationVisibleButtonClass(isClassificationVisible)} js-classification-visible-btn sidebar-classification-visible-btn"
+              data-control-variant="sidebar"
+              data-category-id="${categoryId}"
+              data-style-id="${styleId}"
+              data-visible="${isClassificationVisible ? '1' : '0'}"
+              ${visibilityButtonDisabled}>
+              ${renderClassificationVisibleButtonContent(isClassificationVisible, 'sidebar')}
+            </button>
+            ` : ''}
+            ${statusActionButton}
+          </div>
         </div>
       </div>
     `;
@@ -1734,6 +1778,8 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
       }
     });
   });
+
+  container.querySelectorAll('.js-classification-visible-btn').forEach(bindClassificationVisibilityButton);
 }
 
 async function loadCompetitionSidebar() {
@@ -1805,6 +1851,12 @@ function getClassificationVisibleButtonLabel(isVisible) {
     : t('classification_visibility_show_results', 'Resultados Visibles');
 }
 
+function getSidebarClassificationVisibleButtonLabel(isVisible) {
+  return isVisible
+    ? t('classification_visibility_action_hide', 'Ocultar')
+    : t('classification_visibility_action_show', 'Hacer visible');
+}
+
 function getClassificationVisibleButtonIcon(isVisible) {
   return isVisible ? 'bi-eye-slash' : 'bi-eye-fill';
 }
@@ -1813,7 +1865,18 @@ function getClassificationVisibleButtonClass(isVisible) {
   return isVisible ? 'btn-success' : 'btn-outline-secondary';
 }
 
-function renderClassificationVisibleButtonContent(isVisible) {
+function getSidebarClassificationVisibleButtonClass(isVisible) {
+  return isVisible ? 'btn-outline-secondary' : 'btn-outline-primary';
+}
+
+function renderClassificationVisibleButtonContent(isVisible, variant = 'summary') {
+  if (variant === 'sidebar') {
+    return `
+      <i class="bi ${getClassificationVisibleButtonIcon(isVisible)}"></i>
+      <span>${getSidebarClassificationVisibleButtonLabel(isVisible)}</span>
+    `;
+  }
+
   return `
     <i class="bi ${getClassificationVisibleButtonIcon(isVisible)} me-1"></i>
     <span class="tracking-summary-btn-label">${getClassificationVisibleButtonLabel(isVisible)}</span>
@@ -1869,11 +1932,12 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
           </button>
           <button type="button"
             class="btn btn-sm ${visibilityButtonClass} js-classification-visible-btn tracking-summary-btn"
+            data-control-variant="summary"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
             data-visible="${isClassificationVisible ? '1' : '0'}"
             ${visibilityButtonDisabled}>
-            ${renderClassificationVisibleButtonContent(isClassificationVisible)}
+            ${renderClassificationVisibleButtonContent(isClassificationVisible, 'summary')}
           </button>
           <button type="button"
             class="btn btn-outline-warning btn-sm btn-export-category-results tracking-summary-btn"
@@ -1896,14 +1960,26 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
 function syncClassificationVisibilityControls(categoryId, styleId, isVisible) {
   const normalizedCategoryId = String(categoryId);
   const normalizedStyleId = String(styleId);
+  updateSidebarCompetitionClassificationVisibilityInState(normalizedCategoryId, normalizedStyleId, isVisible);
 
   document.querySelectorAll('.js-classification-visible-btn').forEach(button => {
     if (String(button.dataset.categoryId) !== normalizedCategoryId) return;
     if (String(button.dataset.styleId) !== normalizedStyleId) return;
+    const variant = button.dataset.controlVariant === 'sidebar' ? 'sidebar' : 'summary';
     button.dataset.visible = isVisible ? '1' : '0';
-    button.classList.remove('btn-success', 'btn-outline-secondary');
-    button.classList.add(getClassificationVisibleButtonClass(isVisible));
-    button.innerHTML = renderClassificationVisibleButtonContent(isVisible);
+    button.classList.remove('btn-success', 'btn-outline-secondary', 'btn-outline-primary');
+    button.classList.add(
+      variant === 'sidebar'
+        ? getSidebarClassificationVisibleButtonClass(isVisible)
+        : getClassificationVisibleButtonClass(isVisible)
+    );
+    button.innerHTML = renderClassificationVisibleButtonContent(isVisible, variant);
+  });
+
+  document.querySelectorAll('.js-classification-visible-text').forEach(text => {
+    if (String(text.dataset.categoryId) !== normalizedCategoryId) return;
+    if (String(text.dataset.styleId) !== normalizedStyleId) return;
+    text.textContent = getClassificationVisibilityText(isVisible);
   });
 }
 
@@ -1923,6 +1999,43 @@ async function setClassificationVisibility(categoryId, styleId, nextVisible) {
   if (!response.ok) {
     throw new Error(data.error || t('error_set_classification_visible', 'Error updating result visibility.'));
   }
+}
+
+function bindClassificationVisibilityButton(button) {
+  button.addEventListener('click', async event => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (button.disabled) return;
+
+    const categoryId = Number(button.dataset.categoryId);
+    const styleId = Number(button.dataset.styleId);
+    const currentVisible = button.dataset.visible === '1';
+    const nextVisible = !currentVisible;
+
+    if (!Number.isFinite(categoryId) || !Number.isFinite(styleId)) {
+      showMessageModal(t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
+      return;
+    }
+
+    const confirmMessage = nextVisible
+      ? t('confirm_classification_visible_on', 'Are you sure you want to make the result visible?')
+      : t('confirm_classification_visible_off', 'Are you sure you want to hide the result?');
+
+    const confirmed = await showModal(confirmMessage);
+    if (!confirmed) return;
+
+    button.disabled = true;
+    try {
+      await setClassificationVisibility(categoryId, styleId, nextVisible);
+      syncClassificationVisibilityControls(categoryId, styleId, nextVisible);
+    } catch (error) {
+      showMessageModal(error?.message || t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
+    } finally {
+      if (button.isConnected) {
+        button.disabled = false;
+      }
+    }
+  });
 }
 
 function renderCompetitions(competitions) {
@@ -2201,40 +2314,7 @@ function renderCompetitions(competitions) {
     });
   });
 
-  container.querySelectorAll('.js-classification-visible-btn').forEach(button => {
-    button.addEventListener('click', async () => {
-      if (button.disabled) return;
-
-      const categoryId = Number(button.dataset.categoryId);
-      const styleId = Number(button.dataset.styleId);
-      const currentVisible = button.dataset.visible === '1';
-      const nextVisible = !currentVisible;
-
-      if (!Number.isFinite(categoryId) || !Number.isFinite(styleId)) {
-        showMessageModal(t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
-        return;
-      }
-
-      const confirmMessage = nextVisible
-        ? t('confirm_classification_visible_on', 'Are you sure you want to make the result visible?')
-        : t('confirm_classification_visible_off', 'Are you sure you want to hide the result?');
-
-      const confirmed = await showModal(confirmMessage);
-      if (!confirmed) return;
-
-      button.disabled = true;
-      try {
-        await setClassificationVisibility(categoryId, styleId, nextVisible);
-        syncClassificationVisibilityControls(categoryId, styleId, nextVisible);
-      } catch (error) {
-        showMessageModal(error?.message || t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
-      } finally {
-        if (button.isConnected) {
-          button.disabled = false;
-        }
-      }
-    });
-  });
+  container.querySelectorAll('.js-classification-visible-btn').forEach(bindClassificationVisibilityButton);
 
   container.querySelectorAll('.btn-export-category-results').forEach(button => {
     button.addEventListener('click', async () => {
