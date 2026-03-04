@@ -21,6 +21,7 @@
   "total": "Totale",
   "details": "Dettagli",
   "vote": "Vota",
+  "penalties": "Penalita",
   "votes_for": "Voti per",
   "vote_for": "Vota a",
   "close": "Chiudi",
@@ -34,8 +35,10 @@
   "sending": "Invio in corso",
   "confirm_outlier_scores": "Alcuni punteggi sono molto superiori o inferiori alla media. Sei sicuro di voler inviare questi punteggi?",
   "refresh": "Aggiorna",
+  "previous_competition": "Competizione precedente",
   "next_competition": "Competizione successiva",
   "reserve_alert": "Sei un giudice di riserva. Puoi votare solo per le partecipanti che hanno un giudice come allenatore.",
+  "judge_head_penalties_tooltip": "Sei giudice principale: puoi applicare penalita in questa competizione.",
   "add_comments": "Aggiungi commenti...",
   "clear": "Pulisci",
   "save": "Salva"

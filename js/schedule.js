@@ -3,6 +3,7 @@ let lang;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await WaitEventLoaded();
+    await ensureTranslationsReady();
 
     const user = getUserFromToken();
     const role = user ? user.role : 'guest';
@@ -24,9 +25,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         noticeTextDiv.innerText = getEvent().notice_text;
         noticePanel.style.display = 'block';
     }
-
-    //await ensureTranslationsReady();
-
     loadSchedule();
 });
 

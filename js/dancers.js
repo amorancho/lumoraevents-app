@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   //await eventReadyPromise;
   await WaitEventLoaded();
+  await ensureTranslationsReady();
   applyFlagsVisibility();
   applyClubsVisibility();
 
@@ -113,12 +114,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadClubs();
   }
 
-  await ensureTranslationsReady();
   fetchDancersFromAPI();
 
 });
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+  await ensureTranslationsReady();
 
   const editModalElement = document.getElementById('editModal');
   const editModal = new bootstrap.Modal(editModalElement);
@@ -1255,7 +1256,7 @@ async function handleImportParticipantsClick() {
     await fetchDancersFromAPI();
     applyFilter();
 
-    showMessageModal(successMessage, t('import_dancers', 'Import dancers'));
+    showMessageModal(successMessage, t('import_dancers', 'Import dancers'), 'success');
   } catch (error) {
     console.error('Error creating participants:', error);
     showMessageModal(error.message || t('import_create_error', 'Could not create participants.'), t('error', 'Error'));

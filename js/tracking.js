@@ -82,6 +82,12 @@ function parseClassificationVisible(value) {
   return false;
 }
 
+function getClassificationVisibilityText(isVisible) {
+  return isVisible
+    ? t('classification_visibility_state_visible', 'La clasificación es visible')
+    : t('classification_visibility_state_hidden', 'La clasificación no es visible');
+}
+
 function parseJudgeFlag(value) {
   if (value === true || value === 1) return true;
   if (typeof value === 'string') {
@@ -1183,6 +1189,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   validateRoles(allowedRoles);
 
   await WaitEventLoaded();
+  await ensureTranslationsReady();
   trackingUiState.sidebarFilters = loadTrackingSidebarFilters();
   initClassificationExportOptions();
   initPenaltyAssignmentModal();
@@ -1254,9 +1261,9 @@ async function executeGetCompetitions(categoryId, styleId) {
   await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
 }
 
-async function reloadSelectedCompetition() {
+async function reloadSelectedCompetition(options = {}) {
   if (!trackingUiState.selectedCategoryId || !trackingUiState.selectedStyleId) return;
-  await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
+  await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId, options);
 }
 
 async function changeCompetitionStatus(compId, action, options = {}) {
@@ -1288,7 +1295,10 @@ async function changeCompetitionStatus(compId, action, options = {}) {
 
 
 async function loadCompetitions(categoryId, styleId, options = {}) {
-  const { reloadSidebar = false } = options;
+  const {
+    reloadSidebar = false,
+    syncSidebarState = false
+  } = options;
   try {
     trackingUiState.selectedCategoryId = String(categoryId);
     trackingUiState.selectedStyleId = String(styleId);
@@ -1305,12 +1315,17 @@ async function loadCompetitions(categoryId, styleId, options = {}) {
     renderCompetitions(competitions);
     if (reloadSidebar) {
       await loadCompetitionSidebar();
+    } else if (syncSidebarState) {
+      syncSelectedCompetitionSidebarState(competitions, categoryId, styleId);
+      rerenderSidebarPreservingScroll();
     }
 
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
+    return competitions;
   } catch (error) {
     console.error('Error fetching competitions:', error);
+    return [];
   }
 }
 
@@ -1570,6 +1585,75 @@ function updateSidebarCompetitionStatusInState(compId, nextStatus) {
   }
 }
 
+function findCompetitionByCategoryAndStyle(competitions, categoryId, styleId) {
+  return (Array.isArray(competitions) ? competitions : []).find(comp => {
+    const compCategoryId = comp?.category_id ?? comp?.category?.id ?? '';
+    const compStyleId = comp?.style_id ?? comp?.style?.id ?? '';
+    return String(compCategoryId) === String(categoryId) && String(compStyleId) === String(styleId);
+  }) || null;
+}
+
+function syncSelectedCompetitionSidebarState(competitions, categoryId, styleId) {
+  if (!Array.isArray(trackingUiState.sidebarCompetitions) || trackingUiState.sidebarCompetitions.length === 0) {
+    return false;
+  }
+
+  const selectedCompetition = findCompetitionByCategoryAndStyle(
+    competitions,
+    categoryId ?? trackingUiState.selectedCategoryId,
+    styleId ?? trackingUiState.selectedStyleId
+  );
+  if (!selectedCompetition) return false;
+
+  const sidebarCompetition = trackingUiState.sidebarCompetitions.find(comp => {
+    const sameId = comp?.id !== undefined
+      && comp?.id !== null
+      && selectedCompetition?.id !== undefined
+      && selectedCompetition?.id !== null
+      && String(comp.id) === String(selectedCompetition.id);
+    if (sameId) return true;
+
+    const compCategoryId = comp?.category_id ?? comp?.category?.id ?? '';
+    const compStyleId = comp?.style_id ?? comp?.style?.id ?? '';
+    const selectedCategoryId = selectedCompetition?.category_id ?? selectedCompetition?.category?.id ?? '';
+    const selectedStyleId = selectedCompetition?.style_id ?? selectedCompetition?.style?.id ?? '';
+    return String(compCategoryId) === String(selectedCategoryId)
+      && String(compStyleId) === String(selectedStyleId);
+  });
+  if (!sidebarCompetition) return false;
+
+  sidebarCompetition.status = normalizeSidebarCompetitionStatus(selectedCompetition?.status) || sidebarCompetition.status;
+  sidebarCompetition.clasification_visible = parseClassificationVisible(selectedCompetition?.clasification_visible) ? 1 : 0;
+  return true;
+}
+
+function updateSidebarCompetitionClassificationVisibilityInState(categoryId, styleId, isVisible) {
+  if (!Array.isArray(trackingUiState.sidebarCompetitions) || trackingUiState.sidebarCompetitions.length === 0) {
+    return false;
+  }
+
+  const target = trackingUiState.sidebarCompetitions.find(comp => {
+    const compCategoryId = comp?.category_id ?? comp?.category?.id ?? '';
+    const compStyleId = comp?.style_id ?? comp?.style?.id ?? '';
+    return String(compCategoryId) === String(categoryId)
+      && String(compStyleId) === String(styleId);
+  });
+  if (!target) return false;
+
+  target.clasification_visible = isVisible ? 1 : 0;
+  return true;
+}
+
+function rerenderSidebarPreservingScroll() {
+  const container = document.getElementById('competitionsSidebarList');
+  const previousScrollTop = container ? container.scrollTop : 0;
+  renderSidebarFilters();
+  renderCompetitionSidebar();
+  if (container) {
+    container.scrollTop = previousScrollTop;
+  }
+}
+
 function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetitions) {
   const container = document.getElementById('competitionsSidebarList');
   if (!container) return;
@@ -1593,9 +1677,11 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
     const status = getCompetitionListStatusLabel(comp?.status);
     const isFinished = comp?.status === 'FIN';
     const isOpen = comp?.status === 'OPE';
+    const isClassificationVisible = parseClassificationVisible(comp?.clasification_visible);
     const btnDisabled = getEvent().status === 'finished' ? 'disabled' : '';
     const statusBadgeClass = getCompetitionListStatusBadgeClass(comp?.status);
     const estimatedStart = comp?.estimated_start_form || t('not_defined');
+    const visibilityButtonDisabled = !isFinished ? 'disabled' : '';
     const statusActionButton = !isFinished
       ? `
         <button
@@ -1629,7 +1715,25 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
               - ${escapeHtml(estimatedStart)}
             </small>
           </button>
-          ${statusActionButton}
+          <div class="d-flex flex-column align-items-end text-end gap-2 sidebar-competition-actions">
+            ${isFinished ? `
+            <small
+              class="text-muted js-classification-visible-text sidebar-classification-visible-text"
+              data-category-id="${categoryId}"
+              data-style-id="${styleId}">${escapeHtml(getClassificationVisibilityText(isClassificationVisible))}</small>
+            <button
+              type="button"
+              class="btn btn-sm ${getSidebarClassificationVisibleButtonClass(isClassificationVisible)} js-classification-visible-btn sidebar-classification-visible-btn"
+              data-control-variant="sidebar"
+              data-category-id="${categoryId}"
+              data-style-id="${styleId}"
+              data-visible="${isClassificationVisible ? '1' : '0'}"
+              ${visibilityButtonDisabled}>
+              ${renderClassificationVisibleButtonContent(isClassificationVisible, 'sidebar')}
+            </button>
+            ` : ''}
+            ${statusActionButton}
+          </div>
         </div>
       </div>
     `;
@@ -1659,8 +1763,7 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
         await changeCompetitionStatus(compId, action);
         const nextStatus = getCompetitionStatusFromAction(action);
         updateSidebarCompetitionStatusInState(compId, nextStatus);
-        renderSidebarFilters();
-        renderCompetitionSidebar();
+        rerenderSidebarPreservingScroll();
 
         const isSelectedCompetition = String(trackingUiState.selectedCategoryId) === String(categoryId)
           && String(trackingUiState.selectedStyleId) === String(styleId);
@@ -1677,6 +1780,8 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
       }
     });
   });
+
+  container.querySelectorAll('.js-classification-visible-btn').forEach(bindClassificationVisibilityButton);
 }
 
 async function loadCompetitionSidebar() {
@@ -1748,6 +1853,12 @@ function getClassificationVisibleButtonLabel(isVisible) {
     : t('classification_visibility_show_results', 'Resultados Visibles');
 }
 
+function getSidebarClassificationVisibleButtonLabel(isVisible) {
+  return isVisible
+    ? t('classification_visibility_action_hide', 'Ocultar')
+    : t('classification_visibility_action_show', 'Hacer visible');
+}
+
 function getClassificationVisibleButtonIcon(isVisible) {
   return isVisible ? 'bi-eye-slash' : 'bi-eye-fill';
 }
@@ -1756,7 +1867,18 @@ function getClassificationVisibleButtonClass(isVisible) {
   return isVisible ? 'btn-success' : 'btn-outline-secondary';
 }
 
-function renderClassificationVisibleButtonContent(isVisible) {
+function getSidebarClassificationVisibleButtonClass(isVisible) {
+  return isVisible ? 'btn-outline-secondary' : 'btn-outline-primary';
+}
+
+function renderClassificationVisibleButtonContent(isVisible, variant = 'summary') {
+  if (variant === 'sidebar') {
+    return `
+      <i class="bi ${getClassificationVisibleButtonIcon(isVisible)}"></i>
+      <span>${getSidebarClassificationVisibleButtonLabel(isVisible)}</span>
+    `;
+  }
+
   return `
     <i class="bi ${getClassificationVisibleButtonIcon(isVisible)} me-1"></i>
     <span class="tracking-summary-btn-label">${getClassificationVisibleButtonLabel(isVisible)}</span>
@@ -1812,11 +1934,12 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
           </button>
           <button type="button"
             class="btn btn-sm ${visibilityButtonClass} js-classification-visible-btn tracking-summary-btn"
+            data-control-variant="summary"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
             data-visible="${isClassificationVisible ? '1' : '0'}"
             ${visibilityButtonDisabled}>
-            ${renderClassificationVisibleButtonContent(isClassificationVisible)}
+            ${renderClassificationVisibleButtonContent(isClassificationVisible, 'summary')}
           </button>
           <button type="button"
             class="btn btn-outline-warning btn-sm btn-export-category-results tracking-summary-btn"
@@ -1839,14 +1962,26 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
 function syncClassificationVisibilityControls(categoryId, styleId, isVisible) {
   const normalizedCategoryId = String(categoryId);
   const normalizedStyleId = String(styleId);
+  updateSidebarCompetitionClassificationVisibilityInState(normalizedCategoryId, normalizedStyleId, isVisible);
 
   document.querySelectorAll('.js-classification-visible-btn').forEach(button => {
     if (String(button.dataset.categoryId) !== normalizedCategoryId) return;
     if (String(button.dataset.styleId) !== normalizedStyleId) return;
+    const variant = button.dataset.controlVariant === 'sidebar' ? 'sidebar' : 'summary';
     button.dataset.visible = isVisible ? '1' : '0';
-    button.classList.remove('btn-success', 'btn-outline-secondary');
-    button.classList.add(getClassificationVisibleButtonClass(isVisible));
-    button.innerHTML = renderClassificationVisibleButtonContent(isVisible);
+    button.classList.remove('btn-success', 'btn-outline-secondary', 'btn-outline-primary');
+    button.classList.add(
+      variant === 'sidebar'
+        ? getSidebarClassificationVisibleButtonClass(isVisible)
+        : getClassificationVisibleButtonClass(isVisible)
+    );
+    button.innerHTML = renderClassificationVisibleButtonContent(isVisible, variant);
+  });
+
+  document.querySelectorAll('.js-classification-visible-text').forEach(text => {
+    if (String(text.dataset.categoryId) !== normalizedCategoryId) return;
+    if (String(text.dataset.styleId) !== normalizedStyleId) return;
+    text.textContent = getClassificationVisibilityText(isVisible);
   });
 }
 
@@ -1866,6 +2001,43 @@ async function setClassificationVisibility(categoryId, styleId, nextVisible) {
   if (!response.ok) {
     throw new Error(data.error || t('error_set_classification_visible', 'Error updating result visibility.'));
   }
+}
+
+function bindClassificationVisibilityButton(button) {
+  button.addEventListener('click', async event => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (button.disabled) return;
+
+    const categoryId = Number(button.dataset.categoryId);
+    const styleId = Number(button.dataset.styleId);
+    const currentVisible = button.dataset.visible === '1';
+    const nextVisible = !currentVisible;
+
+    if (!Number.isFinite(categoryId) || !Number.isFinite(styleId)) {
+      showMessageModal(t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
+      return;
+    }
+
+    const confirmMessage = nextVisible
+      ? t('confirm_classification_visible_on', 'Are you sure you want to make the result visible?')
+      : t('confirm_classification_visible_off', 'Are you sure you want to hide the result?');
+
+    const confirmed = await showModal(confirmMessage);
+    if (!confirmed) return;
+
+    button.disabled = true;
+    try {
+      await setClassificationVisibility(categoryId, styleId, nextVisible);
+      syncClassificationVisibilityControls(categoryId, styleId, nextVisible);
+    } catch (error) {
+      showMessageModal(error?.message || t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
+    } finally {
+      if (button.isConnected) {
+        button.disabled = false;
+      }
+    }
+  });
 }
 
 function renderCompetitions(competitions) {
@@ -1943,6 +2115,22 @@ function renderCompetitions(competitions) {
           className: 'me-2',
           style: 'vertical-align: middle;'
         });
+        const penaltiesCount = Number(d?.num_penalties) || 0;
+        const hasPenalties = penaltiesCount > 0;
+        const penaltiesTooltip = escapeHtml(t('dancer_has_penalties_tooltip', 'Tiene penalizaciones'));
+        const penaltiesIndicatorHtml = hasPenalties
+          ? `
+              <span
+                class="tracking-penalties-indicator"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                title="${penaltiesTooltip}"
+                aria-label="${penaltiesTooltip}">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+                <span>${penaltiesCount}</span>
+              </span>
+            `
+          : '';
 
         const dancerCell = `
           <div class="d-flex align-items-center justify-content-between">
@@ -1951,6 +2139,7 @@ function renderCompetitions(competitions) {
               <span>${d.dancer_name}</span>
             </div>
             <div class="d-flex align-items-center gap-2">
+              ${penaltiesIndicatorHtml}
               <div class="dropdown">
                 <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
                   type="button"
@@ -1989,6 +2178,7 @@ function renderCompetitions(competitions) {
                         data-dancer-id="${d.dancer_id ?? d.id}"
                         data-dancer-name="${escapeHtml(d.dancer_name || '')}"
                         data-competition-label="${escapeHtml(competitionLabel)}"
+                        data-assigned-by="O"
                         ${btnDisabled}>
                         ${t('penalty')}
                       </button>
@@ -2014,7 +2204,7 @@ function renderCompetitions(competitions) {
 
           let ind = `${comp.id}-${d.dancer_id}-${v.judge.id}`; // ID de la fila para localizarla en reset
 
-          if (['Completed', 'No Show'].includes(v.status)) {
+          if (['Completed', 'No Show', 'Disqualified'].includes(v.status)) {
 
             let params = `${comp.category_id}, ${comp.style_id}, ${v.judge.id}, ${d.dancer_id}, '${ind}', '${d.dancer_name}', '${v.judge.name}'`;
             let showEye = v.status === 'Completed';
@@ -2106,7 +2296,8 @@ function renderCompetitions(competitions) {
         styleId: btn.dataset.styleId,
         dancerId: btn.dataset.dancerId,
         dancerName: btn.dataset.dancerName,
-        competitionLabel: btn.dataset.competitionLabel
+        competitionLabel: btn.dataset.competitionLabel,
+        assignedBy: btn.dataset.assignedBy
       });
     });
   });
@@ -2125,40 +2316,7 @@ function renderCompetitions(competitions) {
     });
   });
 
-  container.querySelectorAll('.js-classification-visible-btn').forEach(button => {
-    button.addEventListener('click', async () => {
-      if (button.disabled) return;
-
-      const categoryId = Number(button.dataset.categoryId);
-      const styleId = Number(button.dataset.styleId);
-      const currentVisible = button.dataset.visible === '1';
-      const nextVisible = !currentVisible;
-
-      if (!Number.isFinite(categoryId) || !Number.isFinite(styleId)) {
-        showMessageModal(t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
-        return;
-      }
-
-      const confirmMessage = nextVisible
-        ? t('confirm_classification_visible_on', 'Are you sure you want to make the result visible?')
-        : t('confirm_classification_visible_off', 'Are you sure you want to hide the result?');
-
-      const confirmed = await showModal(confirmMessage);
-      if (!confirmed) return;
-
-      button.disabled = true;
-      try {
-        await setClassificationVisibility(categoryId, styleId, nextVisible);
-        syncClassificationVisibilityControls(categoryId, styleId, nextVisible);
-      } catch (error) {
-        showMessageModal(error?.message || t('error_set_classification_visible', 'Error updating result visibility.'), t('error_title'));
-      } finally {
-        if (button.isConnected) {
-          button.disabled = false;
-        }
-      }
-    });
-  });
+  container.querySelectorAll('.js-classification-visible-btn').forEach(bindClassificationVisibilityButton);
 
   container.querySelectorAll('.btn-export-category-results').forEach(button => {
     button.addEventListener('click', async () => {
@@ -2314,7 +2472,7 @@ async function resetVote(categoryId, styleId, judgeId, dancerId, rowId, dancerNa
     const data = await res.json();
     
     if (data.success) {
-      await reloadSelectedCompetition();
+      await reloadSelectedCompetition({ syncSidebarState: true });
     }
 
 
@@ -2346,7 +2504,7 @@ async function markNoShow(categoryId, styleId, dancerId, dancerName) {
       return;
     }
 
-    await reloadSelectedCompetition();
+    await reloadSelectedCompetition({ syncSidebarState: true });
   } catch (err) {
     showMessageModal(err.message || t('error_mark_no_show'), t('error_title'));
   }
@@ -2375,7 +2533,7 @@ async function markDisqualified(categoryId, styleId, dancerId, dancerName) {
       return;
     }
 
-    await reloadSelectedCompetition();
+    await reloadSelectedCompetition({ syncSidebarState: true });
   } catch (err) {
     showMessageModal(err.message || t('error_set_disqualified'), t('error_title'));
   }
@@ -2431,10 +2589,13 @@ function normalizePenaltyDefinition(rawPenalty) {
 function normalizeCompetitionPenalty(rawPenalty) {
   const penaltyId = parseOptionalNumber(rawPenalty?.penalty_id ?? rawPenalty?.id);
   if (penaltyId === null) return null;
+  const rawAssignedBy = String(rawPenalty?.assigned_by || '').trim().toUpperCase();
+  const assignedBy = (rawAssignedBy === 'O' || rawAssignedBy === 'J') ? rawAssignedBy : null;
 
   return {
     penaltyId,
-    score: parseOptionalNumber(rawPenalty?.penalty_score)
+    score: parseOptionalNumber(rawPenalty?.penalty_score),
+    assignedBy
   };
 }
 
@@ -2516,7 +2677,7 @@ function syncPenaltyAssignmentSelectionSummary() {
   if (!bodyEl || !summaryEl) return;
 
   const selectedCount = bodyEl.querySelectorAll('.js-penalty-toggle:checked').length;
-  summaryEl.textContent = `${selectedCount} ${t('penalty_modal_selected_count', 'selected')}`;
+  summaryEl.textContent = `${selectedCount} ${t('penalty_modal_selected_count', 'penalties applied')}`;
 }
 
 function syncPenaltyAssignmentRow(rowEl) {
@@ -2538,14 +2699,14 @@ function syncPenaltyAssignmentRow(rowEl) {
 
   if (!isChecked) {
     scoreInput.disabled = true;
-    scoreInput.readOnly = isFixedScore;
+    scoreInput.readOnly = false;
     scoreInput.value = '';
     return;
   }
 
   if (isFixedScore) {
-    scoreInput.disabled = false;
-    scoreInput.readOnly = true;
+    scoreInput.disabled = true;
+    scoreInput.readOnly = false;
     scoreInput.value = minPenalty !== null ? String(minPenalty) : '';
     return;
   }
@@ -2621,15 +2782,44 @@ function collectPenaltyAssignmentsFromModal() {
   return { isValid, assignments };
 }
 
+async function saveCompetitionPenalties({ eventId, competitionId, dancerId, assignedBy = 'O', penalties = [] } = {}) {
+  const normalizedAssignedBy = String(assignedBy).trim().toUpperCase() === 'J' ? 'J' : 'O';
+  const response = await fetch(`${API_BASE_URL}/api/competitions/penalties`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      event_id: Number(eventId),
+      competition_id: Number(competitionId),
+      dancer_id: Number(dancerId),
+      assigned_by: normalizedAssignedBy,
+      penalties
+    })
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(
+      payload?.error
+      || payload?.message
+      || t('penalty_modal_save_error', 'Error saving penalties.')
+    );
+  }
+
+  return payload;
+}
+
 function renderPenaltyAssignmentModalContent() {
   const bodyEl = document.getElementById('penaltyAssignmentModalBody');
   if (!bodyEl) return;
 
   const context = penaltyAssignmentState.context || {};
   const penalties = Array.isArray(penaltyAssignmentState.penalties) ? penaltyAssignmentState.penalties : [];
-  const competitionPenalties = Array.isArray(penaltyAssignmentState.competitionPenalties)
+  const allCompetitionPenalties = Array.isArray(penaltyAssignmentState.competitionPenalties)
     ? penaltyAssignmentState.competitionPenalties
     : [];
+  const competitionPenalties = context?.assignedBy === 'J'
+    ? allCompetitionPenalties.filter(item => item?.assignedBy === 'J')
+    : allCompetitionPenalties;
 
   if (!penalties.length) {
     bodyEl.innerHTML = `
@@ -2656,9 +2846,17 @@ function renderPenaltyAssignmentModalContent() {
     const rangeText = penalty.isFixedScore
       ? String(penalty.minPenalty)
       : `${penalty.minPenalty} - ${penalty.maxPenalty}`;
-    const forJudgesBadge = penalty.forJudges
-      ? `<span class="badge bg-secondary ms-1">${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}</span>`
+    const fixedBadge = penalty.isFixedScore
+      ? `<span class="badge text-bg-warning text-dark penalty-fixed-badge">${escapeHtml(t('penalty_modal_fixed_score', 'Fixed'))}</span>`
       : '';
+    const assignedByBadge = selectedPenalty?.assignedBy === 'O'
+      ? `<span class="badge bg-primary">${escapeHtml(t('penalty_modal_assigned_by_org', 'ORGANIZATION'))}</span>`
+      : selectedPenalty?.assignedBy === 'J'
+        ? `<span class="badge bg-dark">${escapeHtml(t('penalty_modal_assigned_by_jury', 'JURY'))}</span>`
+        : '<span class="text-muted">-</span>';
+    const forJudgesIcon = penalty.forJudges
+      ? '<i class="bi bi-check-circle-fill text-success"></i>'
+      : '<i class="bi bi-dash-circle text-muted"></i>';
     const inputId = `penaltyScore_${penalty.id}_${index}`;
 
     return `
@@ -2672,29 +2870,33 @@ function renderPenaltyAssignmentModalContent() {
         <td class="text-center align-middle">
           <input class="form-check-input js-penalty-toggle" type="checkbox" ${isSelected ? 'checked' : ''}>
         </td>
-        <td class="align-middle">
+        <td class="align-middle penalty-col-name">
           <div class="fw-semibold">${escapeHtml(penalty.name)}</div>
-          ${forJudgesBadge}
         </td>
-        <td class="text-center align-middle">
-          <span class="badge text-bg-light border">${escapeHtml(rangeText)}</span>
+        <td class="text-center align-middle penalty-col-assigned-by">
+          ${assignedByBadge}
         </td>
-        <td class="align-middle">
+        <td class="text-center align-middle penalty-col-for-judges" title="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}">
+          ${forJudgesIcon}
+        </td>
+        <td class="text-center align-middle penalty-col-range">
+          <div class="d-inline-flex align-items-center justify-content-center gap-1 flex-wrap">
+            <span class="badge text-bg-light border">${escapeHtml(rangeText)}</span>
+            ${fixedBadge}
+          </div>
+        </td>
+        <td class="align-middle penalty-col-score">
           <input
             id="${inputId}"
             type="number"
             class="form-control form-control-sm js-penalty-score"
             min="${penalty.minPenalty}"
             max="${penalty.maxPenalty}"
-            step="0.1"
+            step="1"
             value="${escapeHtml(scoreValue)}"
-            ${isSelected ? '' : 'disabled'}
-            ${penalty.isFixedScore ? 'readonly' : ''}
+            ${(isSelected && !penalty.isFixedScore) ? '' : 'disabled'}
           >
           <div class="invalid-feedback js-penalty-score-feedback"></div>
-          ${penalty.isFixedScore
-    ? `<small class="text-muted">${escapeHtml(t('penalty_modal_fixed_score', 'Fixed score'))}</small>`
-    : ''}
         </td>
       </tr>
     `;
@@ -2704,20 +2906,22 @@ function renderPenaltyAssignmentModalContent() {
   const competitionLabel = String(context?.competitionLabel || '').trim();
 
   bodyEl.innerHTML = `
-    <div class="mb-3">
-      <div class="small text-muted">
-        ${escapeHtml(t('dancer'))}: <span class="fw-semibold">${escapeHtml(dancerName)}</span>
-      </div>
-      ${competitionLabel ? `<div class="small text-muted">${escapeHtml(competitionLabel)}</div>` : ''}
+    <div class="mb-3 penalty-assignment-header">
+      <div class="penalty-assignment-participant fw-semibold">${escapeHtml(dancerName)}</div>
+      ${competitionLabel
+    ? `<span class="badge text-bg-light border penalty-assignment-competition-badge">${escapeHtml(competitionLabel)}</span>`
+    : ''}
     </div>
     <div class="table-responsive">
-      <table class="table table-sm table-bordered align-middle mb-2">
+      <table class="table table-sm table-bordered align-middle mb-2 penalty-assignment-table">
         <thead class="table-light">
           <tr>
-            <th class="text-center" style="width: 72px;">${escapeHtml(t('penalty_modal_apply', 'Apply'))}</th>
-            <th>${escapeHtml(t('penalty_modal_name', 'Penalty'))}</th>
-            <th class="text-center" style="width: 140px;">${escapeHtml(t('penalty_modal_range', 'Range'))}</th>
-            <th style="width: 220px;">${escapeHtml(t('penalty_modal_score', 'Score'))}</th>
+            <th class="text-center penalty-col-apply">${escapeHtml(t('penalty_modal_apply', 'Apply'))}</th>
+            <th class="penalty-col-name">${escapeHtml(t('penalty_modal_name', 'Penalty'))}</th>
+            <th class="text-center penalty-col-assigned-by">${escapeHtml(t('penalty_modal_assigned_by', 'Asignado por'))}</th>
+            <th class="text-center penalty-col-for-judges">${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}</th>
+            <th class="text-center penalty-col-range">${escapeHtml(t('penalty_modal_range', 'Range'))}</th>
+            <th class="penalty-col-score">${escapeHtml(t('penalty_modal_score', 'Score'))}</th>
           </tr>
         </thead>
         <tbody>
@@ -2763,7 +2967,7 @@ function initPenaltyAssignmentModal() {
     clearPenaltyAssignmentValidationMessage();
   });
 
-  saveBtn.addEventListener('click', () => {
+  saveBtn.addEventListener('click', async () => {
     const { isValid, assignments } = collectPenaltyAssignmentsFromModal();
     if (!isValid) {
       setPenaltyAssignmentValidationMessage(
@@ -2772,13 +2976,51 @@ function initPenaltyAssignmentModal() {
       return;
     }
 
+    const context = penaltyAssignmentState.context || {};
+    const eventId = parseOptionalNumber(context?.eventId);
+    const competitionId = parseOptionalNumber(context?.competitionId);
+    const dancerId = parseOptionalNumber(context?.dancerId);
+    const assignedBy = String(context?.assignedBy || 'O').trim().toUpperCase() === 'J' ? 'J' : 'O';
+    if (eventId === null || competitionId === null || dancerId === null) {
+      showMessageModal(t('error_title'), t('error_title'));
+      return;
+    }
+
     clearPenaltyAssignmentValidationMessage();
-    const messageTemplate = t(
-      'penalty_modal_save_not_available',
-      'Saving penalties is not available yet. Selected penalties: {count}.'
-    );
-    const message = messageTemplate.replace('{count}', String(assignments.length));
-    showMessageModal(message, t('penalty'));
+    setButtonLoading(saveBtn, true, t('loading'));
+
+    try {
+      const result = await saveCompetitionPenalties({
+        eventId,
+        competitionId,
+        dancerId,
+        assignedBy,
+        penalties: assignments
+      });
+
+      penaltyAssignmentState.competitionPenalties = assignments.map(item => ({
+        penaltyId: item.penalty_id,
+        score: item.penalty_score,
+        assignedBy
+      }));
+
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.hide();
+      await reloadSelectedCompetition();
+
+      const fallbackMessage = result?.changed
+        ? t('penalty_modal_saved', 'Penalties saved successfully.')
+        : t('penalty_modal_no_changes', 'No penalty changes detected.');
+      showMessageModal(result?.message || fallbackMessage, t('penalty'), 'success');
+    } catch (error) {
+      console.error('Error saving competition penalties:', error);
+      showMessageModal(
+        error?.message || t('penalty_modal_save_error', 'Error saving penalties.'),
+        t('error_title')
+      );
+    } finally {
+      setButtonLoading(saveBtn, false);
+    }
   });
 
   modalEl.addEventListener('hidden.bs.modal', () => {
@@ -2793,7 +3035,7 @@ function initPenaltyAssignmentModal() {
   modalEl.dataset.initialized = '1';
 }
 
-async function openPenaltyAssignmentModal({ competitionId, dancerId, dancerName, competitionLabel = '' } = {}) {
+async function openPenaltyAssignmentModal({ competitionId, dancerId, dancerName, competitionLabel = '', assignedBy = 'O' } = {}) {
   const modalEl = document.getElementById('penaltyAssignmentModal');
   const bodyEl = document.getElementById('penaltyAssignmentModalBody');
   const modalTitleEl = document.getElementById('penaltyAssignmentModalLabel');
@@ -2813,7 +3055,8 @@ async function openPenaltyAssignmentModal({ competitionId, dancerId, dancerName,
     competitionId: parsedCompetitionId,
     dancerId: parsedDancerId,
     dancerName: dancerName || t('dancer'),
-    competitionLabel
+    competitionLabel,
+    assignedBy: String(assignedBy).trim().toUpperCase() === 'J' ? 'J' : 'O'
   };
 
   modalTitleEl.textContent = t('penalty_modal_title', 'Penalties');

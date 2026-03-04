@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   //await eventReadyPromise;
   await WaitEventLoaded();
+  await ensureTranslationsReady();
 
   updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
   updateElementProperty('masterdataUrl', 'href', `?eventId=${eventId}`, false);

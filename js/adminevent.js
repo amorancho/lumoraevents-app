@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   validateRoles(allowedRoles);
 
   await WaitEventLoaded();
+  await ensureTranslationsReady();
 
   initQrModal();
   initExportEventModal();
@@ -46,7 +47,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  await ensureTranslationsReady();
   applyCloseButtonAriaLabels();
   await loadEventData(eventId);
 

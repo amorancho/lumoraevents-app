@@ -445,7 +445,8 @@ async function saveCompetitionEdits(editModal) {
 }
 
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await ensureTranslationsReady();
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
     const scheduleConfigWarningModalEl = document.getElementById('scheduleConfigWarningModal');
     const scheduleConfigWarningModal = scheduleConfigWarningModalEl ? new bootstrap.Modal(scheduleConfigWarningModalEl) : null;
@@ -939,7 +940,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace('{updated}', String(data?.updated_competitions ?? 0))
             .replace('{requested}', String(data?.requested_pairs ?? (selectedCategories.length * selectedStyles.length)));
 
-          showMessageModal(successMessage, t('max_times_info_title', 'Information'));
+          showMessageModal(successMessage, t('max_times_info_title', 'Information'), 'success');
           maxTimesModal.hide();
           await fetchCompetitionsFromAPI();
         } catch (error) {

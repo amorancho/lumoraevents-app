@@ -12,6 +12,7 @@ const formatFecha = (isoString) => {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+    await ensureTranslationsReady();
 
     await WaitEventLoaded();
 

@@ -191,7 +191,7 @@ function initJudgeManagement() {
     const judgeId = document.getElementById('editForm').dataset.id;
   
     if (!judgeId) {
-      showMessageModal('No judge selected.');
+      showMessageModal('No judge selected.', undefined, 'warning');
       return;
     }
   
@@ -225,7 +225,7 @@ function initJudgeManagement() {
   
     } catch (err) {
       console.error(err);
-      showMessageModal('Error sending welcome email.');
+      showMessageModal('Error sending welcome email.', undefined, 'danger');
     } finally {
       // Quitar spinner y restaurar botón
       spinner.remove();
@@ -239,7 +239,7 @@ function initJudgeManagement() {
     const judgeId = document.getElementById('editForm').dataset.id;
   
     if (!judgeId) {
-      showMessageModal('No judge selected.');
+      showMessageModal('No judge selected.', undefined, 'warning');
       return;
     }
   
@@ -269,7 +269,7 @@ function initJudgeManagement() {
   
     } catch (err) {
       console.error(err);
-      showMessageModal('Error sending welcome email.');
+      showMessageModal('Error sending welcome email.', undefined, 'danger');
     } finally {
       // Quitar spinner y restaurar botón
       spinner.remove();
@@ -308,7 +308,7 @@ function initJudgeManagement() {
   
     } catch (err) {
       console.error(err);
-      showMessageModal('Error sending welcome emails.');
+      showMessageModal('Error sending welcome emails.', undefined, 'danger');
     } finally {
       btn.innerHTML = originalText;
       btn.disabled = false;
@@ -357,8 +357,10 @@ function renderJudges() {
     row.innerHTML = `
       <td>${judge.name}</td>
       <td>${judge.email}</td>
-      <td class="align-middle text-center text-success">
-        ${Number(judge.ismaster) === 1 ? '✓' : ''}
+      <td class="align-middle text-center">
+        ${Number(judge.ismaster) === 1
+          ? '<i class="bi bi-check-circle-fill text-success"></i>'
+          : '<i class="bi bi-dash-circle text-muted"></i>'}
       </td>
       <td class="align-middle text-center">
         <span class="badge ${badgeClass}" ${badgeTooltipAttr}>${badgeLabel}</span>

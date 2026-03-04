@@ -305,11 +305,81 @@
       overflow-y: auto;
     }
     #penaltyAssignmentModal .modal-dialog {
-      max-width: 760px;
+      width: 96vw;
+      max-width: 980px;
     }
     #penaltyAssignmentModal .modal-body {
-      max-height: 70vh;
+      max-height: 72vh;
       overflow-y: auto;
+    }
+    #penaltyAssignmentModal .penalty-assignment-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    #penaltyAssignmentModal .penalty-assignment-participant {
+      font-size: 1.3rem;
+      line-height: 1.2;
+    }
+    #penaltyAssignmentModal .penalty-assignment-competition-badge {
+      width: fit-content;
+      max-width: 100%;
+      text-align: left;
+      white-space: normal;
+    }
+    #penaltyAssignmentModal .penalty-assignment-table {
+      table-layout: fixed;
+      min-width: 860px;
+    }
+    #penaltyAssignmentModal .penalty-col-apply {
+      width: 72px;
+    }
+    #penaltyAssignmentModal .penalty-col-name {
+      width: auto;
+    }
+    #penaltyAssignmentModal .penalty-col-assigned-by {
+      width: 130px;
+    }
+    #penaltyAssignmentModal .penalty-col-for-judges {
+      width: 100px;
+    }
+    #penaltyAssignmentModal .penalty-col-range {
+      width: 110px;
+    }
+    #penaltyAssignmentModal .penalty-col-score {
+      width: 120px;
+    }
+    #penaltyAssignmentModal .penalty-fixed-badge {
+      font-size: 0.68rem;
+      line-height: 1;
+    }
+    .tracking-penalties-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: 999px;
+      background: #dc3545;
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1;
+      box-shadow: 0 0 0 0.16rem rgba(220, 53, 69, 0.22);
+      animation: trackingPenaltyPulse 1.7s ease-in-out infinite;
+    }
+    .tracking-penalties-indicator i {
+      font-size: 0.75rem;
+      line-height: 1;
+    }
+    @keyframes trackingPenaltyPulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0.16rem rgba(220, 53, 69, 0.22);
+      }
+      50% {
+        transform: scale(1.04);
+        box-shadow: 0 0 0 0.28rem rgba(220, 53, 69, 0.1);
+      }
     }
     .tracking-center-column {
       min-width: 0;
@@ -331,6 +401,21 @@
     }
     .sidebar-competition-item-active .js-sidebar-competition-item {
       color: var(--bs-primary) !important;
+    }
+    .sidebar-competition-actions {
+      flex: 0 0 auto;
+      max-width: 48%;
+    }
+    .sidebar-classification-visible-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+    .sidebar-classification-visible-text {
+      font-size: 0.72rem;
+      line-height: 1.2;
     }
     .tracking-summary-layout {
       display: flex;

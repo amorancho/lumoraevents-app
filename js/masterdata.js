@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     validateRoles(allowedRoles);
     //await eventReadyPromise;
     await WaitEventLoaded();
+    await ensureTranslationsReady();
 
     const alertPanel = document.getElementById('alertPanel');
     const closedPanel = document.getElementById('closedPanel');

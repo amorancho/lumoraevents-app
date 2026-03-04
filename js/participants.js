@@ -5,6 +5,7 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
+  await ensureTranslationsReady();
 
   const user = getUserFromToken();
   const role = user ? user.role : 'guest';
@@ -27,8 +28,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   applyParticipantsSummaryLayout();
-
-  await ensureTranslationsReady();
   loadParticipants(); 
 });
 
