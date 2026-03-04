@@ -8,6 +8,59 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
+  <style>
+    .dashboard-stat-box {
+      border: 1px solid var(--bs-border-color);
+      border-radius: var(--bs-border-radius);
+      padding: 0.5rem;
+      height: 100%;
+    }
+    .dashboard-stat-box-highlight {
+      background-color: var(--bs-primary-bg-subtle);
+      border-color: var(--bs-primary-border-subtle);
+    }
+    .dashboard-progress {
+      height: 1.4rem;
+    }
+    .tracking-summary-progress {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .tracking-summary-progress .progress {
+      width: 100%;
+      min-width: 0;
+    }
+    .dashboard-competition-block {
+      border-radius: 0.9rem;
+      padding: 1rem;
+      min-height: 210px;
+      color: #fff;
+      box-shadow: 0 0.75rem 1.5rem rgba(0, 0, 0, 0.12);
+    }
+    .dashboard-competition-actual {
+      background: linear-gradient(135deg, #0d6efd 0%, #0aa2ff 100%);
+    }
+    .dashboard-competition-next {
+      background: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+    }
+    .dashboard-competition-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      opacity: 0.9;
+      margin-bottom: 0.2rem;
+    }
+    .dashboard-competition-value {
+      font-size: 1.02rem;
+      font-weight: 700;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+    .dashboard-competition-status-badge {
+      font-size: 0.95rem;
+    }
+  </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
   <div id="header"></div>
@@ -23,84 +76,195 @@
       <main class="col-12 col-lg-9 col-xl-10">
         <div class="d-flex flex-column gap-4">
           <section class="row g-3">
-            <div class="col-12 col-md-6 col-xl-4">
+            <div class="col-12 col-xl-4">
               <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body-tertiary fw-semibold" data-i18n="dashboard_card_event_data">Event Data</div>
                 <div class="card-body">
-                  <div class="small text-uppercase text-body-secondary fw-semibold mb-2" data-i18n="dashboard_badge">Organization Dashboard</div>
-                  <div class="fw-semibold" id="dashboardEventName">-</div>
+                  <div class="row g-2">
+                    <div class="col-12 col-md-6">
+                      <div class="dashboard-stat-box">
+                      <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_card_dates">Dates</div>
+                      <div class="fw-semibold" id="dashboardDateValue">-</div>
+                    </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <div class="dashboard-stat-box">
+                      <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_card_status">Event Status</div>
+                      <span class="badge rounded-pill text-bg-secondary" id="dashboardStatusValue">-</span>
+                    </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="col-12 col-md-6 col-xl-4">
+            <div class="col-12 col-xl-8">
               <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-body-tertiary fw-semibold" data-i18n="dashboard_card_totals">Entity Totals</div>
                 <div class="card-body">
-                  <div class="small text-uppercase text-body-secondary fw-semibold mb-2" data-i18n="dashboard_event_code_label">Event Code</div>
-                  <div class="fw-semibold" id="dashboardEventCode">-</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-4">
-              <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                  <div class="small text-uppercase text-body-secondary fw-semibold mb-2" data-i18n="dashboard_card_status">Event Status</div>
-                  <span class="badge rounded-pill text-bg-secondary" id="dashboardStatusValue">-</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-4">
-              <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                  <div class="small text-uppercase text-body-secondary fw-semibold mb-2" data-i18n="dashboard_card_dates">Dates</div>
-                  <div class="fw-semibold" id="dashboardDateValue">-</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-4">
-              <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                  <div class="small text-uppercase text-body-secondary fw-semibold mb-2" data-i18n="dashboard_card_language">Language</div>
-                  <div class="fw-semibold" id="dashboardLanguageValue">-</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 col-md-6 col-xl-4">
-              <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                  <div class="small text-uppercase text-body-secondary fw-semibold mb-2" data-i18n="dashboard_card_visibility">Visibility</div>
-                  <span class="badge rounded-pill text-bg-secondary" id="dashboardVisibilityValue">-</span>
+                  <div id="dashboardEntityCountsLine" class="row g-2" aria-live="polite"></div>
                 </div>
               </div>
             </div>
           </section>
 
           <section class="row g-3">
-            <div class="col-12 col-xl-7">
-              <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-body-tertiary fw-semibold" data-i18n="dashboard_main_panel_title">Main Panel</div>
+            <div class="col-12">
+              <div class="card border-0 shadow-sm">
+                <div class="card-header bg-body-tertiary fw-semibold" data-i18n="dashboard_card_visibility">Visibility</div>
                 <div class="card-body">
-                  <p class="text-body-secondary mb-0" data-i18n="dashboard_main_panel_text">
-                    This central area is ready for the next dashboard widgets, KPIs, and summaries.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-12 col-xl-5">
-              <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-body-tertiary fw-semibold" data-i18n="dashboard_secondary_panel_title">Quick Notes</div>
-                <div class="card-body">
-                  <p class="text-body-secondary mb-0" data-i18n="dashboard_secondary_panel_text">
-                    Use the sidebar to move between the event setup, participants, competitions, and tracking tools.
-                  </p>
+                  <div class="row g-2">
+                    <div class="col-12 col-md-6 col-xl-2">
+                      <div class="dashboard-stat-box dashboard-stat-box-highlight">
+                      <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_visibility_event">EVENT</div>
+                      <span class="badge rounded-pill text-bg-secondary" id="dashboardVisibilityValue">-</span>
+                    </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-2">
+                      <div class="dashboard-stat-box">
+                      <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_card_visibility_judges">Judges Visibility</div>
+                      <span class="badge rounded-pill text-bg-secondary" id="dashboardVisibilityJudgesValue">-</span>
+                    </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-2">
+                      <div class="dashboard-stat-box">
+                      <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_card_visibility_participants">Participants Visibility</div>
+                      <span class="badge rounded-pill text-bg-secondary" id="dashboardVisibilityParticipantsValue">-</span>
+                    </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-2">
+                      <div class="dashboard-stat-box">
+                      <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_card_visibility_schedule">Schedule Visibility</div>
+                      <span class="badge rounded-pill text-bg-secondary" id="dashboardVisibilityScheduleValue">-</span>
+                    </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-2">
+                      <div class="dashboard-stat-box">
+                      <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_card_visibility_results">Results Visibility</div>
+                      <span class="badge rounded-pill text-bg-secondary" id="dashboardVisibilityResultsValue">-</span>
+                    </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-xl-2">
+                      <div class="dashboard-stat-box">
+                      <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_card_visibility_statistics">Statistics Visibility</div>
+                      <span class="badge rounded-pill text-bg-secondary" id="dashboardVisibilityStatisticsValue">-</span>
+                    </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </section>
+
+          <section class="row g-3">
+            <div class="col-12">
+              <div class="card border-0 shadow-sm">
+                <div class="card-header bg-body-tertiary fw-semibold" data-i18n="dashboard_card_progress">Competition Progress</div>
+                <div class="card-body">
+                  <div class="row g-2">
+                    <div class="col-12 col-xl-5">
+                      <div class="dashboard-stat-box">
+                        <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_progress_competitions">Competitions</div>
+                        <div class="d-flex align-items-center gap-3 tracking-summary-progress">
+                          <div class="progress flex-grow-1 position-relative" role="progressbar" aria-label="Competitions progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 30px;">
+                            <div
+                              id="dashboardCompetitionsProgressBar"
+                              class="progress-bar progress-bar-striped bg-warning"
+                              style="width: 0%;"
+                            ></div>
+                            <span id="dashboardCompetitionsProgressText" class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap text-dark">0/0 (0.0%)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12 col-xl-5">
+                      <div class="dashboard-stat-box">
+                        <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_progress_routines">Routines</div>
+                        <div class="d-flex align-items-center gap-3 tracking-summary-progress">
+                          <div class="progress flex-grow-1 position-relative" role="progressbar" aria-label="Routines progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 30px;">
+                            <div
+                              id="dashboardRoutinesProgressBar"
+                              class="progress-bar progress-bar-striped bg-warning"
+                              style="width: 0%;"
+                            ></div>
+                            <span id="dashboardRoutinesProgressText" class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap text-dark">0/0 (0.0%)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12 col-xl-2">
+                      <div class="dashboard-stat-box">
+                        <div class="small text-uppercase text-body-secondary fw-semibold mb-1" data-i18n="dashboard_progress_total_votes">Total Votes</div>
+                        <div id="dashboardTotalVotesValue" class="h3 fw-semibold mb-0">-</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="row g-3">
+            <div class="col-12 col-xl-6">
+              <div class="dashboard-competition-block dashboard-competition-actual">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div class="h5 fw-bold mb-0" data-i18n="dashboard_actual_title">In Progress</div>
+                  <i class="bi bi-play-circle-fill fs-4"></i>
+                </div>
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <div class="dashboard-competition-label" data-i18n="dashboard_field_category">Category</div>
+                    <div id="dashboardActualCategoryValue" class="dashboard-competition-value">-</div>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <div class="dashboard-competition-label" data-i18n="dashboard_field_style">Style</div>
+                    <div id="dashboardActualStyleValue" class="dashboard-competition-value">-</div>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <div class="dashboard-competition-label" data-i18n="dashboard_field_progress">Progress</div>
+                    <div id="dashboardActualProgressValue" class="dashboard-competition-value">-</div>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <div class="dashboard-competition-label" data-i18n="dashboard_field_remaining_time">Estimated Remaining Time</div>
+                    <div id="dashboardActualRemainingValue" class="dashboard-competition-value">-</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-12 col-xl-6">
+              <div class="dashboard-competition-block dashboard-competition-next">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <div class="h5 fw-bold mb-0" data-i18n="dashboard_next_title">Next Competition</div>
+                  <i class="bi bi-skip-forward-fill fs-4"></i>
+                </div>
+                <div class="row g-3">
+                  <div class="col-12 col-md-6">
+                    <div class="dashboard-competition-label" data-i18n="dashboard_field_category">Category</div>
+                    <div id="dashboardNextCategoryValue" class="dashboard-competition-value">-</div>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <div class="dashboard-competition-label" data-i18n="dashboard_field_style">Style</div>
+                    <div id="dashboardNextStyleValue" class="dashboard-competition-value">-</div>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <div class="dashboard-competition-label" data-i18n="dashboard_field_status">Status</div>
+                    <div>
+                      <span id="dashboardNextStatusValue" class="badge rounded-pill text-bg-light dashboard-competition-status-badge">-</span>
+                    </div>
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <div class="dashboard-competition-label" data-i18n="dashboard_field_participants">Participants</div>
+                    <div id="dashboardNextParticipantsValue" class="dashboard-competition-value">-</div>
+                  </div>
+                  <div class="col-12 col-md-3">
+                    <div class="dashboard-competition-label" data-i18n="dashboard_field_estimated_duration">Estimated Duration</div>
+                    <div id="dashboardNextDurationValue" class="dashboard-competition-value">-</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          
         </div>
       </main>
     </div>

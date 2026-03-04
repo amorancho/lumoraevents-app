@@ -262,6 +262,10 @@ async function changeLanguage(lang, page = null) {
     }
   } else if (pageName === 'voting') {
     loadCompetitionAndDancers();
+  } else if (pageName === 'dashboard') {
+    if (window.renderDashboardOverview) {
+      await window.renderDashboardOverview();
+    }
   }
 
   if (window.renderOrganizationSidebar) {
