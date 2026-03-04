@@ -99,7 +99,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       closedPanel.style.display = 'block';
 
       // deshabilitar inputs y botones
-      document.querySelectorAll('input, button').forEach(el => el.disabled = true);
+      document.querySelectorAll('input, button').forEach(el => {
+        if (el.closest('#organizationSidebarToggle')) return;
+        el.disabled = true;
+      });
   }
 
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
