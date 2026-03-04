@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -31,37 +31,16 @@
 
   <div id="header"></div>
 
-  <div class="container py-4">
+  <div class="container-fluid py-4">
+  <div id="organizationSidebarToggle" class="d-lg-none mb-3"></div>
 
-    <div class="d-flex justify-content-center mb-3">
-      <a href="" class="btn btn-secondary rounded-pill px-4 fw-semibold" id="eventconfigUrl" data-i18n="menu_config">
-        ⚙️ Event Configuration
-      </a>
-    </div>
-    <div class="row justify-content-center mb-4 g-2">
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="admineventUrl" data-i18n="menu_general">
-          ⚙️ General Config.
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="judgesUrl" data-i18n="menu_judges">
-          ⚖️ Judges
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="dancersUrl" data-i18n="menu_dancers">
-          💃 Dancers
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="competitionsUrl" data-i18n="menu_competitions">
-          🚀 Competitions
-        </a>
-      </div>
-    </div>
+  <div class="row g-4 align-items-start">
+    <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+      <div id="organizationSidebarMount"></div>
+    </aside>
 
-    <!-- Panel de alerta -->
+    <main class="col-12 col-lg-9 col-xl-10">
+      <!-- Panel de alerta -->
     <div id="alertPanel" class="mb-4" style="display: none;">
       <div class="alert alert-warning d-flex align-items-center" role="alert">
         <i class="bi bi-info-circle-fill me-2"></i>
@@ -88,7 +67,7 @@
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-criteria-config-tab" data-bs-toggle="tab" data-bs-target="#tab-criteria-config" type="button"
-          role="tab" aria-controls="tab-criteria-config" aria-selected="false" data-i18n="tab_criteria_config">Configuración de criterios</button>
+          role="tab" aria-controls="tab-criteria-config" aria-selected="false" data-i18n="tab_criteria_config">ConfiguraciÃ³n de criterios</button>
       </li>
       <li class="nav-item" role="presentation">
         <button class="nav-link" id="tab-penalties-tab" data-bs-toggle="tab" data-bs-target="#tab-penalties" type="button"
@@ -166,8 +145,8 @@
           </div>
         </div>
 
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-10" id="penalty_box">
+        <div class="row">
+          <div class="col-12" id="penalty_box">
             <div class="card shadow-sm bg-light" id="penalty-card">
               <div class="card-header d-flex align-items-center">
                 <h5 class="mb-0 me-auto" data-i18n="penalties">Penalties</h5>
@@ -204,13 +183,13 @@
         <div class="row justify-content-center my-3">
           <div class="col-12 col-md-4 text-center">
             <button id="createNewSchoolBtn" class="btn btn-primary btn-lg w-100" data-i18n="school_create">
-              Añadir escuela
+              AÃ±adir escuela
             </button>
           </div>
         </div>
 
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-10" id="clubs_box">
+        <div class="row">
+          <div class="col-12" id="clubs_box">
             <div class="card shadow-sm bg-light" id="club-card">
               <div class="card-header d-flex align-items-center">
                 <h5 class="mb-0 me-auto" data-i18n="clubs">Clubs / Escuelas</h5>
@@ -222,7 +201,7 @@
                     <thead class="table">
                       <tr>
                         <th data-i18n="school_name">Nombre</th>
-                        <th data-i18n="school_location">Ubicación</th>
+                        <th data-i18n="school_location">UbicaciÃ³n</th>
                         <th class="text-center" data-i18n="criteria_config_actions">Acciones</th>
                       </tr>
                     </thead>
@@ -233,7 +212,7 @@
                 <div id="schoolsEmptyState" class="text-center py-5 d-none">
                   <i class="bi bi-building text-muted" style="font-size: 3rem;"></i>
                   <h5 class="text-muted mt-3" data-i18n="schools_empty_title">No hay escuelas creadas</h5>
-                  <p class="text-muted" data-i18n="schools_empty_subtitle">Añade tu primera escuela con el botón superior.</p>
+                  <p class="text-muted" data-i18n="schools_empty_subtitle">AÃ±ade tu primera escuela con el botÃ³n superior.</p>
                 </div>
               </div>
             </div>
@@ -246,7 +225,7 @@
           <div class="col-12 col-lg-4">
             <div class="card shadow-sm bg-light">
               <div class="card-body">
-                <h5 class="card-title mb-3" data-i18n="criteria_config_new_title">Nueva configuración</h5>
+                <h5 class="card-title mb-3" data-i18n="criteria_config_new_title">Nueva configuraciÃ³n</h5>
 
                 <div class="mb-3" id="criteria-config-criteria-select-field">
                   <label class="form-label" data-i18n="criteria_config_criteria_label">Criterio</label>
@@ -268,7 +247,7 @@
 
                 <div class="mb-3">
                   <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" data-i18n="criteria_config_categories_label">Categorías</label>
+                    <label class="form-label mb-0" data-i18n="criteria_config_categories_label">CategorÃ­as</label>
                     <div class="btn-group btn-group-sm" role="group">
                       <button type="button" class="btn btn-outline-secondary" id="criteria-config-categories-all" data-i18n="criteria_config_all_feminine">Todas</button>
                       <button type="button" class="btn btn-outline-secondary" id="criteria-config-categories-none" data-i18n="criteria_config_none_feminine">Ninguna</button>
@@ -311,7 +290,7 @@
                 </div>
                 <div class="row g-2 mb-3">
                   <div class="col-12 col-md-4">
-                    <label class="form-label small mb-1" data-i18n="criteria_config_category_label">Categoría</label>
+                    <label class="form-label small mb-1" data-i18n="criteria_config_category_label">CategorÃ­a</label>
                     <select id="criteria-config-filter-category" class="form-select form-select-sm"></select>
                   </div>
                   <div class="col-12 col-md-4">
@@ -330,7 +309,7 @@
                   <table class="table table-hover align-middle">
                     <thead class="table">
                       <tr>
-                        <th data-i18n="criteria_config_category_label">Categoría</th>
+                        <th data-i18n="criteria_config_category_label">CategorÃ­a</th>
                         <th data-i18n="criteria_config_style_label">Estilo</th>
                         <th id="criteria-config-total-header" data-i18n="criteria_config_total_percent">% total</th>
                         <th data-i18n="criteria_config_criteria_label">Criterio</th>
@@ -382,7 +361,7 @@
               <input type="text" id="schoolNameInput" class="form-control" maxlength="80">
             </div>
             <div class="mb-3">
-              <label class="form-label" for="schoolLocationInput" data-i18n="school_location">Ubicación</label>
+              <label class="form-label" for="schoolLocationInput" data-i18n="school_location">UbicaciÃ³n</label>
               <input type="text" id="schoolLocationInput" class="form-control" maxlength="120">
             </div>
           </form>
@@ -432,6 +411,10 @@
     </div>
   </div>
 
+      </main>
+    </div>
+  </div>
+
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -441,7 +424,7 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js"></script>
+  <script src="js/sidebar.js"></script>
   <script src="js/masterdata.js"></script>
 </body>
-
 </html>

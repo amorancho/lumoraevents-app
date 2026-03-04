@@ -87,6 +87,7 @@
   "export_modal_no_options": "Nessuna classifica disponibile per l'esportazione.",
   "export_modal_select_category_validation": "Seleziona almeno una categoria da esportare.",
   "exporting": "Esportazione...",
+  "back_to_dashboard": "Torna alla Dashboard",
   "export_results_button": "Esporta Risultati",
   "confirm_export_category_pdf": "Sei sicuro di voler esportare in PDF tutta la categoria della competizione {competition}?",
   "classification_visible": "Risultato visibile",

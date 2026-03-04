@@ -15,12 +15,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     //await eventReadyPromise;
     await WaitEventLoaded();
 
-    updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
-    updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
-    updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
-    updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);
-    updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
-
     const alertPanel = document.getElementById('alertPanel');
     const closedPanel = document.getElementById('closedPanel');
     if (getEvent().status == 'ongoing') {

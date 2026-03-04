@@ -15,39 +15,17 @@
 
   <div id="header"></div>
 
-  <div class="container py-4">
+  <div class="container-fluid py-4">
+    <div id="organizationSidebarToggle" class="d-lg-none mb-3"></div>
 
-    <div class="d-flex justify-content-center mb-3">
-      <a href="" class="btn btn-secondary rounded-pill px-4 fw-semibold" id="eventconfigUrl" data-i18n="menu_config">
-        &#9881;&#65039; Event Configuration
-      </a>
-    </div>
-    <div class="row justify-content-center mb-4 g-2">
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="masterdataUrl" data-i18n="menu_master">
-          &#127760; Master Data
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="judgesUrl" data-i18n="menu_judges">
-          &#9878;&#65039; Judges
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="dancersUrl" data-i18n="menu_dancers">
-          &#128131; Dancers
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="competitionsUrl" data-i18n="menu_competitions">
-          &#128640; Competitions
-        </a>
-      </div>
-    </div>
+    <div class="row g-4 align-items-start">
+      <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+        <div id="organizationSidebarMount"></div>
+      </aside>
 
-
-    <div class="row g-4" id="dataEvent">
-      <div class="col-12 col-lg-10 mx-auto">
+      <main class="col-12 col-lg-9 col-xl-10">
+        <div class="row g-4" id="dataEvent">
+      <div class="col-12">
         <div class="card shadow-sm border-0">
           <div class="card-header bg-primary text-white fw-semibold d-flex flex-wrap justify-content-between align-items-center">
             <div class="me-2" data-i18n="card_title">
@@ -263,9 +241,9 @@
         </div>
       </div>
 
+        </div>
+      </main>
     </div>
-
-
   </div>
 
   <div class="modal fade" id="visibilityModal" tabindex="-1" aria-hidden="true">
@@ -356,6 +334,7 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js"></script>
+  <script src="js/sidebar.js"></script>
   <script src="js/adminevent.js"></script>
 </body>
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -11,47 +11,33 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
   <div id="header"></div>
-  <div class="container-fluid container-lg py-4">
+  <div class="container-fluid py-4">
+    <div id="organizationSidebarToggle" class="d-lg-none mb-3"></div>
 
-    <div class="d-flex justify-content-center mb-3">
-      <a href="" class="btn btn-secondary rounded-pill px-4 fw-semibold" id="eventconfigUrl" data-i18n="menu_config">
-        ⚙️ Event Configuration
-      </a>
-    </div>        
-    <div class="row justify-content-center mb-4 g-2">
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="admineventUrl" data-i18n="menu_general">
-          🌐 General Config.
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="masterdataUrl" data-i18n="menu_master">
-          🌐 Master Data
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="dancersUrl" data-i18n="menu_dancers">
-          💃 Dancers
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="competitionsUrl" data-i18n="menu_competitions">
-          🚀 Competitions
-        </a>
-      </div>
-    </div>
+    <div class="row g-4 align-items-start">
+      <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+        <div id="organizationSidebarMount"></div>
+      </aside>
 
+      <main class="col-12 col-lg-9 col-xl-10">
+        <div class="row align-items-start g-3 mb-3">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body bg-light">
+                <div class="row g-2">
+                  <div class="col-12 col-md-6 col-lg-3">
+                    <button id="createNewJudgeBtn" class="btn btn-primary w-100" data-i18n="create_judge">
+                      Create New Judge
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-    <div class="row justify-content-center my-3">
-      <div class="col-12 col-md-4 text-center">
-        <button id="createNewJudgeBtn" class="btn btn-primary btn-lg w-100" data-i18n="create_judge">
-          Create New Judge
-        </button>
-      </div>
-    </div>
-
-    <div class="row justify-content-center">
-      <div id="closedPanel" class="mb-4 col-12 col-lg-10" style="display: none;">
+    <div class="row">
+      <div id="closedPanel" class="mb-4 col-12" style="display: none;">
         <div class="alert alert-danger d-flex align-items-center" role="alert">
           <i class="bi bi-info-circle-fill me-2"></i>
           <div data-i18n="alert_end_event">
@@ -63,8 +49,8 @@
 
 
     <!-- Tabla jueces -->
-    <div class="row justify-content-center">
-      <div class="col-12 col-lg-10">
+    <div class="row">
+      <div class="col-12">
         <div class="card shadow-sm">
           <div class="card-header d-flex align-items-center">
             <h5 class="mb-0 me-auto" data-i18n="table_title">
@@ -115,11 +101,11 @@
         </div>
       </div>
     </div>
-
-    
+      </main>
+    </div>
   </div>
 
-  <!-- Modal de edición -->
+  <!-- Modal de ediciÃ³n -->
   <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -254,7 +240,6 @@
       </div>
     </div>
   </div>
-
   <div id="footer"></div>
  
   <!-- Bootstrap JS -->
@@ -264,6 +249,7 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js"></script>
+  <script src="js/sidebar.js"></script>
   <script src="js/judges.js"></script>
 
 </body>

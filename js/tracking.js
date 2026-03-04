@@ -26,6 +26,8 @@ const penaltyAssignmentState = {
   competitionPenalties: []
 };
 
+updateElementProperty('backToDashboardBtn', 'href', `dashboard.html?eventId=${encodeURIComponent(eventId)}`);
+
 function getTrackingSidebarFiltersStorageKey() {
   const eventId = typeof getEvent === 'function' ? (getEvent()?.id ?? 'no_event') : 'no_event';
   const userId = typeof getUserId === 'function' ? (getUserId() ?? 'no_user') : 'no_user';

@@ -1,0 +1,20 @@
+{
+  "title": "Dashboard",
+  "dashboard_badge": "Organization Dashboard",
+  "dashboard_intro_text": "Central workspace for the event configuration and operations area.",
+  "dashboard_event_code_label": "Event Code",
+  "dashboard_card_status": "Event Status",
+  "dashboard_card_dates": "Dates",
+  "dashboard_card_language": "Language",
+  "dashboard_card_visibility": "Visibility",
+  "visibility_visible": "Visible",
+  "visibility_hidden": "Hidden",
+  "status_upcoming": "Upcoming",
+  "status_ongoing": "Ongoing",
+  "status_finished": "Finished",
+  "status_unknown": "Unknown",
+  "dashboard_main_panel_title": "Main Panel",
+  "dashboard_main_panel_text": "This central area is ready for the next dashboard widgets, KPIs, and summaries.",
+  "dashboard_secondary_panel_title": "Quick Notes",
+  "dashboard_secondary_panel_text": "Use the sidebar to move between the event setup, participants, competitions, and tracking tools."
+}

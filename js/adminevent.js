@@ -6,12 +6,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await WaitEventLoaded();
 
-  updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${eventId}`);
-  updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
-  updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
-  updateElementProperty('dancersUrl', 'href', `dancers.html?eventId=${eventId}`);
-  updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
-
   initQrModal();
   initExportEventModal();
   initStatusToggleModal();

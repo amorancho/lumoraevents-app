@@ -31,38 +31,16 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
   <div id="header"></div>
-  <div class="container-fluid container-lg py-4">    
+  <div class="container-fluid py-4">
+  <div id="organizationSidebarToggle" class="d-lg-none mb-3"></div>
 
-    <div class="d-flex justify-content-center mb-3 gap-2 flex-wrap">
-      <a href="" class="btn btn-secondary rounded-pill px-4 fw-semibold" id="eventconfigUrl" data-i18n="menu_config">
-        âš™ï¸ Event Configuration
-      </a>
-    </div> 
-    <div class="row justify-content-center mb-4 g-2">
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="admineventUrl" data-i18n="menu_general">
-          ðŸŒ General Config.
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="masterdataUrl" data-i18n="menu_master">
-          ðŸŒ Master Data
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="judgesUrl" data-i18n="menu_judges">
-          âš–ï¸ Judges
-        </a>
-      </div>
-      <div class="col-6 col-md-auto d-flex justify-content-center">
-        <a href="" class="btn btn-outline-primary rounded-pill px-4 fw-semibold" id="dancersUrl" data-i18n="menu_dancers">
-          ðŸ’ƒ Dancers
-        </a>
-      </div>
-    </div>
+  <div class="row g-4 align-items-start">
+    <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+      <div id="organizationSidebarMount"></div>
+    </aside>
 
-
-    <div class="row justify-content-center align-items-start g-3">
+    <main class="col-12 col-lg-9 col-xl-10">
+      <div class="row justify-content-center align-items-start g-3">
       <div class="col-12">
         <div class="card mb-3">
           <div class="card-body bg-light">
@@ -147,11 +125,11 @@
       </div>
           
     </div>
-
-    
+    </main>
   </div>
+</div>
 
-  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -450,9 +428,9 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js"></script>
+  <script src="js/sidebar.js"></script>
   <script src="js/competitions.js"></script>
 
 </body>
 </html>
-
 

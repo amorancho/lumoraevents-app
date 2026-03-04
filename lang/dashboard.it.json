@@ -1,0 +1,20 @@
+{
+  "title": "Dashboard",
+  "dashboard_badge": "Dashboard Organizzazione",
+  "dashboard_intro_text": "Area centrale per la configurazione e le operazioni dell evento.",
+  "dashboard_event_code_label": "Codice Evento",
+  "dashboard_card_status": "Stato Evento",
+  "dashboard_card_dates": "Date",
+  "dashboard_card_language": "Lingua",
+  "dashboard_card_visibility": "Visibilita",
+  "visibility_visible": "Visibile",
+  "visibility_hidden": "Nascosto",
+  "status_upcoming": "Prossimo",
+  "status_ongoing": "In corso",
+  "status_finished": "Concluso",
+  "status_unknown": "Sconosciuto",
+  "dashboard_main_panel_title": "Pannello Principale",
+  "dashboard_main_panel_text": "Questa area centrale e pronta per i prossimi widget, KPI e riepiloghi del dashboard.",
+  "dashboard_secondary_panel_title": "Note Rapide",
+  "dashboard_secondary_panel_text": "Usa la sidebar per passare tra configurazione, partecipanti, competizioni e tracking."
+}

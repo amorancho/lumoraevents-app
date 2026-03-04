@@ -115,7 +115,10 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
 
       eventObj = {
         id: data.id,
+        code: eventId,
         name: data.name,
+        start: data.start,
+        end: data.end,
         eventLogo: data.eventlogo,
         eventUrl: data.eventurl,
         visible: data.visible === 1,
@@ -259,6 +262,10 @@ async function changeLanguage(lang, page = null) {
     }
   } else if (pageName === 'voting') {
     loadCompetitionAndDancers();
+  }
+
+  if (window.renderOrganizationSidebar) {
+    window.renderOrganizationSidebar();
   }
 }
 

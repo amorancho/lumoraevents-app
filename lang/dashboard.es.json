@@ -1,0 +1,20 @@
+{
+  "title": "Dashboard",
+  "dashboard_badge": "Dashboard Organizadores",
+  "dashboard_intro_text": "Espacio central para la configuracion y la operativa del evento.",
+  "dashboard_event_code_label": "Codigo del Evento",
+  "dashboard_card_status": "Estado del Evento",
+  "dashboard_card_dates": "Fechas",
+  "dashboard_card_language": "Idioma",
+  "dashboard_card_visibility": "Visibilidad",
+  "visibility_visible": "Visible",
+  "visibility_hidden": "Oculto",
+  "status_upcoming": "Proximo",
+  "status_ongoing": "En curso",
+  "status_finished": "Finalizado",
+  "status_unknown": "Sin estado",
+  "dashboard_main_panel_title": "Panel Principal",
+  "dashboard_main_panel_text": "Esta zona central queda preparada para los proximos widgets, KPIs y resumenes del dashboard.",
+  "dashboard_secondary_panel_title": "Notas Rapidas",
+  "dashboard_secondary_panel_text": "Usa el sidebar para moverte entre la configuracion, participantes, competiciones y tracking."
+}

@@ -92,12 +92,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   applyFlagsVisibility();
   applyClubsVisibility();
 
-  updateElementProperty('admineventUrl', 'href', `adminevent.html?eventId=${eventId}`);
-  updateElementProperty('eventconfigUrl', 'href', `configevent.html?eventId=${eventId}`);
-  updateElementProperty('masterdataUrl', 'href', `masterdata.html?eventId=${eventId}`);
-  updateElementProperty('judgesUrl', 'href', `judges.html?eventId=${eventId}`);
-  updateElementProperty('competitionsUrl', 'href', `competitions.html?eventId=${eventId}`);
-
   const closedPanel = document.getElementById('closedPanel');
 
   if (getEvent().status == 'finished') {
