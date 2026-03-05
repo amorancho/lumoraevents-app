@@ -582,18 +582,21 @@ function openSchoolModal({ modal, action, school = null }) {
     const title = document.getElementById('schoolModalTitle');
     const nameInput = document.getElementById('schoolNameInput');
     const locationInput = document.getElementById('schoolLocationInput');
-    if (!form || !title || !nameInput || !locationInput) return;
+    const emailInput = document.getElementById('schoolEmailInput');
+    if (!form || !title || !nameInput || !locationInput || !emailInput) return;
 
     form.dataset.action = action;
     if (action === 'edit' && school) {
         form.dataset.id = school.id;
         nameInput.value = school.name || '';
         locationInput.value = school.location || '';
+        emailInput.value = school.email || '';
         title.textContent = t('school_modal_edit', 'Edit school');
     } else {
         delete form.dataset.id;
         nameInput.value = '';
         locationInput.value = '';
+        emailInput.value = '';
         title.textContent = t('school_modal_create', 'Create school');
     }
 
@@ -635,11 +638,15 @@ function renderSchoolsTable() {
         const isFinished = getEvent().status === 'finished';
         const schoolName = school?.name || '-';
         const schoolLocation = school?.location || '-';
+        const schoolEmail = school?.email || '-';
         const nameCell = document.createElement('td');
         nameCell.textContent = schoolName;
 
         const locationCell = document.createElement('td');
         locationCell.textContent = schoolLocation;
+
+        const emailCell = document.createElement('td');
+        emailCell.textContent = schoolEmail;
 
         const actionsCell = document.createElement('td');
         actionsCell.className = 'text-center align-middle';
@@ -667,6 +674,7 @@ function renderSchoolsTable() {
 
         row.appendChild(nameCell);
         row.appendChild(locationCell);
+        row.appendChild(emailCell);
         row.appendChild(actionsCell);
 
         tableBody.appendChild(row);
@@ -686,10 +694,12 @@ function renderSchoolsTable() {
 async function saveSchool(action, schoolId, schoolModal, saveBtn) {
     const nameInput = document.getElementById('schoolNameInput');
     const locationInput = document.getElementById('schoolLocationInput');
-    if (!nameInput || !locationInput) return;
+    const emailInput = document.getElementById('schoolEmailInput');
+    if (!nameInput || !locationInput || !emailInput) return;
 
     const name = nameInput.value.trim();
     const location = locationInput.value.trim();
+    const email = emailInput.value.trim();
 
     if (!name) {
         showMessageModal(t('school_name_required', 'School name is required.'), t('error'));
@@ -700,7 +710,8 @@ async function saveSchool(action, schoolId, schoolModal, saveBtn) {
     const payload = {
         event_id: getEvent().id,
         name,
-        location: location || null
+        location: location || null,
+        email: email || null
     };
 
     const originalText = saveBtn.textContent;
