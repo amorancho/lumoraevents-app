@@ -17,6 +17,9 @@
   "prop_event_logo": "URL del Logo del Evento",
   "prop_preferences": "Preferencias",
   "prop_visibility": "Visibilidad",
+  "voting_restrictions_title": "Restricciones de votación",
+  "voting_restrictions_field": "Límite",
+  "voting_restrictions_tooltip": "Indica cuántos participantes a la vez puede votar un juez. Si se indica vacío o 0, significa que no hay restricción.",
   "prop_num_judges": "Jueces por defecto para votar en Competiciones",
   "prop_autorefresh": "Auto Refresco (minutos)",
   "prop_class_type": "Tipo de Clasificación por Categorías",
@@ -70,6 +73,7 @@
   "export_event_title": "Exportar evento",
   "export_event_confirm": "Seguro que quieres exportar este evento?",
   "export_event_info": "La exportacion generara un PDF para cada juez, para que puedan completar la votacion en papel en caso de perdida de conexion a internet y la app no pueda utilizarse el dia del evento. Este proceso puede tardar unos segundos. No cierres ni recargues la pagina durante la exportacion.",
+  "export_apply_restriction_voting_label": "�Quiere aplicar la restricci�n de las votaciones en la generaci�n de las p�ginas por juez?",
   "export_event_confirm_btn": "Sí, exportar",
   "event_status_modal_default_title": "Confirmar accion",
   "error_title": "Error",
@@ -90,3 +94,5 @@
   "success_event_updated": "Evento actualizado correctamente",
   "error_event_update_failed": "No se pudo actualizar el evento"
 }
+
+

@@ -17,6 +17,10 @@
   "prop_event_logo": "URL do Logotipo do Evento",
   "prop_preferences": "PreferÃªncias",
   "prop_visibility": "Visibilidade",
+
+  "voting_restrictions_title": "Restricoes de votacao",
+  "voting_restrictions_field": "Limite",
+  "voting_restrictions_tooltip": "Indica quantos participantes um jurado pode votar ao mesmo tempo. Se estiver vazio ou 0, nao ha restricao.",
   "prop_num_judges": "Jurados padrÃ£o para votar em CompetiÃ§Ãµes",
   "prop_autorefresh": "Auto AtualizaÃ§Ã£o (minutos)",
   "prop_class_type": "Tipo de ClassificaÃ§Ã£o por Categorias",
@@ -70,6 +74,7 @@
   "export_event_title": "Exportar evento",
   "export_event_confirm": "Tem certeza de que deseja exportar este evento?",
   "export_event_info": "A exportacao vai gerar um PDF para cada jurado, permitindo completar a votacao em papel caso a conexao com a internet seja perdida e a app nao possa ser usada no dia do evento. Este processo pode demorar alguns segundos. Nao feche nem atualize a pagina durante a exportacao.",
+  "export_apply_restriction_voting_label": "Quer aplicar a restrição de votações na geração das páginas por jurado?",
   "export_event_confirm_btn": "Sim, exportar",
   "event_status_modal_default_title": "Confirmar acao",
   "error_title": "Erro",
@@ -90,3 +95,8 @@
   "success_event_updated": "Evento atualizado com sucesso",
   "error_event_update_failed": "Falha ao atualizar o evento"
 }
+
+
+
+
+

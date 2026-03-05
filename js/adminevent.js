@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initQrModal();
   initExportEventModal();
   initStatusToggleModal();
-  //initTooltips();
+  initTooltips();
 
   const toggleVisible = document.getElementById('visible');
 
@@ -71,6 +71,8 @@ function initExportEventModal() {
   const exportBtn = document.getElementById('exportEventBtn');
   const modalEl = document.getElementById('exportEventModal');
   const confirmBtn = document.getElementById('exportEventConfirmBtn');
+  const applyRestrictionContainer = document.getElementById('exportApplyRestrictionContainer');
+  const applyRestrictionCheck = document.getElementById('exportApplyRestrictionCheck');
 
   if (!exportBtn || !modalEl || !confirmBtn) return;
 
@@ -78,6 +80,17 @@ function initExportEventModal() {
 
   exportBtn.addEventListener('click', () => {
     if (exportBtn.disabled) return;
+
+    const restrictVotingInput = document.getElementById('restrict_voting');
+    const restrictVotingValue = Number(restrictVotingInput?.value ?? 0);
+    const canApplyRestriction = Number.isFinite(restrictVotingValue) && restrictVotingValue > 0;
+    if (applyRestrictionContainer) {
+      applyRestrictionContainer.classList.toggle('d-none', !canApplyRestriction);
+    }
+    if (applyRestrictionCheck) {
+      applyRestrictionCheck.checked = false;
+    }
+
     modal.show();
   });
 
@@ -91,7 +104,15 @@ function initExportEventModal() {
       const id = getEvent()?.id;
       if (!id) throw new Error(t('error_event_not_loaded'));
 
-      const res = await fetch(`${API_BASE_URL}/api/events/${id}/planb`, { method: 'GET' });
+      const restrictVotingInput = document.getElementById('restrict_voting');
+      const restrictVotingValue = Number(restrictVotingInput?.value ?? 0);
+      const canApplyRestriction = Number.isFinite(restrictVotingValue) && restrictVotingValue > 0;
+      const applyRestrictionVoting = canApplyRestriction && Boolean(applyRestrictionCheck?.checked);
+
+      const planbUrl = new URL(`${API_BASE_URL}/api/events/${id}/planb`);
+      planbUrl.searchParams.set('apply_restrictions', applyRestrictionVoting ? 'true' : 'false');
+
+      const res = await fetch(planbUrl.toString(), { method: 'GET' });
       if (!res.ok) {
         let message = t('error_export_event');
         try {
@@ -384,6 +405,7 @@ async function saveEventData(eventId) {
     notice_text: f('notice_text').value.trim(),
     notice_active: f('notice_active').checked ? 1 : 0,
     notice_type: f('notice_type').value,
+    restrict_voting: Number(f('restrict_voting').value || 0),
     registration_start: f('registration_start').value || null,
     registration_end: f('registration_end').value || null
   };

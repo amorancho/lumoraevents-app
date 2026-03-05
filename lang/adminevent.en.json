@@ -17,6 +17,9 @@
   "prop_event_logo": "Event Logo URL",
   "prop_preferences": "Preferences",
   "prop_visibility": "Visibility",
+  "voting_restrictions_title": "Voting Restrictions",
+  "voting_restrictions_field": "Limit",
+  "voting_restrictions_tooltip": "Indicates how many participants a judge can vote at the same time. If left empty or 0, there is no restriction.",
   "prop_num_judges": "Default Judges to vote in Competitions",
   "prop_autorefresh": "Auto Refresh (minutes)",
   "prop_class_type": "Category Classification Type",
@@ -70,6 +73,7 @@
   "export_event_title": "Export event",
   "export_event_confirm": "Are you sure you want to export this event?",
   "export_event_info": "The export will generate a PDF for each judge, allowing them to complete voting on paper if the internet connection is lost and the app cannot be used on the event day. This process may take a few seconds. Please do not close or refresh the page while export is in progress.",
+  "export_apply_restriction_voting_label": "Do you want to apply voting restrictions when generating judge pages?",
   "export_event_confirm_btn": "Yes, export",
   "event_status_modal_default_title": "Confirm action",
   "error_title": "Error",
@@ -90,3 +94,5 @@
   "success_event_updated": "Event updated successfully",
   "error_event_update_failed": "Failed to update event"
 }
+
+

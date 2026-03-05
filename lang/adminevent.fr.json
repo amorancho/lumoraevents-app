@@ -17,6 +17,10 @@
   "prop_event_logo": "URL du Logo de l'Événement",
   "prop_preferences": "Préférences",
   "prop_visibility": "Visibilité",
+
+  "voting_restrictions_title": "Restrictions de vote",
+  "voting_restrictions_field": "Limite",
+  "voting_restrictions_tooltip": "Indique combien de participants un juge peut noter en meme temps. Si la valeur est vide ou 0, il ny a pas de restriction.",
   "prop_num_judges": "Juges par défaut pour voter dans les Compétitions",
   "prop_autorefresh": "Actualisation Automatique (minutes)",
   "prop_class_type": "Type de Classement par Catégories",
@@ -70,6 +74,7 @@
   "export_event_title": "Exporter evenement",
   "export_event_confirm": "Etes-vous sur de vouloir exporter cet evenement?",
   "export_event_info": "L export generera un PDF pour chaque juge afin de completer le vote sur papier en cas de perte de connexion internet et si l application ne peut pas etre utilisee le jour de l evenement. Ce processus peut prendre quelques secondes. Ne fermez pas et ne rechargez pas la page pendant l export.",
+  "export_apply_restriction_voting_label": "Voulez-vous appliquer la restriction de vote lors de la g�n�ration des pages par juge ?",
   "export_event_confirm_btn": "Oui, exporter",
   "event_status_modal_default_title": "Confirmer action",
   "error_title": "Erreur",
@@ -90,3 +95,8 @@
   "success_event_updated": "Evenement mis a jour avec succes",
   "error_event_update_failed": "Impossible de mettre a jour l evenement"
 }
+
+
+
+
+

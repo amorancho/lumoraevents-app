@@ -136,7 +136,9 @@
               </div>
 
               <!-- Visibilidad -->
-              <div class="card shadow-sm border-0 mt-4">
+              <div class="row mt-4 g-3">
+                <div class="col-12 col-lg-10">
+              <div class="card shadow-sm border-0 h-100">
                 <div class="card-header bg-secondary text-white fw-semibold">
                   <i class="bi bi-eye me-2"></i><span data-i18n="prop_visibility">Visibility</span>
                 </div>
@@ -191,11 +193,37 @@
 
                 </div>
               </div>
+                </div>
+
+                <div class="col-12 col-lg-2">
+                  <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header bg-secondary text-white fw-semibold">
+                      <span data-i18n="voting_restrictions_title">Voting Restrictions</span>
+                    </div>
+                    <div class="card-body">
+                      <div class="d-flex align-items-center justify-content-between gap-2">
+                        <input type="number" class="form-control" id="restrict_voting" min="0" step="1">
+                        <label class="form-label mb-0 d-flex align-items-center gap-2" for="restrict_voting">
+                          <span data-i18n="voting_restrictions_field">Limit</span>
+                          <i
+                            id="restrictVotingInfoIcon"
+                            class="bi bi-info-circle"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            data-i18n-title="voting_restrictions_tooltip"
+                            title="Indica cuántos participantes a la vez puede votar un juez. Si se indica vacío o 0, significa que no hay restricción."
+                          ></i>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <!-- Avisos -->
               <div class="card shadow-sm border-0 mt-4">
                 <div class="card-header bg-secondary text-white fw-semibold">
-                  <i class="bi bi-eye me-2"></i><span data-i18n="notices">Avisos</span>
+                  <i class="bi bi-exclamation-triangle me-2"></i><span data-i18n="notices">Avisos</span>
                 </div>
                 <div class="card-body">
                   <div class="row gx-2 gy-1 align-items-end">
@@ -297,6 +325,12 @@
             The export will generate a PDF for each judge, allowing them to complete the voting on paper in case an internet connection is lost and the app cannot be used on the event day.
             <br>
             This process may take a few seconds. Please do not close or refresh the page while the export is in progress.
+          </div>
+          <div class="form-check mt-3 d-none" id="exportApplyRestrictionContainer">
+            <input class="form-check-input" type="checkbox" value="" id="exportApplyRestrictionCheck">
+            <label class="form-check-label" for="exportApplyRestrictionCheck" data-i18n="export_apply_restriction_voting_label">
+              ¿Quiere aplicar la restricción de las votaciones en la generación de las páginas por juez?
+            </label>
           </div>
         </div>
         <div class="modal-footer">
