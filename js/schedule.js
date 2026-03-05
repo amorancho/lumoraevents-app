@@ -225,6 +225,7 @@ function getStatusBadge(status) {
         case 'FIN': badgeClass = 'bg-success'; text = 'FINISHED'; break;
         case 'OPE': badgeClass = 'bg-warning text-dark'; text = 'OPEN'; break;
         case 'CLO': badgeClass = 'bg-danger'; text = 'CLOSED'; break;
+        case 'PRO': badgeClass = 'bg-primary'; text = 'IN PROGRESS'; break;
     }
 
     return `<span class="badge ${badgeClass}">${text}</span>`;

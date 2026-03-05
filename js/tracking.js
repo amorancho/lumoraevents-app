@@ -575,6 +575,7 @@ function getCompetitionStatusBadgeInfo(status) {
   if (status === 'OPE') return { label: 'OPEN', className: 'bg-warning text-dark' };
   if (status === 'CLO') return { label: 'CLOSED', className: 'bg-secondary' };
   if (status === 'FIN') return { label: 'FINISHED', className: 'bg-success' };
+  if (status === 'PRO') return { label: 'IN PROGRESS', className: 'bg-primary' };
   return { label: status || '-', className: 'bg-secondary' };
 }
 
@@ -1258,7 +1259,11 @@ async function executeGetCompetitions(categoryId, styleId) {
   trackingUiState.selectedCategoryId = String(categoryId);
   trackingUiState.selectedStyleId = String(styleId);
   updateSidebarSelectedCompetition(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
-  await loadCompetitions(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
+  await loadCompetitions(
+    trackingUiState.selectedCategoryId,
+    trackingUiState.selectedStyleId,
+    { syncSidebarState: true }
+  );
 }
 
 async function reloadSelectedCompetition(options = {}) {
@@ -1333,6 +1338,7 @@ function getCompetitionListStatusLabel(status) {
   if (status === 'OPE') return 'OPEN';
   if (status === 'CLO') return 'CLOSED';
   if (status === 'FIN') return 'FINISHED';
+  if (status === 'PRO') return 'IN PROGRESS';
   return status || '-';
 }
 
@@ -1340,6 +1346,7 @@ function getCompetitionListStatusBadgeClass(status) {
   if (status === 'OPE') return 'bg-warning text-dark';
   if (status === 'CLO') return 'bg-danger';
   if (status === 'FIN') return 'bg-success';
+  if (status === 'PRO') return 'bg-primary';
   return 'bg-secondary';
 }
 
@@ -1383,6 +1390,7 @@ function normalizeSidebarCompetitionStatus(status) {
   if (value === 'OPEN') return 'OPE';
   if (value === 'CLOSED') return 'CLO';
   if (value === 'FINISHED') return 'FIN';
+  if (value === 'IN PROGRESS') return 'PRO';
   return value;
 }
 
@@ -1484,7 +1492,7 @@ function getDistinctSidebarStatusOptions(list) {
     }
   });
 
-  const order = ['OPE', 'CLO', 'FIN'];
+  const order = ['OPE', 'PRO', 'CLO', 'FIN'];
   return Array.from(map.entries())
     .map(([value, label]) => ({ value, label }))
     .sort((a, b) => {
@@ -1676,7 +1684,7 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
     const compId = comp?.id ?? '';
     const status = getCompetitionListStatusLabel(comp?.status);
     const isFinished = comp?.status === 'FIN';
-    const isOpen = comp?.status === 'OPE';
+    const isOpen = comp?.status === 'OPE' || comp?.status === 'PRO';
     const isClassificationVisible = parseClassificationVisible(comp?.clasification_visible);
     const btnDisabled = getEvent().status === 'finished' ? 'disabled' : '';
     const statusBadgeClass = getCompetitionListStatusBadgeClass(comp?.status);
@@ -2067,7 +2075,9 @@ function renderCompetitions(competitions) {
     } else if (comp.status === 'FIN') {
       statusText = 'FINISHED';
     } else if (comp.status === 'CLO') {
-      statusText = 'CLOSED';
+      statusText = 'CLOSED';      
+    } else if (comp.status === 'PRO') {
+      statusText = 'IN PROGRESS';
     } else {
       statusText = comp.status;
     }

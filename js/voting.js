@@ -874,7 +874,7 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
       btnDetails.addEventListener('click', () => showVotesModal(d, "details"));
       actionsWrap.appendChild(btnDetails);
       hasPrimaryAction = true;
-    } else if (d.status === 'Pending' && compStatus === 'OPE' && d.can_vote) {
+    } else if (d.status === 'Pending' && (compStatus === 'OPE' || compStatus === 'PRO') && d.can_vote) {
       const btnVote = document.createElement('button');
       btnVote.className = 'btn btn-sm btn-primary';
       btnVote.textContent = t('vote');
@@ -1043,6 +1043,7 @@ function formatCompetitionEstimatedStart(competition) {
 
 function getCompetitionStatusText(status) {
   if (status === 'OPE') return 'OPEN';
+  if (status === 'PRO') return 'IN PROGRESS';
   if (status === 'CLO') return 'CLOSED';
   if (status === 'FIN') return 'FINISHED';
   return status || '-';
@@ -1050,6 +1051,7 @@ function getCompetitionStatusText(status) {
 
 function getCompetitionStatusBadgeClass(status) {
   if (status === 'OPE') return 'bg-warning text-dark';
+  if (status === 'PRO') return 'bg-primary';
   if (status === 'CLO') return 'bg-danger';
   if (status === 'FIN') return 'bg-success';
   return 'bg-secondary';
@@ -1257,7 +1259,9 @@ async function reloadCompetitionsAndSelectFirstOpen() {
   availableCompetitions = await loadCompetitionsForJudge();
   populateCompetitionSelect(availableCompetitions, competitionSelect);
 
-  const firstOpenCompetition = availableCompetitions.find(comp => comp?.status === 'OPE');
+  const firstOpenCompetition = availableCompetitions.find(
+    comp => comp?.status === 'OPE' || comp?.status === 'PRO'
+  );
   if (firstOpenCompetition) {
     setCompetitionSelectValue(String(firstOpenCompetition.id), { silent: true });
     refreshBtn.disabled = false;

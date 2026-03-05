@@ -6,13 +6,15 @@ var stylesCatalog = [];
 const convertStatus = {
   'OPE': 'OPEN',
   'FIN': 'FINISHED', 
-  'CLO': 'CLOSED'
+  'CLO': 'CLOSED',
+  'PRO': 'IN PROGRESS'
 }
 
 const statusColor = {
   'OPE': 'success',
   'FIN': 'info',
-  'CLO': 'danger'
+  'CLO': 'danger',
+  'PRO': 'primary'
 };
 
 var title = 'Competitions';
@@ -126,7 +128,7 @@ function loadCompetitions() {
       Total assigned: ${comp.judges.length}<br>
     `.trim();
     const isFinished = comp.status === 'FIN';
-    const isOpen = comp.status === 'OPE';
+    const isOpen = comp.status === 'OPE' || comp.status === 'PRO';
     const isClosed = comp.status === 'CLO';
 
     let btnDisabled = '';
