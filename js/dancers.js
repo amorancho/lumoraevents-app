@@ -4,15 +4,34 @@ var title = 'Dancers';
 
 const allowedRoles = ["admin", "organizer"];
 const allowedImportExtensions = ['xls', 'xlsx'];
+const analyzeParticipantsEndpoints = [
+  '/api/dancers/analyze-participants-file',
+  '/api/dancers/analize-participants-file'
+];
+const createParticipantsEndpoints = [
+  '/api/dancers/create-participants'
+];
+const importMappingStorageKey = 'dancers_import_mapping_presets_v1';
+const importMappingLastStorageKey = 'dancers_import_mapping_last_v1';
+const importMappingValues = new Set([
+  '',
+  'category',
+  'style',
+  'category_style',
+  'style_category',
+  'participant_name',
+  'club_name',
+  'origin_club_1',
+  'origin_club_2',
+  'club_email'
+]);
 const importState = {
   selectedFile: null,
-  analysis: null,
-  detectedCategories: [],
-  detectedStyles: [],
-  summary: {
-    unmappedCategoryEntries: 0,
-    unmappedStyleEntries: 0
-  }
+  headerRowIndex: -1,
+  columns: [],
+  mappingByColumn: {},
+  mappingSignature: '',
+  analysis: null
 };
 
 const select = document.getElementById("nationality");
@@ -137,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const selectImportFileBtn = document.getElementById('selectImportFileBtn');
   const importDropzone = document.getElementById('importDropzone');
   const analyzeParticipantsFileBtn = document.getElementById('analyzeParticipantsFileBtn');
-  const importCreateMissingCategoriesCheck = document.getElementById('importCreateMissingCategoriesCheck');
+  const importCreateMissingEntitiesCheck = document.getElementById('importCreateMissingEntitiesCheck');
   const importParticipantsBtn = document.getElementById('importParticipantsBtn');
 
   const setCodeLabel = (value, forceShow = false) => {
@@ -337,7 +356,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   if (importFileInput) {
     importFileInput.addEventListener('change', (event) => {
       const file = event.target.files && event.target.files[0];
-      handleImportParticipantsFileSelection(file);
+      void handleImportParticipantsFileSelection(file);
     });
   }
 
@@ -365,7 +384,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     importDropzone.addEventListener('drop', (event) => {
       const file = event.dataTransfer?.files && event.dataTransfer.files[0];
-      handleImportParticipantsFileSelection(file);
+      void handleImportParticipantsFileSelection(file);
     });
   }
 
@@ -375,9 +394,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  if (importCreateMissingCategoriesCheck) {
-    importCreateMissingCategoriesCheck.addEventListener('change', () => {
-      refreshImportSummary();
+  if (importCreateMissingEntitiesCheck) {
+    importCreateMissingEntitiesCheck.addEventListener('change', () => {
+      refreshImportCreateButtonState();
     });
   }
 
@@ -700,24 +719,27 @@ function updateDancersCounter(totalCount, visibleCount) {
 
 function resetImportParticipantsState() {
   importState.selectedFile = null;
+  importState.headerRowIndex = -1;
+  importState.columns = [];
+  importState.mappingByColumn = {};
+  importState.mappingSignature = '';
   importState.analysis = null;
-  importState.detectedCategories = [];
-  importState.detectedStyles = [];
-  importState.summary = {
-    unmappedCategoryEntries: 0,
-    unmappedStyleEntries: 0
-  };
 
   const importFileInput = document.getElementById('importFileInput');
   const selectedFileName = document.getElementById('importSelectedFileName');
   const analyzeBtn = document.getElementById('analyzeParticipantsFileBtn');
   const resultsWrap = document.getElementById('importAnalyzeResults');
+  const apiResultsWrap = document.getElementById('importApiAnalyzeResults');
+  const mappingsTableBody = document.getElementById('importMappingsTableBody');
+  const headerRowInfo = document.getElementById('importDetectedHeaderRowInfo');
+  const validationFeedback = document.getElementById('importMappingValidationFeedback');
   const categoriesList = document.getElementById('importCategoriesList');
   const stylesList = document.getElementById('importStylesList');
+  const clubsList = document.getElementById('importClubsList');
   const existingCount = document.getElementById('importExistingCount');
   const toCreateCount = document.getElementById('importToCreateCount');
-  const createMissingCheck = document.getElementById('importCreateMissingCategoriesCheck');
-  const importBtn = document.getElementById('importParticipantsBtn');
+  const createMissingEntitiesCheck = document.getElementById('importCreateMissingEntitiesCheck');
+  const importParticipantsBtn = document.getElementById('importParticipantsBtn');
 
   if (importFileInput) {
     importFileInput.value = '';
@@ -732,11 +754,27 @@ function resetImportParticipantsState() {
   if (resultsWrap) {
     resultsWrap.classList.add('d-none');
   }
+  if (apiResultsWrap) {
+    apiResultsWrap.classList.add('d-none');
+  }
+  if (mappingsTableBody) {
+    mappingsTableBody.innerHTML = '';
+  }
+  if (headerRowInfo) {
+    headerRowInfo.textContent = '';
+  }
+  if (validationFeedback) {
+    validationFeedback.textContent = '';
+    validationFeedback.classList.remove('text-success', 'text-danger');
+  }
   if (categoriesList) {
     categoriesList.innerHTML = '';
   }
   if (stylesList) {
     stylesList.innerHTML = '';
+  }
+  if (clubsList) {
+    clubsList.innerHTML = '';
   }
   if (existingCount) {
     existingCount.textContent = '0';
@@ -744,13 +782,15 @@ function resetImportParticipantsState() {
   if (toCreateCount) {
     toCreateCount.textContent = '0';
   }
-  if (createMissingCheck) {
-    createMissingCheck.checked = true;
+  if (createMissingEntitiesCheck) {
+    createMissingEntitiesCheck.checked = true;
   }
-  if (importBtn) {
-    importBtn.disabled = true;
-    importBtn.textContent = t('import_participants', 'Import participants');
+  if (importParticipantsBtn) {
+    importParticipantsBtn.disabled = true;
+    importParticipantsBtn.textContent = t('import_participants', 'Import participants');
   }
+
+  setImportMappingsPanelExpanded(false);
 }
 
 function isValidParticipantsImportFile(file) {
@@ -767,29 +807,20 @@ function isValidParticipantsImportFile(file) {
   return mimeTypes.includes(file.type);
 }
 
-function handleImportParticipantsFileSelection(file) {
+async function handleImportParticipantsFileSelection(file) {
   const importFileInput = document.getElementById('importFileInput');
   const selectedFileName = document.getElementById('importSelectedFileName');
   const analyzeBtn = document.getElementById('analyzeParticipantsFileBtn');
   const resultsWrap = document.getElementById('importAnalyzeResults');
-  const importBtn = document.getElementById('importParticipantsBtn');
 
   if (!file) {
-    importState.selectedFile = null;
-    if (selectedFileName) selectedFileName.textContent = t('import_no_file_selected', 'No file selected');
-    if (analyzeBtn) analyzeBtn.disabled = true;
-    if (resultsWrap) resultsWrap.classList.add('d-none');
-    if (importBtn) importBtn.disabled = true;
+    resetImportParticipantsState();
     return;
   }
 
   if (!isValidParticipantsImportFile(file)) {
-    importState.selectedFile = null;
+    resetImportParticipantsState();
     if (importFileInput) importFileInput.value = '';
-    if (selectedFileName) selectedFileName.textContent = t('import_no_file_selected', 'No file selected');
-    if (analyzeBtn) analyzeBtn.disabled = true;
-    if (resultsWrap) resultsWrap.classList.add('d-none');
-    if (importBtn) importBtn.disabled = true;
     showMessageModal(
       t('import_invalid_file_type', 'Select a valid Excel file (.xls or .xlsx).'),
       t('import_invalid_file_title', 'Invalid file')
@@ -798,25 +829,54 @@ function handleImportParticipantsFileSelection(file) {
   }
 
   importState.selectedFile = file;
-  importState.analysis = null;
-  importState.detectedCategories = [];
-  importState.detectedStyles = [];
-  importState.summary = {
-    unmappedCategoryEntries: 0,
-    unmappedStyleEntries: 0
-  };
 
   if (selectedFileName) {
     selectedFileName.textContent = `${t('import_selected_file', 'Selected file')}: ${file.name}`;
   }
   if (analyzeBtn) {
-    analyzeBtn.disabled = false;
+    analyzeBtn.disabled = true;
   }
-  if (resultsWrap) {
-    resultsWrap.classList.add('d-none');
-  }
-  if (importBtn) {
-    importBtn.disabled = true;
+
+  try {
+    const parsed = await parseParticipantsImportFile(file);
+    importState.headerRowIndex = parsed.headerRowIndex;
+    importState.columns = parsed.columns;
+    importState.mappingSignature = buildImportMappingSignature(parsed.columns);
+
+    const savedPresets = getSavedImportMappingPresets();
+    const savedForSignature = savedPresets[importState.mappingSignature] || {};
+    const hasSavedSignatureConfig = hasSavedImportMappingConfig(savedForSignature, importState.columns);
+    const lastByHeader = getLastImportHeaderMapping();
+
+    importState.mappingByColumn = buildInitialImportMapping(
+      importState.columns,
+      savedForSignature,
+      lastByHeader
+    );
+    importState.analysis = null;
+
+    resetImportAnalysisResultsUi();
+    renderImportMappingsTable();
+    updateImportMappingValidationHint();
+    persistCurrentImportMappings();
+
+    if (resultsWrap) {
+      resultsWrap.classList.remove('d-none');
+    }
+    setImportMappingsPanelExpanded(!hasSavedSignatureConfig);
+    if (analyzeBtn) {
+      analyzeBtn.disabled = importState.columns.length === 0;
+    }
+  } catch (error) {
+    console.error('Error parsing participants import file:', error);
+    resetImportParticipantsState();
+    if (selectedFileName) {
+      selectedFileName.textContent = `${t('import_selected_file', 'Selected file')}: ${file.name}`;
+    }
+    showMessageModal(
+      error.message || t('import_analyze_error', 'Could not analyze file.'),
+      t('error', 'Error')
+    );
   }
 }
 
@@ -831,121 +891,163 @@ async function analyzeParticipantsFile() {
   analyzeBtn.textContent = t('analyzing_file', 'Analyzing file...');
 
   try {
-    const formData = new FormData();
-    formData.append('file', importState.selectedFile);
-    formData.append('event_id', `${getEvent().id}`);
+    const validation = validateImportMappings(importState.mappingByColumn);
+    if (!validation.isValid) {
+      throw new Error(validation.errors.join('\n'));
+    }
 
-    const endpoint = `${API_BASE_URL}/api/dancers/analize-participants-file?event_id=${encodeURIComponent(getEvent().id)}`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      body: formData
+    persistCurrentImportMappings();
+    const payload = buildImportMappingPayload();
+    const response = await requestParticipantsImportAnalysis({
+      eventId: getEvent().id,
+      file: importState.selectedFile,
+      mapping: payload.mapping
     });
 
-    let data = null;
-    try {
-      data = await res.json();
-    } catch (parseError) {
-      data = null;
-    }
-
-    if (!res.ok) {
-      const errorMessage = data?.error || t('import_analyze_error', 'Could not analyze file.');
-      throw new Error(errorMessage);
-    }
-
-    applyImportAnalysis(data || {});
+    applyImportApiAnalysis(response || {});
   } catch (error) {
-    console.error('Error analyzing participants file:', error);
+    console.error('Error validating participants mapping:', error);
     showMessageModal(error.message || t('import_analyze_error', 'Could not analyze file.'), t('error', 'Error'));
   } finally {
-    analyzeBtn.disabled = !importState.selectedFile;
+    analyzeBtn.disabled = importState.columns.length === 0;
     analyzeBtn.textContent = baseLabel;
+    updateImportMappingValidationHint();
   }
 }
 
-function applyImportAnalysis(data) {
+async function requestParticipantsImportAnalysis({ eventId, file, mapping }) {
+  let lastError = null;
+
+  for (let index = 0; index < analyzeParticipantsEndpoints.length; index += 1) {
+    const path = analyzeParticipantsEndpoints[index];
+    const endpoint = `${API_BASE_URL}${path}?event_id=${encodeURIComponent(eventId)}`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('event_id', `${eventId}`);
+    formData.append('mapping', JSON.stringify(mapping || {}));
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        body: formData
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        data = null;
+      }
+
+      if (response.ok) {
+        return data || {};
+      }
+
+      if (response.status === 404 && index < (analyzeParticipantsEndpoints.length - 1)) {
+        continue;
+      }
+
+      const responseError = new Error(data?.error || t('import_analyze_error', 'Could not analyze file.'));
+      responseError.statusCode = response.status;
+      throw responseError;
+    } catch (error) {
+      lastError = error;
+      const canRetryWithNextEndpoint = (
+        (error?.statusCode === 404 || /404/.test(`${error?.message || ''}`))
+        && index < (analyzeParticipantsEndpoints.length - 1)
+      );
+      if (!canRetryWithNextEndpoint) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError || new Error(t('import_analyze_error', 'Could not analyze file.'));
+}
+
+function resetImportAnalysisResultsUi() {
+  const apiResultsWrap = document.getElementById('importApiAnalyzeResults');
+  const categoriesList = document.getElementById('importCategoriesList');
+  const stylesList = document.getElementById('importStylesList');
+  const clubsList = document.getElementById('importClubsList');
+  const existingCount = document.getElementById('importExistingCount');
+  const toCreateCount = document.getElementById('importToCreateCount');
+  const importParticipantsBtn = document.getElementById('importParticipantsBtn');
+
+  if (apiResultsWrap) {
+    apiResultsWrap.classList.add('d-none');
+  }
+  if (categoriesList) {
+    categoriesList.innerHTML = '';
+  }
+  if (stylesList) {
+    stylesList.innerHTML = '';
+  }
+  if (clubsList) {
+    clubsList.innerHTML = '';
+  }
+  if (existingCount) {
+    existingCount.textContent = '0';
+  }
+  if (toCreateCount) {
+    toCreateCount.textContent = '0';
+  }
+  if (importParticipantsBtn) {
+    importParticipantsBtn.disabled = true;
+    importParticipantsBtn.textContent = t('import_participants', 'Import participants');
+  }
+}
+
+function applyImportApiAnalysis(data) {
   const receivedCategories = Array.isArray(data?.receivedCategories) ? data.receivedCategories : [];
   const receivedStyles = Array.isArray(data?.receivedStyles) ? data.receivedStyles : [];
+  const receivedClubs = Array.isArray(data?.receivedClubs) ? data.receivedClubs : [];
   const participants = Array.isArray(data?.participants) ? data.participants : [];
 
-  importState.analysis = { receivedCategories, receivedStyles, participants };
-  importState.detectedCategories = buildDetectedMappingEntries(receivedCategories, 'category');
-  importState.detectedStyles = buildDetectedMappingEntries(receivedStyles, 'style');
+  importState.analysis = {
+    receivedCategories,
+    receivedStyles,
+    receivedClubs,
+    participants
+  };
 
-  renderDetectedMappingList('category');
-  renderDetectedMappingList('style');
-  refreshImportSummary();
+  renderImportDetectedList('category', receivedCategories);
+  renderImportDetectedList('style', receivedStyles);
+  renderImportDetectedList('club', receivedClubs);
+  refreshImportParticipantsSummary(participants);
 
-  const resultsWrap = document.getElementById('importAnalyzeResults');
-  if (resultsWrap) {
-    resultsWrap.classList.remove('d-none');
+  const apiResultsWrap = document.getElementById('importApiAnalyzeResults');
+  if (apiResultsWrap) {
+    apiResultsWrap.classList.remove('d-none');
   }
-
-  const importBtn = document.getElementById('importParticipantsBtn');
-  if (importBtn) {
-    importBtn.disabled = false;
-  }
+  refreshImportCreateButtonState();
 }
 
-function buildDetectedMappingEntries(items, type) {
-  const byName = new Map();
-
-  items.forEach((item, index) => {
-    const sourceLabel = firstNonEmptyValue(item?.name);
-    const normalizedLabel = normalizeImportLabel(sourceLabel) || `${type}_${index}`;
-    if (byName.has(normalizedLabel)) return;
-
-    const rawMappedId = type === 'category'
-      ? firstNonEmptyValue(item?.categoryId, item?.category_id)
-      : firstNonEmptyValue(item?.styleId, item?.style_id);
-
-    const mappedId = rawMappedId ? `${rawMappedId}` : null;
-
-    byName.set(normalizedLabel, {
-      key: `${type}:${normalizedLabel}`,
-      sourceLabel: sourceLabel || (type === 'category'
-        ? t('import_unknown_category', 'Unknown category')
-        : t('import_unknown_style', 'Unknown style')),
-      mappedId
-    });
-  });
-
-  return Array.from(byName.values());
-}
-
-function firstNonEmptyValue(...values) {
-  for (const value of values) {
-    if (value === null || value === undefined) continue;
-    const cleaned = `${value}`.trim();
-    if (cleaned) return cleaned;
-  }
-  return '';
-}
-
-function normalizeImportLabel(value) {
-  return `${value || ''}`.trim().toLowerCase();
-}
-
-function renderDetectedMappingList(type) {
-  const isCategory = type === 'category';
-  const listEl = document.getElementById(isCategory ? 'importCategoriesList' : 'importStylesList');
+function renderImportDetectedList(type, items) {
+  const listElementByType = {
+    category: document.getElementById('importCategoriesList'),
+    style: document.getElementById('importStylesList'),
+    club: document.getElementById('importClubsList')
+  };
+  const listEl = listElementByType[type];
   if (!listEl) return;
 
   listEl.innerHTML = '';
 
-  const entries = isCategory ? importState.detectedCategories : importState.detectedStyles;
-
-  if (!entries.length) {
+  if (!Array.isArray(items) || items.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'list-group-item text-muted';
-    empty.textContent = isCategory
-      ? t('import_no_categories_detected', 'No categories detected in file.')
-      : t('import_no_styles_detected', 'No styles detected in file.');
+    empty.textContent = type === 'category'
+      ? 'No se detectaron categorias.'
+      : type === 'style'
+        ? 'No se detectaron estilos.'
+        : 'No se detectaron clubs.';
     listEl.appendChild(empty);
     return;
   }
 
-  entries.forEach((entry) => {
+  items.forEach((item) => {
     const row = document.createElement('div');
     row.className = 'list-group-item';
 
@@ -954,300 +1056,296 @@ function renderDetectedMappingList(type) {
 
     const name = document.createElement('div');
     name.className = 'fw-semibold';
-    name.textContent = entry.sourceLabel;
+    name.textContent = `${item?.name || ''}`.trim() || '-';
     top.appendChild(name);
 
-    const badges = document.createElement('div');
-    badges.className = 'd-flex gap-2';
+    const mappedId = type === 'category'
+      ? item?.categoryId
+      : type === 'style'
+        ? item?.styleId
+        : item?.clubId;
 
-    const resolvedId = entry.mappedId ? `${entry.mappedId}` : '';
     const statusBadge = document.createElement('span');
-    statusBadge.className = resolvedId ? 'badge text-bg-success' : 'badge text-bg-warning';
-    statusBadge.textContent = resolvedId
-      ? t('import_mapping_found', 'Found')
-      : t('import_mapping_not_found', 'Not found');
-    badges.appendChild(statusBadge);
-    top.appendChild(badges);
+    statusBadge.className = mappedId ? 'badge text-bg-success' : 'badge text-bg-warning';
+    statusBadge.textContent = mappedId ? 'Encontrado' : 'No encontrado';
+    top.appendChild(statusBadge);
     row.appendChild(top);
 
     listEl.appendChild(row);
   });
 }
 
-function refreshImportSummary() {
-  if (!importState.analysis || !Array.isArray(importState.analysis.participants)) return;
+function refreshImportParticipantsSummary(participants) {
+  const list = Array.isArray(participants) ? participants : [];
+  const existingCountValue = list.filter((participant) => Boolean(participant?.exists)).length;
+  const toCreateCountValue = list.filter((participant) => !Boolean(participant?.exists)).length;
 
-  const participants = importState.analysis.participants;
-  const existingCount = participants.filter(participant => Boolean(participant?.exists)).length;
-  const toCreateCount = participants.filter(participant => !Boolean(participant?.exists)).length;
+  const existingCount = document.getElementById('importExistingCount');
+  const toCreateCount = document.getElementById('importToCreateCount');
 
-  const existingCountEl = document.getElementById('importExistingCount');
-  const toCreateCountEl = document.getElementById('importToCreateCount');
-  if (existingCountEl) existingCountEl.textContent = `${existingCount}`;
-  if (toCreateCountEl) toCreateCountEl.textContent = `${toCreateCount}`;
-
-  const unmappedCategoryEntries = importState.detectedCategories.filter(entry => !entry.mappedId).length;
-  const unmappedStyleEntries = importState.detectedStyles.filter(entry => !entry.mappedId).length;
-
-  importState.summary = {
-    unmappedCategoryEntries,
-    unmappedStyleEntries
-  };
-}
-
-function normalizeIdValue(value) {
-  if (value === null || value === undefined || value === '') return null;
-  const parsed = Number(value);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-function getParticipantSourceLabel(participant, type) {
-  return type === 'category'
-    ? firstNonEmptyValue(
-      participant?.categoryName,
-      participant?.category_name,
-      participant?.category,
-      participant?.rawCategory,
-      participant?.raw_category,
-      participant?.category_assigned
-    )
-    : firstNonEmptyValue(
-      participant?.styleName,
-      participant?.style_name,
-      participant?.style,
-      participant?.rawStyle,
-      participant?.raw_style,
-      participant?.style_assigned
-    );
-}
-
-function buildDetectedResolution(type, createMissing) {
-  const entries = type === 'category' ? importState.detectedCategories : importState.detectedStyles;
-  const bySource = new Map();
-  const createList = [];
-  const unresolvedOriginalEntries = [];
-
-  entries.forEach((entry) => {
-    const source = firstNonEmptyValue(entry?.sourceLabel);
-    const normalizedSource = normalizeImportLabel(source);
-    const originalMappedId = normalizeIdValue(entry?.mappedId);
-    const resolvedId = originalMappedId;
-    const canCreate = !resolvedId && createMissing && !!source;
-
-    const resolution = {
-      source,
-      resolvedId,
-      createName: canCreate ? source : ''
-    };
-
-    bySource.set(normalizedSource, resolution);
-    if (canCreate) {
-      createList.push(source);
-    }
-    if (!originalMappedId) {
-      unresolvedOriginalEntries.push(resolution);
-    }
-  });
-
-  const uniqueFallbackKey = new Set(
-    unresolvedOriginalEntries.map((item) => {
-      if (item.resolvedId) return `id:${item.resolvedId}`;
-      if (item.createName) return `create:${normalizeImportLabel(item.createName)}`;
-      return 'unresolved';
-    })
-  );
-
-  const fallback = uniqueFallbackKey.size === 1 && unresolvedOriginalEntries.length > 0
-    ? unresolvedOriginalEntries[0]
-    : null;
-
-  return {
-    bySource,
-    createList,
-    fallback
-  };
-}
-
-function resolveParticipantField(participant, type, detectedResolution) {
-  const rawId = type === 'category'
-    ? firstNonEmptyValue(participant?.categoryId, participant?.category_id)
-    : firstNonEmptyValue(participant?.styleId, participant?.style_id);
-
-  const directId = normalizeIdValue(rawId);
-  if (directId !== null) {
-    return { id: directId, assigned: '', unresolved: false, unresolvedWithSource: false };
+  if (existingCount) {
+    existingCount.textContent = `${existingCountValue}`;
   }
-
-  const sourceLabel = getParticipantSourceLabel(participant, type);
-  const normalizedSource = normalizeImportLabel(sourceLabel);
-
-  if (sourceLabel && detectedResolution.bySource.has(normalizedSource)) {
-    const resolution = detectedResolution.bySource.get(normalizedSource);
-    if (resolution.resolvedId !== null) {
-      return { id: resolution.resolvedId, assigned: '', unresolved: false, unresolvedWithSource: false };
-    }
-    if (resolution.createName) {
-      return { id: null, assigned: resolution.createName, unresolved: false, unresolvedWithSource: false };
-    }
-    return { id: null, assigned: '', unresolved: true, unresolvedWithSource: true };
+  if (toCreateCount) {
+    toCreateCount.textContent = `${toCreateCountValue}`;
   }
-
-  if (detectedResolution.fallback) {
-    if (detectedResolution.fallback.resolvedId !== null) {
-      return { id: detectedResolution.fallback.resolvedId, assigned: '', unresolved: false, unresolvedWithSource: false };
-    }
-    if (detectedResolution.fallback.createName) {
-      return { id: null, assigned: detectedResolution.fallback.createName, unresolved: false, unresolvedWithSource: false };
-    }
-    return { id: null, assigned: '', unresolved: true, unresolvedWithSource: false };
-  }
-
-  return { id: null, assigned: '', unresolved: true, unresolvedWithSource: Boolean(sourceLabel) };
 }
 
-function buildCreateParticipantsPayload(createMissingCategories) {
-  const participants = Array.isArray(importState.analysis?.participants) ? importState.analysis.participants : [];
-  const categoryResolution = buildDetectedResolution('category', createMissingCategories);
-  const styleResolution = buildDetectedResolution('style', createMissingCategories);
-  const createCategories = [...new Set(categoryResolution.createList)];
-  const createStyles = [...new Set(styleResolution.createList)];
+function refreshImportCreateButtonState() {
+  const importParticipantsBtn = document.getElementById('importParticipantsBtn');
+  if (!importParticipantsBtn) return;
+
+  const hasAnalysis = Array.isArray(importState.analysis?.participants);
+  importParticipantsBtn.disabled = !hasAnalysis;
+}
+
+function normalizeImportCompareValue(value) {
+  return normalizeImportLabel(value || '');
+}
+
+function buildCreateParticipantsPayload(createMissingEntities) {
+  const analysis = importState.analysis || {};
+  const receivedCategories = Array.isArray(analysis.receivedCategories) ? analysis.receivedCategories : [];
+  const receivedStyles = Array.isArray(analysis.receivedStyles) ? analysis.receivedStyles : [];
+  const receivedClubs = Array.isArray(analysis.receivedClubs) ? analysis.receivedClubs : [];
+  const participants = Array.isArray(analysis.participants) ? analysis.participants : [];
+
+  const createCategories = createMissingEntities
+    ? [...new Set(
+      receivedCategories
+        .filter((item) => !item?.categoryId)
+        .map((item) => `${item?.name || ''}`.trim())
+        .filter(Boolean)
+    )]
+    : [];
+
+  const createStyles = createMissingEntities
+    ? [...new Set(
+      receivedStyles
+        .filter((item) => !item?.styleId)
+        .map((item) => `${item?.name || ''}`.trim())
+        .filter(Boolean)
+    )]
+    : [];
+
+  const createClubs = createMissingEntities
+    ? receivedClubs
+      .filter((item) => !item?.clubId)
+      .map((item) => ({
+        name: `${item?.name || ''}`.trim(),
+        email: item?.email_assigned || null,
+        location: item?.location_assigned || null
+      }))
+      .filter((item) => item.name)
+    : [];
+
   const participantsPayload = [];
-  const unresolvedBlocking = [];
+  const skippedParticipants = [];
 
   participants.forEach((participant) => {
     if (!participant || typeof participant !== 'object') return;
 
-    const name = firstNonEmptyValue(participant?.name);
+    const name = `${participant?.name || ''}`.trim();
     if (!name) return;
-    if (participant?.exists === true) return;
 
-    const category = resolveParticipantField(participant, 'category', categoryResolution);
-    const style = resolveParticipantField(participant, 'style', styleResolution);
+    const hasMissingCategory = !participant?.categoryId && !!`${participant?.category_assigned || ''}`.trim();
+    const hasMissingStyle = !participant?.styleId && !!`${participant?.style_assigned || ''}`.trim();
 
-    if (category.unresolved) {
-      if (!createMissingCategories) {
-        return;
-      }
-      unresolvedBlocking.push(name);
+    if (!createMissingEntities && (hasMissingCategory || hasMissingStyle)) {
+      skippedParticipants.push(name);
       return;
     }
 
-    if (style.unresolvedWithSource) {
-      if (!createMissingCategories) {
-        return;
-      }
-      unresolvedBlocking.push(name);
+    if (!participant?.categoryId && !`${participant?.category_assigned || ''}`.trim()) {
+      skippedParticipants.push(name);
       return;
     }
 
-    const participantPayload = {
+    participantsPayload.push({
       name,
-      exists: false,
-      categoryId: category.id,
-      styleId: style.id
-    };
-
-    if (category.assigned) {
-      participantPayload.category_assigned = category.assigned;
-    }
-    if (style.assigned) {
-      participantPayload.style_assigned = style.assigned;
-    }
-
-    participantsPayload.push(participantPayload);
+      exists: Boolean(participant?.exists),
+      categoryId: participant?.categoryId ?? null,
+      styleId: participant?.styleId ?? null,
+      clubId: participant?.clubId ?? null,
+      category_assigned: participant?.category_assigned || null,
+      style_assigned: participant?.style_assigned || null,
+      club_assigned: participant?.club_assigned || null,
+      club_email_assigned: participant?.club_email_assigned || null,
+      club_location_assigned: participant?.club_location_assigned || null
+    });
   });
 
   return {
     createCategories,
     createStyles,
+    createClubs,
     participantsPayload,
-    unresolvedBlocking
+    skippedParticipants
   };
 }
 
+function estimateModifiedParticipants(participantsPayload) {
+  if (!Array.isArray(participantsPayload) || participantsPayload.length === 0) {
+    return 0;
+  }
+
+  const dancersByKey = new Map();
+  (Array.isArray(dancers) ? dancers : []).forEach((dancer) => {
+    const categoryId = Number(dancer?.category_id);
+    if (Number.isNaN(categoryId)) return;
+    const nameKey = normalizeImportCompareValue(dancer?.name);
+    if (!nameKey) return;
+    dancersByKey.set(`${categoryId}::${nameKey}`, dancer);
+  });
+
+  let modifiedCount = 0;
+
+  participantsPayload.forEach((participant) => {
+    const categoryId = Number(participant?.categoryId);
+    if (Number.isNaN(categoryId)) return;
+
+    const participantKey = `${categoryId}::${normalizeImportCompareValue(participant?.name)}`;
+    const existing = dancersByKey.get(participantKey);
+    if (!existing) return;
+
+    const existingStyleIds = Array.isArray(existing?.styles)
+      ? existing.styles
+        .map((style) => Number(style?.id ?? style))
+        .filter((value) => !Number.isNaN(value))
+      : [];
+    const existingStyleNames = Array.isArray(existing?.styles)
+      ? existing.styles
+        .map((style) => normalizeImportCompareValue(style?.name ?? ''))
+        .filter(Boolean)
+      : [];
+
+    let shouldAddStyle = false;
+    const participantStyleId = participant?.styleId === null || participant?.styleId === undefined || participant?.styleId === ''
+      ? null
+      : Number(participant.styleId);
+
+    if (participantStyleId !== null && !Number.isNaN(participantStyleId)) {
+      shouldAddStyle = !existingStyleIds.includes(participantStyleId);
+    } else {
+      const styleAssignedKey = normalizeImportCompareValue(participant?.style_assigned || '');
+      if (styleAssignedKey) {
+        shouldAddStyle = !existingStyleNames.includes(styleAssignedKey);
+      }
+    }
+
+    const participantClubId = participant?.clubId === null || participant?.clubId === undefined || participant?.clubId === ''
+      ? null
+      : Number(participant.clubId);
+    const existingClubId = existing?.club_id === null || existing?.club_id === undefined || existing?.club_id === ''
+      ? null
+      : Number(existing.club_id);
+
+    let shouldAssignClub = false;
+    if (participantClubId !== null && !Number.isNaN(participantClubId)) {
+      shouldAssignClub = participantClubId !== existingClubId;
+    } else {
+      const assignedClubKey = normalizeImportCompareValue(participant?.club_assigned || '');
+      if (assignedClubKey) {
+        const existingClubName = `${existing?.club_name || clubsById.get(String(existing?.club_id || '')) || ''}`.trim();
+        const existingClubKey = normalizeImportCompareValue(existingClubName);
+        shouldAssignClub = assignedClubKey !== existingClubKey;
+      }
+    }
+
+    if (shouldAddStyle || shouldAssignClub) {
+      modifiedCount += 1;
+    }
+  });
+
+  return modifiedCount;
+}
+
+async function requestCreateParticipants({ eventId, payload }) {
+  let lastError = null;
+
+  for (let index = 0; index < createParticipantsEndpoints.length; index += 1) {
+    const endpoint = `${API_BASE_URL}${createParticipantsEndpoints[index]}?event_id=${encodeURIComponent(eventId)}`;
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event_id: eventId,
+          create_categories: payload.createCategories,
+          create_styles: payload.createStyles,
+          create_clubs: payload.createClubs,
+          participants: payload.participantsPayload
+        })
+      });
+
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        data = null;
+      }
+
+      if (response.ok) {
+        return data || {};
+      }
+
+      throw new Error(data?.error || t('import_create_error', 'Could not create participants.'));
+    } catch (error) {
+      lastError = error;
+      if (index >= (createParticipantsEndpoints.length - 1)) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError || new Error(t('import_create_error', 'Could not create participants.'));
+}
+
 async function handleImportParticipantsClick() {
-  if (!importState.analysis) return;
+  if (!importState.analysis || !Array.isArray(importState.analysis.participants)) return;
 
-  const createMissingCategories = document.getElementById('importCreateMissingCategoriesCheck')?.checked ?? true;
-  const hasUnmappedEntries = (importState.summary.unmappedCategoryEntries > 0) || (importState.summary.unmappedStyleEntries > 0);
+  const importParticipantsBtn = document.getElementById('importParticipantsBtn');
+  const createMissingEntitiesCheck = document.getElementById('importCreateMissingEntitiesCheck');
+  const createMissingEntities = createMissingEntitiesCheck?.checked ?? true;
 
-  if (!createMissingCategories && hasUnmappedEntries) {
-    const confirmed = await showImportWarningModal(
-      t(
-        'import_warning_unmapped_message',
-        'There are unmapped categories or styles. Participants from those rows will not be created. Do you want to continue?'
-      )
-    );
+  const payload = buildCreateParticipantsPayload(createMissingEntities);
 
-    if (!confirmed) return;
-  }
-
-  const { createCategories, createStyles, participantsPayload, unresolvedBlocking } = buildCreateParticipantsPayload(createMissingCategories);
-
-  if (unresolvedBlocking.length > 0) {
-    const examples = unresolvedBlocking.slice(0, 5).join(', ');
-    const missingMappingMessage = t(
-      'import_missing_mapping_error',
-      'Cannot resolve category/style mapping for some participants: {participants}'
-    ).replace('{participants}', examples);
-    showMessageModal(
-      missingMappingMessage,
-      t('error', 'Error')
-    );
+  if (!payload.participantsPayload.length) {
+    const message = payload.skippedParticipants.length > 0
+      ? 'No hay participantes validos para crear/modificar con la configuracion actual.'
+      : t('import_no_participants_to_create', 'There are no participants to create.');
+    showMessageModal(message, t('import_dancers', 'Import dancers'));
     return;
   }
 
-  if (!participantsPayload.length) {
-    showMessageModal(
-      t('import_no_participants_to_create', 'There are no participants to create.'),
-      t('import_dancers', 'Import dancers')
-    );
-    return;
-  }
-
-  const importBtn = document.getElementById('importParticipantsBtn');
-  const originalBtnText = importBtn ? importBtn.textContent : '';
-  if (importBtn) {
-    importBtn.disabled = true;
-    importBtn.textContent = t('importing_participants', 'Importing...');
+  const estimatedModifiedParticipants = estimateModifiedParticipants(payload.participantsPayload);
+  const originalButtonText = importParticipantsBtn ? importParticipantsBtn.textContent : '';
+  if (importParticipantsBtn) {
+    importParticipantsBtn.disabled = true;
+    importParticipantsBtn.textContent = t('importing_participants', 'Importing...');
   }
 
   try {
-    const endpoint = `${API_BASE_URL}/api/dancers/create-participants?event_id=${encodeURIComponent(getEvent().id)}`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        event_id: getEvent().id,
-        create_categories: createCategories,
-        create_styles: createStyles,
-        participants: participantsPayload
-      })
+    const response = await requestCreateParticipants({
+      eventId: getEvent().id,
+      payload
     });
 
-    let data = null;
-    try {
-      data = await res.json();
-    } catch (parseError) {
-      data = null;
-    }
+    const createdCategoriesCount = Array.isArray(response?.createdCategories) ? response.createdCategories.length : 0;
+    const createdStylesCount = Array.isArray(response?.createdStyles) ? response.createdStyles.length : 0;
+    const createdClubsCount = Array.isArray(response?.createdClubs) ? response.createdClubs.length : 0;
+    const createdParticipantsCount = Array.isArray(response?.createdParticipants) ? response.createdParticipants.length : 0;
+    const modifiedParticipantsCount = Math.max(0, estimatedModifiedParticipants);
+    const skippedParticipantsCount = Array.isArray(payload?.skippedParticipants) ? payload.skippedParticipants.length : 0;
 
-    if (!res.ok) {
-      const errorMessage = data?.error || t('import_create_error', 'Could not create participants.');
-      throw new Error(errorMessage);
-    }
-
-    const createdCategoriesCount = Array.isArray(data?.createdCategories) ? data.createdCategories.length : 0;
-    const createdStylesCount = Array.isArray(data?.createdStyles) ? data.createdStyles.length : 0;
-    const createdParticipantsCount = Array.isArray(data?.createdParticipants) ? data.createdParticipants.length : 0;
-
-    const successMessage = t(
-      'import_create_success_message',
-      'Created categories: {categories}. Created styles: {styles}. Created participants: {participants}.'
-    )
-      .replace('{categories}', String(createdCategoriesCount))
-      .replace('{styles}', String(createdStylesCount))
-      .replace('{participants}', String(createdParticipantsCount));
+    const summaryMessage = [
+      `Categorias creadas: ${createdCategoriesCount}`,
+      `Estilos creados: ${createdStylesCount}`,
+      `Clubs creados: ${createdClubsCount}`,
+      `Participantes creados: ${createdParticipantsCount}`,
+      `Participantes modificados: ${modifiedParticipantsCount}`,
+      `Participantes omitidos: ${skippedParticipantsCount}`
+    ].join('. ');
 
     const importModalEl = document.getElementById('importDancersModal');
     if (importModalEl) {
@@ -1255,49 +1353,471 @@ async function handleImportParticipantsClick() {
       importModal.hide();
     }
 
-    await Promise.all([loadCategories(), loadStyles()]);
+    await Promise.all([
+      loadCategories(),
+      loadStyles(),
+      shouldShowDancerClubs() ? loadClubs() : Promise.resolve()
+    ]);
     await fetchDancersFromAPI();
     applyFilter();
 
-    showMessageModal(successMessage, t('import_dancers', 'Import dancers'), 'success');
+    showMessageModal(summaryMessage, t('import_dancers', 'Import dancers'), 'success');
   } catch (error) {
     console.error('Error creating participants:', error);
     showMessageModal(error.message || t('import_create_error', 'Could not create participants.'), t('error', 'Error'));
   } finally {
     const modalVisible = Boolean(document.getElementById('importDancersModal')?.classList.contains('show'));
-    if (importBtn && modalVisible) {
-      importBtn.disabled = false;
-      importBtn.textContent = originalBtnText || t('import_participants', 'Import participants');
+    if (importParticipantsBtn && modalVisible) {
+      importParticipantsBtn.disabled = false;
+      importParticipantsBtn.textContent = originalButtonText || t('import_participants', 'Import participants');
     }
   }
 }
 
-function showImportWarningModal(message) {
-  return new Promise((resolve) => {
-    const modalEl = document.getElementById('importWarningModal');
-    const messageEl = document.getElementById('importWarningMessage');
-    const confirmBtn = document.getElementById('confirmImportWarningBtn');
-    if (!modalEl || !messageEl || !confirmBtn) {
-      resolve(window.confirm(message));
-      return;
+async function parseParticipantsImportFile(file) {
+  if (typeof XLSX === 'undefined') {
+    throw new Error('The Excel parser is not available in this browser.');
+  }
+
+  const data = await file.arrayBuffer();
+  const workbook = XLSX.read(data, { type: 'array' });
+  const firstSheetName = Array.isArray(workbook?.SheetNames) ? workbook.SheetNames[0] : null;
+  if (!firstSheetName || !workbook.Sheets[firstSheetName]) {
+    throw new Error('The file does not contain any worksheet.');
+  }
+
+  const sheet = workbook.Sheets[firstSheetName];
+  const rowsRaw = XLSX.utils.sheet_to_json(sheet, {
+    header: 1,
+    raw: false,
+    defval: '',
+    blankrows: false
+  });
+
+  const rows = Array.isArray(rowsRaw)
+    ? rowsRaw.map((row) => (Array.isArray(row) ? row : []))
+    : [];
+
+  if (!rows.length) {
+    throw new Error('The file is empty.');
+  }
+
+  const headerRowIndex = detectParticipantsHeaderRowIndex(rows);
+  const maxColumns = rows.reduce((max, row) => Math.max(max, Array.isArray(row) ? row.length : 0), 0);
+  const columns = [];
+
+  for (let columnIndex = 0; columnIndex < maxColumns; columnIndex += 1) {
+    const rawHeader = rows[headerRowIndex]?.[columnIndex];
+    const originalHeader = cleanImportCellValue(rawHeader);
+    const sampleValue = getFirstColumnSampleValue(rows, headerRowIndex, columnIndex);
+
+    let hasDataInColumn = false;
+    for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+      if (rowIndex === headerRowIndex) continue;
+      if (cleanImportCellValue(rows[rowIndex]?.[columnIndex])) {
+        hasDataInColumn = true;
+        break;
+      }
     }
 
-    const modal = new bootstrap.Modal(modalEl);
-    messageEl.textContent = message;
-    let confirmed = false;
+    if (!originalHeader && !hasDataInColumn) continue;
 
-    confirmBtn.onclick = () => {
-      confirmed = true;
-      modal.hide();
-      resolve(true);
-    };
+    columns.push({
+      columnIndex,
+      columnLabel: buildSpreadsheetColumnLabel(columnIndex),
+      headerLabel: originalHeader || `Column ${columnIndex + 1}`,
+      originalHeader,
+      sampleValue
+    });
+  }
 
-    modalEl.addEventListener('hidden.bs.modal', () => {
-      if (!confirmed) {
-        resolve(false);
-      }
-    }, { once: true });
+  if (!columns.length) {
+    throw new Error('No usable columns were detected in the file.');
+  }
 
-    modal.show();
+  return {
+    headerRowIndex,
+    columns
+  };
+}
+
+function detectParticipantsHeaderRowIndex(rows) {
+  const maxRowsToScan = Math.min(rows.length, 30);
+  let bestIndex = -1;
+  let bestScore = Number.NEGATIVE_INFINITY;
+
+  for (let rowIndex = 0; rowIndex < maxRowsToScan; rowIndex += 1) {
+    const row = Array.isArray(rows[rowIndex]) ? rows[rowIndex] : [];
+    const cleanedCells = row.map(cleanImportCellValue).filter(Boolean);
+    if (!cleanedCells.length) continue;
+
+    const uniqueCount = new Set(cleanedCells.map(normalizeImportLabel)).size;
+    const textLikeCount = cleanedCells.filter((cell) => /[a-z]/i.test(cell)).length;
+    const numericLikeCount = cleanedCells.filter((cell) => /^[\d.,\/\-]+$/.test(cell)).length;
+    const nextRowNonEmpty = countNonEmptyCells(rows[rowIndex + 1]);
+
+    let score = (cleanedCells.length * 4) + (uniqueCount * 2) + (textLikeCount * 2) - numericLikeCount;
+    if (nextRowNonEmpty > 0) score += 2;
+    if (rowIndex <= 5) score += 1;
+    if (cleanedCells.length === 1) score -= 4;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestIndex = rowIndex;
+    }
+  }
+
+  if (bestIndex >= 0) return bestIndex;
+
+  const firstNonEmptyRow = rows.findIndex((row) => countNonEmptyCells(row) > 0);
+  return firstNonEmptyRow >= 0 ? firstNonEmptyRow : 0;
+}
+
+function countNonEmptyCells(row) {
+  if (!Array.isArray(row)) return 0;
+  return row.reduce((count, cell) => count + (cleanImportCellValue(cell) ? 1 : 0), 0);
+}
+
+function cleanImportCellValue(value) {
+  if (value === null || value === undefined) return '';
+  return `${value}`.trim();
+}
+
+function normalizeImportLabel(value) {
+  return `${value || ''}`
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+function buildSpreadsheetColumnLabel(columnIndex) {
+  let n = columnIndex + 1;
+  let label = '';
+
+  while (n > 0) {
+    const remainder = (n - 1) % 26;
+    label = String.fromCharCode(65 + remainder) + label;
+    n = Math.floor((n - 1) / 26);
+  }
+
+  return label;
+}
+
+function getFirstColumnSampleValue(rows, headerRowIndex, columnIndex) {
+  for (let rowIndex = headerRowIndex + 1; rowIndex < rows.length; rowIndex += 1) {
+    const value = cleanImportCellValue(rows[rowIndex]?.[columnIndex]);
+    if (value) return value;
+  }
+  return '';
+}
+
+function buildImportColumnStorageKey(column) {
+  const normalizedHeader = normalizeImportLabel(column.originalHeader || '');
+  if (normalizedHeader) return `h:${normalizedHeader}`;
+  return `c:${column.columnIndex}`;
+}
+
+function buildImportMappingSignature(columns) {
+  return columns
+    .map((column) => buildImportColumnStorageKey(column))
+    .join('|');
+}
+
+function getImportMappingOptions() {
+  return [
+    { value: '', label: t('import_mapping_none', 'Not mapped') },
+    { value: 'category', label: 'Categoria' },
+    { value: 'style', label: 'Estilo' },
+    { value: 'category_style', label: 'Categoria - Estilo' },
+    { value: 'style_category', label: 'Estilo - Categoria' },
+    { value: 'participant_name', label: 'Nombre Grupo/participante' },
+    { value: 'club_name', label: 'Nombre del Club' },
+    { value: 'origin_club_1', label: 'Procedencia 1 Club' },
+    { value: 'origin_club_2', label: 'Procedencia 2 Club' },
+    { value: 'club_email', label: 'Email Club' }
+  ];
+}
+
+function sanitizeImportMappingValue(value) {
+  const candidate = `${value || ''}`.trim();
+  return importMappingValues.has(candidate) ? candidate : '';
+}
+
+function guessImportMappingValue(columnLabel) {
+  const normalized = normalizeImportLabel(columnLabel).replace(/\s+/g, ' ');
+  if (!normalized) return '';
+
+  if (/(categoria|category).*(estilo|style)/.test(normalized)) return 'category_style';
+  if (/(estilo|style).*(categoria|category)/.test(normalized)) return 'style_category';
+  if (normalized.includes('email') && normalized.includes('club')) return 'club_email';
+
+  if (normalized.includes('procedencia') || normalized.includes('origen') || normalized.includes('origin')) {
+    if (/(^| )1($| )|uno|first/.test(normalized)) return 'origin_club_1';
+    if (/(^| )2($| )|dos|second/.test(normalized)) return 'origin_club_2';
+  }
+
+  if (normalized.includes('club') && !normalized.includes('email') && !normalized.includes('procedencia')) {
+    return 'club_name';
+  }
+
+  if (
+    normalized.includes('nombre grupo') ||
+    normalized.includes('nombre participante') ||
+    normalized.includes('participant name') ||
+    normalized === 'nombre' ||
+    normalized === 'name'
+  ) {
+    return 'participant_name';
+  }
+
+  if (normalized.includes('participante') || normalized.includes('participant')) return 'participant_name';
+  if (normalized.includes('categoria') || normalized.includes('category')) return 'category';
+  if (normalized.includes('estilo') || normalized.includes('style')) return 'style';
+
+  return '';
+}
+
+function buildInitialImportMapping(columns, savedForSignature, lastByHeader) {
+  const mappingByColumn = {};
+  const signatureConfig = (savedForSignature && typeof savedForSignature === 'object') ? savedForSignature : {};
+
+  columns.forEach((column) => {
+    const storageKey = buildImportColumnStorageKey(column);
+    const headerKey = normalizeImportLabel(column.originalHeader || column.headerLabel);
+    const hasSignatureValue = Object.prototype.hasOwnProperty.call(signatureConfig, storageKey);
+    const fromSignature = sanitizeImportMappingValue(signatureConfig[storageKey]);
+    const fromLast = sanitizeImportMappingValue(lastByHeader?.[headerKey]);
+    const fromGuess = sanitizeImportMappingValue(guessImportMappingValue(column.headerLabel));
+
+    mappingByColumn[column.columnIndex] = hasSignatureValue
+      ? fromSignature
+      : (fromLast || fromGuess || '');
+  });
+
+  return mappingByColumn;
+}
+
+function hasSavedImportMappingConfig(savedForSignature, columns) {
+  if (!savedForSignature || typeof savedForSignature !== 'object') return false;
+  if (!Array.isArray(columns) || columns.length === 0) return false;
+
+  return columns.some((column) => {
+    const storageKey = buildImportColumnStorageKey(column);
+    return Object.prototype.hasOwnProperty.call(savedForSignature, storageKey);
   });
 }
+
+function setImportMappingsPanelExpanded(expand) {
+  const collapseEl = document.getElementById('importMappingsCollapse');
+  if (!collapseEl || typeof bootstrap === 'undefined') return;
+
+  const collapseInstance = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+  if (expand) {
+    collapseInstance.show();
+  } else {
+    collapseInstance.hide();
+  }
+}
+
+function getSavedImportMappingPresets() {
+  try {
+    const raw = localStorage.getItem(importMappingStorageKey);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === 'object') ? parsed : {};
+  } catch (error) {
+    console.warn('Could not read import mapping presets from localStorage:', error);
+    return {};
+  }
+}
+
+function saveImportMappingPresets(presets) {
+  try {
+    localStorage.setItem(importMappingStorageKey, JSON.stringify(presets || {}));
+  } catch (error) {
+    console.warn('Could not save import mapping presets to localStorage:', error);
+  }
+}
+
+function getLastImportHeaderMapping() {
+  try {
+    const raw = localStorage.getItem(importMappingLastStorageKey);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return (parsed && typeof parsed === 'object') ? parsed : {};
+  } catch (error) {
+    console.warn('Could not read last import mapping from localStorage:', error);
+    return {};
+  }
+}
+
+function saveLastImportHeaderMapping(mappingByHeader) {
+  try {
+    localStorage.setItem(importMappingLastStorageKey, JSON.stringify(mappingByHeader || {}));
+  } catch (error) {
+    console.warn('Could not save last import mapping to localStorage:', error);
+  }
+}
+
+function persistCurrentImportMappings() {
+  if (!importState.mappingSignature || !importState.columns.length) return;
+
+  const signaturePreset = {};
+  const lastByHeader = {};
+
+  importState.columns.forEach((column) => {
+    const target = sanitizeImportMappingValue(importState.mappingByColumn[column.columnIndex]);
+    const storageKey = buildImportColumnStorageKey(column);
+    const headerKey = normalizeImportLabel(column.originalHeader || column.headerLabel);
+
+    signaturePreset[storageKey] = target;
+    if (headerKey) {
+      lastByHeader[headerKey] = target;
+    }
+  });
+
+  const currentPresets = getSavedImportMappingPresets();
+  currentPresets[importState.mappingSignature] = signaturePreset;
+  saveImportMappingPresets(currentPresets);
+  saveLastImportHeaderMapping(lastByHeader);
+}
+
+function renderImportMappingsTable() {
+  const tableBody = document.getElementById('importMappingsTableBody');
+  const headerRowInfo = document.getElementById('importDetectedHeaderRowInfo');
+  if (!tableBody) return;
+
+  tableBody.innerHTML = '';
+
+  if (headerRowInfo) {
+    const detectedRowNumber = importState.headerRowIndex >= 0 ? (importState.headerRowIndex + 1) : 0;
+    headerRowInfo.textContent = detectedRowNumber > 0
+      ? `Fila de cabeceras detectada automaticamente: ${detectedRowNumber}`
+      : '';
+  }
+
+  if (!importState.columns.length) {
+    const emptyRow = document.createElement('tr');
+    const emptyCell = document.createElement('td');
+    emptyCell.colSpan = 4;
+    emptyCell.className = 'text-muted text-center py-3';
+    emptyCell.textContent = 'No se detectaron columnas.';
+    emptyRow.appendChild(emptyCell);
+    tableBody.appendChild(emptyRow);
+    return;
+  }
+
+  const options = getImportMappingOptions();
+
+  importState.columns.forEach((column) => {
+    const row = document.createElement('tr');
+
+    const columnCell = document.createElement('td');
+    columnCell.className = 'text-muted small';
+    columnCell.textContent = `${column.columnLabel} (${column.columnIndex + 1})`;
+
+    const headerCell = document.createElement('td');
+    headerCell.className = 'fw-semibold';
+    headerCell.textContent = column.headerLabel;
+
+    const sampleCell = document.createElement('td');
+    sampleCell.className = 'text-muted small';
+    sampleCell.textContent = column.sampleValue || '-';
+
+    const mappingCell = document.createElement('td');
+    const select = document.createElement('select');
+    select.className = 'form-select form-select-sm';
+    select.dataset.columnIndex = `${column.columnIndex}`;
+
+    options.forEach((optionData) => {
+      const option = document.createElement('option');
+      option.value = optionData.value;
+      option.textContent = optionData.label;
+      select.appendChild(option);
+    });
+
+    select.value = sanitizeImportMappingValue(importState.mappingByColumn[column.columnIndex]);
+
+    select.addEventListener('change', (event) => {
+      const target = event.target;
+      const columnIndex = Number(target.dataset.columnIndex);
+      importState.mappingByColumn[columnIndex] = sanitizeImportMappingValue(target.value);
+      persistCurrentImportMappings();
+      updateImportMappingValidationHint();
+    });
+
+    mappingCell.appendChild(select);
+    row.appendChild(columnCell);
+    row.appendChild(headerCell);
+    row.appendChild(sampleCell);
+    row.appendChild(mappingCell);
+    tableBody.appendChild(row);
+  });
+}
+
+function updateImportMappingValidationHint() {
+  const validationFeedback = document.getElementById('importMappingValidationFeedback');
+  if (!validationFeedback) return;
+
+  validationFeedback.classList.remove('text-success', 'text-danger');
+
+  if (!importState.columns.length) {
+    validationFeedback.textContent = '';
+    return;
+  }
+
+  const validation = validateImportMappings(importState.mappingByColumn);
+  if (validation.isValid) {
+    validationFeedback.classList.add('text-success');
+    validationFeedback.textContent = 'Mapeo valido. Puedes continuar con Analizar.';
+  } else {
+    validationFeedback.classList.add('text-danger');
+    validationFeedback.textContent = validation.errors.join(' ');
+  }
+}
+
+function validateImportMappings(mappingByColumn) {
+  const values = Object.values(mappingByColumn || {}).map(sanitizeImportMappingValue).filter(Boolean);
+  const hasParticipantName = values.includes('participant_name');
+  const hasCategory = values.includes('category');
+  const hasStyle = values.includes('style');
+  const hasCategoryStyle = values.includes('category_style');
+  const hasStyleCategory = values.includes('style_category');
+
+  const hasCategoryAndStyle = (hasCategory && hasStyle) || hasCategoryStyle || hasStyleCategory;
+  const errors = [];
+
+  if (!hasParticipantName) {
+    errors.push('Debes mapear al menos una columna como \"Nombre Grupo/participante\".');
+  }
+
+  if (!hasCategoryAndStyle) {
+    errors.push('Debes mapear \"Categoria\" y \"Estilo\", o \"Categoria - Estilo\", o \"Estilo - Categoria\".');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+function buildImportMappingPayload() {
+  const mapping = {};
+
+  importState.columns.forEach((column) => {
+    const headerKey = normalizeImportLabel(column.originalHeader || column.headerLabel || column.columnLabel);
+    if (!headerKey || Object.prototype.hasOwnProperty.call(mapping, headerKey)) {
+      return;
+    }
+    mapping[headerKey] = sanitizeImportMappingValue(importState.mappingByColumn[column.columnIndex]);
+  });
+
+  return {
+    event_id: getEvent().id,
+    file_name: importState.selectedFile?.name || '',
+    header_row: importState.headerRowIndex + 1,
+    mapping
+  };
+}
+
