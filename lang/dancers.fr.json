@@ -33,7 +33,7 @@
   "guardando": "Enregistrement en cours...",
   "no_styles": "Sans Styles",
   "import_dancers": "Importer participants",
-  "import_dancers_modal_title": "Importer des participants depuis un fichier WOP",
+  "import_dancers_modal_title": "Importer des participants depuis un fichier",
   "import_drop_excel": "Glissez ici un fichier Excel",
   "import_drop_excel_hint": "Formats autorises: .xls, .xlsx",
   "import_select_file": "Selectionner un fichier",

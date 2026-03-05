@@ -33,7 +33,7 @@
   "guardando": "Saving...",
   "no_styles": "No Styles",
   "import_dancers": "Import Participants",
-  "import_dancers_modal_title": "Import Participants from WOP file",
+  "import_dancers_modal_title": "Import Participants from file",
   "import_drop_excel": "Drop an Excel file here",
   "import_drop_excel_hint": "Allowed formats: .xls, .xlsx",
   "import_select_file": "Select file",
