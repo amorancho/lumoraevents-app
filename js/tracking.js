@@ -5,6 +5,7 @@ const voteDetailsInFlight = new Set();
 const competitionDetailsInFlight = new Set();
 const SIDEBAR_STATUS_FILTER_NOT_FINISHED = '__NOT_FINISHED__';
 const TRACKING_SIDEBAR_FILTERS_STORAGE_PREFIX = 'lumora.tracking.sidebarFilters';
+const LIVE_TRACKING_POLL_INTERVAL_MS = 30000;
 const classificationExportState = {
   options: [],
   mode: 'ALL',
@@ -13,12 +14,19 @@ const classificationExportState = {
 const trackingUiState = {
   selectedCategoryId: null,
   selectedStyleId: null,
+  selectedCompetitionId: null,
+  selectedCompetitionRevision: null,
   sidebarCompetitions: [],
   sidebarFilters: {
     category: '',
     style: '',
     status: ''
   }
+};
+const liveTrackingState = {
+  intervalId: null,
+  competitionId: null,
+  isPolling: false
 };
 const penaltyAssignmentState = {
   context: null,
@@ -95,6 +103,37 @@ function parseJudgeFlag(value) {
     return normalized === '1' || normalized === 'true' || normalized === 'yes';
   }
   return false;
+}
+
+function normalizeCompetitionRevision(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function extractCompetitionRevision(payload) {
+  if (payload === null || payload === undefined) return null;
+
+  const directRevision = normalizeCompetitionRevision(payload);
+  if (directRevision !== null) return directRevision;
+
+  if (typeof payload !== 'object') return null;
+
+  const candidates = [
+    payload.revision,
+    payload.competition_revision,
+    payload.competitionRevision,
+    payload.data?.revision,
+    payload.data?.competition_revision,
+    payload.data?.competitionRevision
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeCompetitionRevision(candidate);
+    if (normalized !== null) return normalized;
+  }
+
+  return null;
 }
 
 function normalizeClassificationExportOptions(payload) {
@@ -1195,6 +1234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initClassificationExportOptions();
   initPenaltyAssignmentModal();
   bindSidebarFilters();
+  window.addEventListener('beforeunload', stopLiveTrackingPolling);
   await loadCompetitionSidebar();
 
   const saveClassificationBtn = document.getElementById('saveClassificationBtn');
@@ -1252,12 +1292,138 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 });
 
-async function executeGetCompetitions(categoryId, styleId) {
+function syncSelectedCompetitionLiveTrackingState(
+  competitions = trackingUiState.sidebarCompetitions,
+  categoryId = trackingUiState.selectedCategoryId,
+  styleId = trackingUiState.selectedStyleId
+) {
+  if (categoryId === undefined || categoryId === null || categoryId === '') return false;
+  if (styleId === undefined || styleId === null || styleId === '') return false;
+
+  const selectedCompetition = findCompetitionByCategoryAndStyle(competitions, categoryId, styleId);
+  if (!selectedCompetition) return false;
+
+  const selectedCompetitionId = selectedCompetition?.id ?? selectedCompetition?.competition_id;
+  const previousSelectedCompetitionId = String(trackingUiState.selectedCompetitionId || '').trim();
+  if (selectedCompetitionId !== undefined && selectedCompetitionId !== null && String(selectedCompetitionId).trim() !== '') {
+    const normalizedSelectedCompetitionId = String(selectedCompetitionId).trim();
+    trackingUiState.selectedCompetitionId = normalizedSelectedCompetitionId;
+    if (normalizedSelectedCompetitionId !== previousSelectedCompetitionId) {
+      trackingUiState.selectedCompetitionRevision = null;
+    }
+  }
+
+  const selectedCompetitionRevision = extractCompetitionRevision(selectedCompetition);
+  if (selectedCompetitionRevision !== null) {
+    trackingUiState.selectedCompetitionRevision = selectedCompetitionRevision;
+  }
+
+  return true;
+}
+
+function stopLiveTrackingPolling() {
+  if (liveTrackingState.intervalId) {
+    clearInterval(liveTrackingState.intervalId);
+    liveTrackingState.intervalId = null;
+  }
+  liveTrackingState.competitionId = null;
+  liveTrackingState.isPolling = false;
+}
+
+function ensureLiveTrackingPolling() {
+  const selectedCompetitionId = String(trackingUiState.selectedCompetitionId || '').trim();
+  if (!selectedCompetitionId) {
+    stopLiveTrackingPolling();
+    return;
+  }
+
+  if (liveTrackingState.intervalId && String(liveTrackingState.competitionId) === selectedCompetitionId) {
+    return;
+  }
+
+  stopLiveTrackingPolling();
+  liveTrackingState.competitionId = selectedCompetitionId;
+  liveTrackingState.intervalId = setInterval(() => {
+    void pollSelectedCompetitionRevision();
+  }, LIVE_TRACKING_POLL_INTERVAL_MS);
+}
+
+async function pollSelectedCompetitionRevision() {
+  const selectedCompetitionId = String(trackingUiState.selectedCompetitionId || '').trim();
+  if (!selectedCompetitionId || liveTrackingState.isPolling) return;
+
+  liveTrackingState.isPolling = true;
+  const pollingCompetitionId = selectedCompetitionId;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitions/${encodeURIComponent(pollingCompetitionId)}/revision`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch revision for competition ${pollingCompetitionId}`);
+    }
+
+    const payload = await response.json().catch(() => ({}));
+    if (String(trackingUiState.selectedCompetitionId || '').trim() !== pollingCompetitionId) {
+      return;
+    }
+
+    const nextRevision = extractCompetitionRevision(payload);
+    if (nextRevision === null) return;
+
+    const currentRevision = normalizeCompetitionRevision(trackingUiState.selectedCompetitionRevision);
+    if (currentRevision === null) {
+      trackingUiState.selectedCompetitionRevision = nextRevision;
+      return;
+    }
+
+    if (nextRevision <= currentRevision) return;
+
+    trackingUiState.selectedCompetitionRevision = nextRevision;
+    await executeGetCompetitions(
+      trackingUiState.selectedCategoryId,
+      trackingUiState.selectedStyleId,
+      {
+        competitionId: pollingCompetitionId,
+        revision: nextRevision
+      }
+    );
+  } catch (error) {
+    console.error('Error polling competition revision:', error);
+  } finally {
+    liveTrackingState.isPolling = false;
+  }
+}
+
+async function executeGetCompetitions(categoryId, styleId, options = {}) {
+  const {
+    competitionId = null,
+    revision = null
+  } = options;
+
   if (categoryId === undefined || categoryId === null || categoryId === '') return;
   if (styleId === undefined || styleId === null || styleId === '') return;
 
+  const previousCompetitionId = String(trackingUiState.selectedCompetitionId || '').trim();
   trackingUiState.selectedCategoryId = String(categoryId);
   trackingUiState.selectedStyleId = String(styleId);
+
+  const normalizedCompetitionId = String(competitionId || '').trim();
+  if (normalizedCompetitionId) {
+    trackingUiState.selectedCompetitionId = normalizedCompetitionId;
+    if (normalizedCompetitionId !== previousCompetitionId) {
+      trackingUiState.selectedCompetitionRevision = null;
+    }
+  }
+
+  const normalizedRevision = normalizeCompetitionRevision(revision);
+  if (normalizedRevision !== null) {
+    trackingUiState.selectedCompetitionRevision = normalizedRevision;
+  }
+
+  if (!normalizedCompetitionId && normalizedRevision === null) {
+    syncSelectedCompetitionLiveTrackingState(trackingUiState.sidebarCompetitions, categoryId, styleId);
+  }
+
+  ensureLiveTrackingPolling();
   updateSidebarSelectedCompetition(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
   await loadCompetitions(
     trackingUiState.selectedCategoryId,
@@ -1325,6 +1491,15 @@ async function loadCompetitions(categoryId, styleId, options = {}) {
       rerenderSidebarPreservingScroll();
     }
 
+    const syncedFromTracking = syncSelectedCompetitionLiveTrackingState(competitions, categoryId, styleId);
+    const syncedFromSidebar = syncedFromTracking
+      || syncSelectedCompetitionLiveTrackingState(trackingUiState.sidebarCompetitions, categoryId, styleId);
+    if (!syncedFromSidebar) {
+      trackingUiState.selectedCompetitionId = null;
+      trackingUiState.selectedCompetitionRevision = null;
+    }
+    ensureLiveTrackingPolling();
+
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
     return competitions;
@@ -1381,6 +1556,11 @@ function updateSidebarSelectedCompetition(categoryId, styleId) {
 
     const isSelected = itemCategoryId === selectedCategoryId && itemStyleId === selectedStyleId;
     listItem.classList.toggle('sidebar-competition-item-active', isSelected);
+
+    const liveIndicator = listItem.querySelector('.js-live-tracking-indicator');
+    if (liveIndicator) {
+      liveIndicator.classList.toggle('d-none', !isSelected);
+    }
   });
 }
 
@@ -1632,6 +1812,10 @@ function syncSelectedCompetitionSidebarState(competitions, categoryId, styleId) 
 
   sidebarCompetition.status = normalizeSidebarCompetitionStatus(selectedCompetition?.status) || sidebarCompetition.status;
   sidebarCompetition.clasification_visible = parseClassificationVisible(selectedCompetition?.clasification_visible) ? 1 : 0;
+  const selectedRevision = extractCompetitionRevision(selectedCompetition);
+  if (selectedRevision !== null) {
+    sidebarCompetition.revision = selectedRevision;
+  }
   return true;
 }
 
@@ -1682,6 +1866,7 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
     const categoryId = comp?.category_id ?? comp?.category?.id ?? '';
     const styleId = comp?.style_id ?? comp?.style?.id ?? '';
     const compId = comp?.id ?? '';
+    const competitionRevision = extractCompetitionRevision(comp);
     const status = getCompetitionListStatusLabel(comp?.status);
     const isFinished = comp?.status === 'FIN';
     const isOpen = comp?.status === 'OPE' || comp?.status === 'PRO';
@@ -1716,8 +1901,17 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
             class="btn btn-link text-start text-decoration-none p-0 border-0 flex-grow-1 js-sidebar-competition-item"
             data-competition-id="${compId}"
             data-category-id="${categoryId}"
-            data-style-id="${styleId}">
-            <div class="fw-semibold">${escapeHtml(categoryName)} / ${escapeHtml(styleName)}</div>
+            data-style-id="${styleId}"
+            data-revision="${competitionRevision !== null ? competitionRevision : ''}">
+            <div class="fw-semibold d-flex align-items-center flex-wrap gap-2">
+              <span>${escapeHtml(categoryName)} / ${escapeHtml(styleName)}</span>
+              <span
+                class="tracking-live-indicator js-live-tracking-indicator ${isSelected ? '' : 'd-none'}"
+                title="${escapeHtml(t('tracking_live_tooltip', 'Automatic updates every 30 seconds'))}">
+                <span class="tracking-live-dot" aria-hidden="true"></span>
+                <span>${escapeHtml(t('tracking_live_badge', 'LiveTracking'))}</span>
+              </span>
+            </div>
             <small class="text-muted">
               <span class="badge ${statusBadgeClass} js-sidebar-status-badge">${escapeHtml(status)}</span>
               - ${escapeHtml(estimatedStart)}
@@ -1751,8 +1945,10 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
     item.addEventListener('click', async () => {
       const categoryId = item.dataset.categoryId;
       const styleId = item.dataset.styleId;
+      const competitionId = item.dataset.competitionId;
+      const revision = item.dataset.revision;
       if (!categoryId || !styleId) return;
-      await executeGetCompetitions(categoryId, styleId);
+      await executeGetCompetitions(categoryId, styleId, { competitionId, revision });
     });
   });
 
@@ -1816,6 +2012,12 @@ async function loadCompetitionSidebar() {
 
     const competitions = await response.json();
     trackingUiState.sidebarCompetitions = Array.isArray(competitions) ? competitions : [];
+    const hasSyncedSelectedCompetition = syncSelectedCompetitionLiveTrackingState(trackingUiState.sidebarCompetitions);
+    if (!hasSyncedSelectedCompetition && trackingUiState.selectedCategoryId && trackingUiState.selectedStyleId) {
+      trackingUiState.selectedCompetitionId = null;
+      trackingUiState.selectedCompetitionRevision = null;
+    }
+    ensureLiveTrackingPolling();
     renderSidebarFilters(trackingUiState.sidebarCompetitions);
     renderCompetitionSidebar();
   } catch (error) {

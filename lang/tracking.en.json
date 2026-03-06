@@ -9,6 +9,8 @@
   "tracking_filters_all_styles": "All Styles",
   "tracking_filters_all_statuses": "All Statuses",
   "tracking_filters_not_finished": "Not finished",
+  "tracking_live_badge": "LiveTracking",
+  "tracking_live_tooltip": "Automatic updates every 30 seconds",
   "get_competitions": "Get Competitions",
   "voting_details": "Voting Details",
   "votes": "Votes",

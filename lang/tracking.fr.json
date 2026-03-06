@@ -9,6 +9,8 @@
   "tracking_filters_all_styles": "Tous styles",
   "tracking_filters_all_statuses": "Tous statuts",
   "tracking_filters_not_finished": "Non finalises",
+  "tracking_live_badge": "LiveTracking",
+  "tracking_live_tooltip": "Mise a jour automatique toutes les 30 secondes",
   "get_competitions": "Voir les compétitions",
   "voting_details": "Détails des votes",
   "top_by_criteria": "Classement par critere",

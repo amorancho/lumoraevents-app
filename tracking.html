@@ -417,6 +417,38 @@
       font-size: 0.72rem;
       line-height: 1.2;
     }
+    .tracking-live-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.12rem 0.48rem;
+      border-radius: 999px;
+      background: rgba(25, 135, 84, 0.12);
+      color: #146c43;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+    .tracking-live-dot {
+      width: 0.46rem;
+      height: 0.46rem;
+      border-radius: 50%;
+      background: #198754;
+      box-shadow: 0 0 0 0.14rem rgba(25, 135, 84, 0.2);
+      animation: trackingLivePulse 1.7s ease-in-out infinite;
+    }
+    @keyframes trackingLivePulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0.14rem rgba(25, 135, 84, 0.2);
+      }
+      50% {
+        transform: scale(1.08);
+        box-shadow: 0 0 0 0.24rem rgba(25, 135, 84, 0.12);
+      }
+    }
     .tracking-summary-layout {
       display: flex;
       flex-direction: column;
