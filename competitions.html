@@ -44,24 +44,29 @@
       <div class="col-12">
         <div class="card mb-3">
           <div class="card-body bg-light">
-            <div class="row g-2">
-              <div class="col-12 col-md-6 col-lg-3">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-2" id="competitionsActionsRow">
+              <div class="col">
                 <button type="button" class="btn btn-primary w-100" id="createCompetitionsBtn" data-i18n="create_competitions_button">
                   Crear Competiciones
                 </button>
               </div>
-              <div class="col-12 col-md-6 col-lg-3">
+              <div class="col">
                 <button type="button" class="btn btn-primary w-100" id="maxTimesAssignmentBtn" data-i18n="max_times_button">
                   Asignar Tiempos Máximos
                 </button>
               </div>
-              <div class="col-12 col-md-6 col-lg-3">
+              <div class="col">
                 <button type="button" class="btn btn-primary w-100" id="judgesAssignmentBtn" data-i18n="judges_assignment">
                   AsignaciÃ³n Jueces
                 </button>
               </div>
-              <div class="col-12 col-md-6 col-lg-3">
-                <a href="" class="btn btn-primary w-100" id="scheduleconfigUrl" data-i18n="menu_schedule_config">
+              <div class="col d-none" id="criteriaPerJudgeAssignmentCol">
+                <button type="button" class="btn btn-primary w-100" id="criteriaPerJudgeAssignmentBtn" data-i18n="criteria_per_judge_assignment_button">
+                  AsinaciÃ³n criterios por juez
+                </button>
+              </div>
+              <div class="col">
+                <a href="" class="btn btn-warning w-100" id="scheduleconfigUrl" data-i18n="menu_schedule_config">
                   Schedule Configurator
                 </a>
               </div>

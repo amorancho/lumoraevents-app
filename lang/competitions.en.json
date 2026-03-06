@@ -8,6 +8,7 @@
   "menu_competitions": "🚀 Competitions",
   "menu_schedule_config": "Schedule Configurator",
   "judges_assignment": "Judge Assignment",
+  "criteria_per_judge_assignment_button": "Judge Criteria Assignment",
   "judges_assignment_title": "Judge Assignment",
   "judges_assignment_judges": "Judges",
   "judges_assignment_competitions": "Competitions",
@@ -92,7 +93,7 @@
   "max_times_styles": "Styles",
   "max_times_select_all_categories": "Select all categories",
   "max_times_select_all_styles": "Select all styles",
-  "max_times_label": "Maximum Time",
+  "max_times_label": "Max. Time",
   "max_times_placeholder": "mm:ss",
   "max_times_format_hint": "Format: mm:ss (example 03:30).",
   "max_times_apply": "Assign times",
@@ -110,5 +111,4 @@
   "max_times_summary_styles": "{count} styles",
   "max_times_recalculate_notice": "If you modify a competition (category/style) that belongs to a Schedule Configurator block, affected blocks will be recalculated."
 }
-
 

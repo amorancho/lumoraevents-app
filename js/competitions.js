@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   setupHeadJudgeFieldVisibility();
+  updateTopActionButtonsVisibility();
 
   const categoryFilter = document.getElementById('categoryFilter');
   const styleFilter = document.getElementById('styleFilter');
@@ -97,6 +98,27 @@ function shouldShowHeadJudgeField() {
     return normalized === '1' || normalized === 'true' || normalized === 'yes';
   }
   return false;
+}
+
+function shouldShowCriteriaPerJudgeButton() {
+  const rawCriteriaPerJudge = getEvent()?.criteriaPerJudge;
+  if (rawCriteriaPerJudge === true || rawCriteriaPerJudge === 1) return true;
+  if (typeof rawCriteriaPerJudge === 'string') {
+    const normalized = rawCriteriaPerJudge.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
+}
+
+function updateTopActionButtonsVisibility() {
+  const actionsRow = document.getElementById('competitionsActionsRow');
+  const criteriaPerJudgeCol = document.getElementById('criteriaPerJudgeAssignmentCol');
+  if (!actionsRow || !criteriaPerJudgeCol) return;
+
+  const showCriteriaPerJudgeButton = shouldShowCriteriaPerJudgeButton();
+  criteriaPerJudgeCol.classList.toggle('d-none', !showCriteriaPerJudgeButton);
+  actionsRow.classList.toggle('row-cols-lg-5', showCriteriaPerJudgeButton);
+  actionsRow.classList.toggle('row-cols-lg-4', !showCriteriaPerJudgeButton);
 }
 
 function setupHeadJudgeFieldVisibility() {
@@ -165,8 +187,8 @@ function loadCompetitions() {
     }
 
     row.innerHTML = `
-      <td><span class="badge bg-secondary fs-6">${comp.category_name}</span></td>
-      <td><span class="badge bg-secondary fs-6">${comp.style_name}</span></td>
+      <td><span class="badge bg-secondary">${comp.category_name}</span></td>
+      <td><span class="badge bg-secondary">${comp.style_name}</span></td>
       <td><i class="bi bi-clock me-1 text-muted"></i>${comp.estimated_start_form ?? 'Not defined'}</td>
       <td><i class="bi bi-stopwatch me-1 text-muted"></i>${maxTimeDisplay}</td>
       <td data-status><span class="badge bg-${colorBg}">${statusText}</span></td>
