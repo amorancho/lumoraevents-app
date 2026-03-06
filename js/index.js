@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       container.innerHTML = '';
       data.forEach(event => {
         const col = document.createElement('div');
-        col.className = 'col-12 col-md-6 col-lg-4';
+        col.className = 'col-12 col-md-6 col-lg-3';
 
         const statusInfo = getEventStatusInfo(event.start, event.end);
 
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="card-body d-flex flex-column">
               <img src="${event.eventlogo || 'https://via.placeholder.com/300x180?text=Event'}"
                    class="img-fluid mb-3"
-                   style="height: 180px; width: 100%; object-fit: contain;"
+                   style="height: 100px; width: 100%; object-fit: contain;"
                    alt="${event.name}">
               <p class="text-muted text-center">${formatFecha(event.start)} / ${formatFecha(event.end)}</p>
               <div class="mt-auto text-center">

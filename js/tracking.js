@@ -2451,13 +2451,24 @@ function renderCompetitions(competitions) {
         }).join('');
 
         // Asignar ID a la fila combinando competición-dancer-judge (para poder localizarla en reset)
-        const totalScoreText = (getEvent().criteriaConfig === 'WITH_POR')
-          ? Number(d.total_score ?? 0).toFixed(1)
-          : (d.total_score || 0);
+        const parsedTotalScore = Number(d?.total_score);
+        const totalScoreValue = Number.isFinite(parsedTotalScore) ? parsedTotalScore : 0;
+        const totalScoreText = formatResultScore(totalScoreValue);
+        const parsedTotalPenalties = Number(d?.total_penalties);
+        const totalPenaltiesValue = Number.isFinite(parsedTotalPenalties) ? parsedTotalPenalties : 0;
+        const totalWithPenaltiesText = formatResultScore(totalScoreValue + totalPenaltiesValue);
+        const totalCellHtml = hasPenalties
+          ? `
+            <div class="d-inline-flex justify-content-center position-relative" style="line-height: 1;">
+              <span class="text-danger" style="position: absolute; left: 50%; transform: translate(-50%, -0.75rem); font-size: 0.75em; white-space: nowrap;">${totalWithPenaltiesText}</span>
+              <span>${totalScoreText}</span>
+            </div>
+          `
+          : `${totalScoreText}`;
         const avgPlaceText = formatAvgPlace(d.avg_place);
         tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}        
         <td class="bg-light">${d.judges_voted}</td>
-        <td class="bg-light">${totalScoreText}</td>
+        <td class="bg-light">${totalCellHtml}</td>
         ${shouldShowAvgPlaceColumn() ? `<td class="bg-light">${avgPlaceText}</td>` : ''}</tr>`;
       });
 
@@ -2886,10 +2897,35 @@ function setPenaltyAssignmentValidationMessage(message) {
 function syncPenaltyAssignmentSelectionSummary() {
   const bodyEl = document.getElementById('penaltyAssignmentModalBody');
   const summaryEl = document.getElementById('penaltyAssignmentSummary');
+  const totalBadgeEl = document.getElementById('penaltyAssignmentTotalBadge');
   if (!bodyEl || !summaryEl) return;
 
-  const selectedCount = bodyEl.querySelectorAll('.js-penalty-toggle:checked').length;
+  const rows = Array.from(bodyEl.querySelectorAll('.js-penalty-row'));
+  let selectedCount = 0;
+  let totalPenaltyScore = 0;
+
+  rows.forEach((rowEl) => {
+    const toggleEl = rowEl.querySelector('.js-penalty-toggle');
+    if (!toggleEl?.checked) return;
+
+    selectedCount += 1;
+    const scoreInput = rowEl.querySelector('.js-penalty-score');
+    const parsedScore = parseOptionalNumber(scoreInput?.value);
+    if (parsedScore !== null) {
+      totalPenaltyScore += parsedScore;
+      return;
+    }
+
+    const fixedScore = parseOptionalNumber(rowEl.dataset.minPenalty);
+    if (fixedScore !== null) {
+      totalPenaltyScore += fixedScore;
+    }
+  });
+
   summaryEl.textContent = `${selectedCount} ${t('penalty_modal_selected_count', 'penalties applied')}`;
+  if (totalBadgeEl) {
+    totalBadgeEl.textContent = `${totalPenaltyScore}`;
+  }
 }
 
 function syncPenaltyAssignmentRow(rowEl) {
@@ -3119,7 +3155,13 @@ function renderPenaltyAssignmentModalContent() {
 
   bodyEl.innerHTML = `
     <div class="mb-3 penalty-assignment-header">
-      <div class="penalty-assignment-participant fw-semibold">${escapeHtml(dancerName)}</div>
+      <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+        <div class="penalty-assignment-participant fw-semibold">${escapeHtml(dancerName)}</div>
+        <div class="d-inline-flex align-items-center gap-1">
+          <span class="badge bg-dark">${escapeHtml(t('penalty_modal_total_penalties_label', 'TOTAL PENALTIES'))}</span>
+          <span id="penaltyAssignmentTotalBadge" class="badge bg-danger">0</span>
+        </div>
+      </div>
       ${competitionLabel
     ? `<span class="badge text-bg-light border penalty-assignment-competition-badge">${escapeHtml(competitionLabel)}</span>`
     : ''}

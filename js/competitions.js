@@ -44,9 +44,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setupHeadJudgeFieldVisibility();
 
-  const filter = document.getElementById('categoryFilter');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const styleFilter = document.getElementById('styleFilter');
 
-  filter.addEventListener('change', applyCategoryFilter);
+  if (categoryFilter) {
+    categoryFilter.addEventListener('change', applyCategoryFilter);
+  }
+  if (styleFilter) {
+    styleFilter.addEventListener('change', applyCategoryFilter);
+  }
 
   loadCategories();
   loadStyles();
@@ -680,6 +686,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (assignJudgesBtn) {
       assignJudgesBtn.addEventListener('click', async () => {
         const selectedJudges = getSelectedAssignmentJudges();
+        const selectedHeadJudge = getSelectedAssignmentHeadJudge();
         const selectedCompetitions = getSelectedAssignmentCompetitions();
 
         if (!selectedJudges.length) {
@@ -703,7 +710,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             continue;
           }
 
-          await updateCompetitionJudgesAssignment(competition, selectedJudges);
+          await updateCompetitionJudgesAssignment(competition, selectedJudges, selectedHeadJudge);
         }
 
         assignJudgesBtn.disabled = false;
@@ -1012,8 +1019,22 @@ async function loadCategories() {
 
 async function loadStyles() {
   const styleSelect = document.getElementById('styleDropdown');
+  const styleFilter = document.getElementById('styleFilter');
+  const selectedFilterValue = styleFilter ? styleFilter.value : '';
+  const defaultFilterOption = styleFilter?.querySelector('option[value=""]')?.cloneNode(true);
   if (styleSelect) {
     styleSelect.innerHTML = '';
+  }
+  if (styleFilter) {
+    styleFilter.innerHTML = '';
+    if (defaultFilterOption) {
+      styleFilter.appendChild(defaultFilterOption);
+    } else {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = t('all_styles', 'All Styles');
+      styleFilter.appendChild(option);
+    }
   }
 
   try {
@@ -1026,13 +1047,28 @@ async function loadStyles() {
     }));
 
     styles.forEach(style => {
+      const value = style.id || style;
+      const label = style.name || style;
+
       if (styleSelect) {
         const option = document.createElement('option');
-        option.value = style.id || style;
-        option.textContent = style.name || style;
+        option.value = value;
+        option.textContent = label;
         styleSelect.appendChild(option);
       }
+
+      if (styleFilter) {
+        const filterOption = document.createElement('option');
+        filterOption.value = label;
+        filterOption.textContent = label;
+        styleFilter.appendChild(filterOption);
+      }
     });
+
+    if (styleFilter) {
+      const hasPreviousSelection = selectedFilterValue && styleFilter.querySelector(`option[value="${selectedFilterValue}"]`);
+      styleFilter.value = hasPreviousSelection ? selectedFilterValue : '';
+    }
   } catch (err) {
     console.error('Failed to load styles:', err);
   }
@@ -1098,17 +1134,23 @@ async function deleteCompetition(competitionIdToDelete) {
 
 
 function applyCategoryFilter() {
-  const filter = document.getElementById('categoryFilter');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const styleFilter = document.getElementById('styleFilter');
   const table = document.getElementById('competitionsTable');
 
-  if (!filter || !table) return; // seguridad por si aÃºn no existen en el DOM
+  if (!categoryFilter || !table) return; // seguridad por si aún no existen en el DOM
 
-  const selected = filter.value.toLowerCase();
+  const selectedCategory = categoryFilter.value.toLowerCase();
+  const selectedStyle = styleFilter ? styleFilter.value.toLowerCase() : '';
   const rows = table.querySelectorAll('tr');
 
   rows.forEach(row => {
     const category = row.children[0]?.textContent.trim().toLowerCase();
-    if (!selected || category === selected) {
+    const style = row.children[1]?.textContent.trim().toLowerCase();
+    const categoryMatch = !selectedCategory || category === selectedCategory;
+    const styleMatch = !selectedStyle || style === selectedStyle;
+
+    if (categoryMatch && styleMatch) {
       row.classList.remove('d-none');
     } else {
       row.classList.add('d-none');
@@ -1120,12 +1162,14 @@ function applyCategoryFilter() {
   updateCompetitionsCounter(rows.length, visibleRows.length);
   document.getElementById('emptyState')?.classList.toggle('d-none', visibleRows.length > 0);
 }
-
 function updateCompetitionsCounter(totalCount, visibleCount) {
   const countEl = document.getElementById('count-competitions');
   if (!countEl) return;
 
-  const hasActiveFilter = Boolean(document.getElementById('categoryFilter')?.value || '');
+  const hasActiveFilter = Boolean(
+    (document.getElementById('categoryFilter')?.value || '') ||
+    (document.getElementById('styleFilter')?.value || '')
+  );
   if (hasActiveFilter) {
     countEl.textContent = `${visibleCount} / ${totalCount}`;
     return;
@@ -1133,10 +1177,10 @@ function updateCompetitionsCounter(totalCount, visibleCount) {
 
   countEl.textContent = `${totalCount}`;
 }
-
 function renderJudgesAssignmentList() {
   const list = document.getElementById('judgesAssignmentList');
   if (!list) return;
+  const showHeadJudge = shouldShowHeadJudgeField();
 
   list.innerHTML = '';
 
@@ -1149,20 +1193,65 @@ function renderJudgesAssignmentList() {
   }
 
   masters.forEach(master => {
-    const label = document.createElement('label');
-    label.className = 'list-group-item d-flex align-items-center gap-2';
+    const item = document.createElement('div');
+    item.className = 'list-group-item d-flex align-items-center justify-content-between gap-2';
+
+    const mainControl = document.createElement('div');
+    mainControl.className = 'd-flex align-items-center gap-2';
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
-    checkbox.className = 'form-check-input';
+    checkbox.className = 'form-check-input judge-assignment-checkbox';
     checkbox.value = master.id;
 
     const name = document.createElement('span');
     name.textContent = master.name;
 
-    label.appendChild(checkbox);
-    label.appendChild(name);
-    list.appendChild(label);
+    mainControl.appendChild(checkbox);
+    mainControl.appendChild(name);
+    item.appendChild(mainControl);
+
+    if (showHeadJudge) {
+      const headControl = document.createElement('div');
+      headControl.className = 'form-check m-0 ms-auto';
+
+      const headCheckbox = document.createElement('input');
+      headCheckbox.type = 'checkbox';
+      headCheckbox.className = 'form-check-input judge-assignment-head-checkbox';
+      headCheckbox.value = master.id;
+      headCheckbox.id = `assign-head-${master.id}`;
+      headCheckbox.setAttribute('aria-label', t('col_judge_head', 'Head'));
+
+      const headLabel = document.createElement('label');
+      headLabel.className = 'form-check-label small text-muted';
+      headLabel.htmlFor = headCheckbox.id;
+      headLabel.textContent = t('col_judge_head', 'Head');
+
+      headCheckbox.addEventListener('change', () => {
+        if (!headCheckbox.checked) return;
+
+        const allHeadCheckboxes = document.querySelectorAll('#judgesAssignmentList .judge-assignment-head-checkbox');
+        allHeadCheckboxes.forEach(input => {
+          if (input !== headCheckbox) {
+            input.checked = false;
+          }
+        });
+
+        checkbox.checked = true;
+      });
+
+      checkbox.addEventListener('change', () => {
+        if (!checkbox.checked && headCheckbox.checked) {
+          headCheckbox.checked = false;
+        }
+      });
+
+      headControl.appendChild(headCheckbox);
+      headControl.appendChild(headLabel);
+      item.appendChild(headControl);
+    }
+
+    list.appendChild(item);
   });
 }
 
@@ -1232,7 +1321,13 @@ function renderCompetitionsAssignmentList() {
 
 function getSelectedAssignmentJudges() {
   return Array.from(document.querySelectorAll('#judgesAssignmentList input[type="checkbox"]:checked'))
+    .filter(input => input.classList.contains('judge-assignment-checkbox'))
     .map(input => input.value);
+}
+
+function getSelectedAssignmentHeadJudge() {
+  const headInput = document.querySelector('#judgesAssignmentList .judge-assignment-head-checkbox:checked');
+  return headInput ? headInput.value : null;
 }
 
 function getSelectedAssignmentCompetitions() {
@@ -1631,7 +1726,7 @@ function setAssignmentResult(compId, status, message) {
   resultEl.classList.add('text-muted');
 }
 
-async function updateCompetitionJudgesAssignment(competition, judgeIds) {
+async function updateCompetitionJudgesAssignment(competition, judgeIds, headJudgeId = null) {
   if (!competition) return;
 
   setAssignmentResult(competition.id, 'updating');
@@ -1652,9 +1747,8 @@ async function updateCompetitionJudgesAssignment(competition, judgeIds) {
   };
 
   if (shouldShowHeadJudgeField()) {
-    const headJudge = (competition.judges || []).find(j => isJudgeFlagEnabled(j.head));
-    const headId = headJudge ? String(headJudge.id) : null;
-    const headToSend = headId && judgeIds.includes(headId) ? headId : null;
+    const normalizedHeadId = headJudgeId ? String(headJudgeId) : null;
+    const headToSend = normalizedHeadId && judgeIds.includes(normalizedHeadId) ? normalizedHeadId : null;
     competitionData.judge_head = headToSend;
   }
 
@@ -1678,5 +1772,6 @@ async function updateCompetitionJudgesAssignment(competition, judgeIds) {
     setAssignmentResult(competition.id, 'error', error?.message || 'Unexpected error');
   }
 }
+
 
 
