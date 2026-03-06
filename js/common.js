@@ -110,7 +110,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
       } else if (start <= today && end >= today) {
         status = 'ongoing';
       } else {
-        status = 'ongoing';
+        status = 'pending close';
       }
 
       eventObj = {

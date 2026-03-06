@@ -265,6 +265,7 @@ async function loadCompetitionAndDancers() {
   if (!category || !style) return;
 
   const data = await fetchVoting(category, style);
+  syncCompetitionStatusInDropdown(selectedCompetitionId, data?.competition?.status);
   const loadedCriteria = Array.isArray(data.criteria) ? data.criteria : [];
   criteriaList = loadedCriteria
     .slice()
@@ -1294,6 +1295,39 @@ function populateCompetitionSelect(competitions, selectElement) {
 
   initCompetitionTomSelect();
   applyTranslations();
+}
+
+function syncCompetitionStatusInDropdown(competitionId, fetchedStatus) {
+  const normalizedId = competitionId === undefined || competitionId === null ? '' : String(competitionId);
+  const normalizedStatus = String(fetchedStatus || '').trim();
+  if (!normalizedId || !normalizedStatus) return;
+
+  const competitionIndex = availableCompetitions.findIndex(comp => String(comp?.id) === normalizedId);
+  if (competitionIndex < 0) return;
+
+  const currentStatus = String(availableCompetitions[competitionIndex]?.status || '').trim();
+  if (currentStatus === normalizedStatus) return;
+
+  availableCompetitions[competitionIndex] = {
+    ...availableCompetitions[competitionIndex],
+    status: normalizedStatus
+  };
+
+  const updatedOptionData = buildCompetitionSelectOptionData(availableCompetitions[competitionIndex]);
+
+  if (competitionTomSelect) {
+    competitionTomSelect.updateOption(normalizedId, updatedOptionData);
+    competitionTomSelect.refreshItems();
+    return;
+  }
+
+  if (!competitionSelect) return;
+  const option = Array.from(competitionSelect.options)
+    .find(item => String(item?.value || '') === normalizedId);
+  if (!option) return;
+
+  option.textContent = updatedOptionData.text;
+  option.setAttribute('data-data', JSON.stringify(updatedOptionData));
 }
 
 function getScoreType() {
