@@ -11,8 +11,8 @@ const convertStatus = {
 }
 
 const statusColor = {
-  'OPE': 'success',
-  'FIN': 'info',
+  'OPE': 'warning text-dark',
+  'FIN': 'success',
   'CLO': 'danger',
   'PRO': 'primary'
 };
@@ -165,8 +165,8 @@ function loadCompetitions() {
     }
 
     row.innerHTML = `
-      <td><span class="badge bg-info fs-6">${comp.category_name}</span></td>
-      <td><span class="badge bg-warning text-dark fs-6">${comp.style_name}</span></td>
+      <td><span class="badge bg-secondary fs-6">${comp.category_name}</span></td>
+      <td><span class="badge bg-secondary fs-6">${comp.style_name}</span></td>
       <td><i class="bi bi-clock me-1 text-muted"></i>${comp.estimated_start_form ?? 'Not defined'}</td>
       <td><i class="bi bi-stopwatch me-1 text-muted"></i>${maxTimeDisplay}</td>
       <td data-status><span class="badge bg-${colorBg}">${statusText}</span></td>

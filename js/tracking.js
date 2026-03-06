@@ -612,7 +612,7 @@ function shouldCollapseCriteriaByStatus(status) {
 
 function getCompetitionStatusBadgeInfo(status) {
   if (status === 'OPE') return { label: 'OPEN', className: 'bg-warning text-dark' };
-  if (status === 'CLO') return { label: 'CLOSED', className: 'bg-secondary' };
+  if (status === 'CLO') return { label: 'CLOSED', className: 'bg-danger' };
   if (status === 'FIN') return { label: 'FINISHED', className: 'bg-success' };
   if (status === 'PRO') return { label: 'IN PROGRESS', className: 'bg-primary' };
   return { label: status || '-', className: 'bg-secondary' };
@@ -1892,7 +1892,7 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
     const isSelected = String(trackingUiState.selectedCategoryId) === String(categoryId)
       && String(trackingUiState.selectedStyleId) === String(styleId);
     const itemClassName = isSelected ? 'list-group-item sidebar-competition-item-active' : 'list-group-item';
-
+// <span>${escapeHtml(categoryName)} / ${escapeHtml(styleName)}</span>
     return `
       <div class="${itemClassName}">
         <div class="d-flex justify-content-between align-items-start gap-2">
@@ -1904,7 +1904,9 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
             data-style-id="${styleId}"
             data-revision="${competitionRevision !== null ? competitionRevision : ''}">
             <div class="fw-semibold d-flex align-items-center flex-wrap gap-2">
-              <span>${escapeHtml(categoryName)} / ${escapeHtml(styleName)}</span>
+              
+              <span class="badge bg-secondary fs-7 px-2 py-1">${escapeHtml(categoryName || '-')}</span>
+              <span class="badge bg-secondary fs-7 px-2 py-1">${escapeHtml(styleName || '-')}</span>
               <span
                 class="tracking-live-indicator js-live-tracking-indicator ${isSelected ? '' : 'd-none'}"
                 title="${escapeHtml(t('tracking_live_tooltip', 'Automatic updates every 30 seconds'))}">

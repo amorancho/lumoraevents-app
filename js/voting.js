@@ -1129,8 +1129,8 @@ function initCompetitionTomSelect() {
         return `
           <div class="competition-option-wrap">
             <div class="competition-option-badges">
-              <span class="badge badge-neutral-dark">${escape(optionData.category || '-')}</span>
-              <span class="badge badge-neutral-dark">${escape(optionData.style || '-')}</span>
+              <span class="badge bg-secondary">${escape(optionData.category || '-')}</span>
+              <span class="badge bg-secondary">${escape(optionData.style || '-')}</span>
               <span class="badge ${escape(optionData.statusClass || 'bg-secondary')}">${escape(optionData.statusText || '-')}</span>
             </div>
             <div class="competition-option-meta">
@@ -1144,8 +1144,8 @@ function initCompetitionTomSelect() {
         const optionData = getCompetitionOptionRenderData(item);
         return `
           <div class="competition-option-badges">
-            <span class="badge badge-neutral-dark">${escape(optionData.category || '-')}</span>
-            <span class="badge badge-neutral-dark">${escape(optionData.style || '-')}</span>
+            <span class="badge bg-secondary">${escape(optionData.category || '-')}</span>
+            <span class="badge bg-secondary">${escape(optionData.style || '-')}</span>
             <span class="badge ${escape(optionData.statusClass || 'bg-secondary')}">${escape(optionData.statusText || '-')}</span>
           </div>
         `;
