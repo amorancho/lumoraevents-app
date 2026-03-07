@@ -2,6 +2,14 @@ var competitions = [];
 var masters = [];
 var categoriesCatalog = [];
 var stylesCatalog = [];
+const CRITERIA_PER_JUDGE_ALLOWED_STATUSES = new Set(['OPE', 'CLO']);
+const criteriaPerJudgeState = {
+  groups: [],
+  groupsByKey: new Map(),
+  selectedGroupKey: null,
+  selectedCompetitionIds: new Set(),
+  criteriaAssignments: new Map()
+};
 
 const convertStatus = {
   'OPE': 'OPEN',
@@ -486,6 +494,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dancersOrderModal = new bootstrap.Modal(document.getElementById('dancersOrderModal'));
     const judgesAssignmentModalEl = document.getElementById('judgesAssignmentModal');
     const judgesAssignmentModal = judgesAssignmentModalEl ? new bootstrap.Modal(judgesAssignmentModalEl) : null;
+    const criteriaPerJudgeAssignmentModalEl = document.getElementById('criteriaPerJudgeAssignmentModal');
+    const criteriaPerJudgeAssignmentModal = criteriaPerJudgeAssignmentModalEl ? new bootstrap.Modal(criteriaPerJudgeAssignmentModalEl) : null;
     const maxTimesModalEl = document.getElementById('maxTimesModal');
     const maxTimesModal = maxTimesModalEl ? new bootstrap.Modal(maxTimesModalEl) : null;
     const createCompetitionsModalEl = document.getElementById('createCompetitionsModal');
@@ -687,7 +697,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     const judgesAssignmentBtn = document.getElementById('judgesAssignmentBtn');
+    const criteriaPerJudgeAssignmentBtn = document.getElementById('criteriaPerJudgeAssignmentBtn');
     const assignJudgesBtn = document.getElementById('assignJudgesBtn');
+    const assignCriteriaPerJudgeBtn = document.getElementById('assignCriteriaPerJudgeBtn');
 
     if (judgesAssignmentBtn && judgesAssignmentModal) {
       judgesAssignmentBtn.addEventListener('click', async () => {
@@ -743,6 +755,45 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (judgesAssignmentModalEl) {
       judgesAssignmentModalEl.addEventListener('hidden.bs.modal', () => {
         window.location.reload();
+      });
+    }
+
+    if (criteriaPerJudgeAssignmentBtn && criteriaPerJudgeAssignmentModal) {
+      criteriaPerJudgeAssignmentBtn.addEventListener('click', async () => {
+        if (!competitions.length) {
+          await fetchCompetitionsFromAPI();
+        }
+
+        prepareCriteriaPerJudgeAssignmentModal();
+        criteriaPerJudgeAssignmentModal.show();
+      });
+    }
+
+    if (criteriaPerJudgeAssignmentModalEl) {
+      criteriaPerJudgeAssignmentModalEl.addEventListener('change', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+
+        if (target.classList.contains('criteria-per-judge-comp-checkbox')) {
+          handleCriteriaPerJudgeCompetitionSelectionChange(target);
+          return;
+        }
+
+        if (target.classList.contains('criteria-per-judge-select')) {
+          handleCriteriaPerJudgeCriteriaSelectionChange(target);
+        }
+      });
+
+      criteriaPerJudgeAssignmentModalEl.addEventListener('hidden.bs.modal', () => {
+        clearCriteriaPerJudgeSelections();
+        renderCriteriaPerJudgeGroupsAccordion();
+        renderCriteriaPerJudgeMappingPanel();
+      });
+    }
+
+    if (assignCriteriaPerJudgeBtn) {
+      assignCriteriaPerJudgeBtn.addEventListener('click', () => {
+        handleCriteriaPerJudgeAssignmentSubmit();
       });
     }
 
@@ -1355,6 +1406,466 @@ function getSelectedAssignmentHeadJudge() {
 function getSelectedAssignmentCompetitions() {
   return Array.from(document.querySelectorAll('#competitionsAssignmentList input[type="checkbox"]:checked'))
     .map(input => input.dataset.compId);
+}
+
+function prepareCriteriaPerJudgeAssignmentModal() {
+  clearCriteriaPerJudgeSelections();
+  criteriaPerJudgeState.groups = buildCriteriaPerJudgeGroups();
+  criteriaPerJudgeState.groupsByKey = new Map(
+    criteriaPerJudgeState.groups.map(group => [group.key, group])
+  );
+  renderCriteriaPerJudgeGroupsAccordion();
+  renderCriteriaPerJudgeMappingPanel();
+}
+
+function clearCriteriaPerJudgeSelections() {
+  criteriaPerJudgeState.selectedGroupKey = null;
+  criteriaPerJudgeState.selectedCompetitionIds.clear();
+  criteriaPerJudgeState.criteriaAssignments.clear();
+}
+
+function buildCriteriaPerJudgeGroups() {
+  const groupsMap = new Map();
+  const eligibleCompetitions = (Array.isArray(competitions) ? competitions : [])
+    .filter(comp => CRITERIA_PER_JUDGE_ALLOWED_STATUSES.has(String(comp?.status || '').toUpperCase()));
+
+  eligibleCompetitions.forEach((competition) => {
+    const criteria = normalizeCriteriaPerJudgeCriteria(competition?.criteria);
+    const judges = normalizeCriteriaPerJudgeJudges(competition?.judges);
+    const criteriaKey = criteria.map(item => item.id).join('|');
+    const judgesKey = judges.map(item => item.id).join('|');
+    const key = `criteria:${criteriaKey}__judges:${judgesKey}`;
+
+    if (!groupsMap.has(key)) {
+      groupsMap.set(key, {
+        key,
+        criteria,
+        judges,
+        competitions: []
+      });
+    }
+
+    groupsMap.get(key).competitions.push(competition);
+  });
+
+  return Array.from(groupsMap.values())
+    .map(group => ({
+      ...group,
+      competitions: group.competitions
+        .slice()
+        .sort((a, b) => {
+          const categoryCompare = String(a?.category_name || '').localeCompare(String(b?.category_name || ''));
+          if (categoryCompare !== 0) return categoryCompare;
+          return String(a?.style_name || '').localeCompare(String(b?.style_name || ''));
+        })
+    }))
+    .sort((a, b) => b.competitions.length - a.competitions.length);
+}
+
+function normalizeCriteriaPerJudgeCriteria(criteriaList = []) {
+  const criteriaMap = new Map();
+  (Array.isArray(criteriaList) ? criteriaList : []).forEach((criterion, index) => {
+    const rawId = criterion?.id ?? criterion?.name ?? `criterion-${index + 1}`;
+    const id = String(rawId);
+    if (!id || criteriaMap.has(id)) return;
+
+    const rawPosition = Number(criterion?.position);
+    criteriaMap.set(id, {
+      id,
+      name: String(criterion?.name ?? id),
+      position: Number.isFinite(rawPosition) ? rawPosition : (index + 1)
+    });
+  });
+
+  return Array.from(criteriaMap.values())
+    .sort((a, b) => {
+      if (a.position !== b.position) return a.position - b.position;
+      return a.name.localeCompare(b.name);
+    });
+}
+
+function normalizeCriteriaPerJudgeJudges(judgesList = []) {
+  const judgesMap = new Map();
+  (Array.isArray(judgesList) ? judgesList : []).forEach((judge, index) => {
+    const rawId = judge?.id ?? judge?.name ?? `judge-${index + 1}`;
+    const id = String(rawId);
+    if (!id || judgesMap.has(id)) return;
+
+    judgesMap.set(id, {
+      id,
+      name: String(judge?.name ?? id)
+    });
+  });
+
+  return Array.from(judgesMap.values())
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function renderCriteriaPerJudgeGroupsAccordion() {
+  const container = document.getElementById('criteriaPerJudgeGroupsAccordion');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  if (!criteriaPerJudgeState.groups.length) {
+    const empty = document.createElement('div');
+    empty.className = 'text-muted small';
+    empty.textContent = t(
+      'criteria_per_judge_no_competitions',
+      'No hay competiciones en estado OPEN o IN PROGRESS.'
+    );
+    container.appendChild(empty);
+    return;
+  }
+
+  criteriaPerJudgeState.groups.forEach((group, groupIndex) => {
+    const item = document.createElement('div');
+    item.className = 'accordion-item';
+
+    const headerId = `criteria-per-judge-group-heading-${groupIndex}`;
+    const collapseId = `criteria-per-judge-group-collapse-${groupIndex}`;
+    const isSelectedGroup = criteriaPerJudgeState.selectedGroupKey === group.key;
+
+    const header = document.createElement('h2');
+    header.className = 'accordion-header';
+    header.id = headerId;
+
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = `accordion-button ${isSelectedGroup ? '' : 'collapsed'}`;
+    toggleBtn.type = 'button';
+    toggleBtn.setAttribute('data-bs-toggle', 'collapse');
+    toggleBtn.setAttribute('data-bs-target', `#${collapseId}`);
+    toggleBtn.setAttribute('aria-expanded', isSelectedGroup ? 'true' : 'false');
+    toggleBtn.setAttribute('aria-controls', collapseId);
+
+    const groupTitle = t('criteria_per_judge_group_title', 'Grupo {index}')
+      .replace('{index}', String(groupIndex + 1));
+    const groupSummary = t(
+      'criteria_per_judge_group_summary',
+      '{competitions} competiciones | {criteria} criterios | {judges} jueces'
+    )
+      .replace('{competitions}', String(group.competitions.length))
+      .replace('{criteria}', String(group.criteria.length))
+      .replace('{judges}', String(group.judges.length));
+
+    const headerContent = document.createElement('div');
+    headerContent.className = 'd-flex flex-column';
+    const headerTitle = document.createElement('span');
+    headerTitle.className = 'fw-semibold';
+    headerTitle.textContent = groupTitle;
+    const headerSummary = document.createElement('span');
+    headerSummary.className = 'small text-muted';
+    headerSummary.textContent = groupSummary;
+    headerContent.appendChild(headerTitle);
+    headerContent.appendChild(headerSummary);
+
+    toggleBtn.appendChild(headerContent);
+    header.appendChild(toggleBtn);
+
+    const collapse = document.createElement('div');
+    collapse.id = collapseId;
+    collapse.className = `accordion-collapse collapse ${isSelectedGroup ? 'show' : ''}`;
+    collapse.setAttribute('aria-labelledby', headerId);
+    collapse.setAttribute('data-bs-parent', '#criteriaPerJudgeGroupsAccordion');
+
+    const body = document.createElement('div');
+    body.className = 'accordion-body p-2';
+
+    const list = document.createElement('div');
+    list.className = 'list-group';
+
+    group.competitions.forEach((competition) => {
+      const row = document.createElement('div');
+      row.className = 'list-group-item d-flex align-items-center justify-content-between gap-3';
+
+      const check = document.createElement('div');
+      check.className = 'form-check w-100';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'form-check-input criteria-per-judge-comp-checkbox';
+      checkbox.dataset.groupKey = group.key;
+      checkbox.dataset.compId = String(competition.id);
+      checkbox.id = `criteria-per-judge-comp-${groupIndex}-${competition.id}`;
+      checkbox.checked = criteriaPerJudgeState.selectedCompetitionIds.has(String(competition.id));
+
+      const label = document.createElement('label');
+      label.className = 'form-check-label w-100';
+      label.htmlFor = checkbox.id;
+
+      const titleLine = document.createElement('div');
+      titleLine.className = 'fw-semibold';
+      titleLine.textContent = `${competition.category_name} / ${competition.style_name}`;
+
+      label.appendChild(titleLine);
+      check.appendChild(checkbox);
+      check.appendChild(label);
+
+      row.appendChild(check);
+      row.appendChild(createCriteriaPerJudgeCompetitionStatusBadge(competition.status));
+      list.appendChild(row);
+    });
+
+    body.appendChild(list);
+    collapse.appendChild(body);
+    item.appendChild(header);
+    item.appendChild(collapse);
+    container.appendChild(item);
+  });
+}
+
+function createCriteriaPerJudgeCompetitionStatusBadge(status) {
+  const badge = document.createElement('span');
+  badge.className = `badge bg-${statusColor[status] || 'secondary'}`;
+  badge.textContent = convertStatus[status] || status || '-';
+  return badge;
+}
+
+function handleCriteriaPerJudgeCompetitionSelectionChange(inputEl) {
+  const compId = String(inputEl?.dataset?.compId || '');
+  const groupKey = String(inputEl?.dataset?.groupKey || '');
+  const isChecked = Boolean(inputEl?.checked);
+  if (!compId || !groupKey) return;
+
+  const isSwitchingGroup = isChecked
+    && criteriaPerJudgeState.selectedGroupKey
+    && criteriaPerJudgeState.selectedGroupKey !== groupKey;
+
+  if (isSwitchingGroup) {
+    criteriaPerJudgeState.selectedCompetitionIds.clear();
+    criteriaPerJudgeState.criteriaAssignments.clear();
+    document.querySelectorAll('#criteriaPerJudgeGroupsAccordion .criteria-per-judge-comp-checkbox:checked')
+      .forEach(checkbox => {
+        checkbox.checked = false;
+      });
+    inputEl.checked = true;
+  }
+
+  if (isChecked) {
+    criteriaPerJudgeState.selectedGroupKey = groupKey;
+    criteriaPerJudgeState.selectedCompetitionIds.add(compId);
+  } else {
+    criteriaPerJudgeState.selectedCompetitionIds.delete(compId);
+    if (!criteriaPerJudgeState.selectedCompetitionIds.size) {
+      criteriaPerJudgeState.selectedGroupKey = null;
+      criteriaPerJudgeState.criteriaAssignments.clear();
+    }
+  }
+
+  renderCriteriaPerJudgeMappingPanel();
+}
+
+function renderCriteriaPerJudgeMappingPanel() {
+  const panel = document.getElementById('criteriaPerJudgeMappingPanel');
+  if (!panel) return;
+
+  panel.innerHTML = '';
+
+  const selectedGroup = criteriaPerJudgeState.selectedGroupKey
+    ? criteriaPerJudgeState.groupsByKey.get(criteriaPerJudgeState.selectedGroupKey)
+    : null;
+
+  if (!selectedGroup || !criteriaPerJudgeState.selectedCompetitionIds.size) {
+    const empty = document.createElement('div');
+    empty.className = 'text-muted small';
+    empty.textContent = t(
+      'criteria_per_judge_select_prompt',
+      'Selecciona competiciones de una agrupacion para relacionar criterios y jueces.'
+    );
+    panel.appendChild(empty);
+    return;
+  }
+
+  const selectedCompetitions = selectedGroup.competitions
+    .filter(comp => criteriaPerJudgeState.selectedCompetitionIds.has(String(comp.id)));
+
+  const selectedTitle = document.createElement('div');
+  selectedTitle.className = 'fw-semibold mb-2';
+  selectedTitle.textContent = t('criteria_per_judge_selected_competitions', 'Competiciones seleccionadas');
+  panel.appendChild(selectedTitle);
+
+  const selectedList = document.createElement('div');
+  selectedList.className = 'list-group criteria-per-judge-summary-list mb-3';
+  selectedCompetitions.forEach((competition) => {
+    const row = document.createElement('div');
+    row.className = 'list-group-item py-2 d-flex align-items-center justify-content-between gap-2';
+
+    const text = document.createElement('span');
+    text.textContent = `${competition.category_name} / ${competition.style_name}`;
+    row.appendChild(text);
+    row.appendChild(createCriteriaPerJudgeCompetitionStatusBadge(competition.status));
+    selectedList.appendChild(row);
+  });
+  panel.appendChild(selectedList);
+
+  const judgesTitle = document.createElement('div');
+  judgesTitle.className = 'fw-semibold mb-2';
+  judgesTitle.textContent = t('criteria_per_judge_available_judges', 'Jueces disponibles');
+  panel.appendChild(judgesTitle);
+
+  if (!selectedGroup.judges.length) {
+    const noJudges = document.createElement('div');
+    noJudges.className = 'small text-muted mb-3';
+    noJudges.textContent = t('criteria_per_judge_no_judges', 'No hay jueces en esta agrupacion.');
+    panel.appendChild(noJudges);
+  } else {
+    const judgesWrap = document.createElement('div');
+    judgesWrap.className = 'd-flex flex-wrap gap-2 mb-3';
+    selectedGroup.judges.forEach((judge) => {
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-secondary';
+      badge.textContent = judge.name;
+      judgesWrap.appendChild(badge);
+    });
+    panel.appendChild(judgesWrap);
+  }
+
+  const criteriaTitle = document.createElement('div');
+  criteriaTitle.className = 'fw-semibold mb-2';
+  criteriaTitle.textContent = t('criteria_per_judge_criteria_list', 'Criterios');
+  panel.appendChild(criteriaTitle);
+
+  if (!selectedGroup.criteria.length) {
+    const noCriteria = document.createElement('div');
+    noCriteria.className = 'small text-muted';
+    noCriteria.textContent = t('criteria_per_judge_no_criteria', 'No hay criterios en esta agrupacion.');
+    panel.appendChild(noCriteria);
+    return;
+  }
+
+  const criteriaList = document.createElement('div');
+  criteriaList.className = 'list-group';
+  selectedGroup.criteria.forEach((criterion) => {
+    const row = document.createElement('div');
+    row.className = 'list-group-item d-flex align-items-center justify-content-between gap-3';
+
+    const criterionLabel = document.createElement('div');
+    criterionLabel.className = 'fw-semibold';
+    criterionLabel.textContent = `${criterion.position}. ${criterion.name}`;
+
+    const judgeSelect = document.createElement('select');
+    judgeSelect.className = 'form-select form-select-sm criteria-per-judge-select';
+    judgeSelect.style.maxWidth = '260px';
+    judgeSelect.dataset.criterionId = criterion.id;
+
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = t('criteria_per_judge_select_judge', 'Selecciona juez');
+    judgeSelect.appendChild(placeholderOption);
+
+    selectedGroup.judges.forEach((judge) => {
+      const option = document.createElement('option');
+      option.value = judge.id;
+      option.textContent = judge.name;
+      judgeSelect.appendChild(option);
+    });
+
+    const selectedJudgeId = criteriaPerJudgeState.criteriaAssignments.get(criterion.id);
+    if (selectedJudgeId && selectedGroup.judges.some(judge => String(judge.id) === String(selectedJudgeId))) {
+      judgeSelect.value = String(selectedJudgeId);
+    } else if (selectedJudgeId) {
+      criteriaPerJudgeState.criteriaAssignments.delete(criterion.id);
+    }
+
+    row.appendChild(criterionLabel);
+    row.appendChild(judgeSelect);
+    criteriaList.appendChild(row);
+  });
+
+  panel.appendChild(criteriaList);
+}
+
+function handleCriteriaPerJudgeCriteriaSelectionChange(selectEl) {
+  const criterionId = String(selectEl?.dataset?.criterionId || '');
+  if (!criterionId) return;
+
+  const judgeId = String(selectEl.value || '').trim();
+  if (!judgeId) {
+    criteriaPerJudgeState.criteriaAssignments.delete(criterionId);
+    return;
+  }
+
+  criteriaPerJudgeState.criteriaAssignments.set(criterionId, judgeId);
+}
+
+function handleCriteriaPerJudgeAssignmentSubmit() {
+  const errorTitle = t('error_title', 'Error');
+  const selectedGroup = criteriaPerJudgeState.selectedGroupKey
+    ? criteriaPerJudgeState.groupsByKey.get(criteriaPerJudgeState.selectedGroupKey)
+    : null;
+
+  if (!selectedGroup || !criteriaPerJudgeState.selectedCompetitionIds.size) {
+    showMessageModal(
+      t('criteria_per_judge_missing_selection', 'Selecciona al menos una competicion.'),
+      errorTitle
+    );
+    return;
+  }
+
+  if (!selectedGroup.criteria.length) {
+    showMessageModal(
+      t('criteria_per_judge_no_criteria', 'No hay criterios en esta agrupacion.'),
+      errorTitle
+    );
+    return;
+  }
+
+  if (!selectedGroup.judges.length) {
+    showMessageModal(
+      t('criteria_per_judge_no_judges', 'No hay jueces en esta agrupacion.'),
+      errorTitle
+    );
+    return;
+  }
+
+  const missingCriteriaAssignments = selectedGroup.criteria.filter((criterion) => {
+    const assignedJudgeId = criteriaPerJudgeState.criteriaAssignments.get(criterion.id);
+    return !assignedJudgeId;
+  });
+
+  if (missingCriteriaAssignments.length) {
+    const message = t(
+      'criteria_per_judge_missing_criteria_assignment',
+      'Todos los criterios deben tener juez asignado.'
+    );
+    showMessageModal(message, errorTitle);
+    return;
+  }
+
+  const assignedJudgeIds = new Set();
+  selectedGroup.criteria.forEach((criterion) => {
+    const assignedJudgeId = criteriaPerJudgeState.criteriaAssignments.get(criterion.id);
+    if (assignedJudgeId) {
+      assignedJudgeIds.add(String(assignedJudgeId));
+    }
+  });
+
+  const judgesWithoutCriteria = selectedGroup.judges
+    .filter(judge => !assignedJudgeIds.has(String(judge.id)));
+
+  if (judgesWithoutCriteria.length) {
+    const message = t(
+      'criteria_per_judge_unused_judges',
+      'Todos los jueces deben estar asociados a algun criterio: {judges}.'
+    ).replace('{judges}', judgesWithoutCriteria.map(judge => judge.name).join(', '));
+    showMessageModal(message, errorTitle);
+    return;
+  }
+
+  const payload = {
+    competition_ids: Array.from(criteriaPerJudgeState.selectedCompetitionIds),
+    assignments: selectedGroup.criteria.map((criterion) => ({
+      criterion_id: criterion.id,
+      judge_id: criteriaPerJudgeState.criteriaAssignments.get(criterion.id)
+    }))
+  };
+  console.info('Criteria per judge assignment (dry run)', payload);
+
+  showMessageModal(
+    t('criteria_per_judge_ok', 'Todo OK. Validaciones correctas.'),
+    t('max_times_info_title', 'Information'),
+    'success'
+  );
 }
 
 function renderMaxTimesSelectionListFromSelect(selectId, targetId, type) {

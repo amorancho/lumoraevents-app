@@ -27,6 +27,14 @@
       max-height: 220px;
       overflow-y: auto;
     }
+    .criteria-per-judge-panel {
+      max-height: 55vh;
+      overflow-y: auto;
+    }
+    .criteria-per-judge-summary-list {
+      max-height: 140px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -268,6 +276,33 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
           <button type="button" class="btn btn-primary" id="assignJudgesBtn" data-i18n="judges_assignment_apply">Assign Judges</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="criteriaPerJudgeAssignmentModal" tabindex="-1" aria-labelledby="criteriaPerJudgeAssignmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="criteriaPerJudgeAssignmentModalLabel" data-i18n="criteria_per_judge_modal_title">Asignacion de criterios por juez</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="criteria_per_judge_groups_title">Agrupaciones de competiciones</h6>
+              <div id="criteriaPerJudgeGroupsAccordion" class="accordion assignment-list"></div>
+              <div class="form-text mt-2" data-i18n="criteria_per_judge_groups_help">Solo se pueden seleccionar competiciones de una misma agrupacion.</div>
+            </div>
+            <div class="col-lg-6">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="criteria_per_judge_mapping_title">Relacion criterio-juez</h6>
+              <div id="criteriaPerJudgeMappingPanel" class="border rounded-3 p-3 criteria-per-judge-panel"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="assignCriteriaPerJudgeBtn" data-i18n="criteria_per_judge_assign_button">Asignar</button>
         </div>
       </div>
     </div>
