@@ -107,9 +107,30 @@
       white-space: nowrap;
     }
 
-    .competition-info-progress {
+    .competition-info-progress-wrap {
       flex: 1 1 260px;
       min-width: 220px;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .competition-info-progress {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .head-judge-indicator {
+      width: 30px;
+      height: 30px;
+      border: 0;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #ffc107;
+      color: #664d03;
+      flex: 0 0 auto;
     }
 
     #penaltyAssignmentModal .modal-dialog {
@@ -215,9 +236,23 @@
               <span id="compStatus" class="badge bg-secondary fs-6 px-2 py-1">-</span>
             </div>
             <div id="compTime" class="competition-info-time"></div>
-            <div class="progress position-relative competition-info-progress" role="progressbar" aria-label="Competition progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 30px;">
-              <div id="compProgressBar" class="progress-bar progress-bar-striped bg-warning" style="width: 0%"></div>
-              <span id="compProgressText" class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap text-dark">0/0 (0%)</span>
+            <div class="competition-info-progress-wrap">
+              <div class="progress position-relative competition-info-progress" role="progressbar" aria-label="Competition progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 30px;">
+                <div id="compProgressBar" class="progress-bar progress-bar-striped bg-warning" style="width: 0%"></div>
+                <span id="compProgressText" class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap text-dark">0/0 (0%)</span>
+              </div>
+              <button
+                type="button"
+                id="headJudgeIndicator"
+                class="head-judge-indicator d-none"
+                data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                data-i18n-title="judge_head_penalties_tooltip"
+                title="You are the head judge: you can apply penalties in this competition."
+                aria-label="Head judge"
+              >
+                <i class="bi bi-award-fill" aria-hidden="true"></i>
+              </button>
             </div>
           </div>
         </div>

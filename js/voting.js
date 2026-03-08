@@ -13,6 +13,7 @@ let commentsContext = { competitionId: null, dancerId: null };
 let competitionSelect, competitionInfo, dancersTableContainer, refreshBtn, previousCompetitionBtn, nextCompetitionBtn;
 let competitionTomSelect = null;
 let availableCompetitions = [];
+let headJudgeTooltip = null;
 const penaltyAssignmentState = {
   context: null,
   penalties: [],
@@ -282,7 +283,7 @@ async function loadCompetitionAndDancers() {
   }
 
 
-  renderDancersTable(data.dancers, data.competition.status, Boolean(data?.competition?.judge_head));
+  renderDancersTable(data.dancers, data.competition.status, parseJudgeFlag(data?.competition?.judge_head));
 
   competitionInfo.style.display = 'block';
   dancersTableContainer.style.display = 'block';
@@ -1449,6 +1450,8 @@ function renderCompetitionInfo(competition) {
     progressTextEl.classList.remove('text-white', 'text-dark');
     progressTextEl.classList.add(isCompleted ? 'text-white' : 'text-dark');
   }
+
+  updateHeadJudgeIndicator(parseJudgeFlag(competition?.judge_head));
 }
 
 function escapeHtml(value) {
@@ -1468,6 +1471,36 @@ function parseJudgeFlag(value) {
     return normalized === '1' || normalized === 'true' || normalized === 'yes';
   }
   return false;
+}
+
+function updateHeadJudgeIndicator(isHeadJudge) {
+  const indicatorEl = document.getElementById('headJudgeIndicator');
+  if (!indicatorEl) return;
+
+  const tooltipText = t(
+    'judge_head_penalties_tooltip',
+    'You are the head judge: you can apply penalties in this competition.'
+  );
+  indicatorEl.setAttribute('title', tooltipText);
+  indicatorEl.setAttribute('aria-label', tooltipText);
+
+  if (!isHeadJudge) {
+    indicatorEl.classList.add('d-none');
+    if (headJudgeTooltip) {
+      headJudgeTooltip.dispose();
+      headJudgeTooltip = null;
+    }
+    return;
+  }
+
+  indicatorEl.classList.remove('d-none');
+  if (headJudgeTooltip) {
+    headJudgeTooltip.dispose();
+    headJudgeTooltip = null;
+  }
+  if (window.bootstrap?.Tooltip) {
+    headJudgeTooltip = new bootstrap.Tooltip(indicatorEl);
+  }
 }
 
 function setButtonLoading(button, isLoading, loadingText = t('loading', 'Loading...')) {

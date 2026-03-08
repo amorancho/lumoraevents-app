@@ -113,16 +113,15 @@
           <table class="table table-hover mb-0">
             <thead class="table">
               <tr>
-
-                  <th scope="col" style="width: 15%;" data-i18n="col_category">Category</th>
-                  <th scope="col" style="width: 15%;" data-i18n="col_style">Style</th>
-                  <th scope="col" style="width: 15%;" data-i18n="col_estimated_start_time">Estimated Start Time</th>
-                  <th scope="col" style="width: 10%;" data-i18n="max_times_label">Maximum Time</th>
-                  <th scope="col" style="width: 10%;" data-i18n="col_status">Status</th>
-                  <th scope="col" style="width: 25%;" data-i18n="col_judges">Judges</th>
-                  <th scope="col" style="width: 10%;" data-i18n="col_num_judges">#Judges</th>
-                  <th scope="col" style="width: 10%;" data-i18n="col_num_dancers">#Dancers</th>
-                  <th scope="col" style="width: 10%;" class="text-center" data-i18n="col_actions">Actions</th>
+                <th scope="col" style="width: 15%;" data-i18n="col_category">Category</th>
+                <th scope="col" style="width: 15%;" data-i18n="col_style">Style</th>
+                <th scope="col" style="width: 15%;" data-i18n="col_estimated_start_time">Estimated Start Time</th>
+                <th scope="col" style="width: 10%;" data-i18n="max_times_label">Maximum Time</th>
+                <th scope="col" style="width: 10%;" data-i18n="col_status">Status</th>
+                <th scope="col" style="width: 25%;" data-i18n="col_judges">Judges</th>
+                <th scope="col" style="width: 8%;" id="criteriaColumnHeader" class="d-none text-center" data-i18n="col_criteria">Criteria</th>
+                <th scope="col" style="width: 10%;" data-i18n="col_num_dancers">#Dancers</th>
+                <th scope="col" style="width: 10%;" class="text-center" data-i18n="col_actions">Actions</th>
               </tr>
             </thead>
             <tbody id="competitionsTable">
@@ -303,6 +302,33 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
           <button type="button" class="btn btn-primary" id="assignCriteriaPerJudgeBtn" data-i18n="criteria_per_judge_assign_button">Asignar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="competitionCriteriaConfigModal" tabindex="-1" aria-labelledby="competitionCriteriaConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="competitionCriteriaConfigModalLabel" data-i18n="criteria_per_judge_comp_modal_title">Configuracion de criterios por juez</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-lg-5">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="criteria_per_judge_competition_title">Competicion</h6>
+              <div id="competitionCriteriaConfigSummaryPanel" class="border rounded-3 p-3 criteria-per-judge-panel"></div>
+            </div>
+            <div class="col-lg-7">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="criteria_per_judge_mapping_title">Relacion criterio-juez</h6>
+              <div id="competitionCriteriaConfigMappingPanel" class="border rounded-3 p-3 criteria-per-judge-panel"></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+          <button type="button" class="btn btn-outline-danger" id="deleteCompetitionCriteriaConfigBtn" data-i18n="criteria_per_judge_comp_delete_button">Borrar asignaciones</button>
+          <button type="button" class="btn btn-primary" id="saveCompetitionCriteriaConfigBtn" data-i18n="criteria_per_judge_comp_save_button">Guardar</button>
         </div>
       </div>
     </div>

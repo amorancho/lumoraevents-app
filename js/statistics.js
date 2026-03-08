@@ -80,7 +80,7 @@ function renderStats(data) {
   const container = statsContainer();
   if (!container) return;
   container.innerHTML = '';
-  const hideJudges = isEventHideJudgesEnabled();
+  const hideJudges = isEventHideJudgesEnabled() || getEvent().criteriaPerJudge;
 
   if (!data) {
     return;
