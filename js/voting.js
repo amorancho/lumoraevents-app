@@ -843,6 +843,9 @@ async function uploadAudioFeedback() {
       audioFeedbackState.previewBlob,
       buildAudioFeedbackFilename(audioFeedbackState.previewBlob.type)
     );
+    if (audioFeedbackState.previewDuration != null) {
+      formData.append('duration', `${Math.max(1, Math.round(audioFeedbackState.previewDuration))}`);
+    }
 
     const response = await fetch(getAudioFeedbackUrl(context.competitionId, context.dancerId), {
       method: 'POST',

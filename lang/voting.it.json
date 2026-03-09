@@ -38,7 +38,7 @@
   "audio_feedback_save_error": "Errore durante l'invio del feedback audio.",
   "audio_feedback_delete_error": "Errore durante l'eliminazione del feedback audio.",
   "audio_feedback_secure_context_error": "Il microfono puo essere usato solo da HTTPS o da localhost.",
-  "audio_feedback_permission_error": "Il browser non ha il permesso di usare il microfono. Controlla i permessi del sito e consenti l'accesso al microfono.",
+  "audio_feedback_permission_error": "Il browser non ha il permesso di usare il microfono. Se non compare alcuna richiesta, il permesso era gia stato bloccato oppure la pagina e aperta dentro un'app. Apri il link in Chrome o Safari e controlla i permessi del sito.",
   "audio_feedback_device_not_found_error": "Nessun microfono trovato su questo dispositivo.",
   "audio_feedback_device_busy_error": "Il microfono e usato da un'altra applicazione o non puo essere letto in questo momento.",
   "audio_feedback_constraints_error": "Il browser non e riuscito a inizializzare la registrazione audio con questo dispositivo.",
