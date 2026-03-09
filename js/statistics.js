@@ -380,6 +380,16 @@ function buildVotesDetailTable(styles, criteria, dancerId) {
 
       const judgeName = (vote?.judge_name || '-').trim() || '-';
       const commentText = typeof vote?.comments === 'string' ? vote.comments.trim() : '';
+      const hasFeedback = parseFeedbackFlag(vote?.has_feedback);
+      const competitionId =
+        vote?.competition_id
+        ?? vote?.competitionId
+        ?? style?.competition_id
+        ?? style?.competitionId
+        ?? classification?.competition_id
+        ?? classification?.competitionId
+        ?? null;
+      const judgeId = vote?.judge_id ?? vote?.judgeId ?? null;
       const tdJudge = document.createElement('td');
       tdJudge.className = 'text-start';
       tdJudge.title = judgeName;
@@ -394,17 +404,40 @@ function buildVotesDetailTable(styles, criteria, dancerId) {
       nameSpan.style.flex = '1 1 auto';
       nameSpan.textContent = judgeName;
       judgeWrap.appendChild(nameSpan);
+      const judgeActions = document.createElement('div');
+      judgeActions.className = 'd-flex align-items-center gap-2 ms-auto';
       if (commentText) {
         const commentBtn = document.createElement('button');
         commentBtn.type = 'button';
-        commentBtn.className = 'btn btn-link p-0 text-warning ms-auto';
+        commentBtn.className = 'btn btn-link p-0 text-warning';
         commentBtn.innerHTML = '<i class="bi bi-chat-dots-fill" aria-hidden="true"></i>';
         commentBtn.setAttribute('aria-label', t('comments'));
         commentBtn.addEventListener('click', (event) => {
           event.stopPropagation();
           showVoteComment(commentText, judgeName, styleName);
         });
-        judgeWrap.appendChild(commentBtn);
+        judgeActions.appendChild(commentBtn);
+      }
+      if (hasFeedback) {
+        const feedbackBtn = document.createElement('button');
+        feedbackBtn.type = 'button';
+        feedbackBtn.className = 'btn btn-link p-0 text-info';
+        feedbackBtn.innerHTML = '<i class="bi bi-mic-fill" aria-hidden="true"></i>';
+        feedbackBtn.setAttribute('aria-label', t('audio_feedback', 'Audio feedback'));
+        feedbackBtn.addEventListener('click', async (event) => {
+          event.stopPropagation();
+          await showVoteFeedbackAudio({
+            competitionId,
+            judgeId,
+            dancerId,
+            judgeName,
+            styleName
+          });
+        });
+        judgeActions.appendChild(feedbackBtn);
+      }
+      if (judgeActions.childNodes.length) {
+        judgeWrap.appendChild(judgeActions);
       }
       tdJudge.appendChild(judgeWrap);
       if (isMobile) {
@@ -449,6 +482,11 @@ function buildVotesDetailTable(styles, criteria, dancerId) {
 let commentsModalInstance = null;
 let commentsModalTitleEl = null;
 let commentsModalBodyEl = null;
+let feedbackAudioModalInstance = null;
+let feedbackAudioModalTitleEl = null;
+let feedbackAudioModalBodyEl = null;
+let feedbackAudioObjectUrl = '';
+let feedbackAudioRequestId = 0;
 
 function ensureCommentsModal() {
   if (commentsModalInstance) return commentsModalInstance;
@@ -496,6 +534,153 @@ function showVoteComment(commentText, judgeName, styleName) {
     `;
   }
   modal.show();
+}
+
+function parseFeedbackFlag(value) {
+  if (value === true || value === 1) return true;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized === '1' || normalized === 'true' || normalized === 'yes';
+  }
+  return false;
+}
+
+async function safeJson(res) {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function clearFeedbackAudioObjectUrl() {
+  if (!feedbackAudioObjectUrl) return;
+  URL.revokeObjectURL(feedbackAudioObjectUrl);
+  feedbackAudioObjectUrl = '';
+}
+
+function buildVoteFeedbackDownloadUrl(competitionId, judgeId, dancerId) {
+  const params = new URLSearchParams();
+  const currentEventId = getEvent()?.id;
+  if (currentEventId) params.set('event_id', String(currentEventId));
+  if (judgeId != null) params.set('judge_id', String(judgeId));
+  if (dancerId != null) params.set('dancer_id', String(dancerId));
+  return `${API_BASE_URL}/api/competitions/${competitionId}/feedback/download?${params.toString()}`;
+}
+
+function ensureFeedbackAudioModal() {
+  if (feedbackAudioModalInstance) return feedbackAudioModalInstance;
+  if (!document.getElementById('voteFeedbackAudioModal')) {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="modal fade" id="voteFeedbackAudioModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="voteFeedbackAudioModalLabel">${t('audio_feedback', 'Audio feedback')}</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="voteFeedbackAudioModalBody"></div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t('close', 'Close')}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `);
+  }
+
+  const modalEl = document.getElementById('voteFeedbackAudioModal');
+  feedbackAudioModalTitleEl = document.getElementById('voteFeedbackAudioModalLabel');
+  feedbackAudioModalBodyEl = document.getElementById('voteFeedbackAudioModalBody');
+  feedbackAudioModalInstance = new bootstrap.Modal(modalEl);
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    feedbackAudioRequestId += 1;
+    clearFeedbackAudioObjectUrl();
+    if (feedbackAudioModalBodyEl) {
+      feedbackAudioModalBodyEl.innerHTML = '';
+    }
+  });
+  return feedbackAudioModalInstance;
+}
+
+async function showVoteFeedbackAudio({ competitionId, judgeId, dancerId, judgeName, styleName }) {
+  const modal = ensureFeedbackAudioModal();
+  const requestId = feedbackAudioRequestId + 1;
+  feedbackAudioRequestId = requestId;
+  clearFeedbackAudioObjectUrl();
+
+  if (feedbackAudioModalTitleEl) {
+    feedbackAudioModalTitleEl.textContent = t('audio_feedback', 'Audio feedback');
+  }
+  if (feedbackAudioModalBodyEl) {
+    const judgeLine = judgeName && judgeName !== '-'
+      ? `<div class="small mb-1"><span class="text-muted">${t('judge')}:</span> <strong>${escapeHtml(judgeName)}</strong></div>`
+      : '';
+    const styleLine = styleName && styleName !== '-'
+      ? `<div class="small mb-3"><span class="text-muted">${t('style')}:</span> <strong>${escapeHtml(styleName)}</strong></div>`
+      : '';
+    feedbackAudioModalBodyEl.innerHTML = `
+      ${judgeLine}
+      ${styleLine}
+      <div class="d-flex align-items-center justify-content-center py-4">
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        <span>${escapeHtml(t('audio_feedback_loading', 'Loading audio...'))}</span>
+      </div>
+    `;
+  }
+
+  modal.show();
+
+  try {
+    if (!competitionId || !judgeId || !dancerId) {
+      throw new Error(t('audio_feedback_load_error', 'Error loading audio feedback.'));
+    }
+
+    const response = await fetch(buildVoteFeedbackDownloadUrl(competitionId, judgeId, dancerId));
+    if (!response.ok) {
+      const err = await safeJson(response);
+      throw new Error(err?.error || t('audio_feedback_load_error', 'Error loading audio feedback.'));
+    }
+
+    const blob = await response.blob();
+    if (requestId !== feedbackAudioRequestId) return;
+
+    feedbackAudioObjectUrl = URL.createObjectURL(blob);
+
+    if (feedbackAudioModalBodyEl) {
+      const judgeLine = judgeName && judgeName !== '-'
+        ? `<div class="small mb-1"><span class="text-muted">${t('judge')}:</span> <strong>${escapeHtml(judgeName)}</strong></div>`
+        : '';
+      const styleLine = styleName && styleName !== '-'
+        ? `<div class="small mb-3"><span class="text-muted">${t('style')}:</span> <strong>${escapeHtml(styleName)}</strong></div>`
+        : '';
+      feedbackAudioModalBodyEl.innerHTML = `
+        ${judgeLine}
+        ${styleLine}
+        <audio id="voteFeedbackAudioPlayer" class="w-100" controls preload="metadata"></audio>
+      `;
+      const playerEl = document.getElementById('voteFeedbackAudioPlayer');
+      if (playerEl) {
+        playerEl.src = feedbackAudioObjectUrl;
+        playerEl.load();
+      }
+    }
+  } catch (error) {
+    if (requestId !== feedbackAudioRequestId) return;
+    if (feedbackAudioModalBodyEl) {
+      const judgeLine = judgeName && judgeName !== '-'
+        ? `<div class="small mb-1"><span class="text-muted">${t('judge')}:</span> <strong>${escapeHtml(judgeName)}</strong></div>`
+        : '';
+      const styleLine = styleName && styleName !== '-'
+        ? `<div class="small mb-3"><span class="text-muted">${t('style')}:</span> <strong>${escapeHtml(styleName)}</strong></div>`
+        : '';
+      feedbackAudioModalBodyEl.innerHTML = `
+        ${judgeLine}
+        ${styleLine}
+        <div class="alert alert-danger mb-0">${escapeHtml(error?.message || t('audio_feedback_load_error', 'Error loading audio feedback.'))}</div>
+      `;
+    }
+  }
 }
 
 function createCol(width) {
