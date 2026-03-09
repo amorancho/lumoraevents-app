@@ -10,6 +10,25 @@ const CRITERIA_COL_VIS_STORAGE_PREFIX = 'lumora.voting.criteriaColumnsVisible';
 let modal, criteriaContainer;
 let commentsModal, commentsTextarea, saveCommentsBtn, clearCommentsBtn;
 let commentsContext = { competitionId: null, dancerId: null };
+let audioFeedbackModal;
+const audioFeedbackElements = {};
+const audioFeedbackState = {
+  context: null,
+  feedbackInfo: null,
+  remoteObjectUrl: '',
+  previewObjectUrl: '',
+  previewBlob: null,
+  previewDuration: null,
+  mediaRecorder: null,
+  mediaStream: null,
+  recordingChunks: [],
+  recordingStartedAt: 0,
+  recordingTimerId: null,
+  isLoading: false,
+  isSaving: false,
+  isDeleting: false,
+  loadRequestId: 0
+};
 let competitionSelect, competitionInfo, dancersTableContainer, refreshBtn, previousCompetitionBtn, nextCompetitionBtn;
 let competitionTomSelect = null;
 let availableCompetitions = [];
@@ -103,6 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   criteriaContainer = document.getElementById('criteriaContainer');
 
   initCommentsModal();
+  initAudioFeedbackModal();
   initPenaltyAssignmentModal();
 
 });
@@ -166,28 +186,27 @@ function setCriteriaColumnsVisibility(visible, { persist = false } = {}) {
 }
 
 function syncCommentsColumnPresentation() {
+  const feedbackLabel = t('feedback', 'Feedback');
   const commentsLabel = t('comments', 'Comments');
+  const audioFeedbackLabel = t('audio_feedback', 'Send feedback via audio');
 
   const commentsHeader = document.querySelector('#dancersTableHeadRow th[data-col="comments"]');
   if (commentsHeader) {
-    if (criteriaColumnsVisible) {
-      commentsHeader.innerHTML = `<i class="bi bi-chat-dots" title="${commentsLabel}" aria-label="${commentsLabel}"></i>`;
-    } else {
-      commentsHeader.textContent = commentsLabel;
-    }
+    commentsHeader.textContent = feedbackLabel;
   }
 
   document.querySelectorAll('#dancersTableContainer [data-role="comments-btn"]').forEach(btn => {
     const hasComments = btn.dataset.hasComments === 'true';
-    if (criteriaColumnsVisible) {
-      btn.innerHTML = `<i class="bi ${hasComments ? 'bi-chat-dots-fill' : 'bi-chat-dots'}" aria-hidden="true"></i>`;
-      btn.setAttribute('aria-label', commentsLabel);
-      btn.setAttribute('title', commentsLabel);
-    } else {
-      btn.textContent = commentsLabel;
-      btn.removeAttribute('title');
-      btn.setAttribute('aria-label', commentsLabel);
-    }
+    btn.innerHTML = `<i class="bi ${hasComments ? 'bi-chat-dots-fill' : 'bi-chat-dots'}" aria-hidden="true"></i>`;
+    btn.setAttribute('aria-label', commentsLabel);
+    btn.setAttribute('title', commentsLabel);
+  });
+
+  document.querySelectorAll('#dancersTableContainer [data-role="audio-feedback-btn"]').forEach(btn => {
+    const hasFeedback = btn.dataset.hasFeedback === 'true';
+    btn.innerHTML = `<i class="bi ${hasFeedback ? 'bi-mic-fill' : 'bi-mic'}" aria-hidden="true"></i>`;
+    btn.setAttribute('aria-label', audioFeedbackLabel);
+    btn.setAttribute('title', audioFeedbackLabel);
   });
 }
 
@@ -252,6 +271,724 @@ async function upsertComments(competitionId, dancerId, comments) {
     showMessageModal('Error saving comments', 'Error');
     setCommentsButtonsDisabled(false);
   }
+}
+
+async function safeJson(res) {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+function formatDuration(value) {
+  const totalSeconds = Math.round(Number(value));
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '-';
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
+function buildAudioFeedbackParams(dancerId) {
+  const params = new URLSearchParams();
+  params.set('event_id', String(getEvent()?.id ?? ''));
+  params.set('judge_id', String(getUserId() ?? ''));
+  params.set('dancer_id', String(dancerId ?? ''));
+  return params;
+}
+
+function getAudioFeedbackUrl(competitionId, dancerId) {
+  const params = buildAudioFeedbackParams(dancerId);
+  return `${API_BASE_URL}/api/competitions/${competitionId}/feedback?${params.toString()}`;
+}
+
+function getAudioFeedbackDownloadUrl(competitionId, dancerId) {
+  const params = buildAudioFeedbackParams(dancerId);
+  return `${API_BASE_URL}/api/competitions/${competitionId}/feedback/download?${params.toString()}`;
+}
+
+function supportsAudioFeedbackRecording() {
+  return Boolean(window.MediaRecorder && navigator.mediaDevices?.getUserMedia);
+}
+
+function getPreferredAudioFeedbackMimeType() {
+  if (typeof MediaRecorder !== 'function' || typeof MediaRecorder.isTypeSupported !== 'function') {
+    return '';
+  }
+
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/ogg;codecs=opus',
+    'audio/mp4'
+  ];
+
+  return candidates.find(type => MediaRecorder.isTypeSupported(type)) || '';
+}
+
+function getAudioFeedbackFileExtension(mimeType) {
+  const normalized = String(mimeType || '').toLowerCase();
+  if (normalized.includes('ogg')) return 'ogg';
+  if (normalized.includes('mp4') || normalized.includes('aac')) return 'm4a';
+  if (normalized.includes('mpeg') || normalized.includes('mp3')) return 'mp3';
+  if (normalized.includes('wav')) return 'wav';
+  return 'webm';
+}
+
+function buildAudioFeedbackFilename(mimeType) {
+  const dancerId = audioFeedbackState.context?.dancerId || 'participant';
+  const extension = getAudioFeedbackFileExtension(mimeType);
+  return `feedback-${dancerId}-${Date.now()}.${extension}`;
+}
+
+function getFilenameFromHeader(headerValue) {
+  if (!headerValue) return '';
+  const match = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(headerValue);
+  if (!match || !match[1]) return '';
+  try {
+    return decodeURIComponent(match[1].replace(/"/g, '').trim());
+  } catch {
+    return match[1].replace(/"/g, '').trim();
+  }
+}
+
+function clearAudioElementSource(audioEl) {
+  if (!audioEl) return;
+  audioEl.pause();
+  audioEl.removeAttribute('src');
+  audioEl.load();
+}
+
+function revokeObjectUrl(url) {
+  if (!url) return;
+  URL.revokeObjectURL(url);
+}
+
+function clearAudioFeedbackRemoteAudio() {
+  revokeObjectUrl(audioFeedbackState.remoteObjectUrl);
+  audioFeedbackState.remoteObjectUrl = '';
+  clearAudioElementSource(audioFeedbackElements.existingPlayer);
+}
+
+function clearAudioFeedbackPreview() {
+  revokeObjectUrl(audioFeedbackState.previewObjectUrl);
+  audioFeedbackState.previewObjectUrl = '';
+  audioFeedbackState.previewBlob = null;
+  audioFeedbackState.previewDuration = null;
+  clearAudioElementSource(audioFeedbackElements.previewPlayer);
+}
+
+function stopAudioFeedbackTimer() {
+  if (audioFeedbackState.recordingTimerId) {
+    window.clearInterval(audioFeedbackState.recordingTimerId);
+    audioFeedbackState.recordingTimerId = null;
+  }
+}
+
+function updateAudioFeedbackRecordingTimer(totalSeconds) {
+  if (audioFeedbackElements.recordingTimer) {
+    audioFeedbackElements.recordingTimer.textContent = formatDuration(totalSeconds);
+  }
+}
+
+function stopAudioFeedbackStream() {
+  if (!audioFeedbackState.mediaStream) return;
+  audioFeedbackState.mediaStream.getTracks().forEach(track => track.stop());
+  audioFeedbackState.mediaStream = null;
+}
+
+function isAudioFeedbackRecording() {
+  return Boolean(audioFeedbackState.mediaRecorder && audioFeedbackState.mediaRecorder.state === 'recording');
+}
+
+function setAudioFeedbackError(message = '') {
+  const errorEl = audioFeedbackElements.errorAlert;
+  if (!errorEl) return;
+  errorEl.textContent = message || '';
+  errorEl.classList.toggle('d-none', !message);
+}
+
+function resolveAudioFeedbackRecordingError(error) {
+  if (!window.isSecureContext) {
+    return t(
+      'audio_feedback_secure_context_error',
+      'El microfono solo se puede usar desde HTTPS o desde localhost.'
+    );
+  }
+
+  const errorName = String(error?.name || '').trim();
+
+  if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError' || errorName === 'SecurityError') {
+    return t(
+      'audio_feedback_permission_error',
+      'El navegador no tiene permiso para usar el microfono. Revisa el candado de la URL y permite acceso al microfono.'
+    );
+  }
+
+  if (errorName === 'NotFoundError' || errorName === 'DevicesNotFoundError') {
+    return t(
+      'audio_feedback_device_not_found_error',
+      'No se encontro ningun microfono disponible en este equipo.'
+    );
+  }
+
+  if (errorName === 'NotReadableError' || errorName === 'TrackStartError') {
+    return t(
+      'audio_feedback_device_busy_error',
+      'El microfono esta siendo usado por otra aplicacion o no se puede leer en este momento.'
+    );
+  }
+
+  if (errorName === 'OverconstrainedError' || errorName === 'ConstraintNotSatisfiedError') {
+    return t(
+      'audio_feedback_constraints_error',
+      'El navegador no ha podido inicializar la grabacion de audio con este dispositivo.'
+    );
+  }
+
+  return t(
+    'audio_feedback_microphone_error',
+    'No se pudo acceder al microfono.'
+  );
+}
+
+function updateAudioFeedbackUi() {
+  const hasRemoteFeedback = Boolean(audioFeedbackState.feedbackInfo);
+  const hasPreview = Boolean(audioFeedbackState.previewBlob);
+  const isRecording = isAudioFeedbackRecording();
+  const isBusy = audioFeedbackState.isLoading || audioFeedbackState.isSaving || audioFeedbackState.isDeleting;
+  const canRecord = supportsAudioFeedbackRecording();
+
+  if (audioFeedbackElements.loadingState) {
+    audioFeedbackElements.loadingState.classList.toggle('d-none', !audioFeedbackState.isLoading);
+  }
+
+  if (audioFeedbackElements.existingSection) {
+    audioFeedbackElements.existingSection.classList.toggle('d-none', audioFeedbackState.isLoading || !hasRemoteFeedback);
+  }
+
+  if (audioFeedbackElements.emptySection) {
+    audioFeedbackElements.emptySection.classList.toggle('d-none', audioFeedbackState.isLoading || hasRemoteFeedback);
+  }
+  if (audioFeedbackElements.emptyAlert) {
+    audioFeedbackElements.emptyAlert.classList.toggle('d-none', hasRemoteFeedback || hasPreview || isRecording);
+  }
+
+  if (hasRemoteFeedback) {
+    if (audioFeedbackElements.fileName) {
+      audioFeedbackElements.fileName.textContent =
+        audioFeedbackState.feedbackInfo?.original_name || t('audio_feedback_modal_title', 'Audio feedback');
+    }
+    if (audioFeedbackElements.existingDuration) {
+      const durationValue = audioFeedbackState.feedbackInfo?.duration;
+      audioFeedbackElements.existingDuration.textContent =
+        durationValue != null ? formatDuration(durationValue) : '-';
+    }
+    if (audioFeedbackElements.deleteBtn) {
+      audioFeedbackElements.deleteBtn.disabled = isBusy;
+    }
+    if (audioFeedbackElements.existingPlayer) {
+      audioFeedbackElements.existingPlayer.classList.toggle('d-none', !audioFeedbackState.remoteObjectUrl);
+    }
+  }
+
+  if (audioFeedbackElements.unsupportedAlert) {
+    audioFeedbackElements.unsupportedAlert.classList.toggle('d-none', hasRemoteFeedback || canRecord);
+  }
+  if (audioFeedbackElements.recordIdleSection) {
+    audioFeedbackElements.recordIdleSection.classList.toggle(
+      'd-none',
+      hasRemoteFeedback || !canRecord || hasPreview || isRecording
+    );
+  }
+  if (audioFeedbackElements.recordingSection) {
+    audioFeedbackElements.recordingSection.classList.toggle('d-none', hasRemoteFeedback || !isRecording);
+  }
+  if (audioFeedbackElements.previewSection) {
+    audioFeedbackElements.previewSection.classList.toggle('d-none', hasRemoteFeedback || !hasPreview);
+  }
+
+  if (audioFeedbackElements.startBtn) {
+    audioFeedbackElements.startBtn.disabled = isBusy || !canRecord;
+  }
+  if (audioFeedbackElements.stopBtn) {
+    audioFeedbackElements.stopBtn.disabled = isBusy || !isRecording;
+  }
+  if (audioFeedbackElements.discardBtn) {
+    audioFeedbackElements.discardBtn.disabled = isBusy || !hasPreview;
+  }
+  if (audioFeedbackElements.saveBtn) {
+    audioFeedbackElements.saveBtn.disabled = isBusy || !hasPreview;
+  }
+  if (audioFeedbackElements.previewDuration) {
+    audioFeedbackElements.previewDuration.textContent =
+      hasPreview && audioFeedbackState.previewDuration != null
+        ? formatDuration(audioFeedbackState.previewDuration)
+        : '-';
+  }
+  if (audioFeedbackElements.recorderStatus) {
+    let statusText = t(
+      'audio_feedback_record_hint',
+      'Use your microphone to record feedback for this participant.'
+    );
+
+    if (!canRecord) {
+      statusText = t(
+        'audio_feedback_recording_not_supported',
+        'This browser cannot record audio.'
+      );
+    } else if (hasPreview) {
+      statusText = t(
+        'audio_feedback_preview_hint',
+        'Review the recording before sending it.'
+      );
+    } else if (isRecording) {
+      statusText = t(
+        'audio_feedback_recording_in_progress',
+        'Recording in progress.'
+      );
+    }
+
+    audioFeedbackElements.recorderStatus.textContent = statusText;
+  }
+}
+
+async function readAudioDuration(blob) {
+  if (!(blob instanceof Blob)) return null;
+
+  return new Promise((resolve) => {
+    const audio = document.createElement('audio');
+    const objectUrl = URL.createObjectURL(blob);
+    audio.preload = 'metadata';
+    audio.src = objectUrl;
+    audio.onloadedmetadata = () => {
+      const duration = audio.duration;
+      URL.revokeObjectURL(objectUrl);
+      resolve(Number.isFinite(duration) ? duration : null);
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(null);
+    };
+  });
+}
+
+function abortAudioFeedbackRecording() {
+  stopAudioFeedbackTimer();
+
+  if (audioFeedbackState.mediaRecorder) {
+    audioFeedbackState.mediaRecorder.ondataavailable = null;
+    audioFeedbackState.mediaRecorder.onstop = null;
+    audioFeedbackState.mediaRecorder.onerror = null;
+    if (audioFeedbackState.mediaRecorder.state !== 'inactive') {
+      try {
+        audioFeedbackState.mediaRecorder.stop();
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  audioFeedbackState.mediaRecorder = null;
+  audioFeedbackState.recordingChunks = [];
+  audioFeedbackState.recordingStartedAt = 0;
+  stopAudioFeedbackStream();
+  updateAudioFeedbackRecordingTimer(0);
+}
+
+async function finalizeAudioFeedbackRecording() {
+  const mimeType = audioFeedbackState.mediaRecorder?.mimeType || audioFeedbackState.recordingChunks[0]?.type || 'audio/webm';
+  const elapsedSeconds = audioFeedbackState.recordingStartedAt
+    ? Math.max(1, Math.round((Date.now() - audioFeedbackState.recordingStartedAt) / 1000))
+    : null;
+  const chunks = audioFeedbackState.recordingChunks.slice();
+
+  stopAudioFeedbackTimer();
+  stopAudioFeedbackStream();
+  audioFeedbackState.mediaRecorder = null;
+  audioFeedbackState.recordingChunks = [];
+  audioFeedbackState.recordingStartedAt = 0;
+  updateAudioFeedbackRecordingTimer(0);
+
+  if (!chunks.length) {
+    updateAudioFeedbackUi();
+    return;
+  }
+
+  const blob = new Blob(chunks, { type: mimeType });
+  const detectedDuration = await readAudioDuration(blob);
+
+  clearAudioFeedbackPreview();
+  audioFeedbackState.previewBlob = blob;
+  audioFeedbackState.previewDuration = detectedDuration ?? elapsedSeconds;
+  audioFeedbackState.previewObjectUrl = URL.createObjectURL(blob);
+
+  if (audioFeedbackElements.previewPlayer) {
+    audioFeedbackElements.previewPlayer.src = audioFeedbackState.previewObjectUrl;
+    audioFeedbackElements.previewPlayer.load();
+  }
+
+  updateAudioFeedbackUi();
+}
+
+async function startAudioFeedbackRecording() {
+  if (!supportsAudioFeedbackRecording()) {
+    setAudioFeedbackError(
+      t('audio_feedback_recording_not_supported', 'This browser cannot record audio.')
+    );
+    updateAudioFeedbackUi();
+    return;
+  }
+
+  setAudioFeedbackError('');
+  clearAudioFeedbackPreview();
+
+  if (!window.isSecureContext) {
+    setAudioFeedbackError(
+      t(
+        'audio_feedback_secure_context_error',
+        'El microfono solo se puede usar desde HTTPS o desde localhost.'
+      )
+    );
+    updateAudioFeedbackUi();
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const preferredMimeType = getPreferredAudioFeedbackMimeType();
+    const recorder = preferredMimeType
+      ? new MediaRecorder(stream, { mimeType: preferredMimeType })
+      : new MediaRecorder(stream);
+
+    audioFeedbackState.mediaStream = stream;
+    audioFeedbackState.mediaRecorder = recorder;
+    audioFeedbackState.recordingChunks = [];
+    audioFeedbackState.recordingStartedAt = Date.now();
+    updateAudioFeedbackRecordingTimer(0);
+
+    recorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) {
+        audioFeedbackState.recordingChunks.push(event.data);
+      }
+    };
+    recorder.onerror = () => {
+      setAudioFeedbackError(
+        t(
+          'audio_feedback_device_busy_error',
+          'El microfono esta siendo usado por otra aplicacion o no se puede leer en este momento.'
+        )
+      );
+      abortAudioFeedbackRecording();
+      updateAudioFeedbackUi();
+    };
+    recorder.onstop = async () => {
+      await finalizeAudioFeedbackRecording();
+    };
+
+    stopAudioFeedbackTimer();
+    audioFeedbackState.recordingTimerId = window.setInterval(() => {
+      if (!audioFeedbackState.recordingStartedAt) return;
+      const elapsedSeconds = Math.max(0, Math.round((Date.now() - audioFeedbackState.recordingStartedAt) / 1000));
+      updateAudioFeedbackRecordingTimer(elapsedSeconds);
+    }, 250);
+
+    recorder.start();
+    updateAudioFeedbackUi();
+  } catch (error) {
+    console.error('Error starting audio feedback recording', error);
+    abortAudioFeedbackRecording();
+    setAudioFeedbackError(resolveAudioFeedbackRecordingError(error));
+    updateAudioFeedbackUi();
+  }
+}
+
+function stopAudioFeedbackRecording() {
+  if (!isAudioFeedbackRecording()) return;
+  if (audioFeedbackElements.stopBtn) {
+    audioFeedbackElements.stopBtn.disabled = true;
+  }
+  audioFeedbackState.mediaRecorder.stop();
+}
+
+function resetAudioFeedbackModalState() {
+  audioFeedbackState.loadRequestId += 1;
+  audioFeedbackState.context = null;
+  audioFeedbackState.feedbackInfo = null;
+  audioFeedbackState.isLoading = false;
+  audioFeedbackState.isSaving = false;
+  audioFeedbackState.isDeleting = false;
+
+  abortAudioFeedbackRecording();
+  clearAudioFeedbackRemoteAudio();
+  clearAudioFeedbackPreview();
+  setAudioFeedbackError('');
+
+  if (audioFeedbackElements.participantName) {
+    audioFeedbackElements.participantName.textContent = '-';
+  }
+  if (audioFeedbackElements.competitionName) {
+    audioFeedbackElements.competitionName.textContent = '';
+  }
+  if (audioFeedbackElements.fileName) {
+    audioFeedbackElements.fileName.textContent = '-';
+  }
+  if (audioFeedbackElements.existingDuration) {
+    audioFeedbackElements.existingDuration.textContent = '-';
+  }
+  if (audioFeedbackElements.previewDuration) {
+    audioFeedbackElements.previewDuration.textContent = '-';
+  }
+
+  updateAudioFeedbackUi();
+}
+
+async function loadAudioFeedbackRemoteAudio(requestId) {
+  const context = audioFeedbackState.context;
+  if (!context?.competitionId || !context?.dancerId) return;
+
+  const response = await fetch(getAudioFeedbackDownloadUrl(context.competitionId, context.dancerId));
+  if (!response.ok) {
+    const errData = await safeJson(response);
+    throw new Error(errData?.error || t('audio_feedback_download_error', 'Error loading audio playback.'));
+  }
+
+  const blob = await response.blob();
+  if (requestId !== audioFeedbackState.loadRequestId) return;
+
+  clearAudioFeedbackRemoteAudio();
+  audioFeedbackState.remoteObjectUrl = URL.createObjectURL(blob);
+
+  if (audioFeedbackElements.existingPlayer) {
+    audioFeedbackElements.existingPlayer.src = audioFeedbackState.remoteObjectUrl;
+    audioFeedbackElements.existingPlayer.load();
+  }
+
+  const headerFilename = getFilenameFromHeader(response.headers.get('content-disposition'));
+  if (!audioFeedbackState.feedbackInfo?.original_name && headerFilename) {
+    audioFeedbackState.feedbackInfo.original_name = headerFilename;
+  }
+
+  if (audioFeedbackState.feedbackInfo?.duration == null) {
+    const detectedDuration = await readAudioDuration(blob);
+    if (requestId === audioFeedbackState.loadRequestId && audioFeedbackState.feedbackInfo) {
+      audioFeedbackState.feedbackInfo.duration = detectedDuration;
+    }
+  }
+}
+
+async function loadAudioFeedback() {
+  const context = audioFeedbackState.context;
+  if (!context?.competitionId || !context?.dancerId) return;
+
+  const requestId = audioFeedbackState.loadRequestId + 1;
+  audioFeedbackState.loadRequestId = requestId;
+  audioFeedbackState.isLoading = true;
+  audioFeedbackState.feedbackInfo = null;
+  clearAudioFeedbackRemoteAudio();
+  clearAudioFeedbackPreview();
+  setAudioFeedbackError('');
+  updateAudioFeedbackUi();
+
+  try {
+    const response = await fetch(getAudioFeedbackUrl(context.competitionId, context.dancerId));
+    if (!response.ok) {
+      if (response.status === 404) {
+        return;
+      }
+      const errData = await safeJson(response);
+      throw new Error(errData?.error || t('audio_feedback_load_error', 'Error loading audio feedback.'));
+    }
+
+    const payload = await safeJson(response);
+    if (requestId !== audioFeedbackState.loadRequestId) return;
+
+    if (!payload || (!payload.original_name && !payload.audio_url && !payload.id)) {
+      return;
+    }
+
+    audioFeedbackState.feedbackInfo = payload;
+    await loadAudioFeedbackRemoteAudio(requestId);
+  } catch (error) {
+    console.error('Error loading audio feedback', error);
+    if (requestId !== audioFeedbackState.loadRequestId) return;
+    audioFeedbackState.feedbackInfo = null;
+    setAudioFeedbackError(
+      error?.message || t('audio_feedback_load_error', 'Error loading audio feedback.')
+    );
+  } finally {
+    if (requestId === audioFeedbackState.loadRequestId) {
+      audioFeedbackState.isLoading = false;
+      updateAudioFeedbackUi();
+    }
+  }
+}
+
+async function uploadAudioFeedback() {
+  const context = audioFeedbackState.context;
+  if (!context?.competitionId || !context?.dancerId || !audioFeedbackState.previewBlob) return;
+
+  audioFeedbackState.isSaving = true;
+  setAudioFeedbackError('');
+  setButtonLoading(
+    audioFeedbackElements.saveBtn,
+    true,
+    t('sending', 'Sending')
+  );
+  updateAudioFeedbackUi();
+
+  try {
+    const formData = new FormData();
+    formData.append(
+      'audio',
+      audioFeedbackState.previewBlob,
+      buildAudioFeedbackFilename(audioFeedbackState.previewBlob.type)
+    );
+
+    const response = await fetch(getAudioFeedbackUrl(context.competitionId, context.dancerId), {
+      method: 'POST',
+      body: formData
+    });
+    const payload = await safeJson(response);
+
+    if (!response.ok) {
+      throw new Error(payload?.error || t('audio_feedback_save_error', 'Error sending audio feedback.'));
+    }
+
+    clearAudioFeedbackPreview();
+    await loadCompetitionAndDancers();
+    await loadAudioFeedback();
+  } catch (error) {
+    console.error('Error uploading audio feedback', error);
+    setAudioFeedbackError(
+      error?.message || t('audio_feedback_save_error', 'Error sending audio feedback.')
+    );
+  } finally {
+    audioFeedbackState.isSaving = false;
+    setButtonLoading(audioFeedbackElements.saveBtn, false);
+    updateAudioFeedbackUi();
+  }
+}
+
+async function deleteAudioFeedback() {
+  const context = audioFeedbackState.context;
+  if (!context?.competitionId || !context?.dancerId || !audioFeedbackState.feedbackInfo) return;
+
+  const confirmed = window.confirm(
+    t('audio_feedback_delete_confirm', 'Are you sure you want to delete this audio feedback?')
+  );
+  if (!confirmed) return;
+
+  audioFeedbackState.isDeleting = true;
+  setAudioFeedbackError('');
+  setButtonLoading(
+    audioFeedbackElements.deleteBtn,
+    true,
+    t('loading', 'Loading...')
+  );
+  updateAudioFeedbackUi();
+
+  try {
+    const response = await fetch(getAudioFeedbackUrl(context.competitionId, context.dancerId), {
+      method: 'DELETE'
+    });
+    const payload = await safeJson(response);
+
+    if (!response.ok) {
+      throw new Error(payload?.error || t('audio_feedback_delete_error', 'Error deleting audio feedback.'));
+    }
+
+    audioFeedbackState.feedbackInfo = null;
+    clearAudioFeedbackRemoteAudio();
+    await loadCompetitionAndDancers();
+  } catch (error) {
+    console.error('Error deleting audio feedback', error);
+    setAudioFeedbackError(
+      error?.message || t('audio_feedback_delete_error', 'Error deleting audio feedback.')
+    );
+  } finally {
+    audioFeedbackState.isDeleting = false;
+    setButtonLoading(audioFeedbackElements.deleteBtn, false);
+    updateAudioFeedbackUi();
+  }
+}
+
+function initAudioFeedbackModal() {
+  const modalEl = document.getElementById('audioFeedbackModal');
+  if (!modalEl) return;
+
+  audioFeedbackElements.modal = modalEl;
+  audioFeedbackElements.participantName = document.getElementById('audioFeedbackParticipantName');
+  audioFeedbackElements.competitionName = document.getElementById('audioFeedbackCompetitionName');
+  audioFeedbackElements.loadingState = document.getElementById('audioFeedbackLoadingState');
+  audioFeedbackElements.errorAlert = document.getElementById('audioFeedbackErrorAlert');
+  audioFeedbackElements.existingSection = document.getElementById('audioFeedbackExistingSection');
+  audioFeedbackElements.fileName = document.getElementById('audioFeedbackFileName');
+  audioFeedbackElements.existingDuration = document.getElementById('audioFeedbackExistingDuration');
+  audioFeedbackElements.existingPlayer = document.getElementById('audioFeedbackExistingPlayer');
+  audioFeedbackElements.deleteBtn = document.getElementById('deleteAudioFeedbackBtn');
+  audioFeedbackElements.emptySection = document.getElementById('audioFeedbackEmptySection');
+  audioFeedbackElements.emptyAlert = document.getElementById('audioFeedbackEmptyAlert');
+  audioFeedbackElements.unsupportedAlert = document.getElementById('audioFeedbackUnsupportedAlert');
+  audioFeedbackElements.recordIdleSection = document.getElementById('audioFeedbackRecordIdleSection');
+  audioFeedbackElements.startBtn = document.getElementById('startAudioFeedbackBtn');
+  audioFeedbackElements.recordingSection = document.getElementById('audioFeedbackRecordingSection');
+  audioFeedbackElements.recordingTimer = document.getElementById('audioFeedbackRecordingTimer');
+  audioFeedbackElements.stopBtn = document.getElementById('stopAudioFeedbackBtn');
+  audioFeedbackElements.previewSection = document.getElementById('audioFeedbackPreviewSection');
+  audioFeedbackElements.previewPlayer = document.getElementById('audioFeedbackPreviewPlayer');
+  audioFeedbackElements.previewDuration = document.getElementById('audioFeedbackPreviewDuration');
+  audioFeedbackElements.discardBtn = document.getElementById('discardAudioFeedbackBtn');
+  audioFeedbackElements.saveBtn = document.getElementById('saveAudioFeedbackBtn');
+  audioFeedbackElements.recorderStatus = document.getElementById('audioFeedbackRecorderStatus');
+
+  audioFeedbackModal = new bootstrap.Modal(modalEl);
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    resetAudioFeedbackModalState();
+  });
+
+  audioFeedbackElements.startBtn?.addEventListener('click', async () => {
+    await startAudioFeedbackRecording();
+  });
+  audioFeedbackElements.stopBtn?.addEventListener('click', () => {
+    stopAudioFeedbackRecording();
+  });
+  audioFeedbackElements.discardBtn?.addEventListener('click', () => {
+    clearAudioFeedbackPreview();
+    updateAudioFeedbackUi();
+  });
+  audioFeedbackElements.saveBtn?.addEventListener('click', async () => {
+    await uploadAudioFeedback();
+  });
+  audioFeedbackElements.deleteBtn?.addEventListener('click', async () => {
+    await deleteAudioFeedback();
+  });
+
+  updateAudioFeedbackUi();
+}
+
+async function openAudioFeedbackModal(context) {
+  if (!audioFeedbackModal) return;
+
+  resetAudioFeedbackModalState();
+  audioFeedbackState.context = {
+    competitionId: context?.competitionId ?? null,
+    dancerId: context?.dancerId ?? null,
+    dancerName: context?.dancerName || t('col_dancer', 'Dancer'),
+    competitionLabel: context?.competitionLabel || ''
+  };
+
+  if (audioFeedbackElements.participantName) {
+    audioFeedbackElements.participantName.textContent = audioFeedbackState.context.dancerName;
+  }
+  if (audioFeedbackElements.competitionName) {
+    audioFeedbackElements.competitionName.textContent = audioFeedbackState.context.competitionLabel;
+  }
+
+  audioFeedbackState.isLoading = true;
+  updateAudioFeedbackUi();
+  audioFeedbackModal.show();
+  await loadAudioFeedback();
 }
 
 async function loadCompetitionAndDancers() {
@@ -908,24 +1645,47 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
 
     tr.appendChild(tdActions);
 
-    // Columna Comments (Ãºltima)
+    // Columna Feedback (ultima)
     const tdComments = document.createElement('td');
     tdComments.className = 'text-center';
 
     const hasComments = typeof d.comments === 'string' && d.comments.trim().length > 0;
+    const hasAudioFeedback = parseJudgeFlag(d?.has_feedback);
     if (d.status === 'Completed') {
+      const feedbackActions = document.createElement('div');
+      feedbackActions.className = 'feedback-actions';
+
       const btnComments = document.createElement('button');
-      btnComments.className = `btn btn-sm ${hasComments ? 'btn-comments' : 'btn-outline-comments'}`;
+      btnComments.type = 'button';
+      btnComments.className = `btn btn-sm btn-feedback-icon ${hasComments ? 'btn-comments' : 'btn-outline-comments'}`;
       btnComments.dataset.role = 'comments-btn';
       btnComments.dataset.hasComments = hasComments ? 'true' : 'false';
-      btnComments.textContent = t('comments', 'Comments');
       btnComments.addEventListener('click', () => {
         if (!commentsModal) return;
         commentsContext = { competitionId: d.competition_id, dancerId: d.id };
         commentsTextarea.value = d.comments || '';
         commentsModal.show();
       });
-      tdComments.appendChild(btnComments);
+      feedbackActions.appendChild(btnComments);
+
+      if (getEvent()?.hasJudgeFeedback) {
+        const btnAudioFeedback = document.createElement('button');
+        btnAudioFeedback.type = 'button';
+        btnAudioFeedback.className = `btn btn-sm btn-feedback-icon ${hasAudioFeedback ? 'btn-audio-feedback' : 'btn-outline-audio-feedback'}`;
+        btnAudioFeedback.dataset.role = 'audio-feedback-btn';
+        btnAudioFeedback.dataset.hasFeedback = hasAudioFeedback ? 'true' : 'false';
+        btnAudioFeedback.addEventListener('click', async () => {
+          await openAudioFeedbackModal({
+            competitionId: d?.competition_id ?? selectedCompetition?.id ?? selectedCompetitionId,
+            dancerId: d?.id,
+            dancerName: d?.name || t('col_dancer', 'Dancer'),
+            competitionLabel
+          });
+        });
+        feedbackActions.appendChild(btnAudioFeedback);
+      }
+
+      tdComments.appendChild(feedbackActions);
     } else {
       tdComments.textContent = '-';
     }
@@ -982,7 +1742,7 @@ function renderDancersTableHeader() {
   headRow.appendChild(th(t('col_status', 'Status'), 'text-center'));
   headRow.appendChild(th(t('col_action', 'Action'), 'text-center'));
   {
-    const el = th(t('comments', 'Comments'), 'text-center');
+    const el = th(t('feedback', 'Feedback'), 'text-center');
     el.dataset.col = 'comments';
     headRow.appendChild(el);
   }

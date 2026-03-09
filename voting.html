@@ -38,6 +38,107 @@
       color: #fff;
     }
 
+    .btn-audio-feedback {
+      background-color: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+    }
+
+    .btn-audio-feedback:hover {
+      background-color: #115e59;
+      border-color: #115e59;
+      color: #fff;
+    }
+
+    .btn-outline-audio-feedback {
+      color: #0f766e;
+      border-color: #0f766e;
+    }
+
+    .btn-outline-audio-feedback:hover {
+      background-color: #0f766e;
+      border-color: #0f766e;
+      color: #fff;
+    }
+
+    .feedback-actions {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-feedback-icon {
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    #audioFeedbackModal .modal-body {
+      min-height: 260px;
+    }
+
+    .audio-feedback-card {
+      border: 1px solid #dfe3e8;
+      border-radius: 0.75rem;
+      background: #f8f9fa;
+      padding: 1rem;
+    }
+
+    .audio-feedback-player {
+      width: 100%;
+    }
+
+    .audio-feedback-meta {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .audio-feedback-title {
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .audio-feedback-duration {
+      font-size: 0.9rem;
+      color: #6c757d;
+    }
+
+    .audio-feedback-recording-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .audio-feedback-recording-dot {
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 50%;
+      background: #dc3545;
+      animation: audio-feedback-pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes audio-feedback-pulse {
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      50% {
+        opacity: 0.45;
+        transform: scale(0.82);
+      }
+    }
+
     #dancersTableContainer.dancers-table-collapsed {
       max-width: 700px;
     }
@@ -309,6 +410,90 @@
               <button type="button" class="btn btn-outline-danger" id="clearCommentsBtn" data-i18n="clear">Clear</button>
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
               <button type="button" class="btn btn-primary" id="saveCommentsBtn" data-i18n="save">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="audioFeedbackModal" tabindex="-1" aria-labelledby="audioFeedbackModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="audioFeedbackModalLabel" data-i18n="audio_feedback_modal_title">Audio feedback</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <div class="fw-semibold" id="audioFeedbackParticipantName">-</div>
+                <div class="small text-muted" id="audioFeedbackCompetitionName"></div>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-center py-4 d-none" id="audioFeedbackLoadingState">
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span data-i18n="audio_feedback_loading">Loading audio...</span>
+              </div>
+
+              <div class="alert alert-danger d-none" id="audioFeedbackErrorAlert"></div>
+
+              <div id="audioFeedbackExistingSection" class="d-none">
+                <div class="audio-feedback-card">
+                  <div class="audio-feedback-meta">
+                    <div>
+                      <div class="audio-feedback-title" id="audioFeedbackFileName">-</div>
+                      <div class="audio-feedback-duration">
+                        <span data-i18n="audio_feedback_duration">Duration</span>:
+                        <span id="audioFeedbackExistingDuration">-</span>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm" id="deleteAudioFeedbackBtn" data-i18n="audio_feedback_delete">Delete audio</button>
+                  </div>
+                  <audio id="audioFeedbackExistingPlayer" class="audio-feedback-player mt-3" controls preload="metadata"></audio>
+                </div>
+              </div>
+
+              <div id="audioFeedbackEmptySection" class="d-none">
+                <div class="alert alert-info mb-3" id="audioFeedbackEmptyAlert" data-i18n="audio_feedback_no_audio">No audio feedback yet.</div>
+                <div class="alert alert-warning d-none" id="audioFeedbackUnsupportedAlert" data-i18n="audio_feedback_recording_not_supported">
+                  This browser cannot record audio.
+                </div>
+
+                <div id="audioFeedbackRecordIdleSection">
+                  <button type="button" class="btn btn-outline-primary" id="startAudioFeedbackBtn" data-i18n="audio_feedback_record">Record audio</button>
+                </div>
+
+                <div class="d-none" id="audioFeedbackRecordingSection">
+                  <div class="mb-3">
+                    <span class="badge text-bg-danger audio-feedback-recording-badge">
+                      <span class="audio-feedback-recording-dot" aria-hidden="true"></span>
+                      <span data-i18n="audio_feedback_recording">Recording</span>
+                    </span>
+                    <span class="ms-2 fw-semibold" id="audioFeedbackRecordingTimer">0:00</span>
+                  </div>
+                  <button type="button" class="btn btn-outline-danger" id="stopAudioFeedbackBtn" data-i18n="audio_feedback_stop">Stop recording</button>
+                </div>
+
+                <div class="d-none" id="audioFeedbackPreviewSection">
+                  <div class="audio-feedback-card">
+                    <div class="audio-feedback-title mb-2" data-i18n="audio_feedback_preview_title">Recorded audio</div>
+                    <audio id="audioFeedbackPreviewPlayer" class="audio-feedback-player" controls preload="metadata"></audio>
+                    <div class="audio-feedback-duration mt-2">
+                      <span data-i18n="audio_feedback_duration">Duration</span>:
+                      <span id="audioFeedbackPreviewDuration">-</span>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap mt-3">
+                      <button type="button" class="btn btn-outline-secondary" id="discardAudioFeedbackBtn" data-i18n="audio_feedback_discard">Discard audio</button>
+                      <button type="button" class="btn btn-primary" id="saveAudioFeedbackBtn" data-i18n="audio_feedback_send">Send audio</button>
+                    </div>
+                  </div>
+                </div>
+
+                <p class="small text-muted mb-0 mt-3" id="audioFeedbackRecorderStatus" data-i18n="audio_feedback_record_hint">
+                  Use your microphone to record feedback for this participant.
+                </p>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
             </div>
           </div>
         </div>
