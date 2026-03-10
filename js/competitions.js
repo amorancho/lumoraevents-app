@@ -9,7 +9,8 @@ const criteriaPerJudgeState = {
   groupsByKey: new Map(),
   selectedGroupKey: null,
   selectedCompetitionIds: new Set(),
-  criteriaAssignments: new Map()
+  criteriaAssignments: new Map(),
+  hasPersistedChanges: false
 };
 const criteriaPerJudgeCompetitionState = {
   competitionId: null,
@@ -253,7 +254,7 @@ function loadCompetitions() {
         }
       </td>
       ${criteriaCell}
-      <td>
+      <td class="text-center">
         <span class="badge bg-secondary">${comp.num_dancers}</span>
       </td>
       <td class="text-center">
@@ -801,6 +802,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           await fetchCompetitionsFromAPI();
         }
 
+        criteriaPerJudgeState.hasPersistedChanges = false;
         prepareCriteriaPerJudgeAssignmentModal();
         criteriaPerJudgeAssignmentModal.show();
       });
@@ -821,10 +823,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
 
-      criteriaPerJudgeAssignmentModalEl.addEventListener('hidden.bs.modal', () => {
+      criteriaPerJudgeAssignmentModalEl.addEventListener('hidden.bs.modal', async () => {
+        const shouldRefreshCompetitions = criteriaPerJudgeState.hasPersistedChanges;
+        criteriaPerJudgeState.hasPersistedChanges = false;
         clearCriteriaPerJudgeSelections();
         renderCriteriaPerJudgeGroupsAccordion();
         renderCriteriaPerJudgeMappingPanel();
+
+        if (shouldRefreshCompetitions) {
+          await fetchCompetitionsFromAPI();
+        }
       });
     }
 
@@ -1973,6 +1981,7 @@ async function handleCriteriaPerJudgeAssignmentSubmit() {
       t('max_times_info_title', 'Information'),
       'success'
     );
+    criteriaPerJudgeState.hasPersistedChanges = true;
   } catch (error) {
     showMessageModal(
       error?.message || t('criteria_per_judge_request_error', 'Error al asignar criterios por juez.'),
