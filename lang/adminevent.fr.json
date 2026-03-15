@@ -74,7 +74,7 @@
   "export_event_title": "Exporter evenement",
   "export_event_confirm": "Etes-vous sur de vouloir exporter cet evenement?",
   "export_event_info": "L export generera un PDF pour chaque juge afin de completer le vote sur papier en cas de perte de connexion internet et si l application ne peut pas etre utilisee le jour de l evenement. Ce processus peut prendre quelques secondes. Ne fermez pas et ne rechargez pas la page pendant l export.",
-  "export_apply_restriction_voting_label": "Voulez-vous appliquer la restriction de vote lors de la génération des pages par juge ?",
+  "export_apply_restriction_voting_label": "Voulez-vous appliquer la restriction de vote lors de la generation des pages par juge ?",
   "export_event_confirm_btn": "Oui, exporter",
   "event_status_modal_default_title": "Confirmer action",
   "error_title": "Erreur",
