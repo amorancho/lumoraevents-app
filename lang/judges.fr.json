@@ -35,6 +35,7 @@
   "guardando": "Enregistrement en cours...",
   "error_sending_email": "Erreur lors de l'envoi de l'email",
   "confirm_send_email_to_all": "Êtes-vous sûr de vouloir envoyer l'email de bienvenue à tous les juges qui ne l'ont pas encore reçu ?",
+  "confirm_send_email_to_all_note": "Si vous souhaitez renvoyer l'email de bienvenue à un juge (par oubli ou parce que l'email a été modifié), vous devrez le faire depuis sa fiche.",
   "enviando": "Envoi en cours...",
   "email_status_sent": "ENVOYÉ",
   "email_status_error": "ERREUR",

@@ -35,6 +35,7 @@
   "guardando": "Guardando...",
   "error_sending_email": "Error al enviar el email",
   "confirm_send_email_to_all": "¿Estás seguro de que deseas enviar el email de bienvenida a todos los jueces que aún no lo han recibido?",
+  "confirm_send_email_to_all_note": "Si deseas volver a enviar el email de bienvenida a un juez (por olvido o porque se cambió el email), deberás hacerlo desde su ficha.",
   "enviando": "Enviando...",
   "email_status_sent": "ENVIADO",
   "email_status_error": "ERROR",

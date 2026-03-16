@@ -35,6 +35,7 @@
   "guardando": "Salvataggio in corso...",
   "error_sending_email": "Errore durante l'invio dell'email",
   "confirm_send_email_to_all": "Sei sicuro di voler inviare l'email di benvenuto a tutti i giudici che non l'hanno ancora ricevuta?",
+  "confirm_send_email_to_all_note": "Se desideri inviare di nuovo l'email di benvenuto a un giudice (per dimenticanza o perché l'email è cambiata), dovrai farlo dalla sua scheda.",
   "enviando": "Invio in corso...",
   "email_status_sent": "INVIATO",
   "email_status_error": "ERRORE",

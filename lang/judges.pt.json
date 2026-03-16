@@ -35,6 +35,7 @@
   "guardando": "A guardar...",
   "error_sending_email": "Erro ao enviar o email",
   "confirm_send_email_to_all": "Tem certeza de que deseja enviar o email de boas-vindas a todos os jurados que ainda não o receberam?",
+  "confirm_send_email_to_all_note": "Se quiser voltar a enviar o email de boas-vindas a um jurado (por esquecimento ou porque o email foi alterado), deverá fazê-lo a partir da ficha desse jurado.",
   "enviando": "A enviar...",
   "email_status_sent": "ENVIADO",
   "email_status_error": "ERRO",

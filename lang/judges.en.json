@@ -35,6 +35,7 @@
   "guardando": "Saving...",
   "error_sending_email": "Error sending email",
   "confirm_send_email_to_all": "Are you sure you want to send the welcome email to all judges who have not received it?",
+  "confirm_send_email_to_all_note": "If you need to resend the welcome email to a judge (because they forgot it or because the email address changed), you must do it from that judge's profile.",
   "sending": "Sending...",
   "email_status_sent": "SENT",
   "email_status_error": "ERROR",
