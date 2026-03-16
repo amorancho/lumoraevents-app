@@ -1088,13 +1088,43 @@ function confirmDelete(message, callback) {
   confirmDeleteModal.show();
 }
 
+function setButtonSpinnerOverlay(button, isLoading) {
+  if (!button) return;
+
+  if (isLoading) {
+    if (!button.dataset.originalHtml) {
+      button.dataset.originalHtml = button.innerHTML;
+    }
+
+    button.classList.add('btn-loading-overlay');
+    button.innerHTML = `
+      <span class="btn-loading-label">${button.dataset.originalHtml}</span>
+      <span class="btn-loading-spinner" aria-hidden="true">
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      </span>
+    `;
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    return;
+  }
+
+  if (button.dataset.originalHtml) {
+    button.innerHTML = button.dataset.originalHtml;
+    delete button.dataset.originalHtml;
+  }
+
+  button.classList.remove('btn-loading-overlay');
+  button.disabled = false;
+  button.removeAttribute('aria-busy');
+}
+
 async function exportSchedulePdf() {
   const exportButton = document.getElementById('confirmExportPdfBtn');
   const triggerButton = document.getElementById('exportPdfBtn');
   if (!exportButton) return;
 
-  exportButton.disabled = true;
-  if (triggerButton) triggerButton.disabled = true;
+  setButtonSpinnerOverlay(exportButton, true);
+  setButtonSpinnerOverlay(triggerButton, true);
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/competitions/schedule/export?event_id=${encodeURIComponent(getEvent().id)}`, {
@@ -1122,8 +1152,8 @@ async function exportSchedulePdf() {
     console.error('Failed to export schedule PDF:', error);
     showMessageModal(error?.message || t('schedule_export_error', 'Error exporting schedule'), t('error'));
   } finally {
-    exportButton.disabled = false;
-    if (triggerButton) triggerButton.disabled = false;
+    setButtonSpinnerOverlay(exportButton, false);
+    setButtonSpinnerOverlay(triggerButton, false);
   }
 }
 

@@ -5,7 +5,7 @@ const voteDetailsInFlight = new Set();
 const competitionDetailsInFlight = new Set();
 const SIDEBAR_STATUS_FILTER_NOT_FINISHED = '__NOT_FINISHED__';
 const TRACKING_SIDEBAR_FILTERS_STORAGE_PREFIX = 'lumora.tracking.sidebarFilters';
-const LIVE_TRACKING_POLL_INTERVAL_MS = 30000;
+const LIVE_TRACKING_POLL_INTERVAL_MS = 15000;
 const classificationExportState = {
   options: [],
   mode: 'ALL',
