@@ -7,6 +7,7 @@ let events = [];
 
 let clientModal;
 let eventModal;
+let clearEventDataModal;
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   clientModal = new bootstrap.Modal(document.getElementById('clientModal'));
   eventModal = new bootstrap.Modal(document.getElementById('eventModal'));
+  clearEventDataModal = new bootstrap.Modal(document.getElementById('clearEventDataModal'));
 
   // botón crear nuevo evento
   const createEventBtn = document.getElementById('createNewEventBtn');
@@ -58,6 +60,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   });
+
+  const clearEventDataCodeInput = document.getElementById('clearEventDataCodeInput');
+  if (clearEventDataCodeInput) {
+    clearEventDataCodeInput.addEventListener('input', () => {
+      clearEventDataCodeInput.classList.remove('is-invalid');
+      document.getElementById('clearEventDataFeedback')?.classList.add('d-none');
+    });
+  }
+
+  const confirmClearEventDataBtn = document.getElementById('confirmClearEventDataBtn');
+  if (confirmClearEventDataBtn) {
+    confirmClearEventDataBtn.addEventListener('click', async () => {
+      await clearEventData();
+    });
+  }
 
 });
 
@@ -157,6 +174,9 @@ function renderEvents() {
           </button>
           <button type="button" class="btn btn-outline-primary btn-sm btn-edit-event" title="Edit">
             <i class="bi bi-pencil"></i>
+          </button>
+          <button type="button" class="btn btn-outline-warning btn-sm btn-clear-event-data" title="Vaciar datos">
+            <i class="bi bi-eraser"></i>
           </button>
           <button type="button" class="btn btn-outline-danger btn-sm btn-delete-event" title="Delete">
             <i class="bi bi-trash"></i>
@@ -594,6 +614,87 @@ async function duplicateEvent(eventId, duplicateType) {
   }
 }
 
+function openClearEventDataModal(eventObj) {
+  if (!eventObj) return;
+
+  const modalEl = document.getElementById('clearEventDataModal');
+  const nameEl = document.getElementById('clearEventDataName');
+  const expectedCodeEl = document.getElementById('clearEventDataExpectedCode');
+  const inputEl = document.getElementById('clearEventDataCodeInput');
+  const feedbackEl = document.getElementById('clearEventDataFeedback');
+  const confirmBtn = document.getElementById('confirmClearEventDataBtn');
+
+  if (!modalEl || !nameEl || !expectedCodeEl || !inputEl || !confirmBtn) return;
+
+  modalEl.dataset.eventId = String(eventObj.id);
+  modalEl.dataset.eventCode = String(eventObj.code || '');
+
+  nameEl.textContent = eventObj.name || eventObj.code || `ID ${eventObj.id}`;
+  expectedCodeEl.textContent = eventObj.code || '';
+  inputEl.value = '';
+  inputEl.disabled = false;
+  inputEl.classList.remove('is-invalid');
+  if (feedbackEl) feedbackEl.classList.add('d-none');
+  confirmBtn.disabled = false;
+  confirmBtn.innerHTML = 'Vaciar datos';
+
+  modalEl.addEventListener('shown.bs.modal', () => {
+    inputEl.focus();
+  }, { once: true });
+
+  clearEventDataModal.show();
+}
+
+async function clearEventData() {
+  const modalEl = document.getElementById('clearEventDataModal');
+  const inputEl = document.getElementById('clearEventDataCodeInput');
+  const feedbackEl = document.getElementById('clearEventDataFeedback');
+  const confirmBtn = document.getElementById('confirmClearEventDataBtn');
+
+  if (!modalEl || !inputEl || !confirmBtn) return;
+
+  const eventId = modalEl.dataset.eventId;
+  const expectedCode = (modalEl.dataset.eventCode || '').trim();
+  const typedCode = inputEl.value.trim();
+
+  if (!eventId) return;
+
+  if (!typedCode || typedCode !== expectedCode) {
+    inputEl.classList.add('is-invalid');
+    if (feedbackEl) feedbackEl.classList.remove('d-none');
+    inputEl.focus();
+    return;
+  }
+
+  const originalHtml = confirmBtn.innerHTML;
+  confirmBtn.disabled = true;
+  inputEl.disabled = true;
+  confirmBtn.innerHTML = `
+    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+    Vaciando...
+  `;
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/events/${eventId}/data`, { method: 'DELETE' });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Error vaciando los datos del evento' }));
+      showMessageModal(err.error || 'Error vaciando los datos del evento', 'Error');
+      return;
+    }
+
+    clearEventDataModal.hide();
+    await loadEvents();
+    showToast('Datos del evento eliminados correctamente', 'success');
+  } catch (err) {
+    console.error('Error clearing event data:', err);
+    showMessageModal('Error vaciando los datos del evento', 'Error');
+  } finally {
+    confirmBtn.innerHTML = originalHtml;
+    confirmBtn.disabled = false;
+    inputEl.disabled = false;
+  }
+}
+
 function showToast(message, type = 'success') {
   const container = document.getElementById('toastContainer');
 
@@ -624,6 +725,7 @@ document.addEventListener('click', (ev) => {
   const editBtn = ev.target.closest('.btn-edit-event');
   const deleteBtn = ev.target.closest('.btn-delete-event');
   const dupBtn = ev.target.closest('.btn-duplicate-event');
+  const clearDataBtn = ev.target.closest('.btn-clear-event-data');
 
   if (editBtn) {
     const tr = editBtn.closest('tr');
@@ -656,6 +758,13 @@ document.addEventListener('click', (ev) => {
     const tr = dupBtn.closest('tr');
     const id = tr.dataset.id;
     openDuplicateModal(id);
+  }
+
+  if (clearDataBtn) {
+    const tr = clearDataBtn.closest('tr');
+    const id = tr.dataset.id;
+    const evt = events.find(e => e.id == id);
+    if (evt) openClearEventDataModal(evt);
   }
 });
 

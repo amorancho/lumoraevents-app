@@ -698,6 +698,37 @@
     
   </div>
 
+  <div class="modal fade" id="clearEventDataModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Vaciar datos del evento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-2">
+            Esta acción va a borrar todos los registros del evento <strong id="clearEventDataName"></strong>.
+          </p>
+          <p class="text-danger fw-semibold mb-3">
+            Se eliminarán jueces, participantes, competiciones, votaciones, horarios, resultados y el resto de datos asociados.
+          </p>
+          <label for="clearEventDataCodeInput" class="form-label">Escribe el código del evento para confirmar:</label>
+          <div class="input-group">
+            <span class="input-group-text" id="clearEventDataExpectedCode"></span>
+            <input type="text" class="form-control" id="clearEventDataCodeInput" autocomplete="off">
+          </div>
+          <div class="invalid-feedback d-block d-none" id="clearEventDataFeedback">
+            El código introducido no coincide con el del evento.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmClearEventDataBtn">Vaciar datos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="toastContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;"></div>
 
   <footer class="container-fluid bg-dark text-white py-4 mt-auto">
