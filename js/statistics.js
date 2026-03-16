@@ -128,12 +128,7 @@ function isEventHideJudgesEnabled() {
 
 function buildPersonalCard(personalData, results) {
   const { id, name, nationality, category_name, category_position } = personalData;
-  const hasGeneralClassification = Boolean(
-    results?.general &&
-    typeof results.general === 'object' &&
-    !Array.isArray(results.general) &&
-    Object.keys(results.general).length > 0
-  );
+  const hasGeneralClassification = getEvent().catClassification === 'NUM_MEDALS';
   const card = document.createElement('div');
   card.className = 'col-12 col-lg-10';
 
