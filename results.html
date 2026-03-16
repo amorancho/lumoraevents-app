@@ -62,7 +62,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <span class="fw-bold text-primary" data-i18n="voting_details">Voting Details</span>
+            <span class="fw-bold text-primary" id="votingDetailsModalLabel" data-i18n="voting_details">Voting Details</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
@@ -73,6 +73,25 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cerrar">Close</button>
           <!--button type="button" class="btn btn-primary" id="saveEditBtn">Save changes</button-->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="styleVotingDetailsModal" tabindex="-1" aria-labelledby="styleVotingDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fw-bold text-primary" id="styleVotingDetailsModalLabel" data-i18n="style_voting_details">Style Voting Details</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="styleVotingDetailsContainer"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cerrar">Close</button>
         </div>
       </div>
     </div>
