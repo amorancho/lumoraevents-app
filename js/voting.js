@@ -8,7 +8,7 @@ let criteriaColumnsVisible = false;
 const CRITERIA_COL_VIS_STORAGE_PREFIX = 'lumora.voting.criteriaColumnsVisible';
 
 let modal, criteriaContainer;
-let commentsModal, commentsTextarea, saveCommentsBtn, clearCommentsBtn;
+let commentsModal, clearCommentsConfirmModal, commentsTextarea, saveCommentsBtn, clearCommentsBtn, confirmClearCommentsBtn;
 let commentsContext = { competitionId: null, dancerId: null };
 let audioFeedbackModal;
 const audioFeedbackElements = {};
@@ -212,13 +212,16 @@ function syncCommentsColumnPresentation() {
 
 function initCommentsModal() {
   const modalEl = document.getElementById('commentsModal');
+  const clearConfirmModalEl = document.getElementById('clearCommentsConfirmModal');
   commentsTextarea = document.getElementById('commentsTextarea');
   saveCommentsBtn = document.getElementById('saveCommentsBtn');
   clearCommentsBtn = document.getElementById('clearCommentsBtn');
+  confirmClearCommentsBtn = document.getElementById('confirmClearCommentsBtn');
 
-  if (!modalEl || !commentsTextarea || !saveCommentsBtn || !clearCommentsBtn) return;
+  if (!modalEl || !clearConfirmModalEl || !commentsTextarea || !saveCommentsBtn || !clearCommentsBtn || !confirmClearCommentsBtn) return;
 
   commentsModal = new bootstrap.Modal(modalEl);
+  clearCommentsConfirmModal = new bootstrap.Modal(clearConfirmModalEl);
 
   modalEl.addEventListener('hidden.bs.modal', () => {
     commentsTextarea.value = '';
@@ -226,13 +229,33 @@ function initCommentsModal() {
     setCommentsButtonsDisabled(false);
   });
 
+  clearConfirmModalEl.addEventListener('shown.bs.modal', () => {
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    const latestBackdrop = backdrops[backdrops.length - 1];
+    latestBackdrop?.classList.add('comments-confirm-backdrop');
+  });
+
+  clearConfirmModalEl.addEventListener('hidden.bs.modal', () => {
+    confirmClearCommentsBtn.disabled = false;
+    if (modalEl.classList.contains('show')) {
+      document.body.classList.add('modal-open');
+    }
+  });
+
   saveCommentsBtn.addEventListener('click', async () => {
     if (!commentsContext.competitionId || !commentsContext.dancerId) return;
     await upsertComments(commentsContext.competitionId, commentsContext.dancerId, commentsTextarea.value);
   });
 
-  clearCommentsBtn.addEventListener('click', async () => {
+  clearCommentsBtn.addEventListener('click', () => {
     if (!commentsContext.competitionId || !commentsContext.dancerId) return;
+    clearCommentsConfirmModal?.show();
+  });
+
+  confirmClearCommentsBtn.addEventListener('click', async () => {
+    if (!commentsContext.competitionId || !commentsContext.dancerId) return;
+    confirmClearCommentsBtn.disabled = true;
+    clearCommentsConfirmModal?.hide();
     await upsertComments(commentsContext.competitionId, commentsContext.dancerId, '');
   });
 }

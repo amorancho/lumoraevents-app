@@ -68,6 +68,7 @@
   "reserve_alert": "You are a reserve judge. You can only vote for participants who have a judge as their coach.",
   "judge_head_penalties_tooltip": "You are the head judge: you can apply penalties in this competition.",
   "add_comments": "Add comments...",
+  "comments_delete_confirm": "Are you sure you want to delete the comment?",
   "clear": "Clear",
   "save": "Save"
 }

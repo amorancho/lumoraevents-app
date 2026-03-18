@@ -68,6 +68,7 @@
   "reserve_alert": "Sei un giudice di riserva. Puoi votare solo per le partecipanti che hanno un giudice come allenatore.",
   "judge_head_penalties_tooltip": "Sei giudice principale: puoi applicare penalita in questa competizione.",
   "add_comments": "Aggiungi commenti...",
+  "comments_delete_confirm": "Sei sicuro di voler eliminare il commento?",
   "clear": "Pulisci",
   "save": "Salva"
 }

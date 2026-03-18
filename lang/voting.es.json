@@ -68,6 +68,7 @@
   "reserve_alert": "Eres un juez suplente. Solo puedes votar por participantes que tengan un juez como su maestro.",
   "judge_head_penalties_tooltip": "Eres juez principal: puedes aplicar penalizaciones en esta competicion.",
   "add_comments": "Agregar comentarios...",
+  "comments_delete_confirm": "¿Está seguro que desea eliminar el comentario?",
   "clear": "Limpiar",
   "save": "Guardar"
 }
