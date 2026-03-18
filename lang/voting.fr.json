@@ -30,6 +30,8 @@
   "audio_feedback_discard": "Ignorer l'audio",
   "audio_feedback_send": "Envoyer l'audio",
   "audio_feedback_record_hint": "Utilisez votre microphone pour enregistrer un feedback pour cette participante.",
+  "audio_feedback_help_text": "Si vous avez des problèmes pour accéder au microphone depuis votre appareil, consultez notre",
+  "audio_feedback_help_link": "centre d'aide.",
   "audio_feedback_preview_hint": "Vérifiez l'enregistrement avant de l'envoyer.",
   "audio_feedback_recording_in_progress": "Enregistrement en cours.",
   "audio_feedback_recording_not_supported": "Ce navigateur ne peut pas enregistrer l'audio.",

@@ -30,6 +30,8 @@
   "audio_feedback_discard": "Scarta audio",
   "audio_feedback_send": "Invia audio",
   "audio_feedback_record_hint": "Usa il microfono per registrare un feedback per questa partecipante.",
+  "audio_feedback_help_text": "Se hai problemi ad accedere al microfono dal dispositivo, consulta il nostro",
+  "audio_feedback_help_link": "centro assistenza.",
   "audio_feedback_preview_hint": "Controlla la registrazione prima di inviarla.",
   "audio_feedback_recording_in_progress": "Registrazione in corso.",
   "audio_feedback_recording_not_supported": "Questo browser non può registrare audio.",

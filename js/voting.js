@@ -1,6 +1,10 @@
 ﻿var title = 'Voting';
 
 const allowedRoles = ["admin", "judge"];
+const AUDIO_FEEDBACK_HELP_URLS = {
+  es: 'https://www.notion.so/lumoraevents/Problemas-con-el-micr-fono-327369d44ea1802d9305c6c79646aaf7?source=copy_link',
+  default: 'https://www.notion.so/lumoraevents/Microphone-not-working-327369d44ea18039bbf2cc862e1f6056?source=copy_link'
+};
 
 let criteriaList = [];
 
@@ -575,6 +579,14 @@ function updateAudioFeedbackUi() {
   }
 }
 
+function updateAudioFeedbackHelpLink() {
+  if (!audioFeedbackElements.helpLink) return;
+  const lang = (localStorage.getItem('lang') || document.documentElement.getAttribute('lang') || 'en').toLowerCase();
+  audioFeedbackElements.helpLink.href = lang === 'es'
+    ? AUDIO_FEEDBACK_HELP_URLS.es
+    : AUDIO_FEEDBACK_HELP_URLS.default;
+}
+
 async function readAudioDuration(blob) {
   if (!(blob instanceof Blob)) return null;
 
@@ -966,8 +978,10 @@ function initAudioFeedbackModal() {
   audioFeedbackElements.discardBtn = document.getElementById('discardAudioFeedbackBtn');
   audioFeedbackElements.saveBtn = document.getElementById('saveAudioFeedbackBtn');
   audioFeedbackElements.recorderStatus = document.getElementById('audioFeedbackRecorderStatus');
+  audioFeedbackElements.helpLink = document.getElementById('audioFeedbackHelpLink');
 
   audioFeedbackModal = new bootstrap.Modal(modalEl);
+  updateAudioFeedbackHelpLink();
 
   modalEl.addEventListener('hidden.bs.modal', () => {
     resetAudioFeedbackModalState();
@@ -997,6 +1011,7 @@ async function openAudioFeedbackModal(context) {
   if (!audioFeedbackModal) return;
 
   resetAudioFeedbackModalState();
+  updateAudioFeedbackHelpLink();
   audioFeedbackState.context = {
     competitionId: context?.competitionId ?? null,
     dancerId: context?.dancerId ?? null,

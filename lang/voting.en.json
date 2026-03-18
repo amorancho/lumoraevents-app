@@ -30,6 +30,8 @@
   "audio_feedback_discard": "Discard audio",
   "audio_feedback_send": "Send audio",
   "audio_feedback_record_hint": "Use your microphone to record feedback for this participant.",
+  "audio_feedback_help_text": "If you have trouble accessing the microphone on your device, visit our",
+  "audio_feedback_help_link": "help center.",
   "audio_feedback_preview_hint": "Review the recording before sending it.",
   "audio_feedback_recording_in_progress": "Recording in progress.",
   "audio_feedback_recording_not_supported": "This browser cannot record audio.",

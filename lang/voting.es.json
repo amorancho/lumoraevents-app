@@ -30,6 +30,8 @@
   "audio_feedback_discard": "Descartar audio",
   "audio_feedback_send": "Enviar audio",
   "audio_feedback_record_hint": "Usa tu micrófono para grabar feedback para esta participante.",
+  "audio_feedback_help_text": "Si tienes problemas para acceder al micrófono desde el dispositivo, revisa nuestro",
+  "audio_feedback_help_link": "centro de ayuda.",
   "audio_feedback_preview_hint": "Revisa la grabación antes de enviarla.",
   "audio_feedback_recording_in_progress": "Grabación en curso.",
   "audio_feedback_recording_not_supported": "Este navegador no puede grabar audio.",
