@@ -13,6 +13,138 @@ const registrationState = {
 };
 
 let schoolLoadPromise = null;
+const registrationResourceCache = {
+  eventSchools: new Map(),
+  registrationCategories: new Map(),
+  registrationStyles: new Map()
+};
+const registrationResourceRequests = {
+  eventSchools: new Map(),
+  registrationCategories: new Map(),
+  registrationStyles: new Map()
+};
+
+function getRegistrationEventKey(eventId = getEvent()?.id) {
+  return eventId != null && eventId !== '' ? `${eventId}` : '__all__';
+}
+
+async function fetchRegistrationResource(resourceType, key, fetcher, { force = false } = {}) {
+  const cache = registrationResourceCache[resourceType];
+  const requests = registrationResourceRequests[resourceType];
+
+  if (force) {
+    cache.delete(key);
+  }
+
+  if (cache.has(key)) {
+    return cache.get(key);
+  }
+
+  if (requests.has(key)) {
+    return requests.get(key);
+  }
+
+  const request = (async () => {
+    const data = await fetcher();
+    cache.set(key, data);
+    return data;
+  })();
+
+  requests.set(key, request);
+
+  try {
+    return await request;
+  } finally {
+    requests.delete(key);
+  }
+}
+
+async function fetchEventSchools({ force = false } = {}) {
+  const eventObj = getEvent();
+  const eventId = eventObj?.id;
+  const key = getRegistrationEventKey(eventId);
+
+  return fetchRegistrationResource('eventSchools', key, async () => {
+    const params = new URLSearchParams();
+    if (eventId) {
+      params.set('event_id', eventId);
+    }
+
+    const url = params.toString()
+      ? `${API_BASE_URL}/api/schools?${params.toString()}`
+      : `${API_BASE_URL}/api/schools`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(t('schools_load_error', 'Error loading schools.'));
+    }
+
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  }, { force });
+}
+
+async function fetchRegistrationCategories({ force = false } = {}) {
+  const eventObj = getEvent();
+  const eventId = eventObj?.id;
+  const key = getRegistrationEventKey(eventId);
+
+  const categories = await fetchRegistrationResource('registrationCategories', key, async () => {
+    const params = new URLSearchParams();
+    if (eventId) {
+      params.set('event_id', eventId);
+    }
+
+    const url = params.toString()
+      ? `${API_BASE_URL}/api/registrations/categories?${params.toString()}`
+      : `${API_BASE_URL}/api/registrations/categories`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(t('registration_categories_load_error', 'Error loading categories.'));
+    }
+
+    const data = await res.json();
+    return Array.isArray(data)
+      ? data
+      : (Array.isArray(data?.categories) ? data.categories : []);
+  }, { force });
+
+  registrationState.registrationCategories = categories;
+  syncRegistrationConfigState();
+  return categories;
+}
+
+async function fetchRegistrationStyles({ force = false } = {}) {
+  const eventObj = getEvent();
+  const eventId = eventObj?.id;
+  const key = getRegistrationEventKey(eventId);
+
+  const styles = await fetchRegistrationResource('registrationStyles', key, async () => {
+    const params = new URLSearchParams();
+    if (eventId) {
+      params.set('event_id', eventId);
+    }
+
+    const url = params.toString()
+      ? `${API_BASE_URL}/api/registrations/styles?${params.toString()}`
+      : `${API_BASE_URL}/api/registrations/styles`;
+
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new Error(t('registration_disciplines_load_error', 'Error loading disciplines.'));
+    }
+
+    const data = await res.json();
+    return Array.isArray(data)
+      ? data
+      : (Array.isArray(data?.styles) ? data.styles : (Array.isArray(data?.disciplines) ? data.disciplines : []));
+  }, { force });
+
+  registrationState.registrationDisciplines = styles;
+  syncRegistrationConfigState();
+  return styles;
+}
 
 function syncRegistrationConfigState() {
   registrationState.registrationConfig = {
@@ -662,20 +794,7 @@ function initParticipantsTab(role) {
       return;
     }
     try {
-      const params = new URLSearchParams();
-      const eventObj = getEvent();
-      if (eventObj && eventObj.id) {
-        params.set('event_id', eventObj.id);
-      }
-      const url = params.toString()
-        ? `${API_BASE_URL}/api/schools?${params.toString()}`
-        : `${API_BASE_URL}/api/schools`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(t('schools_load_error', 'Error loading schools.'));
-      }
-      const data = await res.json();
-      const schools = Array.isArray(data) ? data : [];
+      const schools = await fetchEventSchools();
       filterSchool.innerHTML = '<option value=""></option>';
       schools.forEach(school => {
         const option = document.createElement('option');
@@ -1083,13 +1202,7 @@ function initSchoolsTab() {
 
   const loadSchools = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/schools?event_id=${getEvent().id}`);
-      if (!res.ok) {
-        throw new Error(t('schools_load_error', 'Error loading schools.'));
-      }
-
-      const data = await res.json();
-      registrationState.schools = Array.isArray(data) ? data : [];
+      registrationState.schools = await fetchEventSchools();
       applyFilters();
     } catch (err) {
       showSchoolsError(err.message || t('schools_load_error', 'Error loading schools.'));
@@ -1302,26 +1415,7 @@ function initRegistrationCategoriesTab() {
 
   const loadCategories = async () => {
     try {
-      const params = new URLSearchParams();
-      const eventObj = getEvent();
-      if (eventObj?.id) {
-        params.set('event_id', eventObj.id);
-      }
-
-      const url = params.toString()
-        ? `${API_BASE_URL}/api/registrations/categories?${params.toString()}`
-        : `${API_BASE_URL}/api/registrations/categories`;
-
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(t('registration_categories_load_error', 'Error loading categories.'));
-      }
-
-      const data = await res.json();
-      const categories = Array.isArray(data)
-        ? data
-        : (Array.isArray(data?.categories) ? data.categories : []);
-      registrationState.registrationCategories = categories;
+      await fetchRegistrationCategories();
       notifyRegistrationConfigUpdate();
       renderCategories();
     } catch (err) {
@@ -1389,7 +1483,9 @@ function initRegistrationCategoriesTab() {
       }
 
       categoryModal.hide();
-      await loadCategories();
+      await fetchRegistrationCategories({ force: true });
+      notifyRegistrationConfigUpdate();
+      renderCategories();
     } catch (err) {
       showMessageModal(err.message || t('registration_categories_save_error', 'Error saving category.'), t('error_title', 'Error'));
     } finally {
@@ -1433,7 +1529,9 @@ function initRegistrationCategoriesTab() {
       }
 
       deleteModal.hide();
-      await loadCategories();
+      await fetchRegistrationCategories({ force: true });
+      notifyRegistrationConfigUpdate();
+      renderCategories();
     } catch (err) {
       showMessageModal(err.message || t('registration_categories_delete_error', 'Error deleting category.'), t('error_title', 'Error'));
     } finally {
@@ -1609,26 +1707,7 @@ function initRegistrationDisciplinesTab() {
 
   const loadDisciplines = async () => {
     try {
-      const params = new URLSearchParams();
-      const eventObj = getEvent();
-      if (eventObj?.id) {
-        params.set('event_id', eventObj.id);
-      }
-
-      const url = params.toString()
-        ? `${API_BASE_URL}/api/registrations/styles?${params.toString()}`
-        : `${API_BASE_URL}/api/registrations/styles`;
-
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(t('registration_disciplines_load_error', 'Error loading disciplines.'));
-      }
-
-      const data = await res.json();
-      const disciplines = Array.isArray(data)
-        ? data
-        : (Array.isArray(data?.disciplines) ? data.disciplines : []);
-      registrationState.registrationDisciplines = disciplines;
+      await fetchRegistrationStyles();
       renderDisciplines();
       notifyRegistrationConfigUpdate();
     } catch (err) {
@@ -1673,7 +1752,9 @@ function initRegistrationDisciplinesTab() {
       }
 
       inputEl.value = '';
-      await loadDisciplines();
+      await fetchRegistrationStyles({ force: true });
+      renderDisciplines();
+      notifyRegistrationConfigUpdate();
     } catch (err) {
       showMessageModal(err.message || t('registration_disciplines_save_error', 'Error saving discipline.'), t('error_title', 'Error'));
     } finally {
@@ -1709,7 +1790,9 @@ function initRegistrationDisciplinesTab() {
       }
 
       deleteModal.hide();
-      await loadDisciplines();
+      await fetchRegistrationStyles({ force: true });
+      renderDisciplines();
+      notifyRegistrationConfigUpdate();
     } catch (err) {
       showMessageModal(err.message || t('registration_disciplines_delete_error', 'Error deleting discipline.'), t('error_title', 'Error'));
     } finally {
@@ -1824,61 +1907,11 @@ function initOrganizerRegistrationsTab() {
   };
 
   const ensureRegistrationCategories = async () => {
-    if (registrationState.registrationCategories.length) {
-      return registrationState.registrationCategories;
-    }
-
-    const params = new URLSearchParams();
-    const eventObj = getEvent();
-    if (eventObj?.id) {
-      params.set('event_id', eventObj.id);
-    }
-
-    const url = params.toString()
-      ? `${API_BASE_URL}/api/registrations/categories?${params.toString()}`
-      : `${API_BASE_URL}/api/registrations/categories`;
-
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(t('registration_categories_load_error', 'Error loading categories.'));
-    }
-
-    const data = await res.json();
-    const categories = Array.isArray(data)
-      ? data
-      : (Array.isArray(data?.categories) ? data.categories : []);
-    registrationState.registrationCategories = categories;
-    syncRegistrationConfigState();
-    return categories;
+    return fetchRegistrationCategories();
   };
 
   const ensureRegistrationStyles = async () => {
-    if (registrationState.registrationDisciplines.length) {
-      return registrationState.registrationDisciplines;
-    }
-
-    const params = new URLSearchParams();
-    const eventObj = getEvent();
-    if (eventObj?.id) {
-      params.set('event_id', eventObj.id);
-    }
-
-    const url = params.toString()
-      ? `${API_BASE_URL}/api/registrations/styles?${params.toString()}`
-      : `${API_BASE_URL}/api/registrations/styles`;
-
-    const res = await fetch(url);
-    if (!res.ok) {
-      throw new Error(t('registration_disciplines_load_error', 'Error loading disciplines.'));
-    }
-
-    const data = await res.json();
-    const styles = Array.isArray(data)
-      ? data
-      : (Array.isArray(data?.styles) ? data.styles : (Array.isArray(data?.disciplines) ? data.disciplines : []));
-    registrationState.registrationDisciplines = styles;
-    syncRegistrationConfigState();
-    return styles;
+    return fetchRegistrationStyles();
   };
 
   const loadRegistrationConfig = async () => {
@@ -1907,20 +1940,7 @@ function initOrganizerRegistrationsTab() {
 
   const loadSchools = async () => {
     try {
-      const params = new URLSearchParams();
-      const eventObj = getEvent();
-      if (eventObj?.id) {
-        params.set('event_id', eventObj.id);
-      }
-      const url = params.toString()
-        ? `${API_BASE_URL}/api/schools?${params.toString()}`
-        : `${API_BASE_URL}/api/schools`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(t('schools_load_error', 'Error loading schools.'));
-      }
-      const data = await res.json();
-      const schools = Array.isArray(data) ? data : [];
+      const schools = await fetchEventSchools();
       filterSchool.innerHTML = '<option value=""></option>';
       schools.forEach(school => {
         const option = document.createElement('option');

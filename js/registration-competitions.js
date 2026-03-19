@@ -616,8 +616,10 @@
   };
 
   const ensureRegistrationCategories = async () => {
-    if (registrationState.registrationCategories.length) {
-      return registrationState.registrationCategories;
+    if (typeof fetchRegistrationCategories === 'function') {
+      const categories = await fetchRegistrationCategories();
+      registrationState.registrationConfig.categories = categories;
+      return categories;
     }
 
     const params = new URLSearchParams();
@@ -645,8 +647,10 @@
   };
 
   const ensureRegistrationStyles = async () => {
-    if (registrationState.registrationDisciplines.length) {
-      return registrationState.registrationDisciplines;
+    if (typeof fetchRegistrationStyles === 'function') {
+      const styles = await fetchRegistrationStyles();
+      registrationState.registrationConfig.styles = styles;
+      return styles;
     }
 
     const params = new URLSearchParams();
