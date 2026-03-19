@@ -449,6 +449,37 @@
         box-shadow: 0 0 0 0.24rem rgba(25, 135, 84, 0.12);
       }
     }
+    .tracking-vote-cell-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      width: 100%;
+      gap: 0.35rem;
+    }
+    .tracking-vote-cell-side {
+      min-width: 0;
+      display: inline-flex;
+      align-items: center;
+    }
+    .tracking-vote-cell-side-start {
+      justify-self: start;
+    }
+    .tracking-vote-cell-side-end {
+      justify-self: end;
+    }
+    .tracking-vote-cell-center {
+      justify-self: center;
+    }
+    .tracking-vote-status-icons {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      color: #6c757d;
+    }
+    .tracking-vote-status-icon {
+      font-size: 0.72rem;
+      line-height: 1;
+    }
     .tracking-summary-layout {
       display: flex;
       flex-direction: column;

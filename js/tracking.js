@@ -600,10 +600,52 @@ function getVoteStatusBadgeClass(status) {
   return 'secondary';
 }
 
-function renderVoteStatusBadge(status) {
+function renderVoteStatusBadge(status, extraClasses = '') {
   const statusText = status ? escapeHtml(status) : '-';
   const badgeClass = getVoteStatusBadgeClass(status);
-  return `<span class="badge bg-${badgeClass}">${statusText}</span>`;
+  const badgeClasses = ['badge', `bg-${badgeClass}`];
+  if (extraClasses) {
+    badgeClasses.push(extraClasses);
+  }
+  return `<span class="${badgeClasses.join(' ')}">${statusText}</span>`;
+}
+
+function voteHasComment(vote) {
+  return vote?.has_comment === true || vote?.has_comments === true;
+}
+
+function voteHasFeedback(vote) {
+  return vote?.has_feedback === true;
+}
+
+function renderVoteStatusIcons(vote) {
+  const icons = [];
+
+  if (voteHasComment(vote)) {
+    const commentLabel = escapeHtml(t('comments', 'Comments'));
+    icons.push(`
+      <i
+        class="bi bi-chat-left-text-fill tracking-vote-status-icon"
+        title="${commentLabel}"
+        aria-label="${commentLabel}"
+      ></i>
+    `);
+  }
+
+  if (voteHasFeedback(vote)) {
+    const feedbackLabel = escapeHtml(t('feedback', 'Feedback'));
+    icons.push(`
+      <i
+        class="bi bi-mic-fill tracking-vote-status-icon"
+        title="${feedbackLabel}"
+        aria-label="${feedbackLabel}"
+      ></i>
+    `);
+  }
+
+  if (!icons.length) return '';
+
+  return `<span class="tracking-vote-status-icons">${icons.join('')}</span>`;
 }
 
 function shouldCollapseCriteriaByStatus(status) {
@@ -2406,14 +2448,6 @@ function renderCompetitions(competitions) {
         `;
 
         const voteCells = d.votes.map((v, judgeIndex) => {
-          let badgeClass = 'secondary';
-          if (v.status === 'Completed') badgeClass = 'success';
-          else if (v.status === 'Pending') badgeClass = 'warning';
-          else if (v.status === 'Incompatible') badgeClass = 'danger';
-          else if (v.status === 'Max Judges Voted') badgeClass = 'danger';
-          else if (v.status === 'No Show') badgeClass = 'noshown';
-          else if (v.status === 'Disqualified') badgeClass = 'danger';
-
           // async function resetVote(categoryId, styleId, judgeId, dancerId, rowId) {
 
           let ind = `${comp.id}-${d.dancer_id}-${v.judge.id}`; // ID de la fila para localizarla en reset
@@ -2425,31 +2459,42 @@ function renderCompetitions(competitions) {
             
             return `
               <td class="text-center" id="row-${ind}">
-                <div class="d-flex justify-content-between align-items-center">
-                  <!-- Ver detalles (izquierda) -->
-                  <button class="btn btn-link text-primary p-0" 
-                    onclick="showVoteDetails(${params})" 
-                    title="${t('ver_detalles')}"
-                    style="visibility: ${showEye ? 'visible' : 'hidden'};">
-                    <i class="bi bi-eye"></i>
-                  </button>
+                <div class="tracking-vote-cell-layout">
+                  <div class="tracking-vote-cell-side tracking-vote-cell-side-start gap-1">
+                    <!-- Ver detalles (izquierda) -->
+                    <button class="btn btn-link text-primary p-0" 
+                      onclick="showVoteDetails(${params})" 
+                      title="${t('ver_detalles')}"
+                      style="visibility: ${showEye ? 'visible' : 'hidden'};">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    ${renderVoteStatusIcons(v)}
+                  </div>
 
                   <!-- Badge (centro) -->
-                  <span class="badge status-badge bg-${badgeClass}">${v.status}</span>
+                  <div class="tracking-vote-cell-center">
+                    ${renderVoteStatusBadge(v?.status, 'status-badge')}
+                  </div>
 
                   <!-- Reiniciar voto (derecha) -->
-                  <button class="btn btn-link text-danger p-0" 
-                    onclick="resetVote(${params})" 
-                    title="${t('reiniciar_voto')}" ${btnDisabled}>
-                    <i class="bi bi-arrow-counterclockwise"></i>
-                  </button>
+                  <div class="tracking-vote-cell-side tracking-vote-cell-side-end">
+                    <button class="btn btn-link text-danger p-0" 
+                      onclick="resetVote(${params})" 
+                      title="${t('reiniciar_voto')}" ${btnDisabled}>
+                      <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                  </div>
                 </div>
               </td>
             `;
 
           }
 
-          return `<td class="text-center" id="row-${ind}"><span class="badge status-badge bg-${badgeClass}">${v.status}</span></td>`;
+          return `
+            <td class="text-center" id="row-${ind}">
+              ${renderVoteStatusBadge(v?.status, 'status-badge')}
+            </td>
+          `;
         }).join('');
 
         // Asignar ID a la fila combinando competición-dancer-judge (para poder localizarla en reset)
@@ -2657,6 +2702,21 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
       <span id="totalScore" class="badge bg-success fs-4 px-4">${data.dancers.totalScore}</span>
     `;
     criteriaContainer.appendChild(totalCol);
+
+    if (data.dancers.comments != null) {
+      const commentsCol = document.createElement('div');
+      commentsCol.className = 'col-12 mt-2 text-start';
+      commentsCol.innerHTML = `
+        <label class="form-label fw-semibold" for="voteDetailsComments">${t('comments', 'Comments')}</label>
+        <textarea
+          id="voteDetailsComments"
+          class="form-control"
+          rows="4"
+          readonly
+        >${escapeHtml(data.dancers.comments)}</textarea>
+      `;
+      criteriaContainer.appendChild(commentsCol);
+    }
 
     const modalEl = document.getElementById('detailsModal');
     let modal = new bootstrap.Modal(modalEl);
