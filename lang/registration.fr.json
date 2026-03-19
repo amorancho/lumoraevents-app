@@ -115,7 +115,7 @@
   "org_registrations_table_category": "Catégorie",
   "org_registrations_table_style": "Discipline/Style",
   "org_registrations_table_status": "Statut",
-  "org_registrations_table_participants": "# Participants",
+  "org_registrations_table_participants": "#Participants",
   "org_registrations_table_actions": "Actions",
   "org_registrations_empty": "Aucune inscription disponible.",
   "org_registrations_load_error": "Erreur lors du chargement des inscriptions.",

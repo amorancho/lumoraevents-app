@@ -115,7 +115,7 @@
   "org_registrations_table_category": "Categoria",
   "org_registrations_table_style": "Disciplina/Estilo",
   "org_registrations_table_status": "Estado",
-  "org_registrations_table_participants": "# Participants",
+  "org_registrations_table_participants": "#Participants",
   "org_registrations_table_actions": "Actions",
   "org_registrations_empty": "Nenhuma inscricao disponivel.",
   "org_registrations_load_error": "Erro ao carregar as inscricoes.",

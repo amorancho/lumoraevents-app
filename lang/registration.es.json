@@ -22,7 +22,7 @@
   "org_registrations_table_category": "Categoría",
   "org_registrations_table_style": "Disciplina/Estilo",
   "org_registrations_table_status": "Estado",
-  "org_registrations_table_participants": "# Participantes",
+  "org_registrations_table_participants": "#Participantes",
   "org_registrations_table_actions": "Acciones",
   "org_registrations_empty": "No hay inscripciones disponibles.",
   "org_registrations_load_error": "Error al cargar las inscripciones.",
