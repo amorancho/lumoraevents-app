@@ -1821,6 +1821,7 @@ function initRegistrationDisciplinesTab() {
 function initOrganizerRegistrationsTab() {
   const tableBody = document.getElementById('orgRegistrationsTable');
   const emptyEl = document.getElementById('orgRegistrationsEmpty');
+  const countEl = document.getElementById('orgRegistrationsCount');
   const filterForm = document.getElementById('orgRegistrationsFilters');
   const filterSchool = document.getElementById('orgRegistrationsFilterSchool');
   const filterStatus = document.getElementById('orgRegistrationsFilterStatus');
@@ -2494,6 +2495,10 @@ function initOrganizerRegistrationsTab() {
     tableBody.innerHTML = '';
     const registrations = applyFilters();
 
+    if (countEl) {
+      countEl.textContent = `${registrations.length}`;
+    }
+
     if (!registrations.length) {
       emptyEl.classList.remove('d-none');
       return;
@@ -2596,6 +2601,9 @@ function initOrganizerRegistrationsTab() {
     row.appendChild(cell);
     tableBody.appendChild(row);
     emptyEl.classList.add('d-none');
+    if (countEl) {
+      countEl.textContent = '0';
+    }
   };
 
   const loadRegistrations = async () => {
