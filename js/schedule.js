@@ -183,11 +183,17 @@ function renderScheduleHighlight(data) {
         titleKey = 'next_competition';
     }
 
+    const row = document.createElement('div');
+    row.className = 'row justify-content-center';
+
+    const col = document.createElement('div');
+    col.className = 'col-12 col-md-12 col-lg-10';
+
     const wrapper = document.createElement('div');
     wrapper.className = 'card border-primary shadow-sm';
     wrapper.innerHTML = `
         <div class="card-body">
-            <h3 class="h5 mb-3">${t(titleKey)}</h3>
+            <h3 class="h5 mb-3 text-center">${t(titleKey)}</h3>
         </div>
     `;
 
@@ -197,7 +203,9 @@ function renderScheduleHighlight(data) {
         expandParticipants
     }));
 
-    highlightContainer.appendChild(wrapper);
+    col.appendChild(wrapper);
+    row.appendChild(col);
+    highlightContainer.appendChild(row);
     highlightContainer.style.display = 'block';
 }
 
@@ -323,13 +331,17 @@ function createScheduleItemCard(item, { uniqueKey, expandParticipants = false } 
     item.dancersList.forEach(dancer => {
         const dancerName = dancer.name || dancer.dancer_name || '';
         const clubLabel = getParticipantClubLabel(dancer);
+        const dancerStatusBadge = item?.status === 'PRO' ? getDancerScheduleStatusBadge(dancer?.schedule_status) : '';
         const li = document.createElement('li');
         li.className = 'list-group-item d-flex align-items-center';
         li.innerHTML = `
             <span class="badge bg-info me-2">#${dancer.position}</span>
             ${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'width: 24px;' })}
-            <span class="dancer-name">${escapeHtml(dancerName)}</span>
-            ${clubLabel ? `<span class="ms-2 small text-muted">${escapeHtml(clubLabel)}</span>` : ''}
+            <span class="d-flex align-items-center flex-wrap flex-grow-1">
+                <span class="dancer-name">${escapeHtml(dancerName)}</span>
+                ${clubLabel ? `<span class="ms-2 small text-muted">${escapeHtml(clubLabel)}</span>` : ''}
+            </span>
+            ${dancerStatusBadge ? `<span class="ms-auto">${dancerStatusBadge}</span>` : ''}
         `;
         list.appendChild(li);
     });
@@ -383,6 +395,17 @@ function getStatusBadge(status) {
     }
 
     return `<span class="badge ${badgeClass}">${text}</span>`;
+}
+
+function getDancerScheduleStatusBadge(status) {
+    switch (status) {
+        case 'FIN':
+            return '<span class="badge bg-success">FINISHED</span>';
+        case 'PEN':
+            return '<span class="badge bg-warning text-dark">PENDING</span>';
+        default:
+            return '';
+    }
 }
 
 function escapeHtml(str) {
