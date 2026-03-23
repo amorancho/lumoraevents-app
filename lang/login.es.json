@@ -1,1 +1,12 @@
-{}
+{
+  "login_title": "Inicio de sesión",
+  "username_label": "Usuario",
+  "password_label": "Contraseña",
+  "login_button": "Entrar",
+  "legal_accept_title": "Aceptación legal requerida",
+  "legal_accept_description": "Revisa y acepta los documentos legales requeridos para continuar.",
+  "legal_accept_button": "Aceptar",
+  "legal_link_terms": "Términos y condiciones",
+  "legal_link_privacy": "Política de privacidad",
+  "legal_link_cookies": "Política de cookies"
+}

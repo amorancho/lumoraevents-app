@@ -41,31 +41,34 @@
       overflow: hidden;
     }
 
-    .hero {
-      padding: 32px 32px 20px;
+    /* ---------- HEADER ---------- */
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px 28px;
       border-bottom: 1px solid var(--border);
+      background: #ffffff;
     }
 
-    .eyebrow {
-      margin: 0 0 8px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent);
+    .logo {
+      height: 40px;
     }
 
-    h1 {
-      margin: 0;
-      font-size: clamp(2rem, 4vw, 3rem);
-      line-height: 1.1;
+    .brand {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #111827;
     }
 
-    .subtitle {
-      margin: 12px 0 0;
+    .sub {
+      font-size: 0.85rem;
       color: var(--muted);
-      font-size: 1rem;
     }
+
+    /* ---------- CONTENT ---------- */
 
     .content {
       padding: 32px;
@@ -93,54 +96,112 @@
     }
 
     @media (max-width: 640px) {
-      .hero,
       .content {
         padding: 24px;
       }
+
+      .header {
+        padding: 16px 20px;
+      }
     }
+
   </style>
 </head>
+
 <body>
+
   <main class="page">
+
     <section class="card">
-      <header class="hero">
-        <p class="eyebrow">LumoraEvents</p>
-        <h1>Terms and Conditions</h1>
-        <p class="subtitle">Current legal document loaded from the API.</p>
-      </header>
-      <div class="content">
-        <div id="legalContent" class="status">Loading document...</div>
+
+      <!-- HEADER -->
+
+      <div class="header">
+
+        <img
+          src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1749828864/logo_svg_lqefiq.svg"
+          alt="Logo LumoraEvents"
+          class="logo"
+          id="lumoraevents-logo"
+        >
+
       </div>
+
+
+      <!-- CONTENT -->
+
+      <div class="content">
+
+        <div id="legalContent" class="status">
+          Loading document...
+        </div>
+
+      </div>
+
     </section>
+
   </main>
+
 
   <script src="js/utils.js"></script>
 
   <script>
+
     async function loadLegalDocument() {
-      const storedLang = localStorage.getItem('lang') || 'en';
-      const lang = storedLang === 'es' || storedLang === 'en' ? storedLang : 'en';
+
+      const storedLang =
+        localStorage.getItem('lang') || 'en';
+
+      const lang =
+        storedLang === 'es' ||
+        storedLang === 'en'
+          ? storedLang
+          : 'en';
+
       document.documentElement.lang = lang;
 
       try {
-        const response = await fetch(`${API_BASE_URL}/api/legal?type=terms`, {
-          headers: {
-            'Accept-Language': lang
+
+        const response = await fetch(
+          `${API_BASE_URL}/api/legal?type=terms`,
+          {
+            headers: {
+              'Accept-Language': lang
+            }
           }
-        });
+        );
+
         if (!response.ok) {
-          throw new Error(`Error ${response.status} loading terms`);
+          throw new Error(
+            `Error ${response.status} loading terms`
+          );
         }
 
         const data = await response.json();
-        document.getElementById('legalContent').innerHTML = data.content || '';
-      } catch (error) {
-        console.error('Error loading legal document:', error);
-        document.getElementById('legalContent').textContent = 'Unable to load the legal document.';
+
+        document.getElementById(
+          'legalContent'
+        ).innerHTML = data.content || '';
+
       }
+      catch (error) {
+
+        console.error(
+          'Error loading legal document:',
+          error
+        );
+
+        document.getElementById(
+          'legalContent'
+        ).textContent =
+          'Unable to load the legal document.';
+      }
+
     }
 
     loadLegalDocument();
+
   </script>
+
 </body>
 </html>

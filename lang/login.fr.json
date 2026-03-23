@@ -1,0 +1,12 @@
+{
+  "login_title": "Connexion utilisateur",
+  "username_label": "Nom d'utilisateur",
+  "password_label": "Mot de passe",
+  "login_button": "Se connecter",
+  "legal_accept_title": "Acceptation légale requise",
+  "legal_accept_description": "Consultez et acceptez les documents juridiques requis pour continuer.",
+  "legal_accept_button": "Accepter",
+  "legal_link_terms": "Conditions générales",
+  "legal_link_privacy": "Politique de confidentialité",
+  "legal_link_cookies": "Politique de cookies"
+}

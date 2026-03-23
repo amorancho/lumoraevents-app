@@ -1,0 +1,12 @@
+{
+  "login_title": "Accesso utente",
+  "username_label": "Nome utente",
+  "password_label": "Password",
+  "login_button": "Accedi",
+  "legal_accept_title": "Accettazione legale richiesta",
+  "legal_accept_description": "Consulta e accetta i documenti legali richiesti per continuare.",
+  "legal_accept_button": "Accetta",
+  "legal_link_terms": "Termini e condizioni",
+  "legal_link_privacy": "Informativa sulla privacy",
+  "legal_link_cookies": "Informativa sui cookie"
+}
