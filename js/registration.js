@@ -23,6 +23,10 @@ const registrationResourceRequests = {
   registrationCategories: new Map(),
   registrationStyles: new Map()
 };
+const registrationSyncEndpoints = {
+  organizerRegistrations: '/api/registrations/choreographies',
+  synchronization: '/api/registrations/synchronization'
+};
 
 function getRegistrationEventKey(eventId = getEvent()?.id) {
   return eventId != null && eventId !== '' ? `${eventId}` : '__all__';
@@ -147,6 +151,28 @@ async function fetchRegistrationStyles({ force = false } = {}) {
   registrationState.registrationDisciplines = styles;
   syncRegistrationConfigState();
   return styles;
+}
+
+async function fetchOrganizerRegistrationsForEvent() {
+  const params = new URLSearchParams();
+  const eventObj = getEvent();
+  if (eventObj?.id) {
+    params.set('event_id', eventObj.id);
+  }
+
+  const url = params.toString()
+    ? `${API_BASE_URL}${registrationSyncEndpoints.organizerRegistrations}?${params.toString()}`
+    : `${API_BASE_URL}${registrationSyncEndpoints.organizerRegistrations}`;
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(t('org_registrations_load_error', 'Error loading registrations.'));
+  }
+
+  const data = await res.json();
+  const registrations = Array.isArray(data) ? data : [];
+  registrationState.organizerRegistrations = registrations;
+  return registrations;
 }
 
 function syncRegistrationConfigState() {
@@ -1306,6 +1332,11 @@ function countSyncroStatuses(items, options = {}) {
   });
 }
 
+function hasPendingSyncWork(summary) {
+  if (!summary || typeof summary !== 'object') return false;
+  return summary.notSynchronized > 0 || summary.pendingUpdate > 0;
+}
+
 function renderEventSyncSummary(container, items, options = {}) {
   if (!container) {
     return;
@@ -1365,6 +1396,133 @@ function renderEventSyncSummary(container, items, options = {}) {
   return summary;
 }
 
+function getEventRegistrationEndDate() {
+  const rawValue = getEvent()?.registrationEnd;
+  if (!rawValue) return null;
+
+  const parsedDate = new Date(rawValue);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  parsedDate.setHours(0, 0, 0, 0);
+  return parsedDate;
+}
+
+function isEventRegistrationStillOpen() {
+  const registrationEndDate = getEventRegistrationEndDate();
+  if (!registrationEndDate) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today <= registrationEndDate;
+}
+
+function showEventSyncBeforeDeadlineModal() {
+  return new Promise((resolve) => {
+    const modalEl = document.getElementById('eventSyncConfirmModal');
+    const confirmBtn = document.getElementById('confirmEventSyncBtn');
+
+    if (!modalEl || !confirmBtn) {
+      resolve(false);
+      return;
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    let confirmed = false;
+
+    const onConfirm = () => {
+      confirmed = true;
+      modal.hide();
+    };
+
+    const onHidden = () => {
+      confirmBtn.removeEventListener('click', onConfirm);
+      modalEl.removeEventListener('hidden.bs.modal', onHidden);
+      resolve(confirmed);
+    };
+
+    confirmBtn.addEventListener('click', onConfirm);
+    modalEl.addEventListener('hidden.bs.modal', onHidden);
+    modal.show();
+  });
+}
+
+async function runEventSyncAction(syncTarget) {
+  if (isEventRegistrationStillOpen()) {
+    const confirmed = await showEventSyncBeforeDeadlineModal();
+    if (!confirmed) return;
+  }
+
+  const buttonMap = {
+    categories: document.getElementById('eventSyncCategoriesBtn'),
+    styles: document.getElementById('eventSyncStylesBtn'),
+    schools: document.getElementById('eventSyncSchoolsBtn'),
+    registrations: document.getElementById('eventSyncRegistrationsBtn')
+  };
+  const elementMap = {
+    categories: 'cat',
+    styles: 'sty',
+    schools: 'sch',
+    registrations: 'reg'
+  };
+
+  const button = buttonMap[syncTarget] || null;
+  const element = elementMap[syncTarget] || null;
+  if (!element) return;
+
+  const originalText = button?.textContent || t('event_sync_action_sync', 'Synchronize');
+  let stateRefreshed = false;
+  if (button) {
+    button.disabled = true;
+    button.textContent = t('loading', 'Loading...');
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}${registrationSyncEndpoints.synchronization}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_id: Number(getEvent().id),
+        element
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || t('event_sync_error_default', 'Error performing synchronization.'));
+    }
+
+    await Promise.allSettled([
+      fetchRegistrationCategories({ force: true }),
+      fetchRegistrationStyles({ force: true }),
+      fetchEventSchools({ force: true }),
+      fetchOrganizerRegistrationsForEvent()
+    ]);
+
+    notifyRegistrationConfigUpdate();
+    notifyRegistrationSchoolsUpdate();
+    notifyOrganizerRegistrationsUpdate();
+    stateRefreshed = true;
+
+    showMessageModal(
+      data?.message || t('event_sync_success_default', 'Synchronization completed successfully.'),
+      t('event_sync_success_title', 'Synchronization'),
+      'success'
+    );
+  } catch (error) {
+    showMessageModal(
+      error?.message || t('event_sync_error_default', 'Error performing synchronization.'),
+      t('error_title', 'Error')
+    );
+  } finally {
+    if (button) {
+      button.textContent = originalText;
+      if (!stateRefreshed) {
+        button.disabled = false;
+      }
+    }
+  }
+}
+
 function initEventSyncTab() {
   const categoriesEl = document.getElementById('eventSyncCategoriesSummary');
   const stylesEl = document.getElementById('eventSyncStylesSummary');
@@ -1386,18 +1544,17 @@ function initEventSyncTab() {
     const categoriesSummary = renderEventSyncSummary(categoriesEl, registrationState.registrationCategories);
     const stylesSummary = renderEventSyncSummary(stylesEl, registrationState.registrationDisciplines);
     const schoolsSummary = renderEventSyncSummary(schoolsEl, registrationState.schools);
-    renderEventSyncSummary(registrationsEl, registrationState.organizerRegistrations, {
+    const registrationsSummary = renderEventSyncSummary(registrationsEl, registrationState.organizerRegistrations, {
       includeNotApplicable: true
     });
 
-    categoriesBtn.disabled = false;
-    stylesBtn.disabled = false;
-    schoolsBtn.disabled = false;
+    categoriesBtn.disabled = !hasPendingSyncWork(categoriesSummary);
+    stylesBtn.disabled = !hasPendingSyncWork(stylesSummary);
+    schoolsBtn.disabled = !hasPendingSyncWork(schoolsSummary);
 
-    const hasBlockingItems = [categoriesSummary, stylesSummary, schoolsSummary].some((summary) =>
-      summary.notSynchronized > 0 || summary.pendingUpdate > 0
-    );
-    registrationsBtn.disabled = hasBlockingItems;
+    const hasBlockingItems = [categoriesSummary, stylesSummary, schoolsSummary].some(hasPendingSyncWork);
+    const hasRegistrationsSyncWork = hasPendingSyncWork(registrationsSummary);
+    registrationsBtn.disabled = hasBlockingItems || !hasRegistrationsSyncWork;
 
     if (hasBlockingItems) {
       registrationsBtnWrapper.setAttribute('data-bs-toggle', 'tooltip');
@@ -1428,6 +1585,23 @@ function initEventSyncTab() {
   window.addEventListener('registration:config-updated', renderAll);
   window.addEventListener('registration:schools-updated', renderAll);
   window.addEventListener('registration:organizer-registrations-updated', renderAll);
+
+  categoriesBtn.addEventListener('click', async () => {
+    await runEventSyncAction('categories');
+  });
+
+  stylesBtn.addEventListener('click', async () => {
+    await runEventSyncAction('styles');
+  });
+
+  schoolsBtn.addEventListener('click', async () => {
+    await runEventSyncAction('schools');
+  });
+
+  registrationsBtn.addEventListener('click', async () => {
+    if (registrationsBtn.disabled) return;
+    await runEventSyncAction('registrations');
+  });
 
   loadAll();
 }
@@ -2858,22 +3032,7 @@ function initOrganizerRegistrationsTab() {
 
   const loadRegistrations = async () => {
     try {
-      const params = new URLSearchParams();
-      const eventObj = getEvent();
-      if (eventObj?.id) {
-        params.set('event_id', eventObj.id);
-      }
-      const url = params.toString()
-        ? `${API_BASE_URL}${registrationEndpoints.list}?${params.toString()}`
-        : `${API_BASE_URL}${registrationEndpoints.list}`;
-
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(t('org_registrations_load_error', 'Error loading registrations.'));
-      }
-
-      const data = await res.json();
-      registrationState.organizerRegistrations = Array.isArray(data) ? data : [];
+      await fetchOrganizerRegistrationsForEvent();
       notifyOrganizerRegistrationsUpdate();
       renderRegistrations();
     } catch (err) {
@@ -2902,6 +3061,7 @@ function initOrganizerRegistrationsTab() {
       .catch(() => {});
   };
   window.addEventListener('registration:config-updated', handleConfigUpdate);
+  window.addEventListener('registration:organizer-registrations-updated', renderRegistrations);
 
   tableBody.addEventListener('click', (event) => {
     const detailsBtn = event.target.closest('.btn-org-registration-details');

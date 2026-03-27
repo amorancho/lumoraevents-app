@@ -393,6 +393,12 @@
               </div>
             </div>
             <div class="tab-pane fade" id="event-sync" role="tabpanel" aria-labelledby="event-sync-tab">
+              <div class="alert alert-info d-flex align-items-start gap-3 mb-3" role="alert">
+                <i class="bi bi-info-circle-fill fs-5 mt-1"></i>
+                <div data-i18n="event_sync_recommendation">
+                  Se recomienda realizar la sincronización una vez haya finalizado el plazo de inscripciones por parte de las escuelas. Una vez cerrado el plazo, si hay inscripciones puntuales, recomendamos crearlas directamente en el módulo de gestión del evento.
+                </div>
+              </div>
               <div class="row g-3">
                 <div class="col-12 col-md-6 col-xl-3">
                   <div class="card shadow-sm h-100">
@@ -807,6 +813,24 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteAudioBtn">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="eventSyncConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="event_sync_confirm_title">Confirmar sincronización</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="eventSyncConfirmMessage" data-i18n="event_sync_confirm_before_deadline">El plazo de inscripciones no ha finalizado. ¿Seguro que quiere realizar la sincronización?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirmEventSyncBtn" data-i18n="confirm">Confirmar</button>
         </div>
       </div>
     </div>
