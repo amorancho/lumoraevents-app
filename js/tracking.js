@@ -2101,12 +2101,6 @@ function computeCompetitionProgress(comp) {
   };
 }
 
-function getClassificationVisibleButtonLabel(isVisible) {
-  return isVisible
-    ? t('classification_visibility_hide_results', 'Ocultar Resultados')
-    : t('classification_visibility_show_results', 'Resultados Visibles');
-}
-
 function getSidebarClassificationVisibleButtonLabel(isVisible) {
   return isVisible
     ? t('classification_visibility_action_hide', 'Ocultar')
@@ -2117,25 +2111,14 @@ function getClassificationVisibleButtonIcon(isVisible) {
   return isVisible ? 'bi-eye-slash' : 'bi-eye-fill';
 }
 
-function getClassificationVisibleButtonClass(isVisible) {
-  return isVisible ? 'btn-success' : 'btn-outline-secondary';
-}
-
 function getSidebarClassificationVisibleButtonClass(isVisible) {
   return isVisible ? 'btn-outline-secondary' : 'btn-outline-primary';
 }
 
-function renderClassificationVisibleButtonContent(isVisible, variant = 'summary') {
-  if (variant === 'sidebar') {
-    return `
-      <i class="bi ${getClassificationVisibleButtonIcon(isVisible)}"></i>
-      <span>${getSidebarClassificationVisibleButtonLabel(isVisible)}</span>
-    `;
-  }
-
+function renderClassificationVisibleButtonContent(isVisible) {
   return `
-    <i class="bi ${getClassificationVisibleButtonIcon(isVisible)} me-1"></i>
-    <span class="tracking-summary-btn-label">${getClassificationVisibleButtonLabel(isVisible)}</span>
+    <i class="bi ${getClassificationVisibleButtonIcon(isVisible)}"></i>
+    <span>${getSidebarClassificationVisibleButtonLabel(isVisible)}</span>
   `;
 }
 
@@ -2145,9 +2128,7 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
   const progressBarColorClass = progress.percentage >= 100 ? 'bg-success' : 'bg-warning';
   const progressTextClass = progress.percentage >= 100 ? 'text-white' : 'text-dark';
   const progressText = `${progress.completed}/${progress.total} (${progress.percentage}%)`;
-  const visibilityButtonDisabled = !isFinished ? 'disabled' : '';
   const exportButtonDisabled = !isFinished ? 'disabled' : '';
-  const visibilityButtonClass = getClassificationVisibleButtonClass(isClassificationVisible);
 
   const card = document.createElement('div');
   card.className = 'card mb-4 border-primary-subtle';
@@ -2187,15 +2168,6 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
             <span class="tracking-summary-btn-label">${t('results_button', 'Results')}</span>
           </button>
           <button type="button"
-            class="btn btn-sm ${visibilityButtonClass} js-classification-visible-btn tracking-summary-btn"
-            data-control-variant="summary"
-            data-category-id="${comp.category_id}"
-            data-style-id="${comp.style_id}"
-            data-visible="${isClassificationVisible ? '1' : '0'}"
-            ${visibilityButtonDisabled}>
-            ${renderClassificationVisibleButtonContent(isClassificationVisible, 'summary')}
-          </button>
-          <button type="button"
             class="btn btn-outline-warning btn-sm btn-export-category-results tracking-summary-btn"
             data-category-id="${comp.category_id}"
             data-style-id="${comp.style_id}"
@@ -2221,15 +2193,10 @@ function syncClassificationVisibilityControls(categoryId, styleId, isVisible) {
   document.querySelectorAll('.js-classification-visible-btn').forEach(button => {
     if (String(button.dataset.categoryId) !== normalizedCategoryId) return;
     if (String(button.dataset.styleId) !== normalizedStyleId) return;
-    const variant = button.dataset.controlVariant === 'sidebar' ? 'sidebar' : 'summary';
     button.dataset.visible = isVisible ? '1' : '0';
     button.classList.remove('btn-success', 'btn-outline-secondary', 'btn-outline-primary');
-    button.classList.add(
-      variant === 'sidebar'
-        ? getSidebarClassificationVisibleButtonClass(isVisible)
-        : getClassificationVisibleButtonClass(isVisible)
-    );
-    button.innerHTML = renderClassificationVisibleButtonContent(isVisible, variant);
+    button.classList.add(getSidebarClassificationVisibleButtonClass(isVisible));
+    button.innerHTML = renderClassificationVisibleButtonContent(isVisible);
   });
 
   document.querySelectorAll('.js-classification-visible-text').forEach(text => {
