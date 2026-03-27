@@ -9,12 +9,14 @@ let clubsList = [];
 let penaltiesList = [];
 let criteriaConfigList = [];
 let filteredCriteriaConfigIds = [];
+let entryEditModal = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     validateRoles(allowedRoles);
     //await eventReadyPromise;
     await WaitEventLoaded();
     await ensureTranslationsReady();
+    setupEntryEditModal();
 
     const alertPanel = document.getElementById('alertPanel');
     const closedPanel = document.getElementById('closedPanel');
@@ -123,11 +125,26 @@ function renderTable(table, fullData) {
         if (getEvent().status !== 'finished') {
 
             // botón eliminar
-            const btn = document.createElement("button");
-            btn.className = "btn btn-link text-danger p-0 delete-btn";
-            btn.innerHTML = '<i class="bi bi-trash"></i>';
+            const actionsDiv = document.createElement("div");
+            actionsDiv.className = "d-flex align-items-center gap-3";
 
-            btn.onclick = async () => {
+            const editBtn = document.createElement("button");
+            editBtn.type = "button";
+            editBtn.className = "btn btn-link text-primary p-0 edit-btn item-action-btn";
+            editBtn.title = t('edit', 'Edit');
+            editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+            editBtn.onclick = () => {
+                openEntryEditModal(table, item);
+            };
+            actionsDiv.appendChild(editBtn);
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "btn btn-link text-danger p-0 delete-btn item-action-btn";
+            deleteBtn.title = t('delete');
+            deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+
+            deleteBtn.onclick = async () => {
                 const confirmed = await showModal(`${t('delete')} "${item.name}" ${t('from')} <strong>${t(table)}</strong>?`);
                 if (confirmed) {
                     try {
@@ -149,7 +166,8 @@ function renderTable(table, fullData) {
                     }
                 }
             };
-            li.appendChild(btn);
+            actionsDiv.appendChild(deleteBtn);
+            li.appendChild(actionsDiv);
         }
 
         list.appendChild(li);
@@ -159,6 +177,116 @@ function renderTable(table, fullData) {
     const countEl = document.getElementById(`count-${table}`);
     if (countEl) {
         countEl.textContent = fullData.length;
+    }
+}
+
+function setupEntryEditModal() {
+    const modalEl = document.getElementById('entryEditModal');
+    const form = document.getElementById('entryEditForm');
+    const saveBtn = document.getElementById('saveEntryEditBtn');
+
+    if (!modalEl || !form || !saveBtn) {
+        return;
+    }
+
+    entryEditModal = new bootstrap.Modal(modalEl);
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await saveEntryEdit(saveBtn);
+    });
+
+    saveBtn.addEventListener('click', async () => {
+        await saveEntryEdit(saveBtn);
+    });
+
+    modalEl.addEventListener('shown.bs.modal', () => {
+        document.getElementById('entryEditNameInput')?.focus();
+    });
+
+    modalEl.addEventListener('hidden.bs.modal', () => {
+        form.reset();
+        delete form.dataset.table;
+        delete form.dataset.id;
+    });
+}
+
+function openEntryEditModal(table, item) {
+    const form = document.getElementById('entryEditForm');
+    const title = document.getElementById('entryEditModalTitle');
+    const nameLabel = document.getElementById('entryEditNameLabel');
+    const nameInput = document.getElementById('entryEditNameInput');
+    const closeBtn = document.getElementById('closeEntryEditBtn');
+    const saveBtn = document.getElementById('saveEntryEditBtn');
+
+    if (!entryEditModal || !form || !title || !nameLabel || !nameInput || !closeBtn || !saveBtn) {
+        return;
+    }
+
+    form.dataset.table = table;
+    form.dataset.id = item.id;
+    form.dataset.position = item.position ?? '';
+
+    title.textContent = t('edit', 'Edit');
+    nameLabel.textContent = t('penalty_name', 'Name');
+    closeBtn.textContent = t('close', 'Close');
+    saveBtn.textContent = t('modify', 'Modify');
+    nameInput.value = item?.name || '';
+
+    entryEditModal.show();
+}
+
+async function saveEntryEdit(saveBtn) {
+    const form = document.getElementById('entryEditForm');
+    const nameInput = document.getElementById('entryEditNameInput');
+    const table = form?.dataset?.table;
+    const id = form?.dataset?.id;
+    const position = form?.dataset?.position;
+
+    if (!form || !nameInput || !table || !id) {
+        return;
+    }
+
+    const name = nameInput.value.trim();
+    if (!name) {
+        showMessageModal(t('entry_name_required', 'Name is required.'), t('error'));
+        nameInput.focus();
+        return;
+    }
+
+    const originalText = saveBtn.textContent;
+    saveBtn.disabled = true;
+    saveBtn.textContent = t('guardando', 'Saving...');
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/${table}/${id}`, {
+            method: 'PUT',
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                event_id: getEvent().id,
+                name,
+                position: position === '' ? null : Number(position)
+            })
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showMessageModal(data.error || data.message || t('entry_update_error', 'Error updating item.'), t('error'));
+            return;
+        }
+
+        entryEditModal.hide();
+        if (shouldReloadCriteriaConfig(table)) {
+            await loadAll();
+        } else {
+            await loadTable(table);
+        }
+    } catch (error) {
+        console.error('Error updating entry:', error);
+        showMessageModal(t('entry_update_error', 'Error updating item.'), t('error'));
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText || t('modify', 'Modify');
     }
 }
 
