@@ -94,7 +94,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             scheduleCol.classList.remove("d-none");
         }
         
-        if (getEvent().visibleResults == 0) {
+        const canJudgeSeeResults = user && user.role === "judge" && getEvent().judgesVisResults === true;
+
+        if (getEvent().visibleResults == 0 && !canJudgeSeeResults) {
             resultsCol.remove();
         } else {
             resultsCol.classList.remove("d-none");
