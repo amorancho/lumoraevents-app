@@ -1217,9 +1217,12 @@ function showVotesModal(dancer, mode = "details") {
     //renderTotal(total);
     renderTotal(dancer.totalScore);
   } else {
-    const options = generateScoreOptions(scoreType, minScore, maxScore);
+    //const options = generateScoreOptions(scoreType, minScore, maxScore);
 
     criteriaList.forEach(c => {
+
+      let options = generateScoreOptions(scoreType, minScore, c.max_score);
+
       const value = dancer.scores?.[c.name];
       const row = document.createElement('div');
       row.className = 'row align-items-center';
@@ -1281,6 +1284,85 @@ function showVotesModal(dancer, mode = "details") {
         controlCol.appendChild(hiddenInput);
         controlCol.appendChild(btnGroup);
       } else {
+        /*
+        const wrapper = document.createElement('div');
+        wrapper.className = 'w-100';
+
+        const rangeRow = document.createElement('div');
+        rangeRow.className = 'd-flex align-items-center gap-3';
+
+        const range = document.createElement('input');
+        range.type = 'range';
+        range.className = 'form-range flex-grow-1 score-input';
+        range.dataset.criteria = c.id;
+        range.dataset.scoreType = scoreType;
+        range.dataset.min = minScore;
+        range.dataset.max = maxScore;
+
+        range.min = minScore;
+        range.max = c.max_score;
+
+        const step = normalizedScoreType === 'MED' ? 0.5 : 1;
+        range.step = step;
+
+        range.value = currentVal ? currentVal : minScore;
+
+
+        // ===== LABEL GRANDE =====
+
+        const valueLabel = document.createElement('div');
+        valueLabel.className = 'badge bg-primary fs-5 px-3 py-2';
+        valueLabel.style.minWidth = '60px';
+        valueLabel.style.textAlign = 'center';
+
+
+        const setLabel = (val) => {
+          valueLabel.textContent =
+            formatScoreForDisplay(Number(val), scoreType);
+        };
+
+        setLabel(range.value);
+
+
+        range.addEventListener('input', () => {
+          setLabel(range.value);
+          refreshTotalScore();
+        });
+
+
+        rangeRow.appendChild(range);
+        rangeRow.appendChild(valueLabel);
+
+        wrapper.appendChild(rangeRow);
+
+
+        // ===== TICKS =====
+
+        const datalistId = `ticks-${c.id}`;
+        const datalist = document.createElement('datalist');
+        datalist.id = datalistId;
+
+        const max = c.max_score;
+
+        for (let i = minScore; i <= max; i += step) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          datalist.appendChild(opt);
+        }
+
+        range.setAttribute('list', datalistId);
+
+        wrapper.appendChild(datalist);
+
+
+        // ===== ESTILO EXTRA =====
+
+        range.style.cursor = 'pointer';
+        range.style.height = '1.6rem';
+
+        controlCol.appendChild(wrapper);
+        */
+        
         const select = document.createElement('select');
         select.className = 'form-select score-input';
         select.dataset.criteria = c.id;
@@ -1301,6 +1383,7 @@ function showVotesModal(dancer, mode = "details") {
         if (currentVal) select.value = currentVal;
         select.addEventListener('change', refreshTotalScore);
         controlCol.appendChild(select);
+        
       }
 
       row.appendChild(controlCol);

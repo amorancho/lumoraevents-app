@@ -819,6 +819,19 @@ function shouldShowCriteriaConfigTab() {
     return getEvent()?.criteriaConfig && getEvent().criteriaConfig !== 'NO_CONFIG';
 }
 
+function isPercentageCriteriaConfig() {
+    return getEvent()?.criteriaConfig === 'WITH_POR';
+}
+
+function isMaxScoreCriteriaConfig() {
+    return getEvent()?.criteriaConfig === 'PUNT_MAX';
+}
+
+function usesCriteriaConfigChecklist() {
+    const criteriaConfig = getEvent()?.criteriaConfig;
+    return criteriaConfig === 'BY_CAT_STY' || criteriaConfig === 'PUNT_MAX';
+}
+
 function setupCriteriaConfigTab() {
     const tab = document.getElementById('tab-criteria-config-tab');
     const pane = document.getElementById('tab-criteria-config');
@@ -830,9 +843,12 @@ function setupCriteriaConfigTab() {
         return;
     }
 
-    const showPorcentage = getEvent().criteriaConfig === 'WITH_POR';
+    const showPorcentage = isPercentageCriteriaConfig();
+    const showMaxScore = isMaxScoreCriteriaConfig();
     const porcentageField = document.getElementById('criteria-config-porcentage-field');
     const porcentageHeader = document.getElementById('criteria-config-porcentage-header');
+    const maxScoreField = document.getElementById('criteria-config-max-score-field');
+    const maxScoreHeader = document.getElementById('criteria-config-max-score-header');
     const criteriaSelectField = document.getElementById('criteria-config-criteria-select-field');
     const criteriaListField = document.getElementById('criteria-config-criteria-list-field');
 
@@ -846,11 +862,17 @@ function setupCriteriaConfigTab() {
     if (totalHeader) {
         totalHeader.classList.toggle('d-none', !showPorcentage);
     }
+    if (maxScoreField) {
+        maxScoreField.classList.toggle('d-none', !showMaxScore);
+    }
+    if (maxScoreHeader) {
+        maxScoreHeader.classList.toggle('d-none', !showMaxScore);
+    }
     if (criteriaSelectField) {
         criteriaSelectField.classList.toggle('d-none', !showPorcentage);
     }
     if (criteriaListField) {
-        criteriaListField.classList.toggle('d-none', showPorcentage);
+        criteriaListField.classList.toggle('d-none', !usesCriteriaConfigChecklist());
     }
 
 }
@@ -1051,9 +1073,11 @@ function renderCriteriaConfigTable() {
     const selectedStyle = filterStyle ? filterStyle.value : '';
     const selectedCriteria = filterCriteria ? filterCriteria.value : '';
 
-    const showPorcentage = getEvent().criteriaConfig === 'WITH_POR';
+    const showPorcentage = isPercentageCriteriaConfig();
+    const showMaxScore = isMaxScoreCriteriaConfig();
     const porcentageClass = showPorcentage ? '' : 'd-none';
     const totalClass = showPorcentage ? '' : 'd-none';
+    const maxScoreClass = showMaxScore ? '' : 'd-none';
 
     const categoryMap = new Map(categoriesList.map((item) => [String(item.id), item.name]));
     const styleMap = new Map(stylesList.map((item) => [String(item.id), item.name]));
@@ -1105,6 +1129,7 @@ function renderCriteriaConfigTable() {
             const styleName = item.style_name || styleMap.get(String(item.style_id)) || `#${item.style_id}`;
             const criteriaName = item.criteria_name || criteriaMap.get(String(item.criteria_id)) || `#${item.criteria_id}`;
             const porcentageVal = item.porcentage ?? item.percentage ?? '';
+            const maxScoreVal = item.max_score ?? '';
 
             if (index === 0) {
                 const categoryCell = document.createElement('td');
@@ -1137,6 +1162,11 @@ function renderCriteriaConfigTable() {
             porcentageCell.className = porcentageClass;
             porcentageCell.textContent = showPorcentage ? porcentageVal : '';
             tr.appendChild(porcentageCell);
+
+            const maxScoreCell = document.createElement('td');
+            maxScoreCell.className = maxScoreClass;
+            maxScoreCell.textContent = showMaxScore ? maxScoreVal : '';
+            tr.appendChild(maxScoreCell);
 
             const actionsCell = document.createElement('td');
             actionsCell.className = 'text-center';
@@ -1176,7 +1206,8 @@ function formatPercentage(value) {
 }
 
 async function addCriteriaConfig() {
-    const needsPorcentage = getEvent().criteriaConfig === 'WITH_POR';
+    const needsPorcentage = isPercentageCriteriaConfig();
+    const needsMaxScore = isMaxScoreCriteriaConfig();
     let criteriaIds = [];
 
     if (needsPorcentage) {
@@ -1220,6 +1251,21 @@ async function addCriteriaConfig() {
         }
     }
 
+    let maxScore = null;
+    if (needsMaxScore) {
+        const input = document.getElementById('criteria-config-max-score');
+        const rawValue = input ? input.value.trim() : '';
+        if (!rawValue) {
+            showMessageModal(t('criteria_config_max_score_invalid'), t('error'));
+            return;
+        }
+        maxScore = Number(rawValue);
+        if (!Number.isInteger(maxScore) || maxScore < 1 || maxScore > 100) {
+            showMessageModal(t('criteria_config_max_score_invalid'), t('error'));
+            return;
+        }
+    }
+
     try {
         const res = await fetch(`${API_BASE_URL}/api/criteria/config`, {
             method: 'POST',
@@ -1229,7 +1275,8 @@ async function addCriteriaConfig() {
                 category_ids: categories.map(Number),
                 style_ids: styles.map(Number),
                 criteria_ids: criteriaIds,
-                percentage: needsPorcentage ? percentage : null
+                percentage: needsPorcentage ? percentage : null,
+                max_score: needsMaxScore ? maxScore : null
             })
         });
 
@@ -1246,6 +1293,10 @@ async function addCriteriaConfig() {
         }
         if (needsPorcentage) {
             const input = document.getElementById('criteria-config-porcentage');
+            if (input) input.value = '';
+        }
+        if (needsMaxScore) {
+            const input = document.getElementById('criteria-config-max-score');
             if (input) input.value = '';
         }
 

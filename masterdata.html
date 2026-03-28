@@ -277,6 +277,11 @@
                   <input type="number" class="form-control" id="criteria-config-porcentage" min="0" max="100" step="0.01" placeholder="0-100" data-i18n-placeholder="criteria_config_percentage_placeholder">
                 </div>
 
+                <div class="mb-3 d-none" id="criteria-config-max-score-field">
+                  <label class="form-label" data-i18n="criteria_config_max_score_label">Puntuación máxima</label>
+                  <input type="number" class="form-control" id="criteria-config-max-score" min="1" max="100" step="1" placeholder="1-100" data-i18n-placeholder="criteria_config_max_score_placeholder">
+                </div>
+
                 <button type="button" class="btn btn-primary w-100" id="criteria-config-add-btn" data-i18n="criteria_config_create_combinations">Crear combinaciones</button>
               </div>
             </div>
@@ -315,6 +320,7 @@
                         <th id="criteria-config-total-header" data-i18n="criteria_config_total_percent">% total</th>
                         <th data-i18n="criteria_config_criteria_label">Criterio</th>
                         <th id="criteria-config-porcentage-header" data-i18n="criteria_config_percent">%</th>
+                        <th id="criteria-config-max-score-header" class="d-none" data-i18n="criteria_config_max_score_short">Punt. máx.</th>
                         <th class="text-center" data-i18n="criteria_config_actions">Acciones</th>
                       </tr>
                     </thead>

@@ -68,6 +68,8 @@
   "criteria_config_none_masculine": "Aucun",
   "criteria_config_percentage_label": "Pourcentage",
   "criteria_config_percentage_placeholder": "0-100",
+  "criteria_config_max_score_label": "Score maximum",
+  "criteria_config_max_score_placeholder": "1-100",
   "criteria_config_create_combinations": "Créer des combinaisons",
   "criteria_config_title": "Configurations",
   "criteria_config_category_label": "Catégorie",
@@ -75,6 +77,7 @@
   "criteria_config_delete_filtered": "Supprimer les critères filtrés",
   "criteria_config_total_percent": "% Total",
   "criteria_config_percent": "%",
+  "criteria_config_max_score_short": "Score max.",
   "criteria_config_actions": "Actions",
   "criteria_config_delete_many_confirm": "Voulez-vous supprimer {count} configurations ?",
   "criteria_config_delete_one_confirm": "Voulez-vous supprimer cette configuration ?",
@@ -82,6 +85,7 @@
   "criteria_config_select_criteria_error": "Sélectionnez un critère.",
   "criteria_config_select_category_style_error": "Sélectionnez au moins une catégorie et un style.",
   "criteria_config_percentage_invalid": "Indiquez un pourcentage valide.",
+  "criteria_config_max_score_invalid": "Indiquez un score maximum valide entre 1 et 100.",
   "criteria_config_save_error": "Erreur lors de l'enregistrement de la configuration des critères.",
   "criteria_config_delete_error": "Erreur lors de la suppression de la configuration des critères."
 }
