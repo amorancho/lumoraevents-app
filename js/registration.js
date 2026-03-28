@@ -23,6 +23,10 @@ const registrationResourceRequests = {
   registrationCategories: new Map(),
   registrationStyles: new Map()
 };
+const registrationSyncEndpoints = {
+  organizerRegistrations: '/api/registrations/choreographies',
+  synchronization: '/api/registrations/synchronization'
+};
 
 function getRegistrationEventKey(eventId = getEvent()?.id) {
   return eventId != null && eventId !== '' ? `${eventId}` : '__all__';
@@ -64,7 +68,7 @@ async function fetchEventSchools({ force = false } = {}) {
   const eventId = eventObj?.id;
   const key = getRegistrationEventKey(eventId);
 
-  return fetchRegistrationResource('eventSchools', key, async () => {
+  const schools = await fetchRegistrationResource('eventSchools', key, async () => {
     const params = new URLSearchParams();
     if (eventId) {
       params.set('event_id', eventId);
@@ -82,6 +86,9 @@ async function fetchEventSchools({ force = false } = {}) {
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   }, { force });
+
+  registrationState.schools = schools;
+  return schools;
 }
 
 async function fetchRegistrationCategories({ force = false } = {}) {
@@ -146,6 +153,28 @@ async function fetchRegistrationStyles({ force = false } = {}) {
   return styles;
 }
 
+async function fetchOrganizerRegistrationsForEvent() {
+  const params = new URLSearchParams();
+  const eventObj = getEvent();
+  if (eventObj?.id) {
+    params.set('event_id', eventObj.id);
+  }
+
+  const url = params.toString()
+    ? `${API_BASE_URL}${registrationSyncEndpoints.organizerRegistrations}?${params.toString()}`
+    : `${API_BASE_URL}${registrationSyncEndpoints.organizerRegistrations}`;
+
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(t('org_registrations_load_error', 'Error loading registrations.'));
+  }
+
+  const data = await res.json();
+  const registrations = Array.isArray(data) ? data : [];
+  registrationState.organizerRegistrations = registrations;
+  return registrations;
+}
+
 function syncRegistrationConfigState() {
   registrationState.registrationConfig = {
     categories: Array.isArray(registrationState.registrationCategories)
@@ -160,6 +189,14 @@ function syncRegistrationConfigState() {
 function notifyRegistrationConfigUpdate() {
   syncRegistrationConfigState();
   window.dispatchEvent(new CustomEvent('registration:config-updated'));
+}
+
+function notifyRegistrationSchoolsUpdate() {
+  window.dispatchEvent(new CustomEvent('registration:schools-updated'));
+}
+
+function notifyOrganizerRegistrationsUpdate() {
+  window.dispatchEvent(new CustomEvent('registration:organizer-registrations-updated'));
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -179,6 +216,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initOrganizerRegistrationsTab();
     initRegistrationCategoriesTab();
     initRegistrationDisciplinesTab();
+    initEventSyncTab();
   }
 });
 
@@ -219,7 +257,8 @@ function setRoleTabVisibility(role) {
     { roles: ['organizer'], buttonId: 'org-registrations-tab', paneId: 'org-registrations' },
     { roles: ['organizer'], buttonId: 'registration-categories-tab', paneId: 'registration-categories' },
     { roles: ['organizer'], buttonId: 'registration-disciplines-tab', paneId: 'registration-disciplines' },
-    { roles: ['school'], buttonId: 'competitions-tab', paneId: 'competitions' }
+    { roles: ['school'], buttonId: 'competitions-tab', paneId: 'competitions' },
+    { roles: ['organizer'], buttonId: 'event-sync-tab', paneId: 'event-sync' }
   ];
 
   tabConfig.forEach(({ roles, buttonId, paneId }) => {
@@ -1173,6 +1212,15 @@ function initSchoolsTab() {
       });
       row.appendChild(choreoStatusCell);
 
+      const syncroCell = document.createElement('td');
+      syncroCell.className = 'text-center';
+      const syncroBadge = document.createElement('span');
+      const syncroInfo = getSyncroStatusBadgeInfo(school.syncro_status);
+      syncroBadge.className = `badge ${syncroInfo.className}`;
+      syncroBadge.textContent = syncroInfo.label;
+      syncroCell.appendChild(syncroBadge);
+      row.appendChild(syncroCell);
+
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
       const detailBtn = document.createElement('button');
@@ -1191,7 +1239,7 @@ function initSchoolsTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 7;
+    cell.colSpan = 8;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -1202,8 +1250,9 @@ function initSchoolsTab() {
 
   const loadSchools = async () => {
     try {
-      registrationState.schools = await fetchEventSchools();
+      await fetchEventSchools();
       applyFilters();
+      notifyRegistrationSchoolsUpdate();
     } catch (err) {
       showSchoolsError(err.message || t('schools_load_error', 'Error loading schools.'));
     }
@@ -1246,6 +1295,315 @@ function initSchoolsTab() {
   });
 
   loadSchools();
+}
+
+function getSyncroStatusBadgeInfo(status) {
+  switch (`${status || ''}`) {
+    case 'NOT_APPLICABLE':
+      return { label: t('registration_categories_syncro_status_not_applicable', 'Not applicable'), className: 'bg-info-subtle text-info-emphasis' };
+    case 'SYNCRO_OK':
+      return { label: t('registration_categories_syncro_status_ok', 'Synchronized'), className: 'bg-success-subtle text-success-emphasis' };
+    case 'PEN_UPDATE':
+      return { label: t('registration_categories_syncro_status_pending', 'Pending update'), className: 'bg-warning-subtle text-warning-emphasis' };
+    case 'NOT_SYNCRO':
+    default:
+      return { label: t('registration_categories_syncro_status_not', 'Not synchronized'), className: 'bg-secondary-subtle text-secondary-emphasis' };
+  }
+}
+
+function countSyncroStatuses(items, options = {}) {
+  return (Array.isArray(items) ? items : []).reduce((summary, item) => {
+    const status = `${item?.syncro_status || ''}`;
+    if (status === 'NOT_APPLICABLE') {
+      summary.notApplicable += 1;
+    } else if (status === 'SYNCRO_OK') {
+      summary.syncroOk += 1;
+    } else if (status === 'PEN_UPDATE') {
+      summary.pendingUpdate += 1;
+    } else {
+      summary.notSynchronized += 1;
+    }
+    return summary;
+  }, {
+    notSynchronized: 0,
+    pendingUpdate: 0,
+    syncroOk: 0,
+    notApplicable: 0
+  });
+}
+
+function hasPendingSyncWork(summary) {
+  if (!summary || typeof summary !== 'object') return false;
+  return summary.notSynchronized > 0 || summary.pendingUpdate > 0;
+}
+
+function renderEventSyncSummary(container, items, options = {}) {
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = '';
+
+  const summary = countSyncroStatuses(items, options);
+  const total = summary.notSynchronized + summary.pendingUpdate + summary.syncroOk + summary.notApplicable;
+  const rows = [
+    { label: t('registration_categories_syncro_status_not', 'Not synchronized'), count: summary.notSynchronized, badgeClass: 'bg-secondary-subtle text-secondary-emphasis' },
+    { label: t('registration_categories_syncro_status_pending', 'Pending update'), count: summary.pendingUpdate, badgeClass: 'bg-warning-subtle text-warning-emphasis' },
+    { label: t('registration_categories_syncro_status_ok', 'Synchronized'), count: summary.syncroOk, badgeClass: 'bg-success-subtle text-success-emphasis' }
+  ];
+  if (options.includeNotApplicable) {
+    rows.push({
+      label: t('registration_categories_syncro_status_not_applicable', 'Not applicable'),
+      count: summary.notApplicable,
+      badgeClass: 'bg-info-subtle text-info-emphasis'
+    });
+  }
+
+  const list = document.createElement('ul');
+  list.className = 'list-group list-group-flush';
+
+  rows.forEach((rowData) => {
+    const row = document.createElement('li');
+    row.className = 'list-group-item px-0 d-flex justify-content-between align-items-center';
+
+    const label = document.createElement('span');
+    label.textContent = rowData.label;
+    row.appendChild(label);
+
+    const badge = document.createElement('span');
+    badge.className = `badge rounded-pill ${rowData.badgeClass}`;
+    badge.textContent = `${rowData.count}`;
+    row.appendChild(badge);
+
+    list.appendChild(row);
+  });
+
+  container.appendChild(list);
+
+  const info = document.createElement('div');
+  info.className = total === 0
+    ? 'small text-muted mt-3'
+    : (summary.notSynchronized === 0 && summary.pendingUpdate === 0
+      ? 'alert alert-success py-2 px-3 mt-3 mb-0'
+      : 'small text-muted mt-3');
+  info.textContent = total === 0
+    ? t('event_sync_no_items', 'No items available yet.')
+    : (summary.notSynchronized === 0 && summary.pendingUpdate === 0
+      ? t('event_sync_all_good', 'All good. Nothing to sync here.')
+      : t('event_sync_pending_work', 'There are still items pending review or synchronization.'));
+  container.appendChild(info);
+
+  return summary;
+}
+
+function getEventRegistrationEndDate() {
+  const rawValue = getEvent()?.registrationEnd;
+  if (!rawValue) return null;
+
+  const parsedDate = new Date(rawValue);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  parsedDate.setHours(0, 0, 0, 0);
+  return parsedDate;
+}
+
+function isEventRegistrationStillOpen() {
+  const registrationEndDate = getEventRegistrationEndDate();
+  if (!registrationEndDate) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today <= registrationEndDate;
+}
+
+function showEventSyncBeforeDeadlineModal() {
+  return new Promise((resolve) => {
+    const modalEl = document.getElementById('eventSyncConfirmModal');
+    const confirmBtn = document.getElementById('confirmEventSyncBtn');
+
+    if (!modalEl || !confirmBtn) {
+      resolve(false);
+      return;
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    let confirmed = false;
+
+    const onConfirm = () => {
+      confirmed = true;
+      modal.hide();
+    };
+
+    const onHidden = () => {
+      confirmBtn.removeEventListener('click', onConfirm);
+      modalEl.removeEventListener('hidden.bs.modal', onHidden);
+      resolve(confirmed);
+    };
+
+    confirmBtn.addEventListener('click', onConfirm);
+    modalEl.addEventListener('hidden.bs.modal', onHidden);
+    modal.show();
+  });
+}
+
+async function runEventSyncAction(syncTarget) {
+  if (isEventRegistrationStillOpen()) {
+    const confirmed = await showEventSyncBeforeDeadlineModal();
+    if (!confirmed) return;
+  }
+
+  const buttonMap = {
+    categories: document.getElementById('eventSyncCategoriesBtn'),
+    styles: document.getElementById('eventSyncStylesBtn'),
+    schools: document.getElementById('eventSyncSchoolsBtn'),
+    registrations: document.getElementById('eventSyncRegistrationsBtn')
+  };
+  const elementMap = {
+    categories: 'cat',
+    styles: 'sty',
+    schools: 'sch',
+    registrations: 'reg'
+  };
+
+  const button = buttonMap[syncTarget] || null;
+  const element = elementMap[syncTarget] || null;
+  if (!element) return;
+
+  const originalText = button?.textContent || t('event_sync_action_sync', 'Synchronize');
+  let stateRefreshed = false;
+  if (button) {
+    button.disabled = true;
+    button.textContent = t('loading', 'Loading...');
+  }
+
+  try {
+    const res = await fetch(`${API_BASE_URL}${registrationSyncEndpoints.synchronization}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_id: Number(getEvent().id),
+        element
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || t('event_sync_error_default', 'Error performing synchronization.'));
+    }
+
+    await Promise.allSettled([
+      fetchRegistrationCategories({ force: true }),
+      fetchRegistrationStyles({ force: true }),
+      fetchEventSchools({ force: true }),
+      fetchOrganizerRegistrationsForEvent()
+    ]);
+
+    notifyRegistrationConfigUpdate();
+    notifyRegistrationSchoolsUpdate();
+    notifyOrganizerRegistrationsUpdate();
+    stateRefreshed = true;
+
+    showMessageModal(
+      data?.message || t('event_sync_success_default', 'Synchronization completed successfully.'),
+      t('event_sync_success_title', 'Synchronization'),
+      'success'
+    );
+  } catch (error) {
+    showMessageModal(
+      error?.message || t('event_sync_error_default', 'Error performing synchronization.'),
+      t('error_title', 'Error')
+    );
+  } finally {
+    if (button) {
+      button.textContent = originalText;
+      if (!stateRefreshed) {
+        button.disabled = false;
+      }
+    }
+  }
+}
+
+function initEventSyncTab() {
+  const categoriesEl = document.getElementById('eventSyncCategoriesSummary');
+  const stylesEl = document.getElementById('eventSyncStylesSummary');
+  const schoolsEl = document.getElementById('eventSyncSchoolsSummary');
+  const registrationsEl = document.getElementById('eventSyncRegistrationsSummary');
+  const categoriesBtn = document.getElementById('eventSyncCategoriesBtn');
+  const stylesBtn = document.getElementById('eventSyncStylesBtn');
+  const schoolsBtn = document.getElementById('eventSyncSchoolsBtn');
+  const registrationsBtn = document.getElementById('eventSyncRegistrationsBtn');
+  const registrationsBtnWrapper = document.getElementById('eventSyncRegistrationsBtnWrapper');
+
+  if (!categoriesEl || !stylesEl || !schoolsEl || !registrationsEl || !categoriesBtn || !stylesBtn || !schoolsBtn || !registrationsBtn || !registrationsBtnWrapper) {
+    return;
+  }
+
+  let registrationsDisabledTooltip = null;
+
+  const renderAll = () => {
+    const categoriesSummary = renderEventSyncSummary(categoriesEl, registrationState.registrationCategories);
+    const stylesSummary = renderEventSyncSummary(stylesEl, registrationState.registrationDisciplines);
+    const schoolsSummary = renderEventSyncSummary(schoolsEl, registrationState.schools);
+    const registrationsSummary = renderEventSyncSummary(registrationsEl, registrationState.organizerRegistrations, {
+      includeNotApplicable: true
+    });
+
+    categoriesBtn.disabled = !hasPendingSyncWork(categoriesSummary);
+    stylesBtn.disabled = !hasPendingSyncWork(stylesSummary);
+    schoolsBtn.disabled = !hasPendingSyncWork(schoolsSummary);
+
+    const hasBlockingItems = [categoriesSummary, stylesSummary, schoolsSummary].some(hasPendingSyncWork);
+    const hasRegistrationsSyncWork = hasPendingSyncWork(registrationsSummary);
+    registrationsBtn.disabled = hasBlockingItems || !hasRegistrationsSyncWork;
+
+    if (hasBlockingItems) {
+      registrationsBtnWrapper.setAttribute('data-bs-toggle', 'tooltip');
+      registrationsBtnWrapper.setAttribute('data-bs-placement', 'top');
+      registrationsBtnWrapper.setAttribute('data-bs-title', t('event_sync_registrations_disabled_tooltip', 'Registrations can only be synchronized when categories, styles, and schools are fully synchronized.'));
+      registrationsBtnWrapper.tabIndex = 0;
+      registrationsDisabledTooltip = bootstrap.Tooltip.getOrCreateInstance(registrationsBtnWrapper);
+    } else if (registrationsDisabledTooltip) {
+      registrationsDisabledTooltip.dispose();
+      registrationsDisabledTooltip = null;
+      registrationsBtnWrapper.removeAttribute('data-bs-toggle');
+      registrationsBtnWrapper.removeAttribute('data-bs-placement');
+      registrationsBtnWrapper.removeAttribute('data-bs-title');
+      registrationsBtnWrapper.removeAttribute('data-bs-original-title');
+      registrationsBtnWrapper.removeAttribute('tabindex');
+    }
+  };
+
+  const loadAll = async () => {
+    await Promise.allSettled([
+      fetchRegistrationCategories(),
+      fetchRegistrationStyles(),
+      fetchEventSchools()
+    ]);
+    renderAll();
+  };
+
+  window.addEventListener('registration:config-updated', renderAll);
+  window.addEventListener('registration:schools-updated', renderAll);
+  window.addEventListener('registration:organizer-registrations-updated', renderAll);
+
+  categoriesBtn.addEventListener('click', async () => {
+    await runEventSyncAction('categories');
+  });
+
+  stylesBtn.addEventListener('click', async () => {
+    await runEventSyncAction('styles');
+  });
+
+  schoolsBtn.addEventListener('click', async () => {
+    await runEventSyncAction('schools');
+  });
+
+  registrationsBtn.addEventListener('click', async () => {
+    if (registrationsBtn.disabled) return;
+    await runEventSyncAction('registrations');
+  });
+
+  loadAll();
 }
 
 function initRegistrationCategoriesTab() {
@@ -1369,6 +1727,15 @@ function initRegistrationCategoriesTab() {
       musicMaxCell.textContent = category.music_max_duration ?? '-';
       row.appendChild(musicMaxCell);
 
+      const syncroCell = document.createElement('td');
+      syncroCell.className = 'text-center';
+      const syncroBadge = document.createElement('span');
+      const syncroInfo = getSyncroStatusBadgeInfo(category.syncro_status);
+      syncroBadge.className = `badge ${syncroInfo.className}`;
+      syncroBadge.textContent = syncroInfo.label;
+      syncroCell.appendChild(syncroBadge);
+      row.appendChild(syncroCell);
+
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
       const actionGroup = document.createElement('div');
@@ -1404,7 +1771,7 @@ function initRegistrationCategoriesTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 7;
+    cell.colSpan = 8;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -1635,6 +2002,15 @@ function initRegistrationDisciplinesTab() {
 
       li.appendChild(leftDiv);
 
+      const rightDiv = document.createElement('div');
+      rightDiv.className = 'd-flex align-items-center gap-2 ms-3';
+
+      const syncroBadge = document.createElement('span');
+      const syncroInfo = getSyncroStatusBadgeInfo(discipline.syncro_status);
+      syncroBadge.className = `badge ${syncroInfo.className}`;
+      syncroBadge.textContent = syncroInfo.label;
+      rightDiv.appendChild(syncroBadge);
+
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
       deleteBtn.className = 'btn btn-link text-danger p-0';
@@ -1648,7 +2024,8 @@ function initRegistrationDisciplinesTab() {
         deleteModal.show();
       });
 
-      li.appendChild(deleteBtn);
+      rightDiv.appendChild(deleteBtn);
+      li.appendChild(rightDiv);
       listEl.appendChild(li);
     });
 
@@ -1685,7 +2062,12 @@ function initRegistrationDisciplinesTab() {
             if (!res.ok) {
               const error = await res.json();
               console.error('Error reordering disciplines:', error);
+              return;
             }
+
+            await fetchRegistrationStyles({ force: true });
+            renderDisciplines();
+            notifyRegistrationConfigUpdate();
           } catch (err) {
             console.error('Unexpected reorder error:', err);
           }
@@ -1895,6 +2277,7 @@ function initOrganizerRegistrationsTab() {
   let styleById = new Map();
   let validationTarget = null;
   let rejectTarget = null;
+  let registrationsTooltipInstances = [];
 
   const populateSelect = (selectEl, items) => {
     if (!selectEl) return;
@@ -1983,6 +2366,19 @@ function initOrganizerRegistrationsTab() {
     if (kb < 1024) return `${kb.toFixed(1)} KB`;
     const mb = kb / 1024;
     return `${mb.toFixed(1)} MB`;
+  };
+
+  const disposeRegistrationsTooltips = () => {
+    registrationsTooltipInstances.forEach((instance) => instance.dispose());
+    registrationsTooltipInstances = [];
+  };
+
+  const initRegistrationsTooltips = () => {
+    disposeRegistrationsTooltips();
+    const tooltipElements = tableBody.querySelectorAll('[data-bs-toggle="tooltip"]');
+    registrationsTooltipInstances = Array.from(tooltipElements).map((element) =>
+      new bootstrap.Tooltip(element)
+    );
   };
 
   const getEventIdValue = () => getEvent()?.id;
@@ -2492,6 +2888,7 @@ function initOrganizerRegistrationsTab() {
   };
 
   const renderRegistrations = () => {
+    disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
     const registrations = applyFilters();
 
@@ -2548,6 +2945,15 @@ function initOrganizerRegistrationsTab() {
       participantsCell.textContent = `${getParticipantsCount(registration)}`;
       row.appendChild(participantsCell);
 
+      const syncroCell = document.createElement('td');
+      syncroCell.className = 'text-center';
+      const syncroBadge = document.createElement('span');
+      const syncroInfo = getSyncroStatusBadgeInfo(registration.syncro_status);
+      syncroBadge.className = `badge ${syncroInfo.className}`;
+      syncroBadge.textContent = syncroInfo.label;
+      syncroCell.appendChild(syncroBadge);
+      row.appendChild(syncroCell);
+
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
       const actionGroup = document.createElement('div');
@@ -2557,28 +2963,44 @@ function initOrganizerRegistrationsTab() {
       const validateBtn = document.createElement('button');
       validateBtn.type = 'button';
       validateBtn.className = 'btn btn-outline-success btn-sm btn-org-registration-validate';
-      validateBtn.textContent = validateLabel;
       validateBtn.disabled = registration.status !== 'PEN';
       validateBtn.dataset.id = registration.id;
+      validateBtn.title = validateLabel;
+      validateBtn.setAttribute('aria-label', validateLabel);
+      validateBtn.setAttribute('data-bs-toggle', 'tooltip');
+      validateBtn.setAttribute('data-bs-placement', 'top');
+      validateBtn.innerHTML = '<i class="bi bi-check-circle"></i>';
 
       const rejectBtn = document.createElement('button');
       rejectBtn.type = 'button';
       rejectBtn.className = 'btn btn-outline-danger btn-sm btn-org-registration-reject';
-      rejectBtn.textContent = rejectLabel;
       rejectBtn.disabled = !['PEN', 'VAL'].includes(`${registration.status || ''}`);
       rejectBtn.dataset.id = registration.id;
+      rejectBtn.title = rejectLabel;
+      rejectBtn.setAttribute('aria-label', rejectLabel);
+      rejectBtn.setAttribute('data-bs-toggle', 'tooltip');
+      rejectBtn.setAttribute('data-bs-placement', 'top');
+      rejectBtn.innerHTML = '<i class="bi bi-x-circle"></i>';
 
       const membersBtn = document.createElement('button');
       membersBtn.type = 'button';
       membersBtn.className = 'btn btn-outline-secondary btn-sm btn-org-registration-members';
       membersBtn.dataset.id = registration.id;
-      membersBtn.textContent = membersLabel;
+      membersBtn.title = membersLabel;
+      membersBtn.setAttribute('aria-label', membersLabel);
+      membersBtn.setAttribute('data-bs-toggle', 'tooltip');
+      membersBtn.setAttribute('data-bs-placement', 'top');
+      membersBtn.innerHTML = '<i class="bi bi-people"></i>';
 
       const detailsBtn = document.createElement('button');
       detailsBtn.type = 'button';
       detailsBtn.className = 'btn btn-outline-primary btn-sm btn-org-registration-details';
       detailsBtn.dataset.id = registration.id;
-      detailsBtn.textContent = detailsLabel;
+      detailsBtn.title = detailsLabel;
+      detailsBtn.setAttribute('aria-label', detailsLabel);
+      detailsBtn.setAttribute('data-bs-toggle', 'tooltip');
+      detailsBtn.setAttribute('data-bs-placement', 'top');
+      detailsBtn.innerHTML = '<i class="bi bi-search"></i>';
 
       actionGroup.appendChild(validateBtn);
       actionGroup.appendChild(rejectBtn);
@@ -2589,13 +3011,15 @@ function initOrganizerRegistrationsTab() {
 
       tableBody.appendChild(row);
     });
+
+    initRegistrationsTooltips();
   };
 
   const showRegistrationsError = (message) => {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 7;
+    cell.colSpan = 8;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -2608,22 +3032,8 @@ function initOrganizerRegistrationsTab() {
 
   const loadRegistrations = async () => {
     try {
-      const params = new URLSearchParams();
-      const eventObj = getEvent();
-      if (eventObj?.id) {
-        params.set('event_id', eventObj.id);
-      }
-      const url = params.toString()
-        ? `${API_BASE_URL}${registrationEndpoints.list}?${params.toString()}`
-        : `${API_BASE_URL}${registrationEndpoints.list}`;
-
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(t('org_registrations_load_error', 'Error loading registrations.'));
-      }
-
-      const data = await res.json();
-      registrationState.organizerRegistrations = Array.isArray(data) ? data : [];
+      await fetchOrganizerRegistrationsForEvent();
+      notifyOrganizerRegistrationsUpdate();
       renderRegistrations();
     } catch (err) {
       showRegistrationsError(err.message || t('org_registrations_load_error', 'Error loading registrations.'));
@@ -2651,6 +3061,7 @@ function initOrganizerRegistrationsTab() {
       .catch(() => {});
   };
   window.addEventListener('registration:config-updated', handleConfigUpdate);
+  window.addEventListener('registration:organizer-registrations-updated', renderRegistrations);
 
   tableBody.addEventListener('click', (event) => {
     const detailsBtn = event.target.closest('.btn-org-registration-details');
@@ -2713,6 +3124,8 @@ function initOrganizerRegistrationsTab() {
       membersElements.empty.classList.remove('d-none');
     }
   });
+
+  window.addEventListener('beforeunload', disposeRegistrationsTooltips);
 
   Promise.resolve()
     .then(loadRegistrationConfig)

@@ -56,6 +56,9 @@
             <li class="nav-item" role="presentation">
               <button class="nav-link" id="competitions-tab" data-bs-toggle="tab" data-bs-target="#competitions" type="button" role="tab" aria-controls="competitions" aria-selected="false" data-i18n="registration_tab_competitions">Inscripciones en competiciones</button>
             </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="event-sync-tab" data-bs-toggle="tab" data-bs-target="#event-sync" type="button" role="tab" aria-controls="event-sync" aria-selected="false" data-i18n="registration_tab_event_sync">Sincronizacion Evento</button>
+            </li>
           </ul>
 
           <div class="tab-content" id="registrationTabsContent">
@@ -233,6 +236,7 @@
                           <th data-i18n="org_registrations_table_style">Disciplina/Estilo</th>
                           <th data-i18n="org_registrations_table_status">Estado</th>
                           <th class="text-center" data-i18n="org_registrations_table_participants"># Participantes</th>
+                          <th class="text-center" data-i18n="registration_categories_syncro">Syncro</th>
                           <th class="text-center" data-i18n="org_registrations_table_actions">Acciones</th>
                         </tr>
                       </thead>
@@ -270,6 +274,7 @@
                           <th class="text-center" data-i18n="registration_categories_min_years">Min. anos</th>
                           <th class="text-center" data-i18n="registration_categories_max_years">Max. anos</th>
                           <th class="text-center" data-i18n="registration_categories_music_max_duration">Duracion musica</th>
+                          <th class="text-center" data-i18n="registration_categories_syncro">Syncro</th>
                           <th class="text-center" data-i18n="registration_categories_actions">Acciones</th>
                         </tr>
                       </thead>
@@ -373,6 +378,7 @@
                           <th class="text-center" data-i18n="schools_table_participants"># de participantes</th>
                           <th class="text-center" data-i18n="schools_table_choreos"># de choreos</th>
                           <th class="text-center" data-i18n="schools_table_choreos_status">Estados de las coreos</th>
+                          <th class="text-center" data-i18n="schools_table_syncro">Syncro</th>
                           <th class="text-center" data-i18n="schools_table_actions">Acciones</th>
                         </tr>
                       </thead>
@@ -382,6 +388,54 @@
 
                   <div id="schoolsEmpty" class="text-center text-muted py-4 d-none" data-i18n="schools_empty">
                     No hay escuelas disponibles.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="event-sync" role="tabpanel" aria-labelledby="event-sync-tab">
+              <div class="alert alert-info d-flex align-items-start gap-3 mb-3" role="alert">
+                <i class="bi bi-info-circle-fill fs-5 mt-1"></i>
+                <div data-i18n="event_sync_recommendation">
+                  Se recomienda realizar la sincronización una vez haya finalizado el plazo de inscripciones por parte de las escuelas. Una vez cerrado el plazo, si hay inscripciones puntuales, recomendamos crearlas directamente en el módulo de gestión del evento.
+                </div>
+              </div>
+              <div class="row g-3">
+                <div class="col-12 col-md-6 col-xl-3">
+                  <div class="card shadow-sm h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                      <h5 class="card-title mb-3" data-i18n="registration_tab_categories">Categorias</h5>
+                      <div id="eventSyncCategoriesSummary" class="flex-grow-1"></div>
+                      <button type="button" class="btn btn-outline-primary mt-3" id="eventSyncCategoriesBtn" data-i18n="event_sync_action_sync">Sincronizar</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                  <div class="card shadow-sm h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                      <h5 class="card-title mb-3" data-i18n="registration_tab_disciplines">Disciplinas/Estilos</h5>
+                      <div id="eventSyncStylesSummary" class="flex-grow-1"></div>
+                      <button type="button" class="btn btn-outline-primary mt-3" id="eventSyncStylesBtn" data-i18n="event_sync_action_sync">Sincronizar</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                  <div class="card shadow-sm h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                      <h5 class="card-title mb-3" data-i18n="registration_tab_schools">Escuelas</h5>
+                      <div id="eventSyncSchoolsSummary" class="flex-grow-1"></div>
+                      <button type="button" class="btn btn-outline-primary mt-3" id="eventSyncSchoolsBtn" data-i18n="event_sync_action_sync">Sincronizar</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                  <div class="card shadow-sm h-100">
+                    <div class="card-body p-4 d-flex flex-column">
+                      <h5 class="card-title mb-3" data-i18n="registration_tab_org_registrations">Inscripciones</h5>
+                      <div id="eventSyncRegistrationsSummary" class="flex-grow-1"></div>
+                      <span class="d-block w-100 mt-3" id="eventSyncRegistrationsBtnWrapper">
+                        <button type="button" class="btn btn-outline-primary w-100" id="eventSyncRegistrationsBtn" data-i18n="event_sync_action_sync">Sincronizar</button>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -759,6 +813,24 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteAudioBtn">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="eventSyncConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="event_sync_confirm_title">Confirmar sincronización</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="eventSyncConfirmMessage" data-i18n="event_sync_confirm_before_deadline">El plazo de inscripciones no ha finalizado. ¿Seguro que quiere realizar la sincronización?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirmEventSyncBtn" data-i18n="confirm">Confirmar</button>
         </div>
       </div>
     </div>

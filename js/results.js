@@ -1,4 +1,4 @@
-//var title = 'Results';
+ //var title = 'Results';
 let categoryName;
 
 let autoRefreshInterval = null;
@@ -513,8 +513,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const user = getUserFromToken();
   const role = user ? user.role : 'guest';
+  const canJudgeSeeResults = role === 'judge' && getEvent().judgesVisResults === true;
 
-  if (!getEvent().visibleResults && role !== 'admin' && role !== 'organizer') {
+  if (!getEvent().visibleResults && role !== 'admin' && role !== 'organizer' && !canJudgeSeeResults) {
     alert(t('page_not_visible'));
     window.location.href = `home.html?eventId=${eventId}`;
     return;
