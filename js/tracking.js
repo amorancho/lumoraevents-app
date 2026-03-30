@@ -2377,7 +2377,7 @@ function renderCompetitions(competitions) {
                       data-category-id="${comp.category_id}"
                       data-style-id="${comp.style_id}"
                       data-dancer-id="${d.dancer_id ?? d.id}"
-                      data-dancer-name="${d.dancer_name}" ${btnDisabled}>
+                      data-dancer-name="${escapeHtml(d.dancer_name || '')}" ${btnDisabled}>
                       ${t('no_show')}
                     </button>
                   </li>
@@ -2387,7 +2387,7 @@ function renderCompetitions(competitions) {
                       data-category-id="${comp.category_id}"
                       data-style-id="${comp.style_id}"
                       data-dancer-id="${d.dancer_id ?? d.id}"
-                      data-dancer-name="${d.dancer_name}" ${btnDisabled}>
+                      data-dancer-name="${escapeHtml(d.dancer_name || '')}" ${btnDisabled}>
                       ${t('disqualify')}
                     </button>
                   </li>
@@ -2421,7 +2421,6 @@ function renderCompetitions(competitions) {
 
           if (['Completed', 'No Show', 'Disqualified'].includes(v.status)) {
 
-            let params = `${comp.category_id}, ${comp.style_id}, ${v.judge.id}, ${d.dancer_id}, '${ind}', '${d.dancer_name}', '${v.judge.name}'`;
             let showEye = v.status === 'Completed';
             
             return `
@@ -2429,8 +2428,15 @@ function renderCompetitions(competitions) {
                 <div class="tracking-vote-cell-layout">
                   <div class="tracking-vote-cell-side tracking-vote-cell-side-start gap-1">
                     <!-- Ver detalles (izquierda) -->
-                    <button class="btn btn-link text-primary p-0" 
-                      onclick="showVoteDetails(${params})" 
+                    <button class="btn btn-link text-primary p-0 js-show-vote-details"
+                      type="button"
+                      data-category-id="${comp.category_id}"
+                      data-style-id="${comp.style_id}"
+                      data-judge-id="${v.judge.id}"
+                      data-dancer-id="${d.dancer_id}"
+                      data-row-id="${escapeHtml(ind)}"
+                      data-dancer-name="${escapeHtml(d.dancer_name || '')}"
+                      data-judge-name="${escapeHtml(v.judge.name || '')}"
                       title="${t('ver_detalles')}"
                       style="visibility: ${showEye ? 'visible' : 'hidden'};">
                       <i class="bi bi-eye"></i>
@@ -2445,8 +2451,15 @@ function renderCompetitions(competitions) {
 
                   <!-- Reiniciar voto (derecha) -->
                   <div class="tracking-vote-cell-side tracking-vote-cell-side-end">
-                    <button class="btn btn-link text-danger p-0" 
-                      onclick="resetVote(${params})" 
+                    <button class="btn btn-link text-danger p-0 js-reset-vote"
+                      type="button"
+                      data-category-id="${comp.category_id}"
+                      data-style-id="${comp.style_id}"
+                      data-judge-id="${v.judge.id}"
+                      data-dancer-id="${d.dancer_id}"
+                      data-row-id="${escapeHtml(ind)}"
+                      data-dancer-name="${escapeHtml(d.dancer_name || '')}"
+                      data-judge-name="${escapeHtml(v.judge.name || '')}"
                       title="${t('reiniciar_voto')}" ${btnDisabled}>
                       <i class="bi bi-arrow-counterclockwise"></i>
                     </button>
@@ -2536,6 +2549,36 @@ function renderCompetitions(competitions) {
         competitionLabel: btn.dataset.competitionLabel,
         assignedBy: btn.dataset.assignedBy
       });
+    });
+  });
+
+  container.querySelectorAll('.js-show-vote-details').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      await showVoteDetails(
+        Number(btn.dataset.categoryId),
+        Number(btn.dataset.styleId),
+        Number(btn.dataset.judgeId),
+        Number(btn.dataset.dancerId),
+        btn.dataset.rowId,
+        btn.dataset.dancerName,
+        btn.dataset.judgeName
+      );
+    });
+  });
+
+  container.querySelectorAll('.js-reset-vote').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      await resetVote(
+        Number(btn.dataset.categoryId),
+        Number(btn.dataset.styleId),
+        Number(btn.dataset.judgeId),
+        Number(btn.dataset.dancerId),
+        btn.dataset.rowId,
+        btn.dataset.dancerName,
+        btn.dataset.judgeName
+      );
     });
   });
 

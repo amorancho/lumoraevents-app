@@ -1068,20 +1068,36 @@ async function loadCompetitionAndDancers() {
 }
 
 function showVotesModal(dancer, mode = "details") {
+  const eventData = typeof getEvent === 'function' ? getEvent() : null;
   const scoreType = getScoreType();
   const normalizedScoreType = (scoreType || 'INT').toUpperCase();
-  const scoreStep = scoreType === 'DEC' ? '0.1' : scoreType === 'MED' ? '0.5' : '1';
-  const inputMode = scoreType === 'INT' ? 'numeric' : 'decimal';
-  const useMobileLayout = mode !== "vote" || isMobileViewport() || normalizedScoreType === 'DEC';
+  const criteriaConfig = eventData?.criteriaConfig;
+  const isMaxScoreCriteria = criteriaConfig === 'PUNT_MAX';
+  const scoreStep = normalizedScoreType === 'DEC' ? '0.1' : normalizedScoreType === 'MED' ? '0.5' : '1';
+  const inputMode = normalizedScoreType === 'INT' ? 'numeric' : 'decimal';
+  const isMobile = isMobileViewport();
+  const useMobileLayout = mode !== "vote" || isMobile;
   const minScore = DEFAULT_MIN_SCORE;
-  const maxScore = DEFAULT_MAX_SCORE;
   document.getElementById('detailsModalLabel').textContent =
     mode === "details" ? `${t('votes_for')} ${dancer.name}` : `${t('vote_for')} ${dancer.name}`;
 
   const dialog = modal._element.querySelector('.modal-dialog');
-  dialog.classList.remove('modal-lg', 'modal-xl', 'modal-dialog-scrollable');
+  dialog.classList.remove('modal-lg', 'modal-xl', 'modal-dialog-scrollable', 'modal-fullscreen', 'modal-dialog-centered');
+  dialog.style.maxWidth = '';
+  dialog.style.width = '';
+  dialog.style.margin = '';
+  if (isMobile) {
+    dialog.classList.add('modal-fullscreen');
+  } else {
+    dialog.classList.add('modal-dialog-centered');
+  }
   if (!useMobileLayout && mode === "vote") {
-    dialog.classList.add('modal-xl', 'modal-dialog-scrollable');
+    dialog.classList.add('modal-dialog-scrollable');
+    if (normalizedScoreType === 'DEC') {
+      dialog.style.maxWidth = '460px';
+    } else {
+      dialog.classList.add('modal-xl');
+    }
   }
 
   criteriaContainer.className = useMobileLayout ? 'row g-3 text-center' : 'd-flex flex-column gap-3';
@@ -1089,6 +1105,42 @@ function showVotesModal(dancer, mode = "details") {
 
   const getCriteriaInput = (criteriaId) =>
     criteriaContainer.querySelector(`.score-input[data-criteria="${criteriaId}"]`);
+
+  const getCriteriaById = (criteriaId) =>
+    criteriaList.find(c => String(c?.id) === String(criteriaId)) || null;
+
+  const getCriteriaBounds = (criteria) => {
+    const configuredMax = isMaxScoreCriteria ? Number(criteria?.max_score) : DEFAULT_MAX_SCORE;
+    const max =
+      Number.isFinite(configuredMax) && configuredMax >= minScore
+        ? configuredMax
+        : DEFAULT_MAX_SCORE;
+    return { min: minScore, max };
+  };
+
+  const getInputBounds = (input, criteria = null) => {
+    const fallbackBounds = getCriteriaBounds(criteria || getCriteriaById(input?.dataset?.criteria));
+    const rawMin = Number(input?.dataset?.min);
+    const rawMax = Number(input?.dataset?.max);
+    return {
+      min: Number.isFinite(rawMin) ? rawMin : fallbackBounds.min,
+      max: Number.isFinite(rawMax) ? rawMax : fallbackBounds.max
+    };
+  };
+
+  const normalizeCriteriaScore = (rawValue, criteria, { clamp = false } = {}) => {
+    const bounds = getCriteriaBounds(criteria);
+    return normalizeScoreValue(rawValue, scoreType, bounds.min, bounds.max, { clamp });
+  };
+
+  const normalizeInputScore = (input, criteria = null, { clamp = false } = {}) => {
+    if (!input) return null;
+    const bounds = getInputBounds(input, criteria);
+    return normalizeScoreValue(input.value, scoreType, bounds.min, bounds.max, { clamp });
+  };
+
+  const formatBoundValue = (value) =>
+    formatScoreForDisplay(value, scoreType) || String(value);
 
   const parseCriteriaPercentage = (criteria) => {
     const rawPercentage = criteria?.percentage;
@@ -1145,18 +1197,199 @@ function showVotesModal(dancer, mode = "details") {
     return total;
   };
 
+  const getStoredCriteriaScore = (criteria) =>
+    normalizeCriteriaScore(dancer.scores?.[criteria.name], criteria, { clamp: false });
+
+  const getInitialCriteriaScore = (criteria) => {
+    const storedScore = getStoredCriteriaScore(criteria);
+    const bounds = getCriteriaBounds(criteria);
+    if (storedScore === null) return null;
+    if (!isScoreInRange(storedScore, bounds.min, bounds.max)) {
+      return normalizeCriteriaScore(storedScore, criteria, { clamp: true });
+    }
+    return storedScore;
+  };
+
+  const getDetailCriteriaScore = (criteria) =>
+    getStoredCriteriaScore(criteria);
+
+  const getInitialTotalScore = () => {
+    const rawTotal = dancer?.totalScore;
+    const totalNumber =
+      typeof rawTotal === 'number'
+        ? rawTotal
+        : rawTotal == null
+          ? null
+          : Number(rawTotal);
+
+    if (totalNumber !== null && !Number.isNaN(totalNumber)) {
+      return totalNumber;
+    }
+
+    return calculateTotalScore(criteria => getStoredCriteriaScore(criteria));
+  };
+
+  const getVoteControlType = (criteria) => {
+    if (mode !== "vote") return 'readonly';
+    if (isMaxScoreCriteria) {
+      if (normalizedScoreType === 'DEC') return 'number';
+      return 'range';
+    }
+    if (useMobileLayout) {
+      if (normalizedScoreType === 'DEC') return 'number';
+      return 'range';
+    }
+    if (normalizedScoreType === 'DEC') return 'number';
+    if (normalizedScoreType === 'MED') return 'buttons';
+    if (normalizedScoreType === 'INT') return 'buttons';
+    return 'number';
+  };
+
+  const applyInputMetadata = (input, criteria, bounds) => {
+    input.classList.add('score-input');
+    input.dataset.criteria = criteria.id;
+    input.dataset.scoreType = scoreType;
+    input.dataset.min = bounds.min;
+    input.dataset.max = bounds.max;
+  };
+
+  const createNumberInput = (criteria, currentScore, { large = false } = {}) => {
+    const bounds = getCriteriaBounds(criteria);
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.inputMode = inputMode;
+    input.className = large ? 'form-control form-control-lg' : 'form-control';
+    input.step = scoreStep;
+    input.min = bounds.min;
+    input.max = bounds.max;
+    applyInputMetadata(input, criteria, bounds);
+    if (currentScore !== null) {
+      input.value = formatScoreForDisplay(currentScore, scoreType);
+    }
+    return input;
+  };
+
+  const createRangeControl = (criteria, currentScore) => {
+    const bounds = getCriteriaBounds(criteria);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'w-100';
+
+    const rangeRow = document.createElement('div');
+    rangeRow.className = 'd-flex align-items-center gap-3';
+
+    const range = document.createElement('input');
+    range.type = 'range';
+    range.className = 'form-range flex-grow-1 mb-0';
+    range.min = bounds.min;
+    range.max = bounds.max;
+    range.step = scoreStep;
+    range.value = currentScore !== null ? String(currentScore) : String(bounds.min);
+    range.style.cursor = 'pointer';
+    range.style.height = '1.6rem';
+    applyInputMetadata(range, criteria, bounds);
+
+    const valueLabel = document.createElement('div');
+    valueLabel.className = 'badge bg-primary fs-5 px-3 py-2';
+    valueLabel.style.minWidth = normalizedScoreType === 'INT' ? '64px' : '72px';
+    valueLabel.style.textAlign = 'center';
+
+    const setValueLabel = (rawValue) => {
+      const numericValue = normalizeCriteriaScore(rawValue, criteria, { clamp: true });
+      valueLabel.textContent =
+        numericValue === null ? formatBoundValue(bounds.min) : formatScoreForDisplay(numericValue, scoreType);
+    };
+
+    setValueLabel(range.value);
+    range.addEventListener('input', () => {
+      setValueLabel(range.value);
+      refreshTotalScore();
+    });
+    range.addEventListener('change', () => {
+      setValueLabel(range.value);
+      refreshTotalScore();
+    });
+
+    const rangeMeta = document.createElement('div');
+    rangeMeta.className = 'd-flex justify-content-between small text-muted mt-1';
+    rangeMeta.innerHTML = `
+      <span>${formatBoundValue(bounds.min)}</span>
+      <span>${formatBoundValue(bounds.max)}</span>
+    `;
+
+    rangeRow.appendChild(range);
+    rangeRow.appendChild(valueLabel);
+    wrapper.appendChild(rangeRow);
+    wrapper.appendChild(rangeMeta);
+    return wrapper;
+  };
+
+  const createButtonsControl = (criteria, currentScore) => {
+    const bounds = getCriteriaBounds(criteria);
+    const options = generateScoreOptions(scoreType, bounds.min, bounds.max);
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    applyInputMetadata(hiddenInput, criteria, bounds);
+
+    const currentDisplayValue =
+      currentScore === null ? '' : formatScoreForDisplay(currentScore, scoreType);
+    if (currentDisplayValue) {
+      hiddenInput.value = currentDisplayValue;
+    }
+
+    const btnGroup = document.createElement('div');
+    const useSingleLine = normalizedScoreType === 'MED';
+    if (useSingleLine) {
+      btnGroup.className = 'd-grid w-100 gap-1';
+      btnGroup.style.gridTemplateColumns = `repeat(${options.length}, minmax(0, 1fr))`;
+    } else {
+      btnGroup.className = 'd-flex flex-wrap w-100 gap-2';
+    }
+
+    options.forEach(opt => {
+      const formattedOption = formatScoreForDisplay(opt, scoreType);
+      const btnId = `criteria-${criteria.id}-${String(opt).replace('.', '-')}`;
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.className = 'btn-check';
+      radio.name = `criteria-${criteria.id}`;
+      radio.id = btnId;
+      radio.value = formattedOption;
+
+      const label = document.createElement('label');
+      const isHalfStep = normalizedScoreType === 'MED' && !Number.isInteger(opt);
+      const sizeClass = normalizedScoreType === 'INT' ? 'btn-lg' : 'btn-sm';
+      const colorClass = isHalfStep ? 'btn-outline-warning' : 'btn-outline-primary';
+      label.className = useSingleLine
+        ? `btn ${colorClass} ${sizeClass} w-100 px-1`
+        : `btn ${colorClass} ${sizeClass} flex-fill`;
+      label.setAttribute('for', btnId);
+      label.textContent = formattedOption;
+
+      if (currentDisplayValue && radio.value === currentDisplayValue) {
+        radio.checked = true;
+      }
+
+      radio.addEventListener('change', () => {
+        hiddenInput.value = radio.value;
+        refreshTotalScore();
+      });
+
+      btnGroup.appendChild(radio);
+      btnGroup.appendChild(label);
+    });
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'w-100';
+    wrapper.appendChild(hiddenInput);
+    wrapper.appendChild(btnGroup);
+    return wrapper;
+  };
+
   function refreshTotalScore() {
     const total = calculateTotalScore((criteria) => {
       const input = getCriteriaInput(criteria.id);
       if (!input) return null;
-      const normalized = normalizeScoreValue(
-        input.value,
-        scoreType,
-        minScore,
-        maxScore,
-        { clamp: false }
-      );
-      return normalized;
+      return normalizeInputScore(input, criteria, { clamp: false });
     });
     const totalEl = document.getElementById('totalScore');
     if (totalEl) {
@@ -1182,215 +1415,73 @@ function showVotesModal(dancer, mode = "details") {
     criteriaContainer.appendChild(totalCol);
   }
 
-  if (useMobileLayout) {
+  if (mode === "details") {
     criteriaList.forEach(c => {
-      const value = dancer.scores?.[c.name] ?? '-';
-      const criteriaLabel = formatCriteriaLabel(c);
       const col = document.createElement('div');
       col.className = 'col-6 text-center';
-
-      if (mode === "details") {
-        // Solo lectura
-        const formattedValue = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : value;
-        col.innerHTML = `
-        <div class="mb-1 fw-semibold">${criteriaLabel}</div>
+      const currentScore = getDetailCriteriaScore(c);
+      const formattedValue = currentScore === null ? '-' : formatScoreForDisplay(currentScore, scoreType);
+      col.innerHTML = `
+        <div class="mb-1 fw-semibold">${formatCriteriaLabel(c)}</div>
         <span class="badge bg-info fs-5">${formattedValue}</span>
       `;
+      criteriaContainer.appendChild(col);
+    });
+    renderTotal(getInitialTotalScore());
+  } else if (useMobileLayout) {
+    criteriaList.forEach(c => {
+      const controlType = getVoteControlType(c);
+      const currentScore = getInitialCriteriaScore(c);
+      const col = document.createElement('div');
+      col.className = 'col-12 text-center';
+
+      const label = document.createElement('div');
+      label.className = 'mb-2 fw-semibold';
+      label.textContent = formatCriteriaLabel(c);
+      col.appendChild(label);
+
+      if (controlType === 'range') {
+        col.appendChild(createRangeControl(c, currentScore));
+      } else if (controlType === 'buttons') {
+        col.appendChild(createButtonsControl(c, currentScore));
       } else {
-        // Modo edicion
-        const currentVal = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : '';
-        col.innerHTML = `
-        <div class="mb-1 fw-semibold">${criteriaLabel}</div>
-        <input type="number" inputmode="${inputMode}" class="form-control form-control-lg score-input"
-               data-criteria="${c.id}" data-score-type="${scoreType}" step="${scoreStep}" value="${currentVal}">
-      `;
+        col.appendChild(createNumberInput(c, currentScore, { large: true }));
       }
 
       criteriaContainer.appendChild(col);
-
     });
-
-    const total = calculateTotalScore((criteria) => {
-      const rawValue = dancer.scores?.[criteria.name];
-      return typeof rawValue === 'number' ? rawValue : rawValue == null ? null : Number(rawValue);
-    });
-    //renderTotal(total);
-    renderTotal(dancer.totalScore);
+    renderTotal(getInitialTotalScore());
   } else {
-    //const options = generateScoreOptions(scoreType, minScore, maxScore);
-
     criteriaList.forEach(c => {
-
-      let options = generateScoreOptions(scoreType, minScore, c.max_score);
-
-      const value = dancer.scores?.[c.name];
       const row = document.createElement('div');
       row.className = 'row align-items-center';
+      const useStackedDesktopRow = normalizedScoreType === 'DEC' || normalizedScoreType === 'MED';
 
       const labelCol = document.createElement('div');
-      labelCol.className = 'col-12 col-md-3 mb-2 mb-md-0 fw-semibold text-md-end';
+      labelCol.className = useStackedDesktopRow
+        ? 'col-12 mb-2 fw-semibold'
+        : 'col-12 col-md-3 mb-2 mb-md-0 fw-semibold text-md-end';
       labelCol.textContent = formatCriteriaLabel(c);
       row.appendChild(labelCol);
 
       const controlCol = document.createElement('div');
-      controlCol.className = 'col-12 col-md-9';
-      const currentVal = typeof value === 'number' ? formatScoreForDisplay(value, scoreType) : '';
+      controlCol.className = useStackedDesktopRow ? 'col-12' : 'col-12 col-md-9';
+      const controlType = getVoteControlType(c);
+      const currentScore = getInitialCriteriaScore(c);
 
-      const useButtons = options.length <= 12 || normalizedScoreType === 'MED';
-      if (useButtons) {
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.className = 'score-input';
-        hiddenInput.dataset.criteria = c.id;
-        hiddenInput.dataset.scoreType = scoreType;
-        hiddenInput.dataset.min = minScore;
-        hiddenInput.dataset.max = maxScore;
-        if (currentVal) hiddenInput.value = currentVal;
-
-        const btnGroup = document.createElement('div');
-        btnGroup.className = 'd-flex flex-wrap w-100 gap-2';
-
-        options.forEach(opt => {
-          const btnId = `criteria-${c.id}-${String(opt).replace('.', '-')}`;
-          const radio = document.createElement('input');
-          radio.type = 'radio';
-          radio.className = 'btn-check';
-          radio.name = `criteria-${c.id}`;
-          radio.id = btnId;
-          radio.value = formatScoreForDisplay(opt, scoreType);
-
-          const label = document.createElement('label');
-          const isHalfStep = normalizedScoreType === 'MED' && !Number.isInteger(opt);
-          const sizeClass = normalizedScoreType === 'INT' ? 'btn-lg' : 'btn-sm';
-          const colorClass = isHalfStep ? 'btn-outline-warning' : 'btn-outline-primary';
-          label.className = `btn ${colorClass} ${sizeClass} flex-fill`;
-          label.setAttribute('for', btnId);
-          label.textContent = formatScoreForDisplay(opt, scoreType);
-
-          if (currentVal && radio.value === currentVal) {
-            radio.checked = true;
-            hiddenInput.value = currentVal;
-          }
-
-          radio.addEventListener('change', () => {
-            hiddenInput.value = radio.value;
-            refreshTotalScore();
-          });
-
-          btnGroup.appendChild(radio);
-          btnGroup.appendChild(label);
-        });
-
-        controlCol.appendChild(hiddenInput);
-        controlCol.appendChild(btnGroup);
+      if (controlType === 'range') {
+        controlCol.appendChild(createRangeControl(c, currentScore));
+      } else if (controlType === 'buttons') {
+        controlCol.appendChild(createButtonsControl(c, currentScore));
       } else {
-        /*
-        const wrapper = document.createElement('div');
-        wrapper.className = 'w-100';
-
-        const rangeRow = document.createElement('div');
-        rangeRow.className = 'd-flex align-items-center gap-3';
-
-        const range = document.createElement('input');
-        range.type = 'range';
-        range.className = 'form-range flex-grow-1 score-input';
-        range.dataset.criteria = c.id;
-        range.dataset.scoreType = scoreType;
-        range.dataset.min = minScore;
-        range.dataset.max = maxScore;
-
-        range.min = minScore;
-        range.max = c.max_score;
-
-        const step = normalizedScoreType === 'MED' ? 0.5 : 1;
-        range.step = step;
-
-        range.value = currentVal ? currentVal : minScore;
-
-
-        // ===== LABEL GRANDE =====
-
-        const valueLabel = document.createElement('div');
-        valueLabel.className = 'badge bg-primary fs-5 px-3 py-2';
-        valueLabel.style.minWidth = '60px';
-        valueLabel.style.textAlign = 'center';
-
-
-        const setLabel = (val) => {
-          valueLabel.textContent =
-            formatScoreForDisplay(Number(val), scoreType);
-        };
-
-        setLabel(range.value);
-
-
-        range.addEventListener('input', () => {
-          setLabel(range.value);
-          refreshTotalScore();
-        });
-
-
-        rangeRow.appendChild(range);
-        rangeRow.appendChild(valueLabel);
-
-        wrapper.appendChild(rangeRow);
-
-
-        // ===== TICKS =====
-
-        const datalistId = `ticks-${c.id}`;
-        const datalist = document.createElement('datalist');
-        datalist.id = datalistId;
-
-        const max = c.max_score;
-
-        for (let i = minScore; i <= max; i += step) {
-          const opt = document.createElement('option');
-          opt.value = i;
-          datalist.appendChild(opt);
-        }
-
-        range.setAttribute('list', datalistId);
-
-        wrapper.appendChild(datalist);
-
-
-        // ===== ESTILO EXTRA =====
-
-        range.style.cursor = 'pointer';
-        range.style.height = '1.6rem';
-
-        controlCol.appendChild(wrapper);
-        */
-        
-        const select = document.createElement('select');
-        select.className = 'form-select score-input';
-        select.dataset.criteria = c.id;
-        select.dataset.scoreType = scoreType;
-        select.dataset.min = minScore;
-        select.dataset.max = maxScore;
-
-        const placeholder = t('select_score', t('select', '--'));
-        select.innerHTML = `<option value="">${placeholder}</option>`;
-        options.forEach(opt => {
-          const optEl = document.createElement('option');
-          const formatted = formatScoreForDisplay(opt, scoreType);
-          optEl.value = formatted;
-          optEl.textContent = formatted;
-          select.appendChild(optEl);
-        });
-
-        if (currentVal) select.value = currentVal;
-        select.addEventListener('change', refreshTotalScore);
-        controlCol.appendChild(select);
-        
+        controlCol.appendChild(createNumberInput(c, currentScore));
       }
 
       row.appendChild(controlCol);
       criteriaContainer.appendChild(row);
     });
 
-    renderTotal(0);
+    renderTotal(getInitialTotalScore());
   }
 
   // Footer - limpiar primero
@@ -1407,22 +1498,19 @@ function showVotesModal(dancer, mode = "details") {
       criteriaList.forEach(c => {
         const input = getCriteriaInput(c.id);
         if (!input) return;
-        const normalizedScore = normalizeScoreValue(
-          input.value,
-          scoreType,
-          minScore,
-          maxScore,
-          { clamp: false }
-        );
+        const bounds = getInputBounds(input, c);
+        const normalizedScore = normalizeInputScore(input, c, { clamp: false });
 
         if (normalizedScore === null) {
           allFilled = false;
-        } else if (!isScoreInRange(normalizedScore, minScore, maxScore)) {
-          outOfRange.push(c.name);
+        } else if (!isScoreInRange(normalizedScore, bounds.min, bounds.max)) {
+          outOfRange.push({
+            name: c.name,
+            min: bounds.min,
+            max: bounds.max
+          });
         } else {
           if (input.tagName === 'INPUT' && input.type === 'number') {
-            input.value = formatScoreForDisplay(normalizedScore, scoreType);
-          } else if (input.tagName === 'SELECT') {
             input.value = formatScoreForDisplay(normalizedScore, scoreType);
           } else {
             input.value = normalizedScore.toString();
@@ -1540,10 +1628,14 @@ function showVotesModal(dancer, mode = "details") {
       }
 
       if (outOfRange.length > 0) {
-        const message = t(
-          'alert_criteria_range',
-          `Las puntuaciones deben estar entre ${minScore} y ${maxScore}.`
-        );
+        const message = isMaxScoreCriteria
+          ? `Las puntuaciones están fuera del rango permitido: ${outOfRange
+              .map(item => `${item.name} (${formatBoundValue(item.min)}-${formatBoundValue(item.max)})`)
+              .join(', ')}.`
+          : t(
+              'alert_criteria_range',
+              `Las puntuaciones deben estar entre ${minScore} y ${DEFAULT_MAX_SCORE}.`
+            );
         setVoteAlert(message);
         return;
       }
@@ -1627,19 +1719,14 @@ function showVotesModal(dancer, mode = "details") {
     // Anadir botones al footer
     footer.prepend(noShowBtn);  // a la izquierda
     footer.appendChild(sendBtn); // los actuales permanecen a la derecha
-  
+
     // --- recalcular total al cambiar inputs ---
     criteriaContainer.querySelectorAll('input[type="number"].score-input').forEach(input => {
       input.addEventListener('input', refreshTotalScore);
 
       input.addEventListener('blur', () => {
-        const normalized = normalizeScoreValue(
-          input.value,
-          scoreType,
-          minScore,
-          maxScore,
-          { clamp: false }
-        );
+        const criteria = getCriteriaById(input.dataset.criteria);
+        const normalized = normalizeInputScore(input, criteria, { clamp: false });
         if (normalized !== null) {
           input.value = formatScoreForDisplay(normalized, scoreType);
         }
