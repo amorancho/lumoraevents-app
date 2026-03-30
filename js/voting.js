@@ -1139,6 +1139,18 @@ function showVotesModal(dancer, mode = "details") {
     return normalizeScoreValue(input.value, scoreType, bounds.min, bounds.max, { clamp });
   };
 
+  const setInputAssignedState = (input, assigned) => {
+    if (!input) return;
+    input.dataset.assigned = assigned ? '1' : '0';
+  };
+
+  const isInputAssigned = (input, criteria = null) => {
+    if (!input) return false;
+    if (input.dataset.assigned === '1') return true;
+    if (input.dataset.assigned === '0') return false;
+    return normalizeInputScore(input, criteria, { clamp: false }) !== null;
+  };
+
   const formatBoundValue = (value) =>
     formatScoreForDisplay(value, scoreType) || String(value);
 
@@ -1272,10 +1284,9 @@ function showVotesModal(dancer, mode = "details") {
   const createRangeControl = (criteria, currentScore) => {
     const bounds = getCriteriaBounds(criteria);
     const wrapper = document.createElement('div');
-    wrapper.className = 'w-100';
-
-    const rangeRow = document.createElement('div');
-    rangeRow.className = 'd-flex align-items-center gap-3';
+    wrapper.className = 'w-100 d-grid align-items-center gap-1';
+    wrapper.style.gridTemplateColumns = 'minmax(0, 1fr) auto';
+    wrapper.style.columnGap = '0.75rem';
 
     const range = document.createElement('input');
     range.type = 'range';
@@ -1286,39 +1297,59 @@ function showVotesModal(dancer, mode = "details") {
     range.value = currentScore !== null ? String(currentScore) : String(bounds.min);
     range.style.cursor = 'pointer';
     range.style.height = '1.6rem';
+    range.style.gridColumn = '1';
+    range.style.gridRow = '1';
     applyInputMetadata(range, criteria, bounds);
+    setInputAssignedState(range, currentScore !== null);
 
     const valueLabel = document.createElement('div');
-    valueLabel.className = 'badge bg-primary fs-5 px-3 py-2';
+    valueLabel.className = 'badge fs-5 px-3 py-2';
     valueLabel.style.minWidth = normalizedScoreType === 'INT' ? '64px' : '72px';
     valueLabel.style.textAlign = 'center';
+    valueLabel.style.gridColumn = '2';
+    valueLabel.style.gridRow = '1';
 
-    const setValueLabel = (rawValue) => {
-      const numericValue = normalizeCriteriaScore(rawValue, criteria, { clamp: true });
+    const renderValueLabel = () => {
+      const assigned = isInputAssigned(range, criteria);
+      valueLabel.className = assigned
+        ? 'badge bg-primary fs-5 px-3 py-2'
+        : 'badge border text-secondary bg-light fs-5 px-3 py-2';
+      if (!assigned) {
+        valueLabel.textContent = '\u00A0';
+        return;
+      }
+      const numericValue = normalizeCriteriaScore(range.value, criteria, { clamp: true });
       valueLabel.textContent =
         numericValue === null ? formatBoundValue(bounds.min) : formatScoreForDisplay(numericValue, scoreType);
     };
 
-    setValueLabel(range.value);
-    range.addEventListener('input', () => {
-      setValueLabel(range.value);
+    const markRangeAsAssigned = () => {
+      setInputAssignedState(range, true);
+      renderValueLabel();
       refreshTotalScore();
-    });
-    range.addEventListener('change', () => {
-      setValueLabel(range.value);
-      refreshTotalScore();
+    };
+
+    renderValueLabel();
+    range.addEventListener('input', markRangeAsAssigned);
+    range.addEventListener('change', markRangeAsAssigned);
+    range.addEventListener('click', markRangeAsAssigned);
+    range.addEventListener('keydown', (event) => {
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)) {
+        window.requestAnimationFrame(markRangeAsAssigned);
+      }
     });
 
     const rangeMeta = document.createElement('div');
-    rangeMeta.className = 'd-flex justify-content-between small text-muted mt-1';
+    rangeMeta.className = 'd-flex justify-content-between small text-muted';
+    rangeMeta.style.gridColumn = '1';
+    rangeMeta.style.gridRow = '2';
     rangeMeta.innerHTML = `
       <span>${formatBoundValue(bounds.min)}</span>
       <span>${formatBoundValue(bounds.max)}</span>
     `;
 
-    rangeRow.appendChild(range);
-    rangeRow.appendChild(valueLabel);
-    wrapper.appendChild(rangeRow);
+    wrapper.appendChild(range);
+    wrapper.appendChild(valueLabel);
     wrapper.appendChild(rangeMeta);
     return wrapper;
   };
@@ -1389,6 +1420,7 @@ function showVotesModal(dancer, mode = "details") {
     const total = calculateTotalScore((criteria) => {
       const input = getCriteriaInput(criteria.id);
       if (!input) return null;
+      if (!isInputAssigned(input, criteria)) return null;
       return normalizeInputScore(input, criteria, { clamp: false });
     });
     const totalEl = document.getElementById('totalScore');
@@ -1498,6 +1530,10 @@ function showVotesModal(dancer, mode = "details") {
       criteriaList.forEach(c => {
         const input = getCriteriaInput(c.id);
         if (!input) return;
+        if (!isInputAssigned(input, c)) {
+          allFilled = false;
+          return;
+        }
         const bounds = getInputBounds(input, c);
         const normalizedScore = normalizeInputScore(input, c, { clamp: false });
 
