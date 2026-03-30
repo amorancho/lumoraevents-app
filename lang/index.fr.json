@@ -1,9 +1,15 @@
 {
   "home_title": "Événements",
   "go_to_event": "Aller à l'Événement",
+  "search_by_name": "Rechercher par nom",
+  "search_by_name_placeholder": "Rechercher un événement",
+  "filter_by_status": "Filtrer par statut",
+  "all": "Tous",
   "proximamente": "Bientôt",
   "en_curso": "En cours",
   "finalizado": "Terminé",
+  "registration_period": "Inscription",
   "loading_events": "Chargement des événements...",
-  "error_loading_events": "Erreur lors du chargement des événements"
+  "error_loading_events": "Erreur lors du chargement des événements",
+  "no_events_found": "Aucun événement ne correspond aux filtres sélectionnés"
 }

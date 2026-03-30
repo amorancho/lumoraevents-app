@@ -1,9 +1,15 @@
 {
   "home_title": "Events",
   "go_to_event": "Go to Event",
+  "search_by_name": "Search by name",
+  "search_by_name_placeholder": "Search event",
+  "filter_by_status": "Filter by status",
+  "all": "All",
   "proximamente": "Upcoming",
-  "en_curso": "Ongoing", 
+  "en_curso": "Ongoing",
   "finalizado": "Finished",
+  "registration_period": "Registration",
   "loading_events": "Loading events...",
-  "error_loading_events": "Error loading events"
+  "error_loading_events": "Error loading events",
+  "no_events_found": "No events match the selected filters"
 }
