@@ -1679,32 +1679,34 @@ function showVotesModal(dancer, mode = "details") {
       const existingAlert = document.getElementById("voteErrorAlert");
       if (existingAlert) existingAlert.remove();
 
-      // Analizamos si algun valor esta lejos de la media (por ejemplo, si la media es 8 y se pone un 2)
-      const scoreValues = scores.map(s => s.score);
-      const avg = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length;
-      const threshold = 3; // umbral de desviacion
-      const outliers = scores.filter(s => Math.abs(s.score - avg) >= threshold);
+      if (!isMaxScoreCriteria) {
+        // Analizamos si algun valor esta lejos de la media (por ejemplo, si la media es 8 y se pone un 2)
+        const scoreValues = scores.map(s => s.score);
+        const avg = scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length;
+        const threshold = 3; // umbral de desviacion
+        const outliers = scores.filter(s => Math.abs(s.score - avg) >= threshold);
 
-      if (outliers.length > 0) {
-        let outlierNames = outliers.map(o => {
-          const crit = criteriaList.find(c => c.id === o.criteria_id);
-          return crit ? crit.name : 'Unknown';
-        }).join(', ');
+        if (outliers.length > 0) {
+          let outlierNames = outliers.map(o => {
+            const crit = criteriaList.find(c => c.id === o.criteria_id);
+            return crit ? crit.name : 'Unknown';
+          }).join(', ');
 
-        if (outlierMessageEl) {
-          outlierMessageEl.textContent = t('confirm_outlier_scores');
+          if (outlierMessageEl) {
+            outlierMessageEl.textContent = t('confirm_outlier_scores');
+          }
+          if (outlierListEl) {
+            outlierListEl.textContent = outlierNames;
+          }
+          confirmOutlierBtn.onclick = async () => {
+            outlierModal.hide();
+            await sendVotes(scores);
+          };
+          outlierModal.show();
+          return;
         }
-        if (outlierListEl) {
-          outlierListEl.textContent = outlierNames;
-        }
-        confirmOutlierBtn.onclick = async () => {
-          outlierModal.hide();
-          await sendVotes(scores);
-        };
-        outlierModal.show();
-        return;
       }
-  
+
       await sendVotes(scores);
     });
   
