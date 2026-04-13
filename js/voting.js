@@ -1465,21 +1465,25 @@ function showVotesModal(dancer, mode = "details") {
       const controlType = getVoteControlType(c);
       const currentScore = getInitialCriteriaScore(c);
       const col = document.createElement('div');
-      col.className = 'col-12 text-center';
+      col.className = controlType === 'range' ? 'col-12 voting-mobile-range-shell' : 'col-12 text-center';
+
+      const content = document.createElement('div');
+      content.className = controlType === 'range' ? 'voting-mobile-range-card text-center' : 'text-center';
 
       const label = document.createElement('div');
       label.className = 'mb-2 fw-semibold';
       label.textContent = formatCriteriaLabel(c);
-      col.appendChild(label);
+      content.appendChild(label);
 
       if (controlType === 'range') {
-        col.appendChild(createRangeControl(c, currentScore));
+        content.appendChild(createRangeControl(c, currentScore));
       } else if (controlType === 'buttons') {
-        col.appendChild(createButtonsControl(c, currentScore));
+        content.appendChild(createButtonsControl(c, currentScore));
       } else {
-        col.appendChild(createNumberInput(c, currentScore, { large: true }));
+        content.appendChild(createNumberInput(c, currentScore, { large: true }));
       }
 
+      col.appendChild(content);
       criteriaContainer.appendChild(col);
     });
     renderTotal(getInitialTotalScore());
