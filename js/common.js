@@ -149,7 +149,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hasClubs: data.has_clubs === 1,
         criteriaPerJudge: data.criteria_per_judge === 1,
         hasJudgeFeedback: data.has_judge_feedback === 1,
-        judgesVisResults: data.judges_vis_results === 1
+        judgesVisResults: data.judges_vis_results === 1,
+        resultsFilter: data.results_filter
       };
 
     }

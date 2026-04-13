@@ -1,7 +1,25 @@
- //var title = 'Results';
+//var title = 'Results';
 let categoryName;
 
 let autoRefreshInterval = null;
+
+const RESULTS_FILTER_MODE_BY_CATEGORY = 'BY_CAT';
+const RESULTS_FILTER_MODE_BY_CATEGORY_STYLE = 'BY_CAT_STY';
+const RESULTS_FILTER_MODE_BY_STYLE_CATEGORY = 'BY_STY_CAT';
+const RESULTS_FILTER_MODES = new Set([
+  RESULTS_FILTER_MODE_BY_CATEGORY,
+  RESULTS_FILTER_MODE_BY_CATEGORY_STYLE,
+  RESULTS_FILTER_MODE_BY_STYLE_CATEGORY
+]);
+
+const resultsFilterState = {
+  mode: RESULTS_FILTER_MODE_BY_CATEGORY,
+  competitions: [],
+  selectedCategoryId: '',
+  selectedCategoryName: '',
+  selectedStyleId: '',
+  selectedStyleName: ''
+};
 
 function shouldShowAvgPlaceBadge() {
   return getEvent().totalSystem === 'AVG_POSJUD';
@@ -507,6 +525,263 @@ function showDancerVotingDetailsModal(styleObj, dancerData, votingModalEl, votin
   votingModal.show();
 }
 
+function getResultsFilterMode() {
+  const rawMode = String(getEvent()?.resultsFilter || RESULTS_FILTER_MODE_BY_CATEGORY).trim().toUpperCase();
+  return RESULTS_FILTER_MODES.has(rawMode) ? rawMode : RESULTS_FILTER_MODE_BY_CATEGORY;
+}
+
+function usesStyleResultsFilter() {
+  return resultsFilterState.mode !== RESULTS_FILTER_MODE_BY_CATEGORY;
+}
+
+function getSelectedOptionLabel(select) {
+  if (!select || select.selectedIndex < 0) return '';
+  const currentOption = select.options[select.selectedIndex];
+  if (!currentOption || currentOption.value === '') return '';
+  return currentOption.textContent || '';
+}
+
+function buildUniqueFilterOptions(items, idField, nameField) {
+  const uniqueItems = new Map();
+
+  (items || []).forEach((item) => {
+    const rawId = item?.[idField];
+    if (rawId === undefined || rawId === null || rawId === '') return;
+
+    const id = String(rawId);
+    if (uniqueItems.has(id)) return;
+
+    uniqueItems.set(id, {
+      id,
+      name: String(item?.[nameField] || '').trim() || `#${id}`
+    });
+  });
+
+  return Array.from(uniqueItems.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function getAvailableStylesByCategory(categoryId) {
+  if (!categoryId) return [];
+
+  return buildUniqueFilterOptions(
+    resultsFilterState.competitions.filter((competition) => String(competition?.category_id) === String(categoryId)),
+    'style_id',
+    'style_name'
+  );
+}
+
+function getAvailableCategoriesByStyle(styleId) {
+  if (!styleId) return [];
+
+  return buildUniqueFilterOptions(
+    resultsFilterState.competitions.filter((competition) => String(competition?.style_id) === String(styleId)),
+    'category_id',
+    'category_name'
+  );
+}
+
+function populateFilterSelect(select, items, placeholderKey, placeholderFallback, selectedValue = '') {
+  if (!select) return;
+
+  const normalizedSelectedValue = String(selectedValue || '');
+  select.innerHTML = '';
+
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.disabled = true;
+  placeholderOption.selected = normalizedSelectedValue === '';
+  placeholderOption.textContent = t(placeholderKey, placeholderFallback);
+  select.appendChild(placeholderOption);
+
+  items.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = item.name;
+    select.appendChild(option);
+  });
+
+  const hasSelectedValue = normalizedSelectedValue !== '' && items.some((item) => String(item.id) === normalizedSelectedValue);
+  select.value = hasSelectedValue ? normalizedSelectedValue : '';
+  select.disabled = items.length === 0;
+}
+
+function populateCategorySelect(categories, selectedValue = '') {
+  const categorySelect = document.getElementById('categorySelect');
+  populateFilterSelect(categorySelect, categories, 'select_category', 'Select Category', selectedValue);
+}
+
+function populateStyleSelect(styles, selectedValue = '') {
+  const styleSelect = document.getElementById('styleSelect');
+  populateFilterSelect(styleSelect, styles, 'select_style', 'Select Style', selectedValue);
+}
+
+function syncResultsFilterStateFromControls() {
+  const categorySelect = document.getElementById('categorySelect');
+  const styleSelect = document.getElementById('styleSelect');
+
+  resultsFilterState.selectedCategoryId = categorySelect?.value ? String(categorySelect.value) : '';
+  resultsFilterState.selectedCategoryName = getSelectedOptionLabel(categorySelect);
+  resultsFilterState.selectedStyleId = styleSelect?.value ? String(styleSelect.value) : '';
+  resultsFilterState.selectedStyleName = getSelectedOptionLabel(styleSelect);
+  categoryName = resultsFilterState.selectedCategoryName;
+}
+
+function isResultsSelectionComplete() {
+  if (!resultsFilterState.selectedCategoryId) return false;
+  if (!usesStyleResultsFilter()) return true;
+  return Boolean(resultsFilterState.selectedStyleId);
+}
+
+function getResultsBadgeText() {
+  if (!usesStyleResultsFilter()) {
+    return resultsFilterState.selectedCategoryName;
+  }
+
+  return [resultsFilterState.selectedCategoryName, resultsFilterState.selectedStyleName]
+    .filter(Boolean)
+    .join(' / ');
+}
+
+function clearRenderedResults() {
+  const resultsContainer = document.getElementById('resultsContainer');
+  if (resultsContainer) {
+    resultsContainer.innerHTML = '';
+  }
+  window.resultsData = null;
+}
+
+function stopAutoRefresh(resetToggle = true) {
+  clearInterval(autoRefreshInterval);
+  autoRefreshInterval = null;
+
+  const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+  if (autoRefreshToggle && resetToggle) {
+    autoRefreshToggle.checked = false;
+  }
+}
+
+function updateResultsSelectionUi() {
+  const categoriaBadge = document.getElementById('categoriaBadge');
+  const infoText = document.getElementById('infoText');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+  const hasCompleteSelection = isResultsSelectionComplete();
+
+  if (categoriaBadge) {
+    if (hasCompleteSelection) {
+      categoriaBadge.textContent = getResultsBadgeText();
+      categoriaBadge.classList.remove('d-none');
+    } else {
+      categoriaBadge.textContent = '';
+      categoriaBadge.classList.add('d-none');
+    }
+  }
+
+  if (infoText) {
+    infoText.classList.toggle('d-none', !hasCompleteSelection);
+    infoText.classList.toggle('d-block', hasCompleteSelection);
+  }
+
+  if (!hasCompleteSelection && autoRefreshInterval) {
+    stopAutoRefresh();
+  }
+
+  if (refreshBtn) {
+    refreshBtn.disabled = !hasCompleteSelection;
+  }
+
+  if (autoRefreshToggle) {
+    autoRefreshToggle.disabled = !hasCompleteSelection;
+  }
+}
+
+function configureResultsFilterLayout() {
+  const categorySelect = document.getElementById('categorySelect');
+  const styleSelect = document.getElementById('styleSelect');
+  const inputGroup = categorySelect?.parentElement;
+
+  if (!categorySelect || !styleSelect || !inputGroup) return;
+
+  styleSelect.classList.toggle('d-none', !usesStyleResultsFilter());
+
+  if (resultsFilterState.mode === RESULTS_FILTER_MODE_BY_STYLE_CATEGORY) {
+    inputGroup.insertBefore(styleSelect, categorySelect);
+  } else {
+    inputGroup.insertBefore(categorySelect, styleSelect);
+  }
+}
+
+function setResultsControlsLoadingState(isLoading) {
+  const categorySelect = document.getElementById('categorySelect');
+  const styleSelect = document.getElementById('styleSelect');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const autoRefreshToggle = document.getElementById('autoRefreshToggle');
+
+  if (categorySelect) {
+    categorySelect.disabled = isLoading || categorySelect.options.length <= 1;
+  }
+
+  if (styleSelect) {
+    const shouldDisableStyle = styleSelect.classList.contains('d-none') || styleSelect.options.length <= 1;
+    styleSelect.disabled = isLoading || shouldDisableStyle;
+  }
+
+  if (refreshBtn) {
+    refreshBtn.disabled = isLoading || !isResultsSelectionComplete();
+  }
+
+  if (autoRefreshToggle) {
+    autoRefreshToggle.disabled = isLoading || !isResultsSelectionComplete();
+  }
+}
+
+async function fetchResultsCategories() {
+  const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
+  if (!response.ok) throw new Error('Network response was not ok');
+  return response.json();
+}
+
+async function fetchResultsCompetitions() {
+  const response = await fetch(`${API_BASE_URL}/api/competitions?event_id=${getEvent().id}`);
+  if (!response.ok) throw new Error('Network response was not ok');
+  return response.json();
+}
+
+function restoreCategoryDrivenFilters(previousCategoryId, previousStyleId) {
+  const categories = buildUniqueFilterOptions(resultsFilterState.competitions, 'category_id', 'category_name');
+  populateCategorySelect(categories, previousCategoryId);
+  syncResultsFilterStateFromControls();
+
+  const availableStyles = getAvailableStylesByCategory(resultsFilterState.selectedCategoryId);
+  populateStyleSelect(availableStyles, previousStyleId);
+  syncResultsFilterStateFromControls();
+}
+
+function restoreStyleDrivenFilters(previousStyleId, previousCategoryId) {
+  const styles = buildUniqueFilterOptions(resultsFilterState.competitions, 'style_id', 'style_name');
+  populateStyleSelect(styles, previousStyleId);
+  syncResultsFilterStateFromControls();
+
+  const availableCategories = getAvailableCategoriesByStyle(resultsFilterState.selectedStyleId);
+  populateCategorySelect(availableCategories, previousCategoryId);
+  syncResultsFilterStateFromControls();
+}
+
+async function runResultsSearch() {
+  syncResultsFilterStateFromControls();
+  updateResultsSelectionUi();
+
+  if (!isResultsSelectionComplete()) {
+    clearRenderedResults();
+    return;
+  }
+
+  await loadClasifications({
+    categoryId: resultsFilterState.selectedCategoryId,
+    styleId: resultsFilterState.selectedStyleId
+  });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
   await ensureTranslationsReady();
@@ -522,11 +797,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   const categorySelect = document.getElementById('categorySelect');
+  const styleSelect = document.getElementById('styleSelect');
   const refreshBtn = document.getElementById('refreshBtn');
-  const categoriaBadge = document.getElementById('categoriaBadge');
-  const infoText = document.getElementById('infoText');
   const autoRefreshToggle = document.getElementById('autoRefreshToggle');
   const autoRefreshLabel = document.getElementById('autoRefreshLabel');
+
+  resultsFilterState.mode = getResultsFilterMode();
 
   refreshBtn.disabled = true;
   autoRefreshToggle.disabled = true;
@@ -543,41 +819,48 @@ document.addEventListener('DOMContentLoaded', async () => {
   const styleDetailsContainer = document.getElementById('styleVotingDetailsContainer');
   if (styleVotingModalEl) styleVotingModal = new bootstrap.Modal(styleVotingModalEl);
 
-  categorySelect.addEventListener('change', async (e) => {
-    const categoryId = e.target.value;
-    if (!categoryId) return;
+  categorySelect.addEventListener('change', async () => {
+    syncResultsFilterStateFromControls();
 
-    refreshBtn.disabled = false;
-    autoRefreshToggle.disabled = false;
-    categoryName = categorySelect.options[categorySelect.selectedIndex].text;
-
-    if (categoriaBadge) {
-      categoriaBadge.textContent = categoryName;
-      categoriaBadge.classList.remove('d-none');
-    }
-
-    if (infoText) {
-      infoText.classList.remove('d-none');
-      infoText.classList.add('d-block');
-    }
-
-    await loadClasifications(categoryId);
-  });
-
-  refreshBtn.addEventListener('click', () => {
-    categorySelect.dispatchEvent(new Event('change'));
-  });
-
-  autoRefreshToggle.addEventListener('change', () => {
-    if (autoRefreshToggle.checked) {
-      autoRefreshInterval = setInterval(() => {
-        categorySelect.dispatchEvent(new Event('change'));
-      }, 60000 * (getEvent().autoRefreshMin || 2));
+    if (resultsFilterState.mode === RESULTS_FILTER_MODE_BY_CATEGORY_STYLE) {
+      populateStyleSelect(getAvailableStylesByCategory(resultsFilterState.selectedCategoryId));
+      syncResultsFilterStateFromControls();
+      clearRenderedResults();
+      updateResultsSelectionUi();
       return;
     }
 
-    clearInterval(autoRefreshInterval);
-    autoRefreshInterval = null;
+    await runResultsSearch();
+  });
+
+  styleSelect.addEventListener('change', async () => {
+    syncResultsFilterStateFromControls();
+
+    if (resultsFilterState.mode === RESULTS_FILTER_MODE_BY_STYLE_CATEGORY) {
+      populateCategorySelect(getAvailableCategoriesByStyle(resultsFilterState.selectedStyleId));
+      syncResultsFilterStateFromControls();
+      clearRenderedResults();
+      updateResultsSelectionUi();
+      return;
+    }
+
+    await runResultsSearch();
+  });
+
+  refreshBtn.addEventListener('click', async () => {
+    await runResultsSearch();
+  });
+
+  autoRefreshToggle.addEventListener('change', () => {
+    const shouldEnableAutoRefresh = autoRefreshToggle.checked;
+    stopAutoRefresh(false);
+
+    if (shouldEnableAutoRefresh) {
+      autoRefreshToggle.checked = true;
+      autoRefreshInterval = setInterval(() => {
+        runResultsSearch();
+      }, 60000 * (getEvent().autoRefreshMin || 2));
+    }
   });
 
   document.addEventListener('click', (event) => {
@@ -620,39 +903,69 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadCategories() {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
-    if (!response.ok) throw new Error('Network response was not ok');
-    const categories = await response.json();
-    populateCategorySelect(categories);
+    resultsFilterState.mode = getResultsFilterMode();
+    configureResultsFilterLayout();
+    setResultsControlsLoadingState(true);
+
+    const previousCategoryId = resultsFilterState.selectedCategoryId;
+    const previousStyleId = resultsFilterState.selectedStyleId;
+
+    if (!usesStyleResultsFilter()) {
+      resultsFilterState.competitions = [];
+      const categories = await fetchResultsCategories();
+      const normalizedCategories = (categories || []).map((category) => ({
+        id: String(category.id),
+        name: category.name
+      }));
+
+      populateCategorySelect(normalizedCategories, previousCategoryId);
+      populateStyleSelect([]);
+      syncResultsFilterStateFromControls();
+    } else {
+      resultsFilterState.competitions = await fetchResultsCompetitions();
+
+      if (resultsFilterState.mode === RESULTS_FILTER_MODE_BY_CATEGORY_STYLE) {
+        restoreCategoryDrivenFilters(previousCategoryId, previousStyleId);
+      } else {
+        restoreStyleDrivenFilters(previousStyleId, previousCategoryId);
+      }
+    }
+
+    if (!isResultsSelectionComplete()) {
+      clearRenderedResults();
+    }
+
+    updateResultsSelectionUi();
+    setResultsControlsLoadingState(false);
   } catch (error) {
     console.error('Error fetching categories:', error);
+    clearRenderedResults();
+    updateResultsSelectionUi();
+    setResultsControlsLoadingState(false);
   }
 }
 
-function populateCategorySelect(categories) {
-  const categorySelect = document.getElementById('categorySelect');
-  categorySelect.innerHTML = `<option selected disabled>${t('select_category')}</option>`;
-
-  categories.forEach((category) => {
-    const option = document.createElement('option');
-    option.value = category.id;
-    option.textContent = category.name;
-    categorySelect.appendChild(option);
-  });
-}
-
-async function loadClasifications(categoryId) {
+async function loadClasifications(filters) {
   const resultsContainer = document.getElementById('resultsContainer');
   const refreshBtn = document.getElementById('refreshBtn');
-  const categorySelect = document.getElementById('categorySelect');
-
-  refreshBtn.disabled = true;
-  categorySelect.disabled = true;
   const originalBtnText = refreshBtn.innerHTML;
+  const normalizedFilters = typeof filters === 'object' && filters !== null
+    ? filters
+    : { categoryId: filters, styleId: '' };
+  const params = new URLSearchParams({
+    event_id: getEvent().id,
+    category_id: normalizedFilters.categoryId
+  });
+
+  if (normalizedFilters.styleId) {
+    params.set('style_id', normalizedFilters.styleId);
+  }
+
+  setResultsControlsLoadingState(true);
   refreshBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> ${t('loading')}`;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/competitions/results?event_id=${getEvent().id}&category_id=${categoryId}`);
+    const response = await fetch(`${API_BASE_URL}/api/competitions/results?${params.toString()}`);
     if (!response.ok) throw new Error('Network error');
 
     const data = await response.json();
@@ -662,8 +975,7 @@ async function loadClasifications(categoryId) {
     console.error('Error loading results:', err);
     resultsContainer.innerHTML = '<div class="alert alert-danger">Error loading results.</div>';
   } finally {
-    refreshBtn.disabled = false;
-    categorySelect.disabled = false;
+    setResultsControlsLoadingState(false);
     refreshBtn.innerHTML = originalBtnText;
   }
 }
