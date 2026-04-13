@@ -10,6 +10,34 @@
   <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
+  <style>
+    .admin-event-list {
+      max-height: calc(100vh - 22rem);
+      overflow-y: auto;
+    }
+    .admin-event-list .list-group-item {
+      border-left: 0.35rem solid transparent;
+      border-right: 0;
+      background-color: var(--bs-body-bg);
+      color: inherit;
+    }
+    .admin-event-list .list-group-item:first-child {
+      border-top: 0;
+    }
+    .admin-event-list .list-group-item.active {
+      background-color: var(--bs-body-bg);
+      color: inherit;
+      border-color: var(--bs-border-color-translucent);
+      border-left-color: var(--bs-primary);
+      z-index: 1;
+    }
+    .admin-event-list .list-group-item.active .text-body-secondary {
+      color: var(--bs-secondary-color) !important;
+    }
+    .admin-panel-sticky {
+      top: 1.5rem;
+    }
+  </style>
 </head>
 
 <body class="d-flex flex-column min-vh-100">
@@ -519,12 +547,6 @@
                   </div>
                   <div class="col-md-3">
                     <div class="form-check form-switch mb-2">
-                      <input class="form-check-input" type="checkbox" id="criteria_per_judge">
-                      <label class="form-check-label" for="criteria_per_judge">Criterios por juez</label>
-                    </div>
-                  </div>
-                  <div class="col-md-3">
-                    <div class="form-check form-switch mb-2">
                       <input class="form-check-input" type="checkbox" id="has_judge_feedback">
                       <label class="form-check-label" for="has_judge_feedback">Tiene Feedback de Jueces</label>
                     </div>
@@ -579,7 +601,7 @@
               </div>
 
               <div class="col-md-2">
-                <label class="form-label">AutoRefresh (min)</label>
+                <label class="form-label">Autorefresh</label>
                 <input type="number" class="form-control" id="autorefresh_minutes" min="0">
               </div>
 
@@ -602,8 +624,8 @@
               <div class="col-md-3">
                 <label class="form-label">Config. Criterios</label>
                 <select id="criteria_config" class="form-select">
-                  <option value="NO_CONFIG">Sin configuracion</option>
-                  <option value="BY_CAT_STY">Por Categoria/Estilo</option>
+                  <option value="NO_CONFIG">Sin configuración</option>
+                  <option value="BY_CAT_STY">Por Categoría/Estilo</option>
                   <option value="WITH_POR">Con Porcentajes</option>
                   <option value="PUNT_MAX">Con Puntuación Máxima</option>
                 </select>
@@ -613,6 +635,13 @@
                 <select id="total_system" class="form-select">
                   <option value="SUM_SCORES">Suma Puntuaciones</option>
                   <option value="AVG_POSJUD">Media Posiciones por Juez</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Criterios por juez</label>
+                <select id="criteria_per_judge" class="form-select">
+                  <option value="0">No</option>
+                  <option value="1">Sí</option>
                 </select>
               </div>
               <div class="col-md-3">
@@ -775,7 +804,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/common.js"></script>
-  <script src="js/admin.js"></script>
+  <script src="js/admin-panel.js"></script>
 
 </body>
 </html>
