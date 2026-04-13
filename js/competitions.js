@@ -170,6 +170,7 @@ function loadCompetitions() {
     row.dataset.id = comp.id;
     row.dataset.cat_id = comp.category_id;
     row.dataset.style_id = comp.style_id;
+    row.dataset.num_dancers = Number(comp.num_dancers) || 0;
     const maxTimeSeconds = getCompetitionMaxTimeSeconds(comp);
     const maxTimeDisplay = maxTimeSecondsToNormalized(maxTimeSeconds) || t('not_defined', 'Not defined');
 
@@ -1305,23 +1306,41 @@ function applyCategoryFilter() {
 
   // Mostrar o no el empty state
   const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
-  updateCompetitionsCounter(rows.length, visibleRows.length);
+  const totalParticipants = Array.from(rows).reduce((sum, row) => {
+    return sum + (Number(row.dataset.num_dancers) || 0);
+  }, 0);
+  const visibleParticipants = visibleRows.reduce((sum, row) => {
+    return sum + (Number(row.dataset.num_dancers) || 0);
+  }, 0);
+
+  updateCompetitionsCounter(rows.length, visibleRows.length, totalParticipants, visibleParticipants);
   document.getElementById('emptyState')?.classList.toggle('d-none', visibleRows.length > 0);
 }
-function updateCompetitionsCounter(totalCount, visibleCount) {
-  const countEl = document.getElementById('count-competitions');
-  if (!countEl) return;
+function updateCompetitionsCounter(totalCount, visibleCount, totalParticipants, visibleParticipants) {
+  const competitionsCountEl = document.getElementById('count-competitions');
+  const participantsCountEl = document.getElementById('count-participants');
+  if (!competitionsCountEl && !participantsCountEl) return;
 
   const hasActiveFilter = Boolean(
     (document.getElementById('categoryFilter')?.value || '') ||
     (document.getElementById('styleFilter')?.value || '')
   );
   if (hasActiveFilter) {
-    countEl.textContent = `${visibleCount} / ${totalCount}`;
+    if (competitionsCountEl) {
+      competitionsCountEl.textContent = `${visibleCount} / ${totalCount} Comp.`;
+    }
+    if (participantsCountEl) {
+      participantsCountEl.textContent = `${visibleParticipants} / ${totalParticipants} Part.`;
+    }
     return;
   }
 
-  countEl.textContent = `${totalCount}`;
+  if (competitionsCountEl) {
+    competitionsCountEl.textContent = `${totalCount} Comp.`;
+  }
+  if (participantsCountEl) {
+    participantsCountEl.textContent = `${totalParticipants} Part.`;
+  }
 }
 function renderJudgesAssignmentList() {
   const list = document.getElementById('judgesAssignmentList');
