@@ -48,6 +48,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const user = getUserFromToken();
 
+    const moveMenuCardToDedicatedRow = (column, rowId, insertBeforeRow = null) => {
+        if (!column || !menuRow || column.parentElement !== menuRow) return;
+
+        const dedicatedRow = document.createElement("div");
+        dedicatedRow.className = "row g-4 justify-content-center pt-4";
+        dedicatedRow.id = rowId;
+
+        if (insertBeforeRow) {
+            menuRow.parentElement.insertBefore(dedicatedRow, insertBeforeRow);
+        } else {
+            menuRow.parentElement.insertBefore(dedicatedRow, menuRow);
+        }
+
+        dedicatedRow.appendChild(column);
+    };
+
     if (user && (user.role === 'admin' || ((user.role === 'organizer' || user.role === 'school') && user.eventId === eventId))) {
         updateElementProperty('registrationUrl', 'href', `registration.html?eventId=${encodeURIComponent(eventId)}`);
     } else {
@@ -66,6 +82,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if ((["admin", "organizer"].includes(user.role)) && (getEvent().hasRegistration == 1)) {
             registrationCol.classList.remove("d-none");
+        }
+
+        if (user.role === "organizer") {
+            moveMenuCardToDedicatedRow(configCol, "organizer-menu-row", menuRow);
         }
 
     } else if ((getEvent().visible)) {
@@ -114,12 +134,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             registrationCol.classList.remove("d-none");
         }
 
-        if (user && user.role === "judge" && votingCol && menuRow && votingCol.parentElement === menuRow) {
-            const judgeRow = document.createElement("div");
-            judgeRow.className = "row g-4 justify-content-center pt-4";
-            judgeRow.id = "judge-menu-row";
-            menuRow.parentElement.insertBefore(judgeRow, menuRow);
-            judgeRow.appendChild(votingCol);
+        if (user && user.role === "judge") {
+            moveMenuCardToDedicatedRow(votingCol, "judge-menu-row");
         }
 
     } else {
