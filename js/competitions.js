@@ -9,7 +9,8 @@ const criteriaPerJudgeState = {
   groupsByKey: new Map(),
   selectedGroupKey: null,
   selectedCompetitionIds: new Set(),
-  criteriaAssignments: new Map(),
+  pairAssignments: [],
+  nextPairRowId: 1,
   hasPersistedChanges: false
 };
 const criteriaPerJudgeCompetitionState = {
@@ -17,7 +18,8 @@ const criteriaPerJudgeCompetitionState = {
   competition: null,
   criteria: [],
   judges: [],
-  criteriaAssignments: new Map(),
+  pairAssignments: [],
+  nextPairRowId: 1,
   canEdit: false,
   canDelete: false,
   loading: false
@@ -819,8 +821,30 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
 
-        if (target.classList.contains('criteria-per-judge-select')) {
-          handleCriteriaPerJudgeCriteriaSelectionChange(target);
+        if (target.classList.contains('criteria-per-judge-pair-select') && target.dataset.context === 'bulk') {
+          handleCriteriaPerJudgePairSelectionChange(target, criteriaPerJudgeState);
+        }
+      });
+
+      criteriaPerJudgeAssignmentModalEl.addEventListener('click', (event) => {
+        const target = event.target instanceof HTMLElement
+          ? event.target.closest('.criteria-per-judge-pair-add-btn, .criteria-per-judge-pair-remove-btn')
+          : null;
+        if (!(target instanceof HTMLElement) || target.dataset.context !== 'bulk') return;
+
+        if (target.classList.contains('criteria-per-judge-pair-add-btn')) {
+          addCriteriaPerJudgePairAssignment(criteriaPerJudgeState);
+          renderCriteriaPerJudgeMappingPanel();
+          return;
+        }
+
+        if (target.classList.contains('criteria-per-judge-pair-remove-btn')) {
+          removeCriteriaPerJudgePairAssignment(
+            criteriaPerJudgeState,
+            target.dataset.rowId,
+            true
+          );
+          renderCriteriaPerJudgeMappingPanel();
         }
       });
 
@@ -847,8 +871,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       competitionCriteriaConfigModalEl.addEventListener('change', (event) => {
         const target = event.target;
         if (!(target instanceof HTMLElement)) return;
-        if (target.classList.contains('criteria-per-judge-competition-select')) {
+        if (target.classList.contains('criteria-per-judge-pair-select') && target.dataset.context === 'competition') {
           handleCompetitionCriteriaPerJudgeSelectionChange(target);
+        }
+      });
+
+      competitionCriteriaConfigModalEl.addEventListener('click', (event) => {
+        const target = event.target instanceof HTMLElement
+          ? event.target.closest('.criteria-per-judge-pair-add-btn, .criteria-per-judge-pair-remove-btn')
+          : null;
+        if (!(target instanceof HTMLElement) || target.dataset.context !== 'competition') return;
+
+        if (target.classList.contains('criteria-per-judge-pair-add-btn')) {
+          addCriteriaPerJudgePairAssignment(criteriaPerJudgeCompetitionState);
+          renderCompetitionCriteriaConfigMappingPanel();
+          return;
+        }
+
+        if (target.classList.contains('criteria-per-judge-pair-remove-btn')) {
+          removeCriteriaPerJudgePairAssignment(
+            criteriaPerJudgeCompetitionState,
+            target.dataset.rowId,
+            criteriaPerJudgeCompetitionState.canEdit
+          );
+          renderCompetitionCriteriaConfigMappingPanel();
         }
       });
 
@@ -1513,7 +1559,7 @@ function prepareCriteriaPerJudgeAssignmentModal() {
 function clearCriteriaPerJudgeSelections() {
   criteriaPerJudgeState.selectedGroupKey = null;
   criteriaPerJudgeState.selectedCompetitionIds.clear();
-  criteriaPerJudgeState.criteriaAssignments.clear();
+  resetCriteriaPerJudgePairAssignments(criteriaPerJudgeState);
 }
 
 function buildCriteriaPerJudgeGroups() {
@@ -1591,6 +1637,339 @@ function normalizeCriteriaPerJudgeJudges(judgesList = []) {
 
   return Array.from(judgesMap.values())
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function resetCriteriaPerJudgePairAssignments(state) {
+  state.pairAssignments = [];
+  state.nextPairRowId = 1;
+}
+
+function createCriteriaPerJudgePairAssignment(state, pair = {}) {
+  const rawCriterionId = pair?.criterionId ?? pair?.criteria_id ?? pair?.criteriaId ?? '';
+  const rawJudgeId = pair?.judgeId ?? pair?.judge_id ?? pair?.judgeId ?? '';
+
+  return {
+    rowId: `pair-${state.nextPairRowId++}`,
+    criterionId: String(rawCriterionId || '').trim(),
+    judgeId: String(rawJudgeId || '').trim()
+  };
+}
+
+function addCriteriaPerJudgePairAssignment(state, pair = {}) {
+  const nextPair = createCriteriaPerJudgePairAssignment(state, pair);
+  state.pairAssignments.push(nextPair);
+  return nextPair;
+}
+
+function setCriteriaPerJudgePairAssignments(state, pairs = [], criteria = [], judges = []) {
+  const validCriteriaIds = new Set(criteria.map(item => String(item.id)));
+  const validJudgeIds = new Set(judges.map(item => String(item.id)));
+  resetCriteriaPerJudgePairAssignments(state);
+
+  (Array.isArray(pairs) ? pairs : []).forEach((pair) => {
+    const normalizedPair = createCriteriaPerJudgePairAssignment(state, pair);
+    if (!normalizedPair.criterionId || !normalizedPair.judgeId) return;
+    if (validCriteriaIds.size && !validCriteriaIds.has(normalizedPair.criterionId)) return;
+    if (validJudgeIds.size && !validJudgeIds.has(normalizedPair.judgeId)) return;
+    state.pairAssignments.push(normalizedPair);
+  });
+}
+
+function ensureCriteriaPerJudgeEditablePairAssignment(state, canEdit = true) {
+  if (!canEdit) return;
+  if (!Array.isArray(state.pairAssignments) || !state.pairAssignments.length) {
+    addCriteriaPerJudgePairAssignment(state);
+  }
+}
+
+function updateCriteriaPerJudgePairAssignment(state, rowId, field, value) {
+  if (!['criterionId', 'judgeId'].includes(field)) return;
+  const targetPair = (Array.isArray(state.pairAssignments) ? state.pairAssignments : [])
+    .find(pair => String(pair.rowId) === String(rowId));
+  if (!targetPair) return;
+  targetPair[field] = String(value || '').trim();
+}
+
+function removeCriteriaPerJudgePairAssignment(state, rowId, canEdit = true) {
+  state.pairAssignments = (Array.isArray(state.pairAssignments) ? state.pairAssignments : [])
+    .filter(pair => String(pair.rowId) !== String(rowId));
+  ensureCriteriaPerJudgeEditablePairAssignment(state, canEdit);
+}
+
+function collectCriteriaPerJudgeAssignedPairs(state) {
+  const pairs = [];
+  const incompleteRows = [];
+  const duplicateRows = [];
+  const seenPairs = new Set();
+
+  (Array.isArray(state?.pairAssignments) ? state.pairAssignments : []).forEach((pair, index) => {
+    const criterionId = String(pair?.criterionId || '').trim();
+    const judgeId = String(pair?.judgeId || '').trim();
+
+    if (!criterionId && !judgeId) return;
+
+    if (!criterionId || !judgeId) {
+      incompleteRows.push(index + 1);
+      return;
+    }
+
+    const duplicateKey = `${criterionId}__${judgeId}`;
+    if (seenPairs.has(duplicateKey)) {
+      duplicateRows.push(index + 1);
+      return;
+    }
+
+    seenPairs.add(duplicateKey);
+    pairs.push({
+      criterionId,
+      judgeId,
+      rowIndex: index + 1
+    });
+  });
+
+  return {
+    pairs,
+    incompleteRows,
+    duplicateRows
+  };
+}
+
+function buildCriteriaPerJudgePayloadPairs(pairs = []) {
+  return pairs.map((pair) => {
+    const parsedCriteriaId = Number(pair.criterionId);
+    const parsedJudgeId = Number(pair.judgeId);
+    return {
+      criteria_id: Number.isFinite(parsedCriteriaId) ? parsedCriteriaId : pair.criterionId,
+      judge_id: Number.isFinite(parsedJudgeId) ? parsedJudgeId : pair.judgeId
+    };
+  });
+}
+
+function appendCriteriaPerJudgeBadgeSection(container, title, items, options = {}) {
+  const {
+    emptyText = '',
+    formatItem = (item) => item?.name ?? String(item ?? ''),
+    marginClass = 'mb-3'
+  } = options;
+
+  const sectionTitle = document.createElement('div');
+  sectionTitle.className = 'fw-semibold mb-2';
+  sectionTitle.textContent = title;
+  container.appendChild(sectionTitle);
+
+  if (!items.length) {
+    const empty = document.createElement('div');
+    empty.className = `small text-muted ${marginClass}`.trim();
+    empty.textContent = emptyText;
+    container.appendChild(empty);
+    return;
+  }
+
+  const wrap = document.createElement('div');
+  wrap.className = `d-flex flex-wrap gap-2 ${marginClass}`.trim();
+  items.forEach((item) => {
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-secondary';
+    badge.textContent = formatItem(item);
+    wrap.appendChild(badge);
+  });
+  container.appendChild(wrap);
+}
+
+function createCriteriaPerJudgePairSelect(items, config = {}) {
+  const {
+    placeholderText = '',
+    selectedValue = '',
+    disabled = false,
+    context = '',
+    rowId = '',
+    field = '',
+    formatter = (item) => item?.name ?? String(item ?? '')
+  } = config;
+
+  const select = document.createElement('select');
+  select.className = 'form-select form-select-sm criteria-per-judge-pair-select';
+  select.disabled = disabled;
+  select.dataset.context = context;
+  select.dataset.rowId = String(rowId);
+  select.dataset.field = field;
+  select.setAttribute('aria-label', placeholderText);
+
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.textContent = placeholderText;
+  select.appendChild(placeholderOption);
+
+  items.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = formatter(item);
+    select.appendChild(option);
+  });
+
+  const normalizedSelectedValue = String(selectedValue || '').trim();
+  if (normalizedSelectedValue) {
+    select.value = normalizedSelectedValue;
+  }
+
+  return select;
+}
+
+function renderCriteriaPerJudgePairEditor(container, config = {}) {
+  const {
+    state,
+    criteria,
+    judges,
+    canEdit = true,
+    context = '',
+    title = t('criteria_per_judge_pairs_title', 'Pares criterio-juez'),
+    emptyText = t('criteria_per_judge_no_pairs', 'No hay pares configurados.')
+  } = config;
+
+  const header = document.createElement('div');
+  header.className = 'd-flex align-items-center justify-content-between gap-2 mb-2';
+
+  const sectionTitle = document.createElement('div');
+  sectionTitle.className = 'fw-semibold';
+  sectionTitle.textContent = title;
+  header.appendChild(sectionTitle);
+
+  if (canEdit) {
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.className = 'btn btn-outline-primary btn-sm criteria-per-judge-pair-add-btn';
+    addButton.dataset.context = context;
+    addButton.innerHTML = `<i class="bi bi-plus-lg me-1"></i>${t('criteria_per_judge_add_pair', 'Anadir par')}`;
+    header.appendChild(addButton);
+  }
+
+  container.appendChild(header);
+
+  if (!canEdit && !state.pairAssignments.length) {
+    const empty = document.createElement('div');
+    empty.className = 'small text-muted';
+    empty.textContent = emptyText;
+    container.appendChild(empty);
+    return;
+  }
+
+  ensureCriteriaPerJudgeEditablePairAssignment(state, canEdit);
+
+  const rowsWrap = document.createElement('div');
+  rowsWrap.className = 'd-flex flex-column gap-2';
+
+  state.pairAssignments.forEach((pair) => {
+    const rowCard = document.createElement('div');
+    rowCard.className = 'border rounded-3 p-3';
+
+    const row = document.createElement('div');
+    row.className = 'row g-2 align-items-end';
+
+    const criterionCol = document.createElement('div');
+    criterionCol.className = 'col-12 col-md-5';
+    const criterionSelect = createCriteriaPerJudgePairSelect(criteria, {
+      placeholderText: t('criteria_per_judge_select_criterion', 'Selecciona criterio'),
+      selectedValue: pair.criterionId,
+      disabled: !canEdit,
+      context,
+      rowId: pair.rowId,
+      field: 'criterionId',
+      formatter: (criterion) => `${criterion.position}. ${criterion.name}`
+    });
+    criterionCol.appendChild(criterionSelect);
+
+    const judgeCol = document.createElement('div');
+    judgeCol.className = 'col-12 col-md-5';
+    const judgeSelect = createCriteriaPerJudgePairSelect(judges, {
+      placeholderText: t('criteria_per_judge_select_judge', 'Selecciona juez'),
+      selectedValue: pair.judgeId,
+      disabled: !canEdit,
+      context,
+      rowId: pair.rowId,
+      field: 'judgeId'
+    });
+    judgeCol.appendChild(judgeSelect);
+
+    const actionsCol = document.createElement('div');
+    actionsCol.className = 'col-12 col-md-2 d-grid';
+    if (canEdit) {
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'btn btn-outline-danger btn-sm criteria-per-judge-pair-remove-btn';
+      removeButton.dataset.context = context;
+      removeButton.dataset.rowId = String(pair.rowId);
+      removeButton.innerHTML = `<i class="bi bi-trash"></i>`;
+      removeButton.title = t('criteria_per_judge_remove_pair', 'Eliminar par');
+      removeButton.setAttribute('aria-label', t('criteria_per_judge_remove_pair', 'Eliminar par'));
+      actionsCol.appendChild(removeButton);
+    }
+
+    row.appendChild(criterionCol);
+    row.appendChild(judgeCol);
+    row.appendChild(actionsCol);
+    rowCard.appendChild(row);
+    rowsWrap.appendChild(rowCard);
+  });
+
+  container.appendChild(rowsWrap);
+}
+
+function validateCriteriaPerJudgePairCoverage(criteria, judges, state) {
+  const { pairs, incompleteRows, duplicateRows } = collectCriteriaPerJudgeAssignedPairs(state);
+
+  if (incompleteRows.length) {
+    return {
+      valid: false,
+      message: t(
+        'criteria_per_judge_incomplete_pairs',
+        'Completa o elimina las lineas incompletas: {rows}.'
+      ).replace('{rows}', incompleteRows.join(', '))
+    };
+  }
+
+  if (duplicateRows.length) {
+    return {
+      valid: false,
+      message: t(
+        'criteria_per_judge_duplicate_pairs',
+        'No repitas el mismo par criterio-juez. Revisa las lineas: {rows}.'
+      ).replace('{rows}', duplicateRows.join(', '))
+    };
+  }
+
+  const assignedCriteriaIds = new Set(pairs.map(pair => pair.criterionId));
+  const missingCriteriaAssignments = criteria.filter((criterion) => {
+    return !assignedCriteriaIds.has(String(criterion.id));
+  });
+
+  if (missingCriteriaAssignments.length) {
+    return {
+      valid: false,
+      message: t(
+        'criteria_per_judge_missing_criteria_assignment',
+        'Todos los criterios deben tener al menos un juez asignado.'
+      )
+    };
+  }
+
+  const assignedJudgeIds = new Set(pairs.map(pair => pair.judgeId));
+  const judgesWithoutCriteria = judges
+    .filter(judge => !assignedJudgeIds.has(String(judge.id)));
+
+  if (judgesWithoutCriteria.length) {
+    return {
+      valid: false,
+      message: t(
+        'criteria_per_judge_unused_judges',
+        'Todos los jueces deben estar asociados a algun criterio: {judges}.'
+      ).replace('{judges}', judgesWithoutCriteria.map(judge => judge.name).join(', '))
+    };
+  }
+
+  return {
+    valid: true,
+    pairs
+  };
 }
 
 function renderCriteriaPerJudgeGroupsAccordion() {
@@ -1725,7 +2104,7 @@ function handleCriteriaPerJudgeCompetitionSelectionChange(inputEl) {
 
   if (isSwitchingGroup) {
     criteriaPerJudgeState.selectedCompetitionIds.clear();
-    criteriaPerJudgeState.criteriaAssignments.clear();
+    resetCriteriaPerJudgePairAssignments(criteriaPerJudgeState);
     document.querySelectorAll('#criteriaPerJudgeGroupsAccordion .criteria-per-judge-comp-checkbox:checked')
       .forEach(checkbox => {
         checkbox.checked = false;
@@ -1740,7 +2119,7 @@ function handleCriteriaPerJudgeCompetitionSelectionChange(inputEl) {
     criteriaPerJudgeState.selectedCompetitionIds.delete(compId);
     if (!criteriaPerJudgeState.selectedCompetitionIds.size) {
       criteriaPerJudgeState.selectedGroupKey = null;
-      criteriaPerJudgeState.criteriaAssignments.clear();
+      resetCriteriaPerJudgePairAssignments(criteriaPerJudgeState);
     }
   }
 
@@ -1790,94 +2169,43 @@ function renderCriteriaPerJudgeMappingPanel() {
   });
   panel.appendChild(selectedList);
 
-  const judgesTitle = document.createElement('div');
-  judgesTitle.className = 'fw-semibold mb-2';
-  judgesTitle.textContent = t('criteria_per_judge_available_judges', 'Jueces disponibles');
-  panel.appendChild(judgesTitle);
+  appendCriteriaPerJudgeBadgeSection(
+    panel,
+    t('criteria_per_judge_available_judges', 'Jueces disponibles'),
+    selectedGroup.judges,
+    {
+      emptyText: t('criteria_per_judge_no_judges', 'No hay jueces en esta agrupacion.')
+    }
+  );
 
-  if (!selectedGroup.judges.length) {
-    const noJudges = document.createElement('div');
-    noJudges.className = 'small text-muted mb-3';
-    noJudges.textContent = t('criteria_per_judge_no_judges', 'No hay jueces en esta agrupacion.');
-    panel.appendChild(noJudges);
-  } else {
-    const judgesWrap = document.createElement('div');
-    judgesWrap.className = 'd-flex flex-wrap gap-2 mb-3';
-    selectedGroup.judges.forEach((judge) => {
-      const badge = document.createElement('span');
-      badge.className = 'badge bg-secondary';
-      badge.textContent = judge.name;
-      judgesWrap.appendChild(badge);
-    });
-    panel.appendChild(judgesWrap);
-  }
+  appendCriteriaPerJudgeBadgeSection(
+    panel,
+    t('criteria_per_judge_available_criteria', 'Criterios disponibles'),
+    selectedGroup.criteria,
+    {
+      emptyText: t('criteria_per_judge_no_criteria', 'No hay criterios en esta agrupacion.'),
+      formatItem: (criterion) => `${criterion.position}. ${criterion.name}`
+    }
+  );
 
-  const criteriaTitle = document.createElement('div');
-  criteriaTitle.className = 'fw-semibold mb-2';
-  criteriaTitle.textContent = t('criteria_per_judge_criteria_list', 'Criterios');
-  panel.appendChild(criteriaTitle);
-
-  if (!selectedGroup.criteria.length) {
-    const noCriteria = document.createElement('div');
-    noCriteria.className = 'small text-muted';
-    noCriteria.textContent = t('criteria_per_judge_no_criteria', 'No hay criterios en esta agrupacion.');
-    panel.appendChild(noCriteria);
+  if (!selectedGroup.criteria.length || !selectedGroup.judges.length) {
     return;
   }
 
-  const criteriaList = document.createElement('div');
-  criteriaList.className = 'list-group';
-  selectedGroup.criteria.forEach((criterion) => {
-    const row = document.createElement('div');
-    row.className = 'list-group-item d-flex align-items-center justify-content-between gap-3';
-
-    const criterionLabel = document.createElement('div');
-    criterionLabel.className = 'fw-semibold';
-    criterionLabel.textContent = `${criterion.position}. ${criterion.name}`;
-
-    const judgeSelect = document.createElement('select');
-    judgeSelect.className = 'form-select form-select-sm criteria-per-judge-select';
-    judgeSelect.style.maxWidth = '260px';
-    judgeSelect.dataset.criterionId = criterion.id;
-
-    const placeholderOption = document.createElement('option');
-    placeholderOption.value = '';
-    placeholderOption.textContent = t('criteria_per_judge_select_judge', 'Selecciona juez');
-    judgeSelect.appendChild(placeholderOption);
-
-    selectedGroup.judges.forEach((judge) => {
-      const option = document.createElement('option');
-      option.value = judge.id;
-      option.textContent = judge.name;
-      judgeSelect.appendChild(option);
-    });
-
-    const selectedJudgeId = criteriaPerJudgeState.criteriaAssignments.get(criterion.id);
-    if (selectedJudgeId && selectedGroup.judges.some(judge => String(judge.id) === String(selectedJudgeId))) {
-      judgeSelect.value = String(selectedJudgeId);
-    } else if (selectedJudgeId) {
-      criteriaPerJudgeState.criteriaAssignments.delete(criterion.id);
-    }
-
-    row.appendChild(criterionLabel);
-    row.appendChild(judgeSelect);
-    criteriaList.appendChild(row);
+  renderCriteriaPerJudgePairEditor(panel, {
+    state: criteriaPerJudgeState,
+    criteria: selectedGroup.criteria,
+    judges: selectedGroup.judges,
+    canEdit: true,
+    context: 'bulk'
   });
-
-  panel.appendChild(criteriaList);
 }
 
-function handleCriteriaPerJudgeCriteriaSelectionChange(selectEl) {
-  const criterionId = String(selectEl?.dataset?.criterionId || '');
-  if (!criterionId) return;
-
-  const judgeId = String(selectEl.value || '').trim();
-  if (!judgeId) {
-    criteriaPerJudgeState.criteriaAssignments.delete(criterionId);
-    return;
-  }
-
-  criteriaPerJudgeState.criteriaAssignments.set(criterionId, judgeId);
+function handleCriteriaPerJudgePairSelectionChange(selectEl, state) {
+  const rowId = String(selectEl?.dataset?.rowId || '');
+  const field = String(selectEl?.dataset?.field || '');
+  if (!rowId || !field) return;
+  updateCriteriaPerJudgePairAssignment(state, rowId, field, selectEl.value);
 }
 
 async function handleCriteriaPerJudgeAssignmentSubmit() {
@@ -1910,37 +2238,14 @@ async function handleCriteriaPerJudgeAssignmentSubmit() {
     return;
   }
 
-  const missingCriteriaAssignments = selectedGroup.criteria.filter((criterion) => {
-    const assignedJudgeId = criteriaPerJudgeState.criteriaAssignments.get(criterion.id);
-    return !assignedJudgeId;
-  });
+  const validation = validateCriteriaPerJudgePairCoverage(
+    selectedGroup.criteria,
+    selectedGroup.judges,
+    criteriaPerJudgeState
+  );
 
-  if (missingCriteriaAssignments.length) {
-    const message = t(
-      'criteria_per_judge_missing_criteria_assignment',
-      'Todos los criterios deben tener juez asignado.'
-    );
-    showMessageModal(message, errorTitle);
-    return;
-  }
-
-  const assignedJudgeIds = new Set();
-  selectedGroup.criteria.forEach((criterion) => {
-    const assignedJudgeId = criteriaPerJudgeState.criteriaAssignments.get(criterion.id);
-    if (assignedJudgeId) {
-      assignedJudgeIds.add(String(assignedJudgeId));
-    }
-  });
-
-  const judgesWithoutCriteria = selectedGroup.judges
-    .filter(judge => !assignedJudgeIds.has(String(judge.id)));
-
-  if (judgesWithoutCriteria.length) {
-    const message = t(
-      'criteria_per_judge_unused_judges',
-      'Todos los jueces deben estar asociados a algun criterio: {judges}.'
-    ).replace('{judges}', judgesWithoutCriteria.map(judge => judge.name).join(', '));
-    showMessageModal(message, errorTitle);
+  if (!validation.valid) {
+    showMessageModal(validation.message, errorTitle);
     return;
   }
 
@@ -1950,15 +2255,7 @@ async function handleCriteriaPerJudgeAssignmentSubmit() {
       const parsed = Number(competitionId);
       return Number.isFinite(parsed) ? parsed : competitionId;
     }),
-    pairs: selectedGroup.criteria.map((criterion) => {
-      const parsedCriteriaId = Number(criterion.id);
-      const rawJudgeId = criteriaPerJudgeState.criteriaAssignments.get(criterion.id);
-      const parsedJudgeId = Number(rawJudgeId);
-      return {
-        criteria_id: Number.isFinite(parsedCriteriaId) ? parsedCriteriaId : criterion.id,
-        judge_id: Number.isFinite(parsedJudgeId) ? parsedJudgeId : rawJudgeId
-      };
-    })
+    pairs: buildCriteriaPerJudgePayloadPairs(validation.pairs)
   };
 
   const assignButton = document.getElementById('assignCriteriaPerJudgeBtn');
@@ -2019,7 +2316,7 @@ function resetCompetitionCriteriaConfigState() {
   criteriaPerJudgeCompetitionState.competition = null;
   criteriaPerJudgeCompetitionState.criteria = [];
   criteriaPerJudgeCompetitionState.judges = [];
-  criteriaPerJudgeCompetitionState.criteriaAssignments.clear();
+  resetCriteriaPerJudgePairAssignments(criteriaPerJudgeCompetitionState);
   criteriaPerJudgeCompetitionState.canEdit = false;
   criteriaPerJudgeCompetitionState.canDelete = false;
   criteriaPerJudgeCompetitionState.loading = false;
@@ -2117,6 +2414,16 @@ function renderCompetitionCriteriaConfigSummary() {
     panel.appendChild(judgesWrap);
   }
 
+  appendCriteriaPerJudgeBadgeSection(
+    panel,
+    t('criteria_per_judge_available_criteria', 'Criterios disponibles'),
+    criteriaPerJudgeCompetitionState.criteria,
+    {
+      emptyText: t('criteria_per_judge_no_criteria', 'No hay criterios en esta agrupacion.'),
+      formatItem: (criterion) => `${criterion.position}. ${criterion.name}`
+    }
+  );
+
   if (!criteriaPerJudgeCompetitionState.canEdit) {
     const editHint = document.createElement('div');
     editHint.className = 'small text-warning mb-2';
@@ -2188,47 +2495,13 @@ function renderCompetitionCriteriaConfigMappingPanel() {
     return;
   }
 
-  const criteriaList = document.createElement('div');
-  criteriaList.className = 'list-group';
-  criteriaPerJudgeCompetitionState.criteria.forEach((criterion) => {
-    const row = document.createElement('div');
-    row.className = 'list-group-item d-flex align-items-center justify-content-between gap-3';
-
-    const criterionLabel = document.createElement('div');
-    criterionLabel.className = 'fw-semibold';
-    criterionLabel.textContent = `${criterion.position}. ${criterion.name}`;
-
-    const judgeSelect = document.createElement('select');
-    judgeSelect.className = 'form-select form-select-sm criteria-per-judge-competition-select';
-    judgeSelect.style.maxWidth = '260px';
-    judgeSelect.dataset.criterionId = criterion.id;
-    judgeSelect.disabled = !criteriaPerJudgeCompetitionState.canEdit;
-
-    const placeholderOption = document.createElement('option');
-    placeholderOption.value = '';
-    placeholderOption.textContent = t('criteria_per_judge_select_judge', 'Selecciona juez');
-    judgeSelect.appendChild(placeholderOption);
-
-    criteriaPerJudgeCompetitionState.judges.forEach((judge) => {
-      const option = document.createElement('option');
-      option.value = judge.id;
-      option.textContent = judge.name;
-      judgeSelect.appendChild(option);
-    });
-
-    const selectedJudgeId = criteriaPerJudgeCompetitionState.criteriaAssignments.get(criterion.id);
-    if (selectedJudgeId && criteriaPerJudgeCompetitionState.judges.some(judge => String(judge.id) === String(selectedJudgeId))) {
-      judgeSelect.value = String(selectedJudgeId);
-    } else if (selectedJudgeId) {
-      criteriaPerJudgeCompetitionState.criteriaAssignments.delete(criterion.id);
-    }
-
-    row.appendChild(criterionLabel);
-    row.appendChild(judgeSelect);
-    criteriaList.appendChild(row);
+  renderCriteriaPerJudgePairEditor(panel, {
+    state: criteriaPerJudgeCompetitionState,
+    criteria: criteriaPerJudgeCompetitionState.criteria,
+    judges: criteriaPerJudgeCompetitionState.judges,
+    canEdit: criteriaPerJudgeCompetitionState.canEdit,
+    context: 'competition'
   });
-
-  panel.appendChild(criteriaList);
   updateCompetitionCriteriaConfigActionButtons();
 }
 
@@ -2278,17 +2551,12 @@ async function openCompetitionCriteriaConfigModal(competitionId, modalInstance) 
     }
 
     const rows = normalizeCriteriaPerJudgeApiRows(data);
-    const validCriteriaIds = new Set(criteriaPerJudgeCompetitionState.criteria.map(item => String(item.id)));
-    const validJudgeIds = new Set(criteriaPerJudgeCompetitionState.judges.map(item => String(item.id)));
-    criteriaPerJudgeCompetitionState.criteriaAssignments.clear();
-
-    rows.forEach((row) => {
-      const criterionId = String(row?.criteria_id ?? row?.criteriaId ?? '').trim();
-      const judgeId = String(row?.judge_id ?? row?.judgeId ?? '').trim();
-      if (!criterionId || !judgeId) return;
-      if (!validCriteriaIds.has(criterionId) || !validJudgeIds.has(judgeId)) return;
-      criteriaPerJudgeCompetitionState.criteriaAssignments.set(criterionId, judgeId);
-    });
+    setCriteriaPerJudgePairAssignments(
+      criteriaPerJudgeCompetitionState,
+      rows,
+      criteriaPerJudgeCompetitionState.criteria,
+      criteriaPerJudgeCompetitionState.judges
+    );
   } catch (error) {
     showMessageModal(
       error?.message || t('criteria_per_judge_comp_fetch_error', 'Error al cargar la configuracion actual.'),
@@ -2302,16 +2570,7 @@ async function openCompetitionCriteriaConfigModal(competitionId, modalInstance) 
 }
 
 function handleCompetitionCriteriaPerJudgeSelectionChange(selectEl) {
-  const criterionId = String(selectEl?.dataset?.criterionId || '');
-  if (!criterionId) return;
-
-  const judgeId = String(selectEl.value || '').trim();
-  if (!judgeId) {
-    criteriaPerJudgeCompetitionState.criteriaAssignments.delete(criterionId);
-    return;
-  }
-
-  criteriaPerJudgeCompetitionState.criteriaAssignments.set(criterionId, judgeId);
+  handleCriteriaPerJudgePairSelectionChange(selectEl, criteriaPerJudgeCompetitionState);
 }
 
 async function handleCompetitionCriteriaConfigSave() {
@@ -2348,34 +2607,13 @@ async function handleCompetitionCriteriaConfigSave() {
     return;
   }
 
-  const missingCriteriaAssignments = criteriaPerJudgeCompetitionState.criteria.filter((criterion) => {
-    const assignedJudgeId = criteriaPerJudgeCompetitionState.criteriaAssignments.get(criterion.id);
-    return !assignedJudgeId;
-  });
-  if (missingCriteriaAssignments.length) {
-    showMessageModal(
-      t('criteria_per_judge_missing_criteria_assignment', 'Todos los criterios deben tener juez asignado.'),
-      errorTitle
-    );
-    return;
-  }
-
-  const assignedJudgeIds = new Set();
-  criteriaPerJudgeCompetitionState.criteria.forEach((criterion) => {
-    const assignedJudgeId = criteriaPerJudgeCompetitionState.criteriaAssignments.get(criterion.id);
-    if (assignedJudgeId) {
-      assignedJudgeIds.add(String(assignedJudgeId));
-    }
-  });
-
-  const judgesWithoutCriteria = criteriaPerJudgeCompetitionState.judges
-    .filter(judge => !assignedJudgeIds.has(String(judge.id)));
-  if (judgesWithoutCriteria.length) {
-    const message = t(
-      'criteria_per_judge_unused_judges',
-      'Todos los jueces deben estar asociados a algun criterio: {judges}.'
-    ).replace('{judges}', judgesWithoutCriteria.map(judge => judge.name).join(', '));
-    showMessageModal(message, errorTitle);
+  const validation = validateCriteriaPerJudgePairCoverage(
+    criteriaPerJudgeCompetitionState.criteria,
+    criteriaPerJudgeCompetitionState.judges,
+    criteriaPerJudgeCompetitionState
+  );
+  if (!validation.valid) {
+    showMessageModal(validation.message, errorTitle);
     return;
   }
 
@@ -2387,15 +2625,7 @@ async function handleCompetitionCriteriaConfigSave() {
         ? parsedCompetitionId
         : criteriaPerJudgeCompetitionState.competitionId
     ],
-    pairs: criteriaPerJudgeCompetitionState.criteria.map((criterion) => {
-      const parsedCriteriaId = Number(criterion.id);
-      const rawJudgeId = criteriaPerJudgeCompetitionState.criteriaAssignments.get(criterion.id);
-      const parsedJudgeId = Number(rawJudgeId);
-      return {
-        criteria_id: Number.isFinite(parsedCriteriaId) ? parsedCriteriaId : criterion.id,
-        judge_id: Number.isFinite(parsedJudgeId) ? parsedJudgeId : rawJudgeId
-      };
-    })
+    pairs: buildCriteriaPerJudgePayloadPairs(validation.pairs)
   };
 
   const saveButton = document.getElementById('saveCompetitionCriteriaConfigBtn');
@@ -2513,7 +2743,7 @@ function handleCompetitionCriteriaConfigDelete() {
         );
       }
 
-      criteriaPerJudgeCompetitionState.criteriaAssignments.clear();
+      resetCriteriaPerJudgePairAssignments(criteriaPerJudgeCompetitionState);
       renderCompetitionCriteriaConfigMappingPanel();
 
       const removed = data?.removed;
