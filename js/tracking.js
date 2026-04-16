@@ -495,37 +495,80 @@ function getCompetitionJudges(competition) {
   return Array.from(judgesById.values());
 }
 
-function getCompetitionCriteria(competition, judges) {
-  const dancers = Array.isArray(competition?.dancers) ? competition.dancers : [];
-  for (const dancer of dancers) {
-    const votes = Array.isArray(dancer?.votes) ? dancer.votes : [];
-    for (const judge of judges) {
-      const vote = votes.find(v => String(v?.judge?.id) === String(judge?.id));
-      const details = Array.isArray(vote?.details) ? vote.details : [];
-      if (!details.length) continue;
+function normalizeCompetitionCriteriaDetails(details, { respectVisibility = false } = {}) {
+  const sourceDetails = Array.isArray(details) ? details : [];
+  const shouldFilterByVisibility = respectVisibility
+    && sourceDetails.some(detail => detail?.visible !== undefined && detail?.visible !== null);
 
-      return details.map(detail => ({
-        criteria_id: detail?.criteria_id,
-        criteria_name: detail?.criteria_name || '',
-        percentage: detail?.percentage
-      }));
-    }
+  return sourceDetails
+    .filter(detail => !shouldFilterByVisibility || parseJudgeFlag(detail?.visible))
+    .map(detail => ({
+      criteria_id: detail?.criteria_id,
+      criteria_name: detail?.criteria_name || '',
+      percentage: detail?.percentage
+    }));
+}
+
+function getCompetitionCriteriaByJudge(competition, judges) {
+  const criteriaByJudge = new Map();
+  const dancers = Array.isArray(competition?.dancers) ? competition.dancers : [];
+  const sourceDancer = dancers.find(dancer => Array.isArray(dancer?.votes) && dancer.votes.length) || null;
+  const sourceVotes = Array.isArray(sourceDancer?.votes) ? sourceDancer.votes : [];
+
+  judges.forEach((judge) => {
+    const judgeId = String(judge?.id ?? '');
+    const vote = sourceVotes.find(item => String(item?.judge?.id) === judgeId);
+    criteriaByJudge.set(
+      judgeId,
+      normalizeCompetitionCriteriaDetails(vote?.details, { respectVisibility: true })
+    );
+  });
+
+  return criteriaByJudge;
+}
+
+function isSameCriteriaReference(leftCriteria, rightCriteria) {
+  if (!leftCriteria || !rightCriteria) return false;
+
+  if (
+    leftCriteria?.criteria_id !== undefined
+    && leftCriteria?.criteria_id !== null
+    && rightCriteria?.criteria_id !== undefined
+    && rightCriteria?.criteria_id !== null
+  ) {
+    return leftCriteria.criteria_id === rightCriteria.criteria_id;
   }
-  return [];
+
+  return String(leftCriteria?.criteria_name || '') === String(rightCriteria?.criteria_name || '');
+}
+
+function getCombinedCompetitionCriteria(criteriaByJudge) {
+  const combinedCriteria = new Map();
+
+  if (!(criteriaByJudge instanceof Map)) {
+    return [];
+  }
+
+  criteriaByJudge.forEach((criteriaList) => {
+    criteriaList.forEach((criteria) => {
+      const criteriaKey = criteria?.criteria_id !== undefined && criteria?.criteria_id !== null
+        ? `id:${criteria.criteria_id}`
+        : `name:${String(criteria?.criteria_name || '')}`;
+
+      if (!combinedCriteria.has(criteriaKey)) {
+        combinedCriteria.set(criteriaKey, criteria);
+      }
+    });
+  });
+
+  return Array.from(combinedCriteria.values());
 }
 
 function findVoteDetailByCriteria(vote, criteriaRef) {
   const details = Array.isArray(vote?.details) ? vote.details : [];
   if (!details.length) return null;
 
-  const byId = details.find(detail =>
-    criteriaRef?.criteria_id !== undefined &&
-    criteriaRef?.criteria_id !== null &&
-    detail?.criteria_id === criteriaRef.criteria_id
-  );
-  if (byId) return byId;
-
-  return details.find(detail => String(detail?.criteria_name || '') === String(criteriaRef?.criteria_name || '')) || null;
+  return details.find(detail => isSameCriteriaReference(detail, criteriaRef)) || null;
 }
 
 function formatVoteScore(score) {
@@ -673,7 +716,7 @@ function renderVotingDetailsModalTitle(competition) {
   return `${titleText} <span class="badge ${statusInfo.className} ms-2">${escapeHtml(statusInfo.label)}</span>`;
 }
 
-function renderCompetitionCriteriaLeadersSummary(competition, criteria) {
+function renderCompetitionCriteriaLeadersSummary(competition, criteria, criteriaByJudge = null) {
   if (!Array.isArray(criteria) || !criteria.length) {
     return '';
   }
@@ -690,6 +733,14 @@ function renderCompetitionCriteriaLeadersSummary(competition, criteria) {
       let hasAnyScore = false;
 
       votes.forEach((vote) => {
+        const judgeCriteria = criteriaByJudge instanceof Map
+          ? (criteriaByJudge.get(String(vote?.judge?.id ?? '')) || [])
+          : null;
+
+        if (Array.isArray(judgeCriteria) && !judgeCriteria.some(item => isSameCriteriaReference(item, criteriaRef))) {
+          return;
+        }
+
         const detail = findVoteDetailByCriteria(vote, criteriaRef);
         const numericScore = parseCriterionScore(detail?.score);
         if (numericScore === null) return;
@@ -785,9 +836,10 @@ function setVoteDetailsCriteriaVisibility(modalBody, modalFooter, showCriteria, 
 
 function renderCompetitionVotingDetailsTable(competition) {
   const judges = getCompetitionJudges(competition);
-  const criteria = getCompetitionCriteria(competition, judges);
+  const criteriaByJudge = getCompetitionCriteriaByJudge(competition, judges);
+  const criteria = getCombinedCompetitionCriteria(criteriaByJudge);
   const dancers = Array.isArray(competition?.dancers) ? competition.dancers : [];
-  const criteriaLeadersSummary = renderCompetitionCriteriaLeadersSummary(competition, criteria);
+  const criteriaLeadersSummary = renderCompetitionCriteriaLeadersSummary(competition, criteria, criteriaByJudge);
 
   if (!judges.length || !dancers.length) {
     return `
@@ -797,21 +849,22 @@ function renderCompetitionVotingDetailsTable(competition) {
     `;
   }
 
-  const hasCriteria = criteria.length > 0;
-  const detailColumnsPerJudge = hasCriteria ? (criteria.length + 1) : 1;
   const staticColumnsCount = 2;
-  const detailCols = judges.map(() => {
-    if (!hasCriteria) {
+  const detailCols = judges.map((judge) => {
+    const judgeCriteria = criteriaByJudge.get(String(judge?.id)) || [];
+    if (!judgeCriteria.length) {
       return '<col class="vote-details-col-judge-total">';
     }
 
-    const criteriaCols = new Array(criteria.length)
+    const criteriaCols = new Array(judgeCriteria.length)
       .fill('<col class="vote-details-col-criteria vote-details-criteria-col">')
       .join('');
     return `${criteriaCols}<col class="vote-details-col-judge-total">`;
   }).join('');
 
   const judgeHeaderCells = judges.map((judge) => {
+    const judgeCriteria = criteriaByJudge.get(String(judge?.id)) || [];
+    const detailColumnsPerJudge = judgeCriteria.length > 0 ? (judgeCriteria.length + 1) : 1;
     const reserveBadge = parseJudgeFlag(judge?.reserve)
       ? `<span class="badge bg-secondary ms-1" title="${t('judge_in_reserve')}">R</span>`
       : '';
@@ -825,12 +878,13 @@ function renderCompetitionVotingDetailsTable(competition) {
     `;
   }).join('');
 
-  const criteriaHeaderCells = judges.map(() => {
-    if (!hasCriteria) {
+  const criteriaHeaderCells = judges.map((judge) => {
+    const judgeCriteria = criteriaByJudge.get(String(judge?.id)) || [];
+    if (!judgeCriteria.length) {
       return `<th class="text-center vote-details-criteria-head vote-details-judge-total-head">${t('total')}</th>`;
     }
 
-    const criteriaHeads = criteria.map(item => {
+    const criteriaHeads = judgeCriteria.map(item => {
       const rawName = item?.criteria_name || '';
       const percentageText = formatCriteriaPercentageLabel(item?.percentage);
       const caption = percentageText ? `${rawName} (${percentageText})` : rawName;
@@ -863,18 +917,19 @@ function renderCompetitionVotingDetailsTable(competition) {
 
     const judgeCells = judges.map((judge) => {
       const vote = votes.find(v => String(v?.judge?.id) === String(judge?.id));
+      const judgeCriteria = criteriaByJudge.get(String(judge?.id)) || [];
       if (!vote) {
-        if (!hasCriteria) {
+        if (!judgeCriteria.length) {
           return '<td class="vote-details-cell vote-details-score-cell vote-details-judge-total-cell text-muted">-</td>';
         }
-        const emptyCriteriaCells = new Array(criteria.length)
+        const emptyCriteriaCells = new Array(judgeCriteria.length)
           .fill('<td class="vote-details-cell vote-details-score-cell text-muted vote-details-criteria-col">-</td>')
           .join('');
         return `${emptyCriteriaCells}<td class="vote-details-cell vote-details-score-cell vote-details-judge-total-cell text-muted">-</td>`;
       }
 
       const statusTitle = escapeHtml(vote?.status || '');
-      if (!hasCriteria) {
+      if (!judgeCriteria.length) {
         const score = formatVoteTotalScore(vote?.total);
         if (shouldCollapseCriteriaByStatus(vote?.status)) {
           return `<td class="vote-details-cell vote-details-score-cell vote-details-judge-total-cell" title="${statusTitle}">${renderVoteStatusBadge(vote?.status)}</td>`;
@@ -885,14 +940,14 @@ function renderCompetitionVotingDetailsTable(competition) {
       if (shouldCollapseCriteriaByStatus(vote?.status)) {
         const judgeTotalScore = formatVoteTotalScore(vote?.total);
         return `
-          <td class="vote-details-cell vote-details-status-cell vote-details-criteria-col" colspan="${criteria.length}" title="${statusTitle}">
+          <td class="vote-details-cell vote-details-status-cell vote-details-criteria-col" colspan="${judgeCriteria.length}" title="${statusTitle}">
             ${renderVoteStatusBadge(vote?.status)}
           </td>
           <td class="vote-details-cell vote-details-score-cell vote-details-judge-total-cell" title="${statusTitle}">${judgeTotalScore}</td>
         `;
       }
 
-      const criteriaCells = criteria.map(criteriaRef => {
+      const criteriaCells = judgeCriteria.map(criteriaRef => {
         const detail = findVoteDetailByCriteria(vote, criteriaRef);
         const score = formatVoteScore(detail?.score);
         return `<td class="vote-details-cell vote-details-score-cell vote-details-criteria-col" title="${statusTitle}">${score}</td>`;
