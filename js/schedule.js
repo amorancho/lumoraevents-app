@@ -96,7 +96,7 @@ function getParticipantClubLabel(participant) {
     const clubName = String(participant?.club_name || '').trim();
     const clubLocation = String(participant?.club_location || '').trim();
     if (!clubName) return '';
-    return clubLocation ? `${clubName} (${clubLocation})` : clubName;
+    return clubLocation ? `${clubName} [${clubLocation}]` : clubName;
 }
 
 function renderSchedule(data) {

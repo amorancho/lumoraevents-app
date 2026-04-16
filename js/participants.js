@@ -57,7 +57,7 @@ function getParticipantClubLabel(participant) {
   const clubName = String(participant?.club_name || '').trim();
   const clubLocation = String(participant?.club_location || '').trim();
   if (!clubName) return '';
-  return clubLocation ? `${clubName} (${clubLocation})` : clubName;
+  return clubLocation ? `${clubName} [${clubLocation}]` : clubName;
 }
 
 async function loadParticipants() {
@@ -292,49 +292,59 @@ function createCategoryItem(category, categoryData, index) {
   categoryData.participants.forEach(participant => {
     const row = document.createElement('tr');
 
-    // Celda participante con bandera, nombre y badge
+    // Celda participante con bandera, nombre, club y badge
     const tdParticipant = document.createElement('td');
-    tdParticipant.className = 'd-flex justify-content-between align-items-center ps-3';
+    tdParticipant.className = 'ps-3';
 
-    // Contenedor izquierda (bandera + nombre)
-    const leftDiv = document.createElement('div');
-    leftDiv.className = 'd-flex align-items-center';
+    const participantContent = document.createElement('div');
+    participantContent.className = 'd-flex align-items-start w-100 gap-2';
 
     if (shouldShowDancerFlags()) {
       const imgCountry = document.createElement('img');
-      imgCountry.className = 'me-2';
+      imgCountry.className = 'mt-1 flex-shrink-0';
       imgCountry.src = getDancerFlagUrl(participant.nationality, 24);
       imgCountry.width = 24;
       imgCountry.height = 24;
-      leftDiv.appendChild(imgCountry);
+      participantContent.appendChild(imgCountry);
     }
+
+    const textBlock = document.createElement('div');
+    textBlock.className = 'd-flex flex-column flex-grow-1 w-100';
+    textBlock.style.minWidth = '0';
+
+    const topRow = document.createElement('div');
+    topRow.className = 'd-flex align-items-center justify-content-between gap-2 w-100';
 
     const spanDancer = document.createElement('span');
     spanDancer.textContent = participant.name;
     const clubLabel = getParticipantClubLabel(participant);
 
-    leftDiv.appendChild(spanDancer);
+    topRow.appendChild(spanDancer);
+
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-info ms-2 flex-shrink-0';
+    badge.textContent = `${participant.styles.length} ${t('styles')}`;
+    topRow.appendChild(badge);
+
+    textBlock.appendChild(topRow);
+
     if (clubLabel) {
-      const spanClub = document.createElement('span');
-      spanClub.className = 'ms-2 small text-muted';
+      const spanClub = document.createElement('small');
+      spanClub.className = 'text-muted';
       spanClub.textContent = clubLabel;
-      leftDiv.appendChild(spanClub);
+      textBlock.appendChild(spanClub);
     }
 
-    // Badge derecha
-    const badge = document.createElement('span');
-    badge.className = 'badge bg-info me-2';
-    badge.textContent = `${participant.styles.length} ${t('styles')}`;
+    participantContent.appendChild(textBlock);
 
-    tdParticipant.appendChild(leftDiv);
-    tdParticipant.appendChild(badge);
+    tdParticipant.appendChild(participantContent);
 
     row.appendChild(tdParticipant);
 
     // Columnas de estilos
     categoryData.styles.forEach(style => {
         const td = document.createElement('td');
-        td.className = 'text-center';
+        td.className = 'text-center align-middle';
         const spanTd = document.createElement('span');
         spanTd.className = 'text-success';
         spanTd.textContent = participant.styles.some(s => s.id === style.id) ? '✓' : '';

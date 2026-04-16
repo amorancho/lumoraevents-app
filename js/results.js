@@ -35,7 +35,7 @@ function getDancerClubLabel(dancer) {
   const clubName = String(dancer?.club_name || '').trim();
   const clubLocation = String(dancer?.club_location || '').trim();
   if (!clubName) return '';
-  return clubLocation ? `${clubName} (${clubLocation})` : clubName;
+  return clubLocation ? `${clubName} [${clubLocation}]` : clubName;
 }
 
 function getValidPenalties(source) {
