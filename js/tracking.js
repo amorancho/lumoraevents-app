@@ -840,6 +840,7 @@ function renderCompetitionVotingDetailsTable(competition) {
   const criteria = getCombinedCompetitionCriteria(criteriaByJudge);
   const dancers = Array.isArray(competition?.dancers) ? competition.dancers : [];
   const criteriaLeadersSummary = renderCompetitionCriteriaLeadersSummary(competition, criteria, criteriaByJudge);
+  const showPenaltiesColumn = shouldShowTrackingPenaltyAction();
 
   if (!judges.length || !dancers.length) {
     return `
@@ -849,7 +850,7 @@ function renderCompetitionVotingDetailsTable(competition) {
     `;
   }
 
-  const staticColumnsCount = 2;
+  const staticColumnsCount = showPenaltiesColumn ? 3 : 2;
   const detailCols = judges.map((judge) => {
     const judgeCriteria = criteriaByJudge.get(String(judge?.id)) || [];
     if (!judgeCriteria.length) {
@@ -914,6 +915,9 @@ function renderCompetitionVotingDetailsTable(competition) {
       ? `<span class="badge bg-info vote-details-dancer-badge">#${escapeHtml(dancer.position)}</span>`
       : '';
     const dancerTotalScore = formatVoteTotalScore(dancer?.total_score);
+    const parsedTotalPenalties = Number(dancer?.total_penalties);
+    const totalPenaltiesValue = Number.isFinite(parsedTotalPenalties) ? parsedTotalPenalties : 0;
+    const dancerPenaltiesScore = escapeHtml(formatResultScore(totalPenaltiesValue));
 
     const judgeCells = judges.map((judge) => {
       const vote = votes.find(v => String(v?.judge?.id) === String(judge?.id));
@@ -966,6 +970,7 @@ function renderCompetitionVotingDetailsTable(competition) {
           </div>
         </th>
         <td class="vote-details-cell vote-details-score-cell vote-details-dancer-total-cell">${dancerTotalScore}</td>
+        ${showPenaltiesColumn ? `<td class="vote-details-cell vote-details-score-cell vote-details-dancer-total-cell">${dancerPenaltiesScore}</td>` : ''}
         ${judgeCells}
       </tr>
     `;
@@ -982,12 +987,14 @@ function renderCompetitionVotingDetailsTable(competition) {
           <colgroup>
             <col class="vote-details-col-dancer">
             <col class="vote-details-col-dancer-total">
+            ${showPenaltiesColumn ? '<col class="vote-details-col-dancer-total">' : ''}
             ${detailCols}
           </colgroup>
           <thead class="table-light">
             <tr>
               <th class="text-start vote-details-sticky-col" rowspan="2">${t('dancer')}</th>
               <th class="text-center vote-details-total-head" rowspan="2">${t('total')}</th>
+              ${showPenaltiesColumn ? `<th class="text-center vote-details-total-head" rowspan="2">Penal.</th>` : ''}
               ${judgeHeaderCells}
             </tr>
             <tr>
