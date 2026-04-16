@@ -167,11 +167,13 @@ function renderScheduleHighlight(data) {
     let selectedItem = null;
     let titleKey = '';
     let expandParticipants = false;
+    let showLiveHighlight = false;
 
     if (inProgressItem) {
         selectedItem = inProgressItem;
         titleKey = 'competition_in_progress';
         expandParticipants = true;
+        showLiveHighlight = true;
     } else {
         const lastFinishedIndex = todayItems.reduce((lastIndex, item, index) => {
             return item?.status === 'FIN' ? index : lastIndex;
@@ -190,17 +192,30 @@ function renderScheduleHighlight(data) {
     col.className = 'col-12 col-md-12 col-lg-10';
 
     const wrapper = document.createElement('div');
-    wrapper.className = 'card border-primary shadow-sm';
-    wrapper.innerHTML = `
-        <div class="card-body">
-            <h3 class="h5 mb-3 text-center">${t(titleKey)}</h3>
-        </div>
-    `;
+    wrapper.className = showLiveHighlight ? 'card schedule-highlight-live shadow-sm' : 'card border-primary shadow-sm';
+    wrapper.innerHTML = showLiveHighlight
+        ? `
+            <div class="card-body">
+                <div class="schedule-live-banner mb-3" role="status" aria-live="polite">
+                    <span class="schedule-live-pill">
+                        <span class="schedule-live-dot" aria-hidden="true"></span>
+                        ${t('live_now', 'Live now')}
+                    </span>
+                    <h3 class="h5 mb-0">${t(titleKey)}</h3>                    
+                </div>
+            </div>
+        `
+        : `
+            <div class="card-body">
+                <h3 class="h5 mb-3 text-center">${t(titleKey)}</h3>
+            </div>
+        `;
 
     const wrapperBody = wrapper.querySelector('.card-body');
     wrapperBody.appendChild(createScheduleItemCard(selectedItem, {
         uniqueKey: `highlight-${selectedItem?.id ?? 'today'}`,
-        expandParticipants
+        expandParticipants,
+        highlightLive: showLiveHighlight
     }));
 
     col.appendChild(wrapper);
@@ -259,12 +274,19 @@ function canShowScheduleParticipants() {
     return getEvent().visibleParticipants == 1 || validateRoles(['admin', 'organizer'], false);
 }
 
-function createScheduleItemCard(item, { uniqueKey, expandParticipants = false } = {}) {
+function createScheduleItemCard(item, { uniqueKey, expandParticipants = false, highlightLive = false } = {}) {
     const card = document.createElement('div');
-    card.className = 'card mb-3 border border-secondary-subtle rounded-3 shadow-none';
+    const isLiveItem = highlightLive && item?.status === 'PRO';
+    card.className = `card mb-3 border border-secondary-subtle rounded-3 shadow-none${isLiveItem ? ' schedule-item-live' : ''}`;
 
     card.innerHTML = `
         <div class="card-body">
+            ${isLiveItem ? `
+                <div class="schedule-item-live-callout">
+                    <i class="bi bi-broadcast-pin" aria-hidden="true"></i>
+                    <span>${t('competition_live_message', 'Participants are on stage right now.')}</span>
+                </div>
+            ` : ''}
             <div class="row text-center align-items-center">
                 <div class="col-6 col-md-3 mb-2 mb-md-0">
                     <p class="mb-1 fw-semibold">${t('category', 'Category')}</p>
