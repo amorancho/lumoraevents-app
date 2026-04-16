@@ -984,6 +984,7 @@ function renderResults(data) {
   const resultsContainer = document.getElementById('resultsContainer');
   const general = Array.isArray(data?.general) ? data.general : [];
   const styles = Array.isArray(data?.styles) ? data.styles : [];
+  const shouldCenterSingleStyle = usesStyleResultsFilter() && styles.length === 1;
 
   resultsContainer.innerHTML = '';
 
@@ -1014,11 +1015,11 @@ function renderResults(data) {
   colStyles.className = colStylesClass;
 
   const stylesRow = document.createElement('div');
-  stylesRow.className = 'row g-4';
+  stylesRow.className = `row g-4${shouldCenterSingleStyle ? ' justify-content-center' : ''}`;
 
   styles.forEach((style) => {
     const styleCol = document.createElement('div');
-    styleCol.className = 'col-12 col-md-6 col-xl-4';
+    styleCol.className = 'col-12 col-xl-6 col-xxl-4';
     styleCol.innerHTML = renderStyleClassification(style);
     stylesRow.appendChild(styleCol);
   });
