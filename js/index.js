@@ -35,6 +35,18 @@ const formatFecha = (isoString) => {
   return `${day}-${month}`;
 };
 
+const formatEventDateRange = (start, end) => {
+  if (!start) {
+    return '';
+  }
+
+  if (!end || start === end) {
+    return formatFecha(start);
+  }
+
+  return `${formatFecha(start)} / ${formatFecha(end)}`;
+};
+
 const normalizeEventStatus = (rawStatus) => {
   const normalized = String(rawStatus || '').trim().toLowerCase();
 
@@ -104,7 +116,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       Number(event.has_registrations) === 1 && event.registration_start && event.registration_end;
 
     return `
-      <div class="col-12 col-md-6 col-lg-3">
+      <div class="col-12 col-md-6 col-lg-4">
         <div class="card h-100">
           <div class="card-header fw-bold text-center">
             ${safeName}
@@ -113,12 +125,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             <img
               src="${safeLogo}"
               class="img-fluid mb-3"
-              style="height: 100px; width: 100%; object-fit: contain;"
+              style="height: 150px; width: 100%; object-fit: contain;"
               alt="${safeName}"
             >
             <p class="text-muted text-center d-flex align-items-center justify-content-center gap-2">
               <i class="bi bi-calendar3 text-primary"></i>
-              <span>${formatFecha(event.start)} / ${formatFecha(event.end)}</span>
+              <span>${formatEventDateRange(event.start, event.end)}</span>
             </p>
             ${showRegistrationPeriod ? `
               <p class="text-muted text-center d-flex align-items-center justify-content-center gap-2 small">
