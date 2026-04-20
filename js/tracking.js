@@ -326,8 +326,8 @@ async function exportClassificationResults(eventId, { all = true, categories = [
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       event_id: eventId,
-      all: Boolean(all),
-      categories: all ? [] : normalizedCategories
+      //all: Boolean(all),
+      //categories: all ? [] : normalizedCategories
     })
   });
 
