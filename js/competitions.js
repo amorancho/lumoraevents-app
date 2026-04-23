@@ -24,6 +24,13 @@ const criteriaPerJudgeCompetitionState = {
   canDelete: false,
   loading: false
 };
+const substituteJudgeState = {
+  sourceJudgeId: '',
+  replacementJudgeId: '',
+  competitions: [],
+  selectedCompetitionIds: new Set(),
+  loading: false
+};
 
 const convertStatus = {
   'OPE': 'OPEN',
@@ -65,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   setupHeadJudgeFieldVisibility();
+  updateSubstituteJudgeHeadNoticeVisibility();
   updateTopActionButtonsVisibility();
 
   const categoryFilter = document.getElementById('categoryFilter');
@@ -135,16 +143,19 @@ function shouldShowCriteriaPerJudgeButton() {
 function updateTopActionButtonsVisibility() {
   const actionsRow = document.getElementById('competitionsActionsRow');
   const criteriaPerJudgeCol = document.getElementById('criteriaPerJudgeAssignmentCol');
+  const substituteJudgeCol = document.getElementById('substituteJudgeCol');
   const criteriaColumnHeader = document.getElementById('criteriaColumnHeader');
-  if (!actionsRow || !criteriaPerJudgeCol) return;
+  if (!actionsRow || !criteriaPerJudgeCol || !substituteJudgeCol) return;
 
   const showCriteriaPerJudgeButton = shouldShowCriteriaPerJudgeButton();
   criteriaPerJudgeCol.classList.toggle('d-none', !showCriteriaPerJudgeButton);
+  substituteJudgeCol.classList.toggle('d-none', !showCriteriaPerJudgeButton);
   if (criteriaColumnHeader) {
     criteriaColumnHeader.classList.toggle('d-none', !showCriteriaPerJudgeButton);
   }
-  actionsRow.classList.toggle('row-cols-lg-5', showCriteriaPerJudgeButton);
+  actionsRow.classList.toggle('row-cols-lg-6', showCriteriaPerJudgeButton);
   actionsRow.classList.toggle('row-cols-lg-4', !showCriteriaPerJudgeButton);
+  actionsRow.classList.remove('row-cols-lg-5');
 }
 
 function setupHeadJudgeFieldVisibility() {
@@ -160,6 +171,13 @@ function setupHeadJudgeFieldVisibility() {
       headSelect.value = '';
     }
   }
+}
+
+function updateSubstituteJudgeHeadNoticeVisibility() {
+  const noticeWrapper = document.getElementById('substituteJudgeHeadNoticeWrapper');
+  if (!noticeWrapper) return;
+
+  noticeWrapper.classList.toggle('d-none', !Boolean(getEvent()?.has_penalties));
 }
 
 function loadCompetitions() {
@@ -525,6 +543,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const dancersOrderModal = new bootstrap.Modal(document.getElementById('dancersOrderModal'));
     const judgesAssignmentModalEl = document.getElementById('judgesAssignmentModal');
     const judgesAssignmentModal = judgesAssignmentModalEl ? new bootstrap.Modal(judgesAssignmentModalEl) : null;
+    const substituteJudgeModalEl = document.getElementById('substituteJudgeModal');
+    const substituteJudgeModal = substituteJudgeModalEl ? new bootstrap.Modal(substituteJudgeModalEl) : null;
     const criteriaPerJudgeAssignmentModalEl = document.getElementById('criteriaPerJudgeAssignmentModal');
     const criteriaPerJudgeAssignmentModal = criteriaPerJudgeAssignmentModalEl ? new bootstrap.Modal(criteriaPerJudgeAssignmentModalEl) : null;
     const competitionCriteriaConfigModalEl = document.getElementById('competitionCriteriaConfigModal');
@@ -736,11 +756,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     const judgesAssignmentBtn = document.getElementById('judgesAssignmentBtn');
+    const substituteJudgeBtn = document.getElementById('substituteJudgeBtn');
     const criteriaPerJudgeAssignmentBtn = document.getElementById('criteriaPerJudgeAssignmentBtn');
     const assignJudgesBtn = document.getElementById('assignJudgesBtn');
+    const fetchSubstituteJudgeDataBtn = document.getElementById('fetchSubstituteJudgeDataBtn');
+    const performSubstituteJudgeBtn = document.getElementById('performSubstituteJudgeBtn');
     const assignCriteriaPerJudgeBtn = document.getElementById('assignCriteriaPerJudgeBtn');
     const saveCompetitionCriteriaConfigBtn = document.getElementById('saveCompetitionCriteriaConfigBtn');
     const deleteCompetitionCriteriaConfigBtn = document.getElementById('deleteCompetitionCriteriaConfigBtn');
+    const substituteJudgeSourceSelect = document.getElementById('substituteJudgeSourceSelect');
+    const substituteJudgeReplacementSelect = document.getElementById('substituteJudgeReplacementSelect');
+    const substituteJudgeSelectAllCompetitions = document.getElementById('substituteJudgeSelectAllCompetitions');
 
     if (judgesAssignmentBtn && judgesAssignmentModal) {
       judgesAssignmentBtn.addEventListener('click', async () => {
@@ -796,6 +822,103 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (judgesAssignmentModalEl) {
       judgesAssignmentModalEl.addEventListener('hidden.bs.modal', () => {
         window.location.reload();
+      });
+    }
+
+    if (substituteJudgeBtn && substituteJudgeModal) {
+      substituteJudgeBtn.addEventListener('click', async () => {
+        if (!masters.length) {
+          await loadMasters();
+        }
+
+        resetSubstituteJudgeState();
+        populateSubstituteJudgeSelects();
+        renderSubstituteJudgeCompetitionsList();
+        updateSubstituteJudgeSelectAllState();
+        updateSubstituteJudgeApplyButtonState();
+        substituteJudgeModal.show();
+      });
+    }
+
+    if (fetchSubstituteJudgeDataBtn) {
+      fetchSubstituteJudgeDataBtn.addEventListener('click', async () => {
+        const selectedJudgeId = String(substituteJudgeSourceSelect?.value || '').trim();
+        if (!selectedJudgeId) {
+          showMessageModal(
+            t('substitute_judge_missing_source', 'Selecciona un juez.'),
+            t('error_title', 'Error')
+          );
+          return;
+        }
+
+        substituteJudgeState.sourceJudgeId = selectedJudgeId;
+        updateSubstituteJudgeReplacementOptions();
+        await loadSubstituteJudgeCompetitions(selectedJudgeId, fetchSubstituteJudgeDataBtn);
+      });
+    }
+
+    if (substituteJudgeSourceSelect) {
+      substituteJudgeSourceSelect.addEventListener('change', () => {
+        substituteJudgeState.sourceJudgeId = String(substituteJudgeSourceSelect.value || '').trim();
+        substituteJudgeState.competitions = [];
+        substituteJudgeState.selectedCompetitionIds.clear();
+        updateSubstituteJudgeReplacementOptions();
+        renderSubstituteJudgeCompetitionsList();
+        updateSubstituteJudgeSelectAllState();
+        updateSubstituteJudgeApplyButtonState();
+      });
+    }
+
+    if (substituteJudgeReplacementSelect) {
+      substituteJudgeReplacementSelect.addEventListener('change', () => {
+        substituteJudgeState.replacementJudgeId = String(substituteJudgeReplacementSelect.value || '').trim();
+        updateSubstituteJudgeApplyButtonState();
+      });
+    }
+
+    if (substituteJudgeSelectAllCompetitions) {
+      substituteJudgeSelectAllCompetitions.addEventListener('change', () => {
+        const eligibleCompetitionIds = substituteJudgeState.competitions.map(comp => String(comp.id));
+        substituteJudgeState.selectedCompetitionIds = substituteJudgeSelectAllCompetitions.checked
+          ? new Set(eligibleCompetitionIds)
+          : new Set();
+        renderSubstituteJudgeCompetitionsList();
+        updateSubstituteJudgeSelectAllState();
+        updateSubstituteJudgeApplyButtonState();
+      });
+    }
+
+    if (performSubstituteJudgeBtn) {
+      performSubstituteJudgeBtn.addEventListener('click', async () => {
+        await submitSubstituteJudgeReplacement(performSubstituteJudgeBtn);
+      });
+    }
+
+    if (substituteJudgeModalEl) {
+      substituteJudgeModalEl.addEventListener('change', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement)) return;
+        if (!target.classList.contains('substitute-judge-competition-checkbox')) return;
+
+        const competitionId = String(target.dataset.competitionId || '').trim();
+        if (!competitionId) return;
+
+        if (target.checked) {
+          substituteJudgeState.selectedCompetitionIds.add(competitionId);
+        } else {
+          substituteJudgeState.selectedCompetitionIds.delete(competitionId);
+        }
+
+        updateSubstituteJudgeSelectAllState();
+        updateSubstituteJudgeApplyButtonState();
+      });
+
+      substituteJudgeModalEl.addEventListener('hidden.bs.modal', () => {
+        resetSubstituteJudgeState();
+        populateSubstituteJudgeSelects();
+        renderSubstituteJudgeCompetitionsList();
+        updateSubstituteJudgeSelectAllState();
+        updateSubstituteJudgeApplyButtonState();
       });
     }
 
@@ -1549,6 +1672,331 @@ function getSelectedAssignmentHeadJudge() {
 function getSelectedAssignmentCompetitions() {
   return Array.from(document.querySelectorAll('#competitionsAssignmentList input[type="checkbox"]:checked'))
     .map(input => input.dataset.compId);
+}
+
+function resetSubstituteJudgeState() {
+  substituteJudgeState.sourceJudgeId = '';
+  substituteJudgeState.replacementJudgeId = '';
+  substituteJudgeState.competitions = [];
+  substituteJudgeState.selectedCompetitionIds = new Set();
+  substituteJudgeState.loading = false;
+}
+
+function populateSubstituteJudgeSelect(selectEl, { includeEmpty = true, excludeJudgeId = '' } = {}) {
+  if (!selectEl) return;
+
+  const currentValue = String(selectEl.value || '').trim();
+  selectEl.innerHTML = '';
+
+  if (includeEmpty) {
+    const emptyOption = document.createElement('option');
+    emptyOption.value = '';
+    emptyOption.textContent = t('ninguno', 'Ninguno');
+    selectEl.appendChild(emptyOption);
+  }
+
+  masters.forEach((master) => {
+    const masterId = String(master?.id ?? '').trim();
+    if (!masterId) return;
+    if (excludeJudgeId && masterId === String(excludeJudgeId)) return;
+
+    const option = document.createElement('option');
+    option.value = masterId;
+    option.textContent = master?.name || masterId;
+    selectEl.appendChild(option);
+  });
+
+  if (currentValue && Array.from(selectEl.options).some(option => option.value === currentValue)) {
+    selectEl.value = currentValue;
+  }
+}
+
+function populateSubstituteJudgeSelects() {
+  const sourceSelect = document.getElementById('substituteJudgeSourceSelect');
+  const replacementSelect = document.getElementById('substituteJudgeReplacementSelect');
+  populateSubstituteJudgeSelect(sourceSelect);
+  populateSubstituteJudgeSelect(replacementSelect, {
+    excludeJudgeId: substituteJudgeState.sourceJudgeId
+  });
+
+  if (sourceSelect) {
+    sourceSelect.value = substituteJudgeState.sourceJudgeId || '';
+  }
+  if (replacementSelect) {
+    replacementSelect.value = substituteJudgeState.replacementJudgeId || '';
+  }
+}
+
+function updateSubstituteJudgeReplacementOptions() {
+  const replacementSelect = document.getElementById('substituteJudgeReplacementSelect');
+  if (!replacementSelect) return;
+
+  const currentReplacementId = String(substituteJudgeState.replacementJudgeId || '').trim();
+  populateSubstituteJudgeSelect(replacementSelect, {
+    excludeJudgeId: substituteJudgeState.sourceJudgeId
+  });
+
+  if (
+    currentReplacementId &&
+    Array.from(replacementSelect.options).some(option => option.value === currentReplacementId)
+  ) {
+    replacementSelect.value = currentReplacementId;
+    substituteJudgeState.replacementJudgeId = currentReplacementId;
+  } else {
+    replacementSelect.value = '';
+    substituteJudgeState.replacementJudgeId = '';
+  }
+}
+
+function renderSubstituteJudgeCompetitionsList() {
+  const list = document.getElementById('substituteJudgeCompetitionsList');
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  if (substituteJudgeState.loading) {
+    const loading = document.createElement('div');
+    loading.className = 'list-group-item text-muted';
+    loading.textContent = t('substitute_judge_loading', 'Cargando competiciones...');
+    list.appendChild(loading);
+    return;
+  }
+
+  if (!substituteJudgeState.sourceJudgeId) {
+    const empty = document.createElement('div');
+    empty.className = 'list-group-item text-muted';
+    empty.textContent = t('substitute_judge_select_prompt', 'Selecciona un juez y pulsa Obtener datos.');
+    list.appendChild(empty);
+    return;
+  }
+
+  if (!substituteJudgeState.competitions.length) {
+    const empty = document.createElement('div');
+    empty.className = 'list-group-item text-muted';
+    empty.textContent = t('substitute_judge_no_competitions', 'No hay competiciones CLOSED para este juez.');
+    list.appendChild(empty);
+    return;
+  }
+
+  substituteJudgeState.competitions.forEach((competition) => {
+    const item = document.createElement('label');
+    item.className = 'list-group-item d-flex align-items-center justify-content-between gap-3';
+
+    const leftWrap = document.createElement('div');
+    leftWrap.className = 'd-flex align-items-start gap-2';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'form-check-input mt-1 substitute-judge-competition-checkbox';
+    checkbox.dataset.competitionId = String(competition.id);
+    checkbox.checked = substituteJudgeState.selectedCompetitionIds.has(String(competition.id));
+
+    const textWrap = document.createElement('div');
+    const title = document.createElement('div');
+    title.className = 'fw-semibold';
+    title.textContent = `${competition.category_name || ''} / ${competition.style_name || ''}`;
+    const criteriaBadges = document.createElement('div');
+    criteriaBadges.className = 'd-flex flex-wrap gap-1 mt-1';
+
+    normalizeSubstituteJudgeCriteriaList(competition.criteria_list).forEach((criterionName) => {
+      const badge = document.createElement('span');
+      badge.className = 'badge text-bg-info';
+      badge.textContent = criterionName;
+      criteriaBadges.appendChild(badge);
+    });
+
+    textWrap.appendChild(title);
+    if (criteriaBadges.childElementCount) {
+      textWrap.appendChild(criteriaBadges);
+    }
+    leftWrap.appendChild(checkbox);
+    leftWrap.appendChild(textWrap);
+
+    const statusBadge = document.createElement('span');
+    statusBadge.className = `badge bg-${statusColor[competition.status] || 'secondary'}`;
+    statusBadge.textContent = convertStatus[competition.status] || competition.status || '';
+
+    item.appendChild(leftWrap);
+    item.appendChild(statusBadge);
+    list.appendChild(item);
+  });
+}
+
+function normalizeSubstituteJudgeCriteriaList(criteriaList) {
+  if (typeof criteriaList === 'string') {
+    return criteriaList
+      .split(',')
+      .map(item => String(item || '').trim())
+      .filter(Boolean);
+  }
+
+  if (!Array.isArray(criteriaList)) return [];
+
+  return criteriaList
+    .map((criterion) => {
+      if (criterion === null || criterion === undefined) return '';
+      if (typeof criterion === 'string' || typeof criterion === 'number') {
+        return String(criterion).trim();
+      }
+
+      const candidate = criterion.name ?? criterion.criteria_name ?? criterion.label ?? criterion.criterion_name;
+      return String(candidate || '').trim();
+    })
+    .filter(Boolean);
+}
+
+function updateSubstituteJudgeSelectAllState() {
+  const selectAll = document.getElementById('substituteJudgeSelectAllCompetitions');
+  if (!selectAll) return;
+
+  const totalCompetitions = substituteJudgeState.competitions.length;
+  const selectedCount = substituteJudgeState.selectedCompetitionIds.size;
+
+  selectAll.disabled = substituteJudgeState.loading || totalCompetitions === 0;
+  selectAll.checked = totalCompetitions > 0 && selectedCount === totalCompetitions;
+  selectAll.indeterminate = selectedCount > 0 && selectedCount < totalCompetitions;
+}
+
+function updateSubstituteJudgeApplyButtonState() {
+  const applyButton = document.getElementById('performSubstituteJudgeBtn');
+  if (!applyButton) return;
+
+  const hasSourceJudge = Boolean(String(substituteJudgeState.sourceJudgeId || '').trim());
+  const hasReplacementJudge = Boolean(String(substituteJudgeState.replacementJudgeId || '').trim());
+  const hasSelectedCompetitions = substituteJudgeState.selectedCompetitionIds.size > 0;
+
+  applyButton.disabled = substituteJudgeState.loading || !hasSourceJudge || !hasReplacementJudge || !hasSelectedCompetitions;
+}
+
+async function loadSubstituteJudgeCompetitions(judgeId, triggerButton = null) {
+  substituteJudgeState.loading = true;
+  substituteJudgeState.competitions = [];
+  substituteJudgeState.selectedCompetitionIds.clear();
+  renderSubstituteJudgeCompetitionsList();
+  updateSubstituteJudgeSelectAllState();
+  updateSubstituteJudgeApplyButtonState();
+
+  const originalButtonText = triggerButton?.textContent || t('substitute_judge_fetch_button', 'Obtener datos');
+  if (triggerButton) {
+    triggerButton.disabled = true;
+    triggerButton.textContent = t('substitute_judge_loading', 'Cargando competiciones...');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/voting/competitions?event_id=${getEvent().id}&judge_id=${judgeId}`);
+    const data = await response.json().catch(() => ([]));
+    if (!response.ok) {
+      throw new Error(
+        data?.error || data?.message || t('substitute_judge_fetch_error', 'Error al obtener las competiciones del juez.')
+      );
+    }
+
+    substituteJudgeState.competitions = (Array.isArray(data) ? data : [])
+      .filter(comp => String(comp?.status || '').toUpperCase() === 'CLO');
+  } catch (error) {
+    console.error('Error loading substitute judge competitions:', error);
+    showMessageModal(
+      error?.message || t('substitute_judge_fetch_error', 'Error al obtener las competiciones del juez.'),
+      t('error_title', 'Error')
+    );
+    substituteJudgeState.competitions = [];
+  } finally {
+    substituteJudgeState.loading = false;
+    renderSubstituteJudgeCompetitionsList();
+    updateSubstituteJudgeSelectAllState();
+    updateSubstituteJudgeApplyButtonState();
+    if (triggerButton) {
+      triggerButton.disabled = false;
+      triggerButton.textContent = originalButtonText;
+    }
+  }
+}
+
+async function submitSubstituteJudgeReplacement(triggerButton = null) {
+  const sourceJudgeId = String(substituteJudgeState.sourceJudgeId || '').trim();
+  const replacementJudgeId = String(substituteJudgeState.replacementJudgeId || '').trim();
+  const selectedCompetitions = Array.from(substituteJudgeState.selectedCompetitionIds);
+
+  if (!sourceJudgeId) {
+    showMessageModal(
+      t('substitute_judge_missing_source', 'Selecciona un juez.'),
+      t('error_title', 'Error')
+    );
+    return;
+  }
+
+  if (!replacementJudgeId) {
+    showMessageModal(
+      t('substitute_judge_missing_replacement', 'Selecciona un juez sustituto.'),
+      t('error_title', 'Error')
+    );
+    return;
+  }
+
+  if (!selectedCompetitions.length) {
+    showMessageModal(
+      t('substitute_judge_missing_competitions', 'Selecciona al menos una competición.'),
+      t('error_title', 'Error')
+    );
+    return;
+  }
+
+  const payload = {
+    event_id: getEvent().id,
+    judge_id_ori: Number.isFinite(Number(sourceJudgeId)) ? Number(sourceJudgeId) : sourceJudgeId,
+    judge_id_des: Number.isFinite(Number(replacementJudgeId)) ? Number(replacementJudgeId) : replacementJudgeId,
+    competitions: selectedCompetitions.map((competitionId) => (
+      Number.isFinite(Number(competitionId)) ? Number(competitionId) : competitionId
+    ))
+  };
+
+  const originalButtonText = triggerButton?.textContent || t('substitute_judge_apply_button', 'Realizar substitución');
+  substituteJudgeState.loading = true;
+  updateSubstituteJudgeApplyButtonState();
+  updateSubstituteJudgeSelectAllState();
+
+  if (triggerButton) {
+    triggerButton.disabled = true;
+    triggerButton.textContent = t('substitute_judge_status_updating', 'Realizando substitución...');
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitions/replace-judge`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(
+        data?.error || data?.message || t('substitute_judge_request_error', 'Error al realizar la substitución de juez.')
+      );
+    }
+
+    await fetchCompetitionsFromAPI();
+    await loadSubstituteJudgeCompetitions(sourceJudgeId);
+
+    showMessageModal(
+      data?.message || t('substitute_judge_success', 'Substitución de juez realizada correctamente.'),
+      t('max_times_info_title', 'Información'),
+      'success'
+    );
+  } catch (error) {
+    console.error('Error replacing judge:', error);
+    showMessageModal(
+      error?.message || t('substitute_judge_request_error', 'Error al realizar la substitución de juez.'),
+      t('error_title', 'Error')
+    );
+  } finally {
+    substituteJudgeState.loading = false;
+    updateSubstituteJudgeApplyButtonState();
+    updateSubstituteJudgeSelectAllState();
+    if (triggerButton) {
+      triggerButton.disabled = false;
+      triggerButton.textContent = originalButtonText;
+    }
+  }
 }
 
 function prepareCriteriaPerJudgeAssignmentModal() {

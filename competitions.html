@@ -73,6 +73,11 @@
                   AsinaciÃ³n criterios por juez
                 </button>
               </div>
+              <div class="col d-none" id="substituteJudgeCol">
+                <button type="button" class="btn btn-primary w-100" id="substituteJudgeBtn" data-i18n="substitute_judge_button">
+                  Substituir Juez
+                </button>
+              </div>
               <div class="col">
                 <a href="" class="btn btn-warning w-100" id="scheduleconfigUrl" data-i18n="menu_schedule_config">
                   Schedule Configurator
@@ -276,6 +281,65 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
           <button type="button" class="btn btn-primary" id="assignJudgesBtn" data-i18n="judges_assignment_apply">Assign Judges</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="substituteJudgeModal" tabindex="-1" aria-labelledby="substituteJudgeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="substituteJudgeModalLabel" data-i18n="substitute_judge_modal_title">Substituir juez</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="substitute_judge_source_judge">Juez original</h6>
+              <div class="row g-2 align-items-end">
+                <div class="col-md-8 col-lg-9">
+                  <select class="form-select" id="substituteJudgeSourceSelect">
+                    <option value="" data-i18n="ninguno">Ninguno</option>
+                  </select>
+                </div>
+                <div class="col-md-4 col-lg-3">
+                  <button type="button" class="btn btn-outline-primary w-100" id="fetchSubstituteJudgeDataBtn" data-i18n="substitute_judge_fetch_button">
+                    Obtener datos
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                <h6 class="text-uppercase text-muted small mb-0" data-i18n="substitute_judge_competitions">Competiciones</h6>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="substituteJudgeSelectAllCompetitions">
+                  <label class="form-check-label" for="substituteJudgeSelectAllCompetitions" data-i18n="substitute_judge_select_all">
+                    Seleccionar todos
+                  </label>
+                </div>
+              </div>
+              <div id="substituteJudgeCompetitionsList" class="list-group assignment-list"></div>
+            </div>
+            <div class="col-12">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="substitute_judge_replacement_judge">Juez sustituto</h6>
+              <select class="form-select" id="substituteJudgeReplacementSelect">
+                <option value="" data-i18n="ninguno">Ninguno</option>
+              </select>
+            </div>
+            <div class="col-12 d-none" id="substituteJudgeHeadNoticeWrapper">
+              <div class="alert alert-warning border-warning-subtle mb-0 d-flex align-items-start gap-2" role="alert" style="font-size: 0.8rem;">
+                <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                <div data-i18n="substitute_judge_head_notice">
+                  Si el juez original es juez principal, tras la substitución tendrás que reasignar un juez principal en aquellas competiciones en las que has aplicado el cambio
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="performSubstituteJudgeBtn" data-i18n="substitute_judge_apply_button" disabled>Realizar substitución</button>
         </div>
       </div>
     </div>
