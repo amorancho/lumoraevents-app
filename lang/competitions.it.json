@@ -32,6 +32,7 @@
   "criteria_per_judge_select_prompt": "Seleziona competizioni da un gruppo per collegare criteri e giudici.",
   "criteria_per_judge_group_title": "Gruppo {index}",
   "criteria_per_judge_group_summary": "{competitions} competizioni | {criteria} criteri | {judges} giudici",
+  "criteria_per_judge_select_all": "Seleziona tutto",
   "criteria_per_judge_selected_competitions": "Competizioni selezionate",
   "criteria_per_judge_available_judges": "Giudici disponibili",
   "criteria_per_judge_available_criteria": "Criteri disponibili",

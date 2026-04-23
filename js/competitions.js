@@ -816,6 +816,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const target = event.target;
         if (!(target instanceof HTMLElement)) return;
 
+        if (target.classList.contains('criteria-per-judge-group-select-all')) {
+          handleCriteriaPerJudgeGroupSelectAllChange(target);
+          return;
+        }
+
         if (target.classList.contains('criteria-per-judge-comp-checkbox')) {
           handleCriteriaPerJudgeCompetitionSelectionChange(target);
           return;
@@ -1749,13 +1754,26 @@ function appendCriteriaPerJudgeBadgeSection(container, title, items, options = {
   const {
     emptyText = '',
     formatItem = (item) => item?.name ?? String(item ?? ''),
-    marginClass = 'mb-3'
+    marginClass = 'mb-3',
+    count = null
   } = options;
 
+  const sectionTitleWrap = document.createElement('div');
+  sectionTitleWrap.className = 'd-flex align-items-center gap-2 mb-2';
+
   const sectionTitle = document.createElement('div');
-  sectionTitle.className = 'fw-semibold mb-2';
+  sectionTitle.className = 'fw-semibold';
   sectionTitle.textContent = title;
-  container.appendChild(sectionTitle);
+  sectionTitleWrap.appendChild(sectionTitle);
+
+  if (count !== null) {
+    const countBadge = document.createElement('span');
+    countBadge.className = 'badge bg-secondary rounded-pill';
+    countBadge.textContent = String(count);
+    sectionTitleWrap.appendChild(countBadge);
+  }
+
+  container.appendChild(sectionTitleWrap);
 
   if (!items.length) {
     const empty = document.createElement('div');
@@ -2042,6 +2060,34 @@ function renderCriteriaPerJudgeGroupsAccordion() {
     const body = document.createElement('div');
     body.className = 'accordion-body p-2';
 
+    const selectedCompetitionCount = group.competitions.filter(
+      competition => criteriaPerJudgeState.selectedCompetitionIds.has(String(competition.id))
+    ).length;
+    const isAllSelected = group.competitions.length > 0
+      && selectedCompetitionCount === group.competitions.length;
+    const isPartiallySelected = selectedCompetitionCount > 0
+      && selectedCompetitionCount < group.competitions.length;
+
+    const selectAllWrap = document.createElement('div');
+    selectAllWrap.className = 'form-check mb-2';
+
+    const selectAllCheckbox = document.createElement('input');
+    selectAllCheckbox.type = 'checkbox';
+    selectAllCheckbox.className = 'form-check-input criteria-per-judge-group-select-all';
+    selectAllCheckbox.dataset.groupKey = group.key;
+    selectAllCheckbox.id = `criteria-per-judge-group-select-all-${groupIndex}`;
+    selectAllCheckbox.checked = isAllSelected;
+    selectAllCheckbox.indeterminate = isPartiallySelected;
+
+    const selectAllLabel = document.createElement('label');
+    selectAllLabel.className = 'form-check-label fw-semibold';
+    selectAllLabel.htmlFor = selectAllCheckbox.id;
+    selectAllLabel.textContent = t('criteria_per_judge_select_all', 'Seleccionar todos');
+
+    selectAllWrap.appendChild(selectAllCheckbox);
+    selectAllWrap.appendChild(selectAllLabel);
+    body.appendChild(selectAllWrap);
+
     const list = document.createElement('div');
     list.className = 'list-group';
 
@@ -2092,6 +2138,43 @@ function createCriteriaPerJudgeCompetitionStatusBadge(status) {
   return badge;
 }
 
+function handleCriteriaPerJudgeGroupSelectAllChange(inputEl) {
+  const groupKey = String(inputEl?.dataset?.groupKey || '');
+  const shouldSelectAll = Boolean(inputEl?.checked);
+  if (!groupKey) return;
+
+  const group = criteriaPerJudgeState.groupsByKey.get(groupKey);
+  if (!group) return;
+
+  const isSwitchingGroup = shouldSelectAll
+    && criteriaPerJudgeState.selectedGroupKey
+    && criteriaPerJudgeState.selectedGroupKey !== groupKey;
+
+  if (isSwitchingGroup) {
+    criteriaPerJudgeState.selectedCompetitionIds.clear();
+    resetCriteriaPerJudgePairAssignments(criteriaPerJudgeState);
+  }
+
+  if (shouldSelectAll) {
+    criteriaPerJudgeState.selectedGroupKey = groupKey;
+    group.competitions.forEach((competition) => {
+      criteriaPerJudgeState.selectedCompetitionIds.add(String(competition.id));
+    });
+  } else if (criteriaPerJudgeState.selectedGroupKey === groupKey) {
+    group.competitions.forEach((competition) => {
+      criteriaPerJudgeState.selectedCompetitionIds.delete(String(competition.id));
+    });
+
+    if (!criteriaPerJudgeState.selectedCompetitionIds.size) {
+      criteriaPerJudgeState.selectedGroupKey = null;
+      resetCriteriaPerJudgePairAssignments(criteriaPerJudgeState);
+    }
+  }
+
+  renderCriteriaPerJudgeGroupsAccordion();
+  renderCriteriaPerJudgeMappingPanel();
+}
+
 function handleCriteriaPerJudgeCompetitionSelectionChange(inputEl) {
   const compId = String(inputEl?.dataset?.compId || '');
   const groupKey = String(inputEl?.dataset?.groupKey || '');
@@ -2123,6 +2206,7 @@ function handleCriteriaPerJudgeCompetitionSelectionChange(inputEl) {
     }
   }
 
+  renderCriteriaPerJudgeGroupsAccordion();
   renderCriteriaPerJudgeMappingPanel();
 }
 
@@ -2150,24 +2234,15 @@ function renderCriteriaPerJudgeMappingPanel() {
   const selectedCompetitions = selectedGroup.competitions
     .filter(comp => criteriaPerJudgeState.selectedCompetitionIds.has(String(comp.id)));
 
-  const selectedTitle = document.createElement('div');
-  selectedTitle.className = 'fw-semibold mb-2';
-  selectedTitle.textContent = t('criteria_per_judge_selected_competitions', 'Competiciones seleccionadas');
-  panel.appendChild(selectedTitle);
-
-  const selectedList = document.createElement('div');
-  selectedList.className = 'list-group criteria-per-judge-summary-list mb-3';
-  selectedCompetitions.forEach((competition) => {
-    const row = document.createElement('div');
-    row.className = 'list-group-item py-2 d-flex align-items-center justify-content-between gap-2';
-
-    const text = document.createElement('span');
-    text.textContent = `${competition.category_name} / ${competition.style_name}`;
-    row.appendChild(text);
-    row.appendChild(createCriteriaPerJudgeCompetitionStatusBadge(competition.status));
-    selectedList.appendChild(row);
-  });
-  panel.appendChild(selectedList);
+  appendCriteriaPerJudgeBadgeSection(
+    panel,
+    t('criteria_per_judge_selected_competitions', 'Competiciones seleccionadas'),
+    selectedCompetitions,
+    {
+      count: selectedCompetitions.length,
+      formatItem: (competition) => `${competition.category_name} / ${competition.style_name}`
+    }
+  );
 
   appendCriteriaPerJudgeBadgeSection(
     panel,
