@@ -1164,13 +1164,27 @@ function showVotesModal(dancer, mode = "details") {
     return percentageNumber;
   };
 
+  const parseCriteriaMaxScore = (criteria) => {
+    const rawMaxScore = criteria?.max_score;
+    if (rawMaxScore === undefined || rawMaxScore === null || rawMaxScore === '') {
+      return null;
+    }
+    const maxScoreNumber = Number(rawMaxScore);
+    if (Number.isNaN(maxScoreNumber)) return String(rawMaxScore);
+    return formatBoundValue(maxScoreNumber);
+  };
+
   const hasCriteriaPercentages = () =>
     criteriaList.some(c => parseCriteriaPercentage(c) !== null);
 
   const formatCriteriaLabel = (criteria) => {
     const percentageNumber = parseCriteriaPercentage(criteria);
-    if (percentageNumber === null) return criteria.name;
-    return `${criteria.name} (${percentageNumber}%)`;
+    if (percentageNumber !== null) return `${criteria.name} (${percentageNumber}%)`;
+
+    const maxScore = parseCriteriaMaxScore(criteria);
+    if (maxScore !== null) return `${criteria.name} (Max: ${maxScore})`;
+
+    return criteria.name;
   };
 
   const formatTotalScore = (value) => {

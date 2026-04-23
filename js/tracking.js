@@ -505,7 +505,8 @@ function normalizeCompetitionCriteriaDetails(details, { respectVisibility = fals
     .map(detail => ({
       criteria_id: detail?.criteria_id,
       criteria_name: detail?.criteria_name || '',
-      percentage: detail?.percentage
+      percentage: detail?.percentage,
+      max_score: detail?.max_score
     }));
 }
 
@@ -631,6 +632,46 @@ function formatCriteriaPercentageLabel(rawPercentage) {
   }
 
   return normalizedValue;
+}
+
+function formatCriteriaMaxScoreLabel(rawMaxScore) {
+  if (rawMaxScore === null || rawMaxScore === undefined || rawMaxScore === '') {
+    return '';
+  }
+
+  const normalizedValue = String(rawMaxScore).trim();
+  if (!normalizedValue) return '';
+
+  const numericValue = Number(normalizedValue);
+  if (Number.isFinite(numericValue)) {
+    return String(numericValue);
+  }
+
+  return normalizedValue;
+}
+
+function getCriteriaDisplayParts(rawName, rawPercentage, rawMaxScore) {
+  const name = String(rawName || '');
+  const percentageText = formatCriteriaPercentageLabel(rawPercentage);
+  if (percentageText) {
+    return {
+      caption: `${name} (${percentageText})`,
+      suffix: percentageText
+    };
+  }
+
+  const maxScoreText = formatCriteriaMaxScoreLabel(rawMaxScore);
+  if (maxScoreText) {
+    return {
+      caption: `${name} (Max: ${maxScoreText})`,
+      suffix: `Max: ${maxScoreText}`
+    };
+  }
+
+  return {
+    caption: name,
+    suffix: ''
+  };
 }
 
 function getVoteStatusBadgeClass(status) {
@@ -765,7 +806,13 @@ function renderCompetitionCriteriaLeadersSummary(competition, criteria, criteria
       return String(a.name || '').localeCompare(String(b.name || ''));
     });
 
-    const criteriaName = escapeHtml(criteriaRef?.criteria_name || t('criteria', 'Criteria'));
+    const criteriaName = escapeHtml(
+      getCriteriaDisplayParts(
+        criteriaRef?.criteria_name || t('criteria', 'Criteria'),
+        criteriaRef?.percentage,
+        criteriaRef?.max_score
+      ).caption
+    );
     const rankingText = dancerScores.length
       ? dancerScores.map((entry) => {
         const dancerName = escapeHtml(entry?.name || t('dancer'));
@@ -887,16 +934,15 @@ function renderCompetitionVotingDetailsTable(competition) {
 
     const criteriaHeads = judgeCriteria.map(item => {
       const rawName = item?.criteria_name || '';
-      const percentageText = formatCriteriaPercentageLabel(item?.percentage);
-      const caption = percentageText ? `${rawName} (${percentageText})` : rawName;
+      const { caption, suffix } = getCriteriaDisplayParts(rawName, item?.percentage, item?.max_score);
       const captionEscaped = escapeHtml(caption);
       const nameEscaped = escapeHtml(rawName);
-      const percentageEscaped = escapeHtml(percentageText);
+      const suffixEscaped = escapeHtml(suffix);
       return `
         <th class="text-center vote-details-criteria-head vote-details-criteria-col" title="${captionEscaped}">
           <span class="vote-details-criteria-caption">
             <span class="vote-details-criteria-name">${nameEscaped}</span>
-            ${percentageText ? `<span class="vote-details-criteria-percentage">${percentageEscaped}</span>` : ''}
+            ${suffix ? `<span class="vote-details-criteria-percentage">${suffixEscaped}</span>` : ''}
           </span>
         </th>
       `;
@@ -2735,17 +2781,8 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
 
     const data = await res.json();
 
-    const formatCriteriaLabel = (criteria) => {
-      const rawPercentage = criteria?.percentage;
-      if (rawPercentage === undefined || rawPercentage === null || rawPercentage === '') {
-        return criteria.name;
-      }
-      const percentageNumber = Number(rawPercentage);
-      if (Number.isNaN(percentageNumber)) {
-        return criteria.name;
-      }
-      return `${criteria.name} (${percentageNumber}%)`;
-    };
+    const formatCriteriaLabel = (criteria) =>
+      getCriteriaDisplayParts(criteria?.name, criteria?.percentage, criteria?.max_score).caption;
 
     // Filtramos dancerId de data.dancers
     data.dancers = data.dancers.find(d => d.id === dancerId);

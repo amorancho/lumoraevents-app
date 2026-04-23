@@ -117,17 +117,20 @@ function getStyleDancerById(styleObj, dancerId) {
 function getCriteriaDisplayLabel(criteria) {
   const rawName = String(criteria?.name || '').trim();
   const percentage = criteria?.percentage;
+  const maxScore = criteria?.max_score;
 
-  if (percentage === undefined || percentage === null || percentage === '') {
-    return rawName;
+  if (percentage !== undefined && percentage !== null && percentage !== '') {
+    const numericPercentage = Number(percentage);
+    if (Number.isFinite(numericPercentage)) {
+      return `${rawName} (${numericPercentage.toFixed(0)}%)`;
+    }
   }
 
-  const numericPercentage = Number(percentage);
-  if (!Number.isFinite(numericPercentage)) {
-    return rawName;
+  if (maxScore !== undefined && maxScore !== null && maxScore !== '') {
+    return `${rawName} (Max: ${formatScoreValue(maxScore)})`;
   }
 
-  return `${rawName} (${numericPercentage.toFixed(0)}%)`;
+  return rawName;
 }
 
 function getCriteriaColumnStyle() {
@@ -183,7 +186,8 @@ function collectStyleCriteriaSummary(styleObj) {
         criteria.push({
           key,
           name: String(criterion?.name || '').trim(),
-          percentage: criterion?.percentage
+          percentage: criterion?.percentage,
+          max_score: criterion?.max_score
         });
       });
     });
@@ -221,7 +225,8 @@ function collectStyleJudgeGroups(styleObj) {
         judgeGroup.criteria.push({
           key: criterionKey,
           name: String(criterion?.name || '').trim(),
-          percentage: criterion?.percentage
+          percentage: criterion?.percentage,
+          max_score: criterion?.max_score
         });
       });
     });
