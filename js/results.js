@@ -984,7 +984,9 @@ function renderResults(data) {
   const resultsContainer = document.getElementById('resultsContainer');
   const general = Array.isArray(data?.general) ? data.general : [];
   const styles = Array.isArray(data?.styles) ? data.styles : [];
-  const shouldCenterSingleStyle = usesStyleResultsFilter() && styles.length === 1;
+  const hasGeneralClassification = getEvent().catClassification !== 'NO';
+  const shouldRenderGeneralBlock = hasGeneralClassification && general.length > 0;
+  const shouldCenterSingleStyle = styles.length === 1 && !shouldRenderGeneralBlock;
 
   resultsContainer.innerHTML = '';
 
@@ -1002,7 +1004,7 @@ function renderResults(data) {
 
   let colStylesClass = 'col-12';
 
-  if (getEvent().catClassification !== 'NO') {
+  if (shouldRenderGeneralBlock) {
     const colGeneral = document.createElement('div');
     colGeneral.className = 'col-12 col-lg-4';
     colGeneral.innerHTML = renderGeneralClassification(general);
