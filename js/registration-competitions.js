@@ -228,7 +228,9 @@
       return false;
     }
 
-    const maxDuration = audioState.maxDuration;
+    const TIME_EXTRA = 10;
+
+    const maxDuration = audioState.maxDuration + TIME_EXTRA;
     if (maxDuration != null && audioState.duration > maxDuration) {
       audioState.isValid = false;
       setAudioError(`La duracion supera el maximo permitido (${formatDuration(maxDuration)}).`);
