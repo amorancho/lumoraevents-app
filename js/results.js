@@ -133,6 +133,24 @@ function getCriteriaDisplayLabel(criteria) {
   return rawName;
 }
 
+function getCriteriaMetaLabel(criteria) {
+  const percentage = criteria?.percentage;
+  const maxScore = criteria?.max_score;
+
+  if (percentage !== undefined && percentage !== null && percentage !== '') {
+    const numericPercentage = Number(percentage);
+    if (Number.isFinite(numericPercentage)) {
+      return `${numericPercentage.toFixed(0)}%`;
+    }
+  }
+
+  if (maxScore !== undefined && maxScore !== null && maxScore !== '') {
+    return `Max: ${formatScoreValue(maxScore)}`;
+  }
+
+  return '';
+}
+
 function getCriteriaColumnStyle() {
   const widthRem = getEvent()?.criteriaPerJudge ? 5 : 3.25;
   return `width: ${widthRem}rem; min-width: ${widthRem}rem; max-width: ${widthRem}rem;`;
@@ -150,11 +168,19 @@ function getCriteriaHeaderTextStyle() {
   return 'display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 400; font-size: 0.72rem; line-height: 1.1;';
 }
 
-function renderCriteriaHeaderCell(label) {
+function getCriteriaHeaderMetaStyle() {
+  return 'display: block; margin-top: 0.2rem; font-size: 0.68rem; line-height: 1.1; color: var(--bs-secondary-color); text-align: center;';
+}
+
+function renderCriteriaHeaderCell(criteria) {
+  const label = String(criteria?.name || '').trim();
+  const metaLabel = getCriteriaMetaLabel(criteria);
   const safeLabel = escapeHtml(label);
+  const safeMetaLabel = escapeHtml(metaLabel);
   return `
     <th class="text-center align-middle" style="${getCriteriaColumnStyle()}">
       <span style="${getCriteriaHeaderTextStyle()}" title="${safeLabel}">${safeLabel}</span>
+      ${metaLabel ? `<span style="${getCriteriaHeaderMetaStyle()}">${safeMetaLabel}</span>` : ''}
     </th>
   `;
 }
@@ -245,7 +271,7 @@ function renderStyleCriteriaSummaryTable(styleObj) {
   }
 
   const headerCells = criteria
-    .map((criterion) => renderCriteriaHeaderCell(getCriteriaDisplayLabel(criterion)))
+    .map((criterion) => renderCriteriaHeaderCell(criterion))
     .join('');
 
   const bodyRows = dancers.map((dancer, index) => {
@@ -326,7 +352,7 @@ function renderStyleJudgeGroupedTable(styleObj) {
     }
 
     return judgeGroup.criteria
-      .map((criterion) => renderCriteriaHeaderCell(getCriteriaDisplayLabel(criterion)))
+      .map((criterion) => renderCriteriaHeaderCell(criterion))
       .join('');
   }).join('');
 

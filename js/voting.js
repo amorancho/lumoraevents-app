@@ -1154,38 +1154,8 @@ function showVotesModal(dancer, mode = "details") {
   const formatBoundValue = (value) =>
     formatScoreForDisplay(value, scoreType) || String(value);
 
-  const parseCriteriaPercentage = (criteria) => {
-    const rawPercentage = criteria?.percentage;
-    if (rawPercentage === undefined || rawPercentage === null || rawPercentage === '') {
-      return null;
-    }
-    const percentageNumber = Number(rawPercentage);
-    if (Number.isNaN(percentageNumber)) return null;
-    return percentageNumber;
-  };
-
-  const parseCriteriaMaxScore = (criteria) => {
-    const rawMaxScore = criteria?.max_score;
-    if (rawMaxScore === undefined || rawMaxScore === null || rawMaxScore === '') {
-      return null;
-    }
-    const maxScoreNumber = Number(rawMaxScore);
-    if (Number.isNaN(maxScoreNumber)) return String(rawMaxScore);
-    return formatBoundValue(maxScoreNumber);
-  };
-
   const hasCriteriaPercentages = () =>
     criteriaList.some(c => parseCriteriaPercentage(c) !== null);
-
-  const formatCriteriaLabel = (criteria) => {
-    const percentageNumber = parseCriteriaPercentage(criteria);
-    if (percentageNumber !== null) return `${criteria.name} (${percentageNumber}%)`;
-
-    const maxScore = parseCriteriaMaxScore(criteria);
-    if (maxScore !== null) return `${criteria.name} (Max: ${maxScore})`;
-
-    return criteria.name;
-  };
 
   const formatTotalScore = (value) => {
     if (value === null || value === undefined) return '';
@@ -2019,12 +1989,21 @@ function renderDancersTableHeader() {
     el.scope = 'col';
     el.className = 'text-center small criteria-col';
     el.dataset.criteriaId = c.id;
+    const metaLabel = getCriteriaMetaLabel(c);
 
     const label = document.createElement('span');
     label.className = 'criteria-header-text';
-    label.title = c.name;
+    label.title = formatCriteriaLabel(c);
     label.textContent = c.name;
     el.appendChild(label);
+
+    if (metaLabel) {
+      const meta = document.createElement('span');
+      meta.className = 'criteria-header-meta';
+      meta.textContent = metaLabel;
+      el.appendChild(meta);
+    }
+
     headRow.appendChild(el);
   });
 
@@ -2413,6 +2392,44 @@ function formatScoreForDisplay(value, scoreType) {
     default:
       return Math.round(value).toString();
   }
+}
+
+function parseCriteriaPercentage(criteria) {
+  const rawPercentage = criteria?.percentage;
+  if (rawPercentage === undefined || rawPercentage === null || rawPercentage === '') {
+    return null;
+  }
+
+  const percentageNumber = Number(rawPercentage);
+  if (Number.isNaN(percentageNumber)) return null;
+  return percentageNumber;
+}
+
+function parseCriteriaMaxScore(criteria) {
+  const rawMaxScore = criteria?.max_score;
+  if (rawMaxScore === undefined || rawMaxScore === null || rawMaxScore === '') {
+    return null;
+  }
+
+  const maxScoreNumber = Number(rawMaxScore);
+  if (Number.isNaN(maxScoreNumber)) return String(rawMaxScore);
+  return formatScoreForDisplay(maxScoreNumber, getScoreType()) || String(maxScoreNumber);
+}
+
+function getCriteriaMetaLabel(criteria) {
+  const percentageNumber = parseCriteriaPercentage(criteria);
+  if (percentageNumber !== null) return `${percentageNumber}%`;
+
+  const maxScore = parseCriteriaMaxScore(criteria);
+  if (maxScore !== null) return `Max: ${maxScore}`;
+
+  return '';
+}
+
+function formatCriteriaLabel(criteria) {
+  const name = String(criteria?.name || '');
+  const metaLabel = getCriteriaMetaLabel(criteria);
+  return metaLabel ? `${name} (${metaLabel})` : name;
 }
 
 function renderCompetitionInfo(competition) {
