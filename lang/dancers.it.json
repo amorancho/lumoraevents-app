@@ -67,5 +67,16 @@
   "import_create_error": "Impossibile creare i partecipanti.",
   "import_create_success_message": "Categorie create: {categories}. Stili creati: {styles}. Partecipanti creati: {participants}.",
   "import_no_participants_to_create": "Non ci sono partecipanti da creare.",
-  "import_missing_mapping_error": "Impossibile risolvere il mapping categoria/stile per alcuni partecipanti: {participants}"
+  "import_missing_mapping_error": "Impossibile risolvere il mapping categoria/stile per alcuni partecipanti: {participants}",
+  "close": "Chiudi",
+  "bulk_delete_dancers_button": "Elimina partecipanti",
+  "bulk_delete_dancers_modal_title": "Elimina partecipanti",
+  "bulk_delete_dancers_info": "Questa lista contiene i partecipanti attualmente visibili nella tabella.",
+  "bulk_delete_dancers_total": "Totale partecipanti",
+  "bulk_delete_dancers_status": "Stato",
+  "bulk_delete_dancers_empty": "Nessun partecipante visibile con i filtri attuali.",
+  "bulk_delete_dancers_confirm": "Sei sicuro di voler eliminare i {count} partecipanti mostrati?",
+  "bulk_delete_dancers_deleting": "Eliminazione...",
+  "bulk_delete_dancers_delete_error": "Errore durante l'eliminazione del partecipante.",
+  "bulk_delete_dancers_summary": "Totale: {total} | OK: {ok} | KO: {ko}"
 }

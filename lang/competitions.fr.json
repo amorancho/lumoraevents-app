@@ -178,4 +178,16 @@
   "max_times_summary_categories": "{count} catégories",
   "max_times_summary_styles": "{count} styles",
   "max_times_recalculate_notice": "Si une compétition (catégorie/style) appartenant à un bloc du Configurateur de planning est modifiée, les blocs concernés seront recalculés."
+  ,
+  "bulk_delete_competitions_button": "Supprimer competitions",
+  "bulk_delete_competitions_modal_title": "Supprimer competitions",
+  "bulk_delete_competitions_info": "Cette liste contient les competitions actuellement affichees dans le tableau.",
+  "bulk_delete_competitions_total": "Total competitions",
+  "bulk_delete_competitions_total_participants": "Total participants",
+  "bulk_delete_competitions_status": "Statut",
+  "bulk_delete_competitions_empty": "Aucune competition visible avec les filtres actuels.",
+  "bulk_delete_competitions_confirm": "Etes-vous sur de vouloir supprimer les {count} competitions affichees ?",
+  "bulk_delete_competitions_deleting": "Suppression...",
+  "bulk_delete_competitions_delete_error": "Erreur lors de la suppression de la competition.",
+  "bulk_delete_competitions_summary": "Total: {total} | OK: {ok} | KO: {ko}"
 }

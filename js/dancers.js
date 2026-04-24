@@ -33,6 +33,14 @@ const importState = {
   mappingSignature: '',
   analysis: null
 };
+const bulkDeleteState = {
+  modal: null,
+  items: [],
+  isProcessing: false,
+  hasExecuted: false,
+  deletedCount: 0,
+  pendingReload: false
+};
 
 const select = document.getElementById("nationality");
 
@@ -102,6 +110,380 @@ function applyFlagsVisibility() {
   }
 }
 
+function getCurrentDancerFilters() {
+  return {
+    category: `${document.getElementById('categoryFilter')?.value || ''}`.trim().toLowerCase(),
+    club: shouldShowDancerClubs() ? `${document.getElementById('clubFilter')?.value || ''}` : '',
+    style: `${document.getElementById('styleFilter')?.value || ''}`.trim()
+  };
+}
+
+function dancerMatchesFilters(dancer, filters = getCurrentDancerFilters()) {
+  const categoryName = `${dancer?.category_name || ''}`.trim().toLowerCase();
+  const clubId = dancer?.club_id === null || dancer?.club_id === undefined ? '' : String(dancer.club_id);
+  const styleIds = Array.isArray(dancer?.styles)
+    ? dancer.styles
+      .map((style) => String(style?.id ?? style).trim())
+      .filter(Boolean)
+    : [];
+
+  return (
+    (!filters.category || categoryName === filters.category) &&
+    (!filters.club || clubId === filters.club) &&
+    (!filters.style || styleIds.includes(filters.style))
+  );
+}
+
+function getFilteredDancers() {
+  const filters = getCurrentDancerFilters();
+  return (Array.isArray(dancers) ? dancers : []).filter((dancer) => dancerMatchesFilters(dancer, filters));
+}
+
+function getBulkDeleteElements() {
+  return {
+    tableWrap: document.getElementById('bulkDeleteDancersTableWrap'),
+    tableBody: document.getElementById('bulkDeleteDancersTableBody'),
+    totalEl: document.getElementById('bulkDeleteDancersTotal'),
+    emptyState: document.getElementById('bulkDeleteDancersEmptyState'),
+    summaryEl: document.getElementById('bulkDeleteDancersSummary'),
+    closeBtn: document.getElementById('bulkDeleteDancersCloseBtn'),
+    closeTopBtn: document.getElementById('bulkDeleteDancersCloseTopBtn'),
+    deleteBtn: document.getElementById('bulkDeleteDancersDeleteBtn')
+  };
+}
+
+function updateBulkDeleteButtonState(visibleCount = getFilteredDancers().length) {
+  const button = document.getElementById('openBulkDeleteDancersBtn');
+  if (!button) return;
+  button.disabled = bulkDeleteState.isProcessing || visibleCount === 0 || getEvent()?.status === 'finished';
+}
+
+function buildBulkDeleteStatusContent(item) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'small';
+
+  if (item.status === 'processing') {
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner-border spinner-border-sm text-danger me-2';
+    spinner.setAttribute('aria-hidden', 'true');
+    wrapper.appendChild(spinner);
+
+    const text = document.createElement('span');
+    text.textContent = t('bulk_delete_dancers_deleting', 'Deleting...');
+    wrapper.appendChild(text);
+    return wrapper;
+  }
+
+  if (item.status === 'ok') {
+    const badge = document.createElement('span');
+    badge.className = 'badge text-bg-success';
+    badge.textContent = 'OK';
+    wrapper.appendChild(badge);
+    return wrapper;
+  }
+
+  if (item.status === 'error') {
+    const badge = document.createElement('span');
+    badge.className = 'badge text-bg-danger';
+    badge.textContent = 'KO';
+    wrapper.appendChild(badge);
+
+    if (item.message) {
+      const message = document.createElement('div');
+      message.className = 'text-danger mt-1';
+      message.textContent = item.message;
+      wrapper.appendChild(message);
+    }
+    return wrapper;
+  }
+
+  wrapper.className = 'small text-muted';
+  wrapper.textContent = '-';
+  return wrapper;
+}
+
+function updateBulkDeleteSummary() {
+  const { summaryEl } = getBulkDeleteElements();
+  if (!summaryEl) return;
+
+  const totalCount = bulkDeleteState.items.length;
+  const okCount = bulkDeleteState.items.filter((item) => item.status === 'ok').length;
+  const errorCount = bulkDeleteState.items.filter((item) => item.status === 'error').length;
+
+  summaryEl.textContent = t('bulk_delete_dancers_summary', 'Total: {total} | OK: {ok} | KO: {ko}')
+    .replace('{total}', totalCount)
+    .replace('{ok}', okCount)
+    .replace('{ko}', errorCount);
+}
+
+function updateBulkDeleteControls() {
+  const { closeBtn, closeTopBtn, deleteBtn } = getBulkDeleteElements();
+  const hasItems = bulkDeleteState.items.length > 0;
+
+  if (closeBtn) {
+    closeBtn.disabled = bulkDeleteState.isProcessing;
+  }
+  if (closeTopBtn) {
+    closeTopBtn.disabled = bulkDeleteState.isProcessing;
+  }
+  if (deleteBtn) {
+    deleteBtn.disabled = bulkDeleteState.isProcessing || !hasItems || bulkDeleteState.hasExecuted;
+    deleteBtn.textContent = bulkDeleteState.isProcessing
+      ? t('bulk_delete_dancers_deleting', 'Deleting...')
+      : t('delete', 'Delete');
+  }
+}
+
+function renderBulkDeleteDancersList() {
+  const { tableWrap, tableBody, totalEl, emptyState } = getBulkDeleteElements();
+  if (!tableBody || !totalEl || !emptyState) return;
+
+  tableBody.innerHTML = '';
+  totalEl.textContent = `${bulkDeleteState.items.length}`;
+
+  bulkDeleteState.items.forEach((item) => {
+    const row = document.createElement('tr');
+    row.dataset.dancerId = item.dancerId;
+
+    const nameCell = document.createElement('td');
+    nameCell.className = 'align-middle';
+    nameCell.textContent = item.dancer?.name || '-';
+
+    const categoryCell = document.createElement('td');
+    categoryCell.className = 'align-middle';
+    categoryCell.textContent = item.dancer?.category_name || '-';
+
+    const stylesCell = document.createElement('td');
+    stylesCell.className = 'align-middle bulk-delete-styles';
+    if (Array.isArray(item.dancer?.styles) && item.dancer.styles.length > 0) {
+      item.dancer.styles.forEach((style) => {
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-warning text-dark';
+        badge.textContent = style?.name || `${style || ''}`;
+        stylesCell.appendChild(badge);
+      });
+    } else {
+      const badge = document.createElement('span');
+      badge.className = 'badge bg-secondary';
+      badge.textContent = t('no_styles', 'No Styles');
+      stylesCell.appendChild(badge);
+    }
+
+    const statusCell = document.createElement('td');
+    statusCell.className = 'align-middle bulk-delete-status-cell';
+    statusCell.dataset.role = 'status';
+    statusCell.appendChild(buildBulkDeleteStatusContent(item));
+
+    row.appendChild(nameCell);
+    row.appendChild(categoryCell);
+    row.appendChild(stylesCell);
+    row.appendChild(statusCell);
+    tableBody.appendChild(row);
+  });
+
+  if (tableWrap) {
+    tableWrap.classList.toggle('d-none', bulkDeleteState.items.length === 0);
+  }
+  emptyState.classList.toggle('d-none', bulkDeleteState.items.length > 0);
+  updateBulkDeleteSummary();
+  updateBulkDeleteControls();
+}
+
+function setBulkDeleteItemStatus(dancerId, status, message = '') {
+  const item = bulkDeleteState.items.find((entry) => entry.dancerId === String(dancerId));
+  if (!item) return;
+
+  item.status = status;
+  item.message = message;
+
+  const { tableBody } = getBulkDeleteElements();
+  const row = tableBody
+    ? Array.from(tableBody.querySelectorAll('tr')).find((candidate) => candidate.dataset.dancerId === String(dancerId))
+    : null;
+  const statusCell = row?.querySelector('[data-role="status"]');
+  if (statusCell) {
+    statusCell.replaceChildren(buildBulkDeleteStatusContent(item));
+  }
+
+  updateBulkDeleteSummary();
+}
+
+function resetBulkDeleteState() {
+  bulkDeleteState.items = [];
+  bulkDeleteState.isProcessing = false;
+  bulkDeleteState.hasExecuted = false;
+  bulkDeleteState.deletedCount = 0;
+  bulkDeleteState.pendingReload = false;
+  renderBulkDeleteDancersList();
+  updateBulkDeleteButtonState();
+}
+
+function openBulkDeleteDancersModal() {
+  if (!bulkDeleteState.modal) return;
+
+  bulkDeleteState.items = getFilteredDancers().map((dancer) => ({
+    dancerId: String(dancer.id),
+    dancer,
+    status: 'pending',
+    message: ''
+  }));
+  bulkDeleteState.isProcessing = false;
+  bulkDeleteState.hasExecuted = false;
+  bulkDeleteState.deletedCount = 0;
+  bulkDeleteState.pendingReload = false;
+
+  renderBulkDeleteDancersList();
+  bulkDeleteState.modal.show();
+}
+
+function resetDancerModalElement(modalEl) {
+  if (!modalEl) return;
+  modalEl.classList.remove('show');
+  modalEl.style.display = 'none';
+  modalEl.setAttribute('aria-hidden', 'true');
+  modalEl.removeAttribute('aria-modal');
+  modalEl.removeAttribute('role');
+}
+
+function cleanupDancerModalArtifacts({ forceFullCleanup = false } = {}) {
+  const deleteModalEl = document.getElementById('deleteModal');
+  const bulkDeleteModalEl = document.getElementById('bulkDeleteDancersModal');
+  if (deleteModalEl) {
+    deleteModalEl.classList.remove('bulk-delete-confirm-modal');
+  }
+
+  document.querySelectorAll('.modal-backdrop.bulk-delete-confirm-backdrop').forEach((backdrop) => {
+    backdrop.classList.remove('bulk-delete-confirm-backdrop');
+  });
+
+  const otherVisibleModals = Array.from(document.querySelectorAll('.modal.show')).filter((modalEl) => {
+    return modalEl.id !== 'deleteModal';
+  });
+
+  if (forceFullCleanup || otherVisibleModals.length === 0) {
+    const deleteModalInstance = deleteModalEl ? bootstrap.Modal.getInstance(deleteModalEl) : null;
+    const bulkDeleteModalInstance = bulkDeleteModalEl ? bootstrap.Modal.getInstance(bulkDeleteModalEl) : null;
+
+    deleteModalInstance?.dispose();
+    bulkDeleteModalInstance?.dispose();
+
+    resetDancerModalElement(deleteModalEl);
+    resetDancerModalElement(bulkDeleteModalEl);
+
+    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
+      backdrop.remove();
+    });
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+
+    if (bulkDeleteModalEl) {
+      bulkDeleteState.modal = new bootstrap.Modal(bulkDeleteModalEl);
+    }
+  }
+}
+
+function showDeleteConfirmationModal(message, { stacked = false, parentModalEl = null } = {}) {
+  return new Promise((resolve) => {
+    const modalEl = document.getElementById('deleteModal');
+    const messageEl = document.getElementById('deleteModalMessage');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+    if (!modalEl || !messageEl || !confirmBtn) {
+      resolve(false);
+      return;
+    }
+
+    if (!stacked) {
+      cleanupDancerModalArtifacts({ forceFullCleanup: true });
+    }
+
+    const deleteModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    let confirmed = false;
+    const stackedModalClass = 'bulk-delete-confirm-modal';
+    const stackedBackdropClass = 'bulk-delete-confirm-backdrop';
+
+    messageEl.innerHTML = message;
+    confirmBtn.onclick = () => {
+      confirmed = true;
+      deleteModal.hide();
+    };
+
+    if (stacked) {
+      modalEl.classList.add(stackedModalClass);
+    }
+
+    modalEl.addEventListener('shown.bs.modal', () => {
+      if (!stacked) return;
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      const latestBackdrop = backdrops[backdrops.length - 1];
+      latestBackdrop?.classList.add(stackedBackdropClass);
+    }, { once: true });
+
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      confirmBtn.onclick = null;
+      const parentModalStillOpen = Boolean(stacked && parentModalEl?.classList.contains('show'));
+      if (stacked) {
+        modalEl.classList.remove(stackedModalClass);
+        document.querySelectorAll(`.modal-backdrop.${stackedBackdropClass}`).forEach((backdrop) => {
+          backdrop.classList.remove(stackedBackdropClass);
+        });
+        if (parentModalStillOpen) {
+          document.body.classList.add('modal-open');
+        }
+      }
+      cleanupDancerModalArtifacts({ forceFullCleanup: !parentModalStillOpen });
+      resolve(confirmed);
+    }, { once: true });
+
+    deleteModal.show();
+  });
+}
+
+async function confirmAndRunBulkDelete() {
+  if (!bulkDeleteState.modal || bulkDeleteState.isProcessing || bulkDeleteState.hasExecuted || !bulkDeleteState.items.length) {
+    return;
+  }
+
+  const confirmMessage = t(
+    'bulk_delete_dancers_confirm',
+    'Are you sure you want to delete the {count} displayed participants?'
+  ).replace('{count}', `<strong>${bulkDeleteState.items.length}</strong>`);
+
+  const confirmed = await showDeleteConfirmationModal(confirmMessage, {
+    stacked: true,
+    parentModalEl: document.getElementById('bulkDeleteDancersModal')
+  });
+  if (!confirmed) return;
+
+  bulkDeleteState.isProcessing = true;
+  updateBulkDeleteControls();
+
+  let deletedCount = 0;
+
+  for (const item of bulkDeleteState.items) {
+    setBulkDeleteItemStatus(item.dancerId, 'processing');
+    const result = await deleteDancer(item.dancerId, { showErrorModal: false });
+
+    if (result.ok) {
+      deletedCount += 1;
+      setBulkDeleteItemStatus(item.dancerId, 'ok');
+    } else {
+      setBulkDeleteItemStatus(
+        item.dancerId,
+        'error',
+        result.error || t('bulk_delete_dancers_delete_error', 'Error deleting participant.')
+      );
+    }
+  }
+
+  bulkDeleteState.deletedCount = deletedCount;
+  bulkDeleteState.pendingReload = deletedCount > 0;
+  bulkDeleteState.isProcessing = false;
+  bulkDeleteState.hasExecuted = true;
+  updateBulkDeleteControls();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
@@ -158,6 +540,39 @@ document.addEventListener('DOMContentLoaded', async function () {
   const analyzeParticipantsFileBtn = document.getElementById('analyzeParticipantsFileBtn');
   const importCreateMissingEntitiesCheck = document.getElementById('importCreateMissingEntitiesCheck');
   const importParticipantsBtn = document.getElementById('importParticipantsBtn');
+  const openBulkDeleteDancersBtn = document.getElementById('openBulkDeleteDancersBtn');
+  const bulkDeleteModalElement = document.getElementById('bulkDeleteDancersModal');
+  const bulkDeleteDancersDeleteBtn = document.getElementById('bulkDeleteDancersDeleteBtn');
+  const bulkDeleteDancersCloseTopBtn = document.getElementById('bulkDeleteDancersCloseTopBtn');
+
+  if (bulkDeleteDancersCloseTopBtn) {
+    bulkDeleteDancersCloseTopBtn.setAttribute('aria-label', t('close', 'Close'));
+  }
+
+  if (bulkDeleteModalElement) {
+    bulkDeleteState.modal = new bootstrap.Modal(bulkDeleteModalElement);
+    bulkDeleteModalElement.addEventListener('hidden.bs.modal', async () => {
+      const shouldReload = bulkDeleteState.pendingReload;
+      cleanupDancerModalArtifacts({ forceFullCleanup: true });
+      resetBulkDeleteState();
+
+      if (shouldReload) {
+        await fetchDancersFromAPI();
+      }
+    });
+  }
+
+  if (openBulkDeleteDancersBtn) {
+    openBulkDeleteDancersBtn.addEventListener('click', () => {
+      openBulkDeleteDancersModal();
+    });
+  }
+
+  if (bulkDeleteDancersDeleteBtn) {
+    bulkDeleteDancersDeleteBtn.addEventListener('click', async () => {
+      await confirmAndRunBulkDelete();
+    });
+  }
 
   const setCodeLabel = (value, forceShow = false) => {
     if (!codeLabel) return;
@@ -252,27 +667,20 @@ document.addEventListener('DOMContentLoaded', async function () {
       editModal.show();
 
     } else if (event.target.closest('.btn-delete-dancer')) {
-
       const button = event.target.closest('.btn-delete-dancer');
-
       const tr = button.closest('tr');
       const id = tr.dataset.id;
       const dancer = dancers.find(d => d.id == id);
-
-      dancerIdToDelete = id;
+      if (!dancer) return;
 
       const message = `${t('delete_question')} <strong>${dancer.name}</strong>?`;
-      document.getElementById('deleteModalMessage').innerHTML = message;
+      const confirmed = await showDeleteConfirmationModal(message);
+      if (!confirmed) return;
 
-      const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-      deleteModal.show();
-
-      document.getElementById('confirmDeleteBtn').onclick = async () => {
-        await deleteDancer(dancerIdToDelete);
+      const result = await deleteDancer(id);
+      if (result.ok) {
         await fetchDancersFromAPI();
-        applyFilter(); 
-        deleteModal.hide();
-      };
+      }
 
     }
 
@@ -413,6 +821,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   resetImportParticipantsState();
+  resetBulkDeleteState();
 
 });
 
@@ -654,50 +1063,49 @@ async function getDancerById(id) {
   }
 }
 
-async function deleteDancer(dancerIdToDelete) {
+async function deleteDancer(dancerIdToDelete, { showErrorModal = true } = {}) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/dancers/${dancerIdToDelete}`, {
       method: 'DELETE'
     });
 
-    if (!res.ok) {
-      const errData = await res.json();
-      showMessageModal(errData.error || 'Error deleting dancer', 'Error');
-      return;
+    let errData = null;
+    try {
+      errData = await res.json();
+    } catch (parseError) {
+      errData = null;
     }
 
+    if (!res.ok) {
+      const errorMessage = errData?.error || errData?.message || t('bulk_delete_dancers_delete_error', 'Error deleting participant.');
+      if (showErrorModal) {
+        showMessageModal(errorMessage, t('error', 'Error'));
+      }
+      return { ok: false, error: errorMessage };
+    }
+    return { ok: true };
   } catch (error) {
     console.error('Error al eliminar la bailarina:', error);
+    const errorMessage = error?.message || t('bulk_delete_dancers_delete_error', 'Error deleting participant.');
+    if (showErrorModal) {
+      showMessageModal(errorMessage, t('error', 'Error'));
+    }
+    return { ok: false, error: errorMessage };
   }
 }
 
 function applyFilter() {
-  const filterCategory = document.getElementById('categoryFilter').value.toLowerCase();
-  const hasClubs = shouldShowDancerClubs();
-  const filterClub = hasClubs ? (document.getElementById('clubFilter')?.value || '') : '';
-  const filterStyle = document.getElementById('styleFilter').value;
-  const rows = document.querySelectorAll('#dancersTable tr');
+  const rows = Array.from(document.querySelectorAll('#dancersTable tr'));
+  const visibleIds = new Set(getFilteredDancers().map((dancer) => String(dancer.id)));
 
-  rows.forEach(row => {
-    const category = row.children[1]?.textContent.trim().toLowerCase();
-    const club_id = row.dataset.club_id;
-    const styleIds = (row.dataset.style_ids || '').split(',').filter(Boolean);
-
-    if (
-      (!filterCategory || category === filterCategory) &&
-      (!filterClub || club_id === filterClub) &&
-      (!filterStyle || styleIds.includes(filterStyle))
-    ) {
-      row.classList.remove('d-none');
-    } else {
-      row.classList.add('d-none');
-    }
+  rows.forEach((row) => {
+    row.classList.toggle('d-none', !visibleIds.has(String(row.dataset.id)));
   });
 
   // Mostrar o no el empty state
-  const visibleRows = Array.from(rows).filter(row => !row.classList.contains('d-none'));
-  updateDancersCounter(rows.length, visibleRows.length);
-  document.getElementById('emptyState').classList.toggle('d-none', visibleRows.length > 0);
+  updateDancersCounter(rows.length, visibleIds.size);
+  updateBulkDeleteButtonState(visibleIds.size);
+  document.getElementById('emptyState').classList.toggle('d-none', visibleIds.size > 0);
 }
 
 function updateDancersCounter(totalCount, visibleCount) {

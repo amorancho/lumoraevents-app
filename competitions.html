@@ -35,6 +35,15 @@
       max-height: 140px;
       overflow-y: auto;
     }
+    .bulk-delete-status-cell {
+      min-width: 220px;
+    }
+    #deleteModal.bulk-delete-confirm-modal {
+      z-index: 1065;
+    }
+    .modal-backdrop.bulk-delete-confirm-backdrop {
+      z-index: 1060;
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -112,6 +121,9 @@
               </select>
               <span id="count-competitions" class="badge bg-secondary rounded-pill">0 Comp.</span>
               <span id="count-participants" class="badge bg-secondary rounded-pill">0 Part.</span>
+              <button id="openBulkDeleteCompetitionsBtn" type="button" class="btn btn-outline-danger btn-sm" data-i18n="bulk_delete_competitions_button">
+                Delete Competitions
+              </button>
             </div>
           </div>
       <div class="card-body p-2">
@@ -163,6 +175,50 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteBtn" data-i18n="delete">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="bulkDeleteCompetitionsModal" tabindex="-1" aria-labelledby="bulkDeleteCompetitionsModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="bulkDeleteCompetitionsModalLabel" data-i18n="bulk_delete_competitions_modal_title">Delete Competitions</h5>
+          <button type="button" class="btn-close" id="bulkDeleteCompetitionsCloseTopBtn" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+            <div class="text-muted small" data-i18n="bulk_delete_competitions_info">This list contains the competitions currently shown in the table.</div>
+            <div class="d-flex flex-wrap gap-3 fw-semibold">
+              <div><span data-i18n="bulk_delete_competitions_total">Total competitions</span>: <span id="bulkDeleteCompetitionsTotal">0</span></div>
+              <div><span data-i18n="bulk_delete_competitions_total_participants">Total participants</span>: <span id="bulkDeleteCompetitionsParticipantsTotal">0</span></div>
+            </div>
+          </div>
+
+          <div id="bulkDeleteCompetitionsTableWrap" class="table-responsive border rounded">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th data-i18n="col_category">Category</th>
+                  <th data-i18n="col_style">Style</th>
+                  <th data-i18n="col_num_dancers">#Participants</th>
+                  <th data-i18n="bulk_delete_competitions_status">Status</th>
+                </tr>
+              </thead>
+              <tbody id="bulkDeleteCompetitionsTableBody"></tbody>
+            </table>
+          </div>
+
+          <div id="bulkDeleteCompetitionsEmptyState" class="alert alert-light border text-muted mb-0 d-none" data-i18n="bulk_delete_competitions_empty">
+            No competitions are visible with the current filters.
+          </div>
+
+          <div id="bulkDeleteCompetitionsSummary" class="small text-muted mt-3">Total: 0 | OK: 0 | KO: 0</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="bulkDeleteCompetitionsCloseBtn" data-bs-dismiss="modal" data-i18n="close">Close</button>
+          <button type="button" class="btn btn-danger" id="bulkDeleteCompetitionsDeleteBtn" data-i18n="delete">Delete</button>
         </div>
       </div>
     </div>

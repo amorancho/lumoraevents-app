@@ -178,5 +178,17 @@
   "max_times_summary_categories": "{count} categories",
   "max_times_summary_styles": "{count} styles",
   "max_times_recalculate_notice": "If you modify a competition (category/style) that belongs to a Schedule Configurator block, affected blocks will be recalculated."
+  ,
+  "bulk_delete_competitions_button": "Delete Competitions",
+  "bulk_delete_competitions_modal_title": "Delete Competitions",
+  "bulk_delete_competitions_info": "This list contains the competitions currently shown in the table.",
+  "bulk_delete_competitions_total": "Total competitions",
+  "bulk_delete_competitions_total_participants": "Total participants",
+  "bulk_delete_competitions_status": "Status",
+  "bulk_delete_competitions_empty": "No competitions are visible with the current filters.",
+  "bulk_delete_competitions_confirm": "Are you sure you want to delete the {count} displayed competitions?",
+  "bulk_delete_competitions_deleting": "Deleting...",
+  "bulk_delete_competitions_delete_error": "Error deleting competition.",
+  "bulk_delete_competitions_summary": "Total: {total} | OK: {ok} | KO: {ko}"
 }
 

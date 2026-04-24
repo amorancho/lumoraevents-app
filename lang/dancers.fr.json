@@ -67,5 +67,16 @@
   "import_create_error": "Impossible de creer les participants.",
   "import_create_success_message": "Categories creees: {categories}. Styles crees: {styles}. Participants crees: {participants}.",
   "import_no_participants_to_create": "Aucun participant a creer.",
-  "import_missing_mapping_error": "Impossible de resoudre le mappage categorie/style pour certains participants: {participants}"
+  "import_missing_mapping_error": "Impossible de resoudre le mappage categorie/style pour certains participants: {participants}",
+  "close": "Fermer",
+  "bulk_delete_dancers_button": "Supprimer participants",
+  "bulk_delete_dancers_modal_title": "Supprimer participants",
+  "bulk_delete_dancers_info": "Cette liste contient les participants actuellement affiches dans le tableau.",
+  "bulk_delete_dancers_total": "Total participants",
+  "bulk_delete_dancers_status": "Statut",
+  "bulk_delete_dancers_empty": "Aucun participant visible avec les filtres actuels.",
+  "bulk_delete_dancers_confirm": "Etes-vous sur de vouloir supprimer les {count} participants affiches ?",
+  "bulk_delete_dancers_deleting": "Suppression...",
+  "bulk_delete_dancers_delete_error": "Erreur lors de la suppression du participant.",
+  "bulk_delete_dancers_summary": "Total: {total} | OK: {ok} | KO: {ko}"
 }

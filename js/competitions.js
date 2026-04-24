@@ -31,6 +31,14 @@ const substituteJudgeState = {
   selectedCompetitionIds: new Set(),
   loading: false
 };
+const bulkDeleteCompetitionsState = {
+  modal: null,
+  items: [],
+  isProcessing: false,
+  hasExecuted: false,
+  deletedCount: 0,
+  pendingReload: false
+};
 
 const convertStatus = {
   'OPE': 'OPEN',
@@ -49,6 +57,364 @@ const statusColor = {
 var title = 'Competitions';
 
 const allowedRoles = ["admin", "organizer"];
+
+function getCurrentCompetitionFilters() {
+  return {
+    category: `${document.getElementById('categoryFilter')?.value || ''}`.trim().toLowerCase(),
+    style: `${document.getElementById('styleFilter')?.value || ''}`.trim().toLowerCase()
+  };
+}
+
+function competitionMatchesFilters(competition, filters = getCurrentCompetitionFilters()) {
+  const category = `${competition?.category_name || ''}`.trim().toLowerCase();
+  const style = `${competition?.style_name || ''}`.trim().toLowerCase();
+  return (!filters.category || category === filters.category) && (!filters.style || style === filters.style);
+}
+
+function getFilteredCompetitions() {
+  const filters = getCurrentCompetitionFilters();
+  return (Array.isArray(competitions) ? competitions : []).filter((competition) => competitionMatchesFilters(competition, filters));
+}
+
+function getBulkDeleteCompetitionElements() {
+  return {
+    tableWrap: document.getElementById('bulkDeleteCompetitionsTableWrap'),
+    tableBody: document.getElementById('bulkDeleteCompetitionsTableBody'),
+    totalEl: document.getElementById('bulkDeleteCompetitionsTotal'),
+    participantsTotalEl: document.getElementById('bulkDeleteCompetitionsParticipantsTotal'),
+    emptyState: document.getElementById('bulkDeleteCompetitionsEmptyState'),
+    summaryEl: document.getElementById('bulkDeleteCompetitionsSummary'),
+    closeBtn: document.getElementById('bulkDeleteCompetitionsCloseBtn'),
+    closeTopBtn: document.getElementById('bulkDeleteCompetitionsCloseTopBtn'),
+    deleteBtn: document.getElementById('bulkDeleteCompetitionsDeleteBtn')
+  };
+}
+
+function updateBulkDeleteCompetitionsButtonState(visibleCount = getFilteredCompetitions().length) {
+  const button = document.getElementById('openBulkDeleteCompetitionsBtn');
+  if (!button) return;
+  button.disabled = bulkDeleteCompetitionsState.isProcessing || visibleCount === 0 || getEvent()?.status === 'finished';
+}
+
+function buildBulkDeleteCompetitionStatusContent(item) {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'small';
+
+  if (item.status === 'processing') {
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner-border spinner-border-sm text-danger me-2';
+    spinner.setAttribute('aria-hidden', 'true');
+    wrapper.appendChild(spinner);
+
+    const text = document.createElement('span');
+    text.textContent = t('bulk_delete_competitions_deleting', 'Deleting...');
+    wrapper.appendChild(text);
+    return wrapper;
+  }
+
+  if (item.status === 'ok') {
+    const badge = document.createElement('span');
+    badge.className = 'badge text-bg-success';
+    badge.textContent = 'OK';
+    wrapper.appendChild(badge);
+    return wrapper;
+  }
+
+  if (item.status === 'error') {
+    const badge = document.createElement('span');
+    badge.className = 'badge text-bg-danger';
+    badge.textContent = 'KO';
+    wrapper.appendChild(badge);
+
+    if (item.message) {
+      const message = document.createElement('div');
+      message.className = 'text-danger mt-1';
+      message.textContent = item.message;
+      wrapper.appendChild(message);
+    }
+    return wrapper;
+  }
+
+  wrapper.className = 'small text-muted';
+  wrapper.textContent = '-';
+  return wrapper;
+}
+
+function updateBulkDeleteCompetitionsSummary() {
+  const { summaryEl } = getBulkDeleteCompetitionElements();
+  if (!summaryEl) return;
+
+  const totalCount = bulkDeleteCompetitionsState.items.length;
+  const okCount = bulkDeleteCompetitionsState.items.filter((item) => item.status === 'ok').length;
+  const errorCount = bulkDeleteCompetitionsState.items.filter((item) => item.status === 'error').length;
+
+  summaryEl.textContent = t('bulk_delete_competitions_summary', 'Total: {total} | OK: {ok} | KO: {ko}')
+    .replace('{total}', totalCount)
+    .replace('{ok}', okCount)
+    .replace('{ko}', errorCount);
+}
+
+function updateBulkDeleteCompetitionsControls() {
+  const { closeBtn, closeTopBtn, deleteBtn } = getBulkDeleteCompetitionElements();
+  const hasItems = bulkDeleteCompetitionsState.items.length > 0;
+
+  if (closeBtn) {
+    closeBtn.disabled = bulkDeleteCompetitionsState.isProcessing;
+  }
+  if (closeTopBtn) {
+    closeTopBtn.disabled = bulkDeleteCompetitionsState.isProcessing;
+  }
+  if (deleteBtn) {
+    deleteBtn.disabled = bulkDeleteCompetitionsState.isProcessing || !hasItems || bulkDeleteCompetitionsState.hasExecuted;
+    deleteBtn.textContent = bulkDeleteCompetitionsState.isProcessing
+      ? t('bulk_delete_competitions_deleting', 'Deleting...')
+      : t('delete', 'Delete');
+  }
+}
+
+function renderBulkDeleteCompetitionsList() {
+  const { tableWrap, tableBody, totalEl, participantsTotalEl, emptyState } = getBulkDeleteCompetitionElements();
+  if (!tableBody || !totalEl || !participantsTotalEl || !emptyState) return;
+
+  tableBody.innerHTML = '';
+
+  const participantsTotal = bulkDeleteCompetitionsState.items.reduce((sum, item) => {
+    return sum + (Number(item.competition?.num_dancers) || 0);
+  }, 0);
+
+  totalEl.textContent = `${bulkDeleteCompetitionsState.items.length}`;
+  participantsTotalEl.textContent = `${participantsTotal}`;
+
+  bulkDeleteCompetitionsState.items.forEach((item) => {
+    const row = document.createElement('tr');
+    row.dataset.competitionId = item.competitionId;
+
+    const categoryCell = document.createElement('td');
+    categoryCell.className = 'align-middle';
+    categoryCell.textContent = item.competition?.category_name || '-';
+
+    const styleCell = document.createElement('td');
+    styleCell.className = 'align-middle';
+    styleCell.textContent = item.competition?.style_name || '-';
+
+    const dancersCell = document.createElement('td');
+    dancersCell.className = 'align-middle';
+    dancersCell.textContent = `${Number(item.competition?.num_dancers) || 0}`;
+
+    const statusCell = document.createElement('td');
+    statusCell.className = 'align-middle bulk-delete-status-cell';
+    statusCell.dataset.role = 'status';
+    statusCell.appendChild(buildBulkDeleteCompetitionStatusContent(item));
+
+    row.appendChild(categoryCell);
+    row.appendChild(styleCell);
+    row.appendChild(dancersCell);
+    row.appendChild(statusCell);
+    tableBody.appendChild(row);
+  });
+
+  if (tableWrap) {
+    tableWrap.classList.toggle('d-none', bulkDeleteCompetitionsState.items.length === 0);
+  }
+  emptyState.classList.toggle('d-none', bulkDeleteCompetitionsState.items.length > 0);
+  updateBulkDeleteCompetitionsSummary();
+  updateBulkDeleteCompetitionsControls();
+}
+
+function setBulkDeleteCompetitionItemStatus(competitionId, status, message = '') {
+  const item = bulkDeleteCompetitionsState.items.find((entry) => entry.competitionId === String(competitionId));
+  if (!item) return;
+
+  item.status = status;
+  item.message = message;
+
+  const { tableBody } = getBulkDeleteCompetitionElements();
+  const row = tableBody
+    ? Array.from(tableBody.querySelectorAll('tr')).find((candidate) => candidate.dataset.competitionId === String(competitionId))
+    : null;
+  const statusCell = row?.querySelector('[data-role="status"]');
+  if (statusCell) {
+    statusCell.replaceChildren(buildBulkDeleteCompetitionStatusContent(item));
+  }
+
+  updateBulkDeleteCompetitionsSummary();
+}
+
+function resetBulkDeleteCompetitionsState() {
+  bulkDeleteCompetitionsState.items = [];
+  bulkDeleteCompetitionsState.isProcessing = false;
+  bulkDeleteCompetitionsState.hasExecuted = false;
+  bulkDeleteCompetitionsState.deletedCount = 0;
+  bulkDeleteCompetitionsState.pendingReload = false;
+  renderBulkDeleteCompetitionsList();
+  updateBulkDeleteCompetitionsButtonState();
+}
+
+function openBulkDeleteCompetitionsModal() {
+  if (!bulkDeleteCompetitionsState.modal) return;
+
+  bulkDeleteCompetitionsState.items = getFilteredCompetitions().map((competition) => ({
+    competitionId: String(competition.id),
+    competition,
+    status: 'pending',
+    message: ''
+  }));
+  bulkDeleteCompetitionsState.isProcessing = false;
+  bulkDeleteCompetitionsState.hasExecuted = false;
+  bulkDeleteCompetitionsState.deletedCount = 0;
+  bulkDeleteCompetitionsState.pendingReload = false;
+
+  renderBulkDeleteCompetitionsList();
+  bulkDeleteCompetitionsState.modal.show();
+}
+
+function resetCompetitionModalElement(modalEl) {
+  if (!modalEl) return;
+  modalEl.classList.remove('show');
+  modalEl.style.display = 'none';
+  modalEl.setAttribute('aria-hidden', 'true');
+  modalEl.removeAttribute('aria-modal');
+  modalEl.removeAttribute('role');
+}
+
+function cleanupCompetitionModalArtifacts({ forceFullCleanup = false } = {}) {
+  const deleteModalEl = document.getElementById('deleteModal');
+  const bulkDeleteModalEl = document.getElementById('bulkDeleteCompetitionsModal');
+  if (deleteModalEl) {
+    deleteModalEl.classList.remove('bulk-delete-confirm-modal');
+  }
+
+  document.querySelectorAll('.modal-backdrop.bulk-delete-confirm-backdrop').forEach((backdrop) => {
+    backdrop.classList.remove('bulk-delete-confirm-backdrop');
+  });
+
+  const otherVisibleModals = Array.from(document.querySelectorAll('.modal.show')).filter((modalEl) => {
+    return modalEl.id !== 'deleteModal';
+  });
+
+  if (forceFullCleanup || otherVisibleModals.length === 0) {
+    const deleteModalInstance = deleteModalEl ? bootstrap.Modal.getInstance(deleteModalEl) : null;
+    const bulkDeleteModalInstance = bulkDeleteModalEl ? bootstrap.Modal.getInstance(bulkDeleteModalEl) : null;
+
+    deleteModalInstance?.dispose();
+    bulkDeleteModalInstance?.dispose();
+
+    resetCompetitionModalElement(deleteModalEl);
+    resetCompetitionModalElement(bulkDeleteModalEl);
+
+    document.querySelectorAll('.modal-backdrop').forEach((backdrop) => {
+      backdrop.remove();
+    });
+    document.body.classList.remove('modal-open');
+    document.body.style.removeProperty('overflow');
+    document.body.style.removeProperty('padding-right');
+
+    if (bulkDeleteModalEl) {
+      bulkDeleteCompetitionsState.modal = new bootstrap.Modal(bulkDeleteModalEl);
+    }
+  }
+}
+
+function showCompetitionDeleteConfirmationModal(message, { stacked = false, parentModalEl = null } = {}) {
+  return new Promise((resolve) => {
+    const modalEl = document.getElementById('deleteModal');
+    const messageEl = document.getElementById('deleteModalMessage');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+    if (!modalEl || !messageEl || !confirmBtn) {
+      resolve(false);
+      return;
+    }
+
+    if (!stacked) {
+      cleanupCompetitionModalArtifacts({ forceFullCleanup: true });
+    }
+
+    const deleteModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    let confirmed = false;
+    const stackedModalClass = 'bulk-delete-confirm-modal';
+    const stackedBackdropClass = 'bulk-delete-confirm-backdrop';
+
+    messageEl.innerHTML = message;
+    confirmBtn.onclick = () => {
+      confirmed = true;
+      deleteModal.hide();
+    };
+
+    if (stacked) {
+      modalEl.classList.add(stackedModalClass);
+    }
+
+    modalEl.addEventListener('shown.bs.modal', () => {
+      if (!stacked) return;
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      const latestBackdrop = backdrops[backdrops.length - 1];
+      latestBackdrop?.classList.add(stackedBackdropClass);
+    }, { once: true });
+
+    modalEl.addEventListener('hidden.bs.modal', () => {
+      confirmBtn.onclick = null;
+      const parentModalStillOpen = Boolean(stacked && parentModalEl?.classList.contains('show'));
+      if (stacked) {
+        modalEl.classList.remove(stackedModalClass);
+        document.querySelectorAll(`.modal-backdrop.${stackedBackdropClass}`).forEach((backdrop) => {
+          backdrop.classList.remove(stackedBackdropClass);
+        });
+        if (parentModalStillOpen) {
+          document.body.classList.add('modal-open');
+        }
+      }
+      cleanupCompetitionModalArtifacts({ forceFullCleanup: !parentModalStillOpen });
+      resolve(confirmed);
+    }, { once: true });
+
+    deleteModal.show();
+  });
+}
+
+async function confirmAndRunBulkDeleteCompetitions() {
+  if (!bulkDeleteCompetitionsState.modal || bulkDeleteCompetitionsState.isProcessing || bulkDeleteCompetitionsState.hasExecuted || !bulkDeleteCompetitionsState.items.length) {
+    return;
+  }
+
+  const confirmMessage = t(
+    'bulk_delete_competitions_confirm',
+    'Are you sure you want to delete the {count} displayed competitions?'
+  ).replace('{count}', `<strong>${bulkDeleteCompetitionsState.items.length}</strong>`);
+
+  const confirmed = await showCompetitionDeleteConfirmationModal(confirmMessage, {
+    stacked: true,
+    parentModalEl: document.getElementById('bulkDeleteCompetitionsModal')
+  });
+  if (!confirmed) return;
+
+  bulkDeleteCompetitionsState.isProcessing = true;
+  updateBulkDeleteCompetitionsControls();
+
+  let deletedCount = 0;
+
+  for (const item of bulkDeleteCompetitionsState.items) {
+    setBulkDeleteCompetitionItemStatus(item.competitionId, 'processing');
+    const result = await deleteCompetition(item.competitionId, { showErrorModal: false });
+
+    if (result.ok) {
+      deletedCount += 1;
+      setBulkDeleteCompetitionItemStatus(item.competitionId, 'ok');
+    } else {
+      setBulkDeleteCompetitionItemStatus(
+        item.competitionId,
+        'error',
+        result.error || t('bulk_delete_competitions_delete_error', 'Error deleting competition.')
+      );
+    }
+  }
+
+  bulkDeleteCompetitionsState.deletedCount = deletedCount;
+  bulkDeleteCompetitionsState.pendingReload = deletedCount > 0;
+  bulkDeleteCompetitionsState.isProcessing = false;
+  bulkDeleteCompetitionsState.hasExecuted = true;
+  updateBulkDeleteCompetitionsControls();
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
 
@@ -538,6 +904,10 @@ async function saveCompetitionEdits(editModal) {
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureTranslationsReady();
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    const bulkDeleteCompetitionsModalEl = document.getElementById('bulkDeleteCompetitionsModal');
+    const openBulkDeleteCompetitionsBtn = document.getElementById('openBulkDeleteCompetitionsBtn');
+    const bulkDeleteCompetitionsDeleteBtn = document.getElementById('bulkDeleteCompetitionsDeleteBtn');
+    const bulkDeleteCompetitionsCloseTopBtn = document.getElementById('bulkDeleteCompetitionsCloseTopBtn');
     const scheduleConfigWarningModalEl = document.getElementById('scheduleConfigWarningModal');
     const scheduleConfigWarningModal = scheduleConfigWarningModalEl ? new bootstrap.Modal(scheduleConfigWarningModalEl) : null;
     const dancersOrderModal = new bootstrap.Modal(document.getElementById('dancersOrderModal'));
@@ -556,7 +926,36 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editMaxTimeInput = document.getElementById('editMaxTime');
     const scheduleConfigWarningMessageEl = document.getElementById('scheduleConfigWarningMessage');
 
-    document.addEventListener('click', (event) => {
+    if (bulkDeleteCompetitionsCloseTopBtn) {
+      bulkDeleteCompetitionsCloseTopBtn.setAttribute('aria-label', t('close', 'Close'));
+    }
+
+    if (bulkDeleteCompetitionsModalEl) {
+      bulkDeleteCompetitionsState.modal = new bootstrap.Modal(bulkDeleteCompetitionsModalEl);
+      bulkDeleteCompetitionsModalEl.addEventListener('hidden.bs.modal', async () => {
+        const shouldReload = bulkDeleteCompetitionsState.pendingReload;
+        cleanupCompetitionModalArtifacts({ forceFullCleanup: true });
+        resetBulkDeleteCompetitionsState();
+
+        if (shouldReload) {
+          await fetchCompetitionsFromAPI();
+        }
+      });
+    }
+
+    if (openBulkDeleteCompetitionsBtn) {
+      openBulkDeleteCompetitionsBtn.addEventListener('click', () => {
+        openBulkDeleteCompetitionsModal();
+      });
+    }
+
+    if (bulkDeleteCompetitionsDeleteBtn) {
+      bulkDeleteCompetitionsDeleteBtn.addEventListener('click', async () => {
+        await confirmAndRunBulkDeleteCompetitions();
+      });
+    }
+
+    document.addEventListener('click', async (event) => {
 
       const button = event.target.closest('.btn-edit-competition');
 
@@ -632,16 +1031,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (competition) {
           const message = `${t('confirm_delete_competition')} <strong>${competition.category_name} - ${competition.style_name}</strong>?`;
-          document.getElementById('deleteModalMessage').innerHTML = message;
+          const confirmed = await showCompetitionDeleteConfirmationModal(message);
+          if (!confirmed) return;
 
-          const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-          deleteModal.show();
-
-          document.getElementById('confirmDeleteBtn').onclick = async () => {
-            await deleteCompetition(competitionId);
-            fetchCompetitionsFromAPI();
-            deleteModal.hide();
-          };
+          const result = await deleteCompetition(competitionId);
+          if (result.ok) {
+            await fetchCompetitionsFromAPI();
+          }
         }
       }
 
@@ -1288,7 +1684,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     }
-  });
+
+    resetBulkDeleteCompetitionsState();
+});
 
 
 async function loadCategories() {
@@ -1516,6 +1914,63 @@ function updateCompetitionsCounter(totalCount, visibleCount, totalParticipants, 
     participantsCountEl.textContent = `${totalParticipants} Part.`;
   }
 }
+
+async function deleteCompetition(competitionIdToDelete, { showErrorModal = true } = {}) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/competitions/${competitionIdToDelete}`, {
+      method: 'DELETE'
+    });
+
+    let data = null;
+    try {
+      data = await res.json();
+    } catch (parseError) {
+      data = null;
+    }
+
+    if (!res.ok) {
+      const errorMessage = data?.error || data?.message || t('bulk_delete_competitions_delete_error', 'Error deleting competition.');
+      if (showErrorModal) {
+        showMessageModal(errorMessage, t('error_title', 'Error'));
+      }
+      return { ok: false, error: errorMessage };
+    }
+
+    return { ok: true };
+  } catch (error) {
+    console.error('Error deleting competition:', error);
+    const errorMessage = error?.message || t('bulk_delete_competitions_delete_error', 'Error deleting competition.');
+    if (showErrorModal) {
+      showMessageModal(errorMessage, t('error_title', 'Error'));
+    }
+    return { ok: false, error: errorMessage };
+  }
+}
+
+function applyCategoryFilter() {
+  const table = document.getElementById('competitionsTable');
+  if (!table) return;
+
+  const rows = Array.from(table.querySelectorAll('tr'));
+  const visibleCompetitions = getFilteredCompetitions();
+  const visibleIds = new Set(visibleCompetitions.map((competition) => String(competition.id)));
+
+  rows.forEach((row) => {
+    row.classList.toggle('d-none', !visibleIds.has(String(row.dataset.id)));
+  });
+
+  const totalParticipants = (Array.isArray(competitions) ? competitions : []).reduce((sum, competition) => {
+    return sum + (Number(competition?.num_dancers) || 0);
+  }, 0);
+  const visibleParticipants = visibleCompetitions.reduce((sum, competition) => {
+    return sum + (Number(competition?.num_dancers) || 0);
+  }, 0);
+
+  updateCompetitionsCounter(rows.length, visibleCompetitions.length, totalParticipants, visibleParticipants);
+  updateBulkDeleteCompetitionsButtonState(visibleCompetitions.length);
+  document.getElementById('emptyState')?.classList.toggle('d-none', visibleCompetitions.length > 0);
+}
+
 function renderJudgesAssignmentList() {
   const list = document.getElementById('judgesAssignmentList');
   if (!list) return;

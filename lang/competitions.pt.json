@@ -178,4 +178,16 @@
   "max_times_summary_categories": "{count} categorias",
   "max_times_summary_styles": "{count} estilos",
   "max_times_recalculate_notice": "Se uma competição (categoria/estilo) que pertence a um bloco do Configurador de Programação for modificada, os blocos afetados serão recalculados."
+  ,
+  "bulk_delete_competitions_button": "Eliminar competicoes",
+  "bulk_delete_competitions_modal_title": "Eliminar competicoes",
+  "bulk_delete_competitions_info": "Esta lista contem as competicoes atualmente visiveis na tabela.",
+  "bulk_delete_competitions_total": "Total competicoes",
+  "bulk_delete_competitions_total_participants": "Total participantes",
+  "bulk_delete_competitions_status": "Estado",
+  "bulk_delete_competitions_empty": "Nao ha competicoes visiveis com os filtros atuais.",
+  "bulk_delete_competitions_confirm": "Tem a certeza de que pretende eliminar as {count} competicoes mostradas?",
+  "bulk_delete_competitions_deleting": "A eliminar...",
+  "bulk_delete_competitions_delete_error": "Erro ao eliminar a competicao.",
+  "bulk_delete_competitions_summary": "Total: {total} | OK: {ok} | KO: {ko}"
 }
