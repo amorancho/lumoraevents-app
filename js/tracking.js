@@ -2430,7 +2430,6 @@ function renderCompetitions(competitions) {
                   ${parseJudgeFlag(j.head) ? `<span class="badge bg-dark ms-1" data-bs-toggle="tooltip" data-bs-placement="top" title="${t('judge_is_head', 'Head Judge')}">H</span>` : ''}
                 </th>
               `).join('')}              
-              <th>${t('voted')}</th>
               <th>${t('total')}</th>
               ${shouldShowAvgPlaceColumn() ? `<th>${t('avg_place')}</th>` : ''}
             </tr>
@@ -2602,7 +2601,6 @@ function renderCompetitions(competitions) {
           : `${totalScoreText}`;
         const avgPlaceText = formatAvgPlace(d.avg_place);
         tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}        
-        <td class="bg-light">${d.judges_voted}</td>
         <td class="bg-light">${totalCellHtml}</td>
         ${shouldShowAvgPlaceColumn() ? `<td class="bg-light">${avgPlaceText}</td>` : ''}</tr>`;
       });
