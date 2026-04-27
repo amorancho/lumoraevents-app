@@ -31,6 +31,27 @@ function formatAvgPlace(avgPlace) {
   return Number.isNaN(num) ? avgPlace : num;
 }
 
+function getClassificationDisplayPositions(clasification = []) {
+  const hasTiedPositions = getEvent().hasTiedPositions;
+  let previousScoreKey = null;
+  let previousPosition = 0;
+
+  return clasification.map((dancer, index) => {
+    const rawScore = dancer?.total_score;
+    const numericScore = Number(rawScore);
+    const scoreKey = Number.isNaN(numericScore) ? String(rawScore ?? '') : `num:${numericScore}`;
+
+    if (hasTiedPositions && index > 0 && scoreKey === previousScoreKey) {
+      return previousPosition;
+    }
+
+    const position = index + 1;
+    previousScoreKey = scoreKey;
+    previousPosition = position;
+    return position;
+  });
+}
+
 function getDancerClubLabel(dancer) {
   const clubName = String(dancer?.club_name || '').trim();
   const clubLocation = String(dancer?.club_location || '').trim();
@@ -265,6 +286,7 @@ function renderStyleCriteriaSummaryTable(styleObj) {
   const dancers = Array.isArray(styleObj?.clasification) ? styleObj.clasification : [];
   const criteria = collectStyleCriteriaSummary(styleObj);
   const showPenalties = shouldShowPenaltiesColumn();
+  const displayPositions = getClassificationDisplayPositions(dancers);
 
   if (!dancers.length || !criteria.length) {
     return `<div class="alert alert-info mb-0">${escapeHtml(t('no_style_voting_details', 'No voting details available for this style.'))}</div>`;
@@ -296,7 +318,7 @@ function renderStyleCriteriaSummaryTable(styleObj) {
 
     return `
       <tr>
-        <td class="text-center fw-semibold">${index + 1}</td>
+        <td class="text-center fw-semibold">${displayPositions[index]}</td>
         <td>${renderStyleTableDancerCell(dancer)}</td>
         <td class="text-center fw-semibold">${formatScoreValue(dancer?.total_score)}</td>
         ${penaltiesCell}
@@ -336,6 +358,7 @@ function renderStyleJudgeGroupedTable(styleObj) {
   const dancers = Array.isArray(styleObj?.clasification) ? styleObj.clasification : [];
   const judgeGroups = collectStyleJudgeGroups(styleObj);
   const showPenalties = shouldShowPenaltiesColumn();
+  const displayPositions = getClassificationDisplayPositions(dancers);
 
   if (!dancers.length || !judgeGroups.length) {
     return `<div class="alert alert-info mb-0">${escapeHtml(t('no_style_voting_details', 'No voting details available for this style.'))}</div>`;
@@ -388,7 +411,7 @@ function renderStyleJudgeGroupedTable(styleObj) {
 
     return `
       <tr>
-        <td class="text-center fw-semibold">${index + 1}</td>
+        <td class="text-center fw-semibold">${displayPositions[index]}</td>
         <td>${renderStyleTableDancerCell(dancer)}</td>
         <td class="text-center fw-semibold">${formatScoreValue(dancer?.total_score)}</td>
         ${penaltiesCell}
@@ -1157,18 +1180,22 @@ function renderStyleClassification(style) {
       </div>
   `;
 
+  const displayPositions = getClassificationDisplayPositions(style.clasification);
+
   style.clasification.forEach((dancer, index) => {
     const medals = ['🥇', '🥈', '🥉'];
-    const bg = index === 0 ? 'bg-warning' : index === 1 ? 'bg-secondary-subtle' : index === 2 ? 'bg-warning-subtle' : '';
-    const fw = index < 3 ? 'fw-bold' : '';
+    const displayPosition = displayPositions[index];
+    const bg = displayPosition === 1 ? 'bg-warning' : displayPosition === 2 ? 'bg-secondary-subtle' : displayPosition === 3 ? 'bg-warning-subtle' : '';
+    const fw = displayPosition <= 3 ? 'fw-bold' : '';
+    const medal = displayPosition >= 1 && displayPosition <= 3 ? medals[displayPosition - 1] : '';
     const clubLabel = getDancerClubLabel(dancer);
 
     html += `
       <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${bg} fs-6 ${fw} dancer-result" data-dancer-id="${dancer.dancer_id}">
-        <span class="me-2">${index + 1}</span>
+        <span class="me-2">${displayPosition}</span>
         ${getDancerFlagImgHtml(dancer.dancer_nationality, { className: 'me-2' })}
         <span class="me-auto d-flex align-items-baseline flex-wrap gap-1">
-          <span>${escapeHtml(dancer.dancer_name)} ${index < 3 ? medals[index] : ''}</span>
+          <span>${escapeHtml(dancer.dancer_name)} ${medal}</span>
           ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
         </span>
         <span class="badge bg-light text-dark rounded-pill">${formatScoreValue(dancer.total_score, { fixedDecimals: 1 })}</span>

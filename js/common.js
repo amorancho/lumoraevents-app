@@ -150,7 +150,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         criteriaPerJudge: data.criteria_per_judge === 1,
         hasJudgeFeedback: data.has_judge_feedback === 1,
         judgesVisResults: data.judges_vis_results === 1,
-        resultsFilter: data.results_filter
+        resultsFilter: data.results_filter,
+        hasTiedPositions: data.has_tied_positions === 1
       };
 
     }

@@ -3573,17 +3573,46 @@ function formatPositionCountKey(positionCount) {
   return entries.map(([pos, count]) => `${pos}:${count}`).join('|');
 }
 
+function getResultsDisplayPositions(results) {
+  const hasTiedPositions = getEvent().hasTiedPositions;
+  let previousScoreKey = null;
+  let previousPosition = 0;
+
+  return results.map((result, index) => {
+    const scoreKey = String(formatResultScore(result?.total_score));
+    if (hasTiedPositions && index > 0 && scoreKey === previousScoreKey) {
+      return previousPosition;
+    }
+
+    const position = index + 1;
+    previousScoreKey = scoreKey;
+    previousPosition = position;
+    return position;
+  });
+}
+
 function updateResultsPositions(tbody) {
   const rows = Array.from(tbody.querySelectorAll('tr'));
+  const hasTiedPositions = getEvent().hasTiedPositions;
+  let previousScoreKey = null;
+  let previousPosition = 0;
+
   rows.forEach((row, index) => {
     const cell = row.querySelector('td');
     if (!cell) return;
-    const positionText = `${index + 1}`;
+    const scoreKey = row.dataset.score || '';
+    const position = hasTiedPositions && index > 0 && scoreKey === previousScoreKey
+      ? previousPosition
+      : index + 1;
+    const positionText = `${position}`;
     if (row.dataset.draggable === 'true') {
       cell.innerHTML = `<i class="bi bi-grip-vertical text-muted me-2 tie-move-icon" aria-hidden="true"></i>${positionText}`;
     } else {
       cell.textContent = positionText;
     }
+
+    previousScoreKey = scoreKey;
+    previousPosition = position;
   });
 }
 
@@ -3743,6 +3772,7 @@ async function showResults(categoryId, styleId, status) {
       return;
     }
 
+    const displayPositions = getResultsDisplayPositions(results);
     const rows = results.map((r, index) => {
       const dancerFlagHtml = getDancerFlagImgHtml(r.dancer_nationality, {
         className: 'me-2',
@@ -3765,7 +3795,7 @@ async function showResults(categoryId, styleId, status) {
       const avgPlaceKey = r.avg_place ?? '';
       return `
         <tr data-score="${scoreKey}" data-dancer-id="${dancerId}" data-avg-place="${avgPlaceKey}" data-position-count-key="${positionCountKey}">
-          <td class="fw-semibold">${index + 1}</td>
+          <td class="fw-semibold">${displayPositions[index]}</td>
           <td class="results-dancer-cell">${dancerCell}</td>
           <td class="fw-semibold">${scoreValue}</td>
           ${showPositions ? `<td class="fw-semibold">${positionCountText}</td>` : ''}
