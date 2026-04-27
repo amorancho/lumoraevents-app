@@ -115,6 +115,9 @@ function buildEventFormTabs(){
         <button class="nav-link active" id="event-config-tab" data-bs-toggle="tab" data-bs-target="#event-config-pane" type="button" role="tab" aria-controls="event-config-pane" aria-selected="true">Configuración</button>
       </li>
       <li class="nav-item" role="presentation">
+        <button class="nav-link" id="event-registrations-tab" data-bs-toggle="tab" data-bs-target="#event-registrations-pane" type="button" role="tab" aria-controls="event-registrations-pane" aria-selected="false">Inscripciones</button>
+      </li>
+      <li class="nav-item" role="presentation">
         <button class="nav-link" id="event-notice-tab" data-bs-toggle="tab" data-bs-target="#event-notice-pane" type="button" role="tab" aria-controls="event-notice-pane" aria-selected="false">Avisos</button>
       </li>
       <li class="nav-item" role="presentation">
@@ -127,6 +130,9 @@ function buildEventFormTabs(){
     <div class="tab-content border border-top-0 rounded-bottom p-3">
       <div class="tab-pane fade show active" id="event-config-pane" role="tabpanel" aria-labelledby="event-config-tab">
         <div class="row g-3" id="eventConfigContent"></div>
+      </div>
+      <div class="tab-pane fade" id="event-registrations-pane" role="tabpanel" aria-labelledby="event-registrations-tab">
+        <div class="row g-3" id="eventRegistrationsContent"></div>
       </div>
       <div class="tab-pane fade" id="event-notice-pane" role="tabpanel" aria-labelledby="event-notice-tab">
         <div class="row g-3" id="eventNoticeContent"></div>
@@ -142,6 +148,7 @@ function buildEventFormTabs(){
   separator.insertAdjacentElement('afterend',tabsCol);
 
   const configContent=document.getElementById('eventConfigContent');
+  const registrationsContent=document.getElementById('eventRegistrationsContent');
   const noticeContent=document.getElementById('eventNoticeContent');
   const webContent=document.getElementById('eventWebContent');
   const welcomeContent=document.getElementById('eventWelcomeContent');
@@ -159,14 +166,14 @@ function buildEventFormTabs(){
       appendNodeToTabContent(welcomeContent,node);
       return;
     }
-    if(nodeContainsIds(node,['visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','show_flags','send_stats_code','hide_judges','has_penalties','has_clubs','criteria_per_judge','has_judge_feedback','judges_vis_results','has_registrations','registration_start','registration_end','min_styles','autorefresh_minutes','category_class_type','score_type','criteria_config','total_system','can_decide_positions','restrict_voting','results_filter'])){
+    if(nodeContainsIds(node,['visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','show_flags','send_stats_code','hide_judges','has_penalties','has_clubs','criteria_per_judge','has_judge_feedback','judges_vis_results','has_registrations','has_tied_positions','registration_start','registration_end','min_styles','autorefresh_minutes','category_class_type','score_type','criteria_config','total_system','can_decide_positions','restrict_voting','results_filter'])){
       appendNodeToTabContent(configContent,node);
       return;
     }
     node.remove();
   });
 
-  rebuildEventConfigLayout();
+  rebuildEventDetailTabLayouts(configContent,registrationsContent);
   activateEventDetailTab();
 }
 
@@ -196,19 +203,19 @@ function appendNodeToTabContent(content,node){
   content.appendChild(node);
 }
 
-function rebuildEventConfigLayout(){
-  const configContent=document.getElementById('eventConfigContent');
-  if(!configContent) return;
+function rebuildEventDetailTabLayouts(configContent,registrationsContent){
+  if(!configContent||!registrationsContent) return;
 
   const fieldIds=[
     'visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics',
     'show_flags','send_stats_code','hide_judges','has_judge_feedback','judges_vis_results',
-    'has_penalties','has_clubs','has_registrations','registration_start','registration_end',
+    'has_penalties','has_clubs','has_registrations','has_tied_positions','registration_start','registration_end',
     'category_class_type','score_type','criteria_config','total_system','criteria_per_judge',
     'min_styles','autorefresh_minutes','can_decide_positions','restrict_voting','results_filter'
   ];
-  const fields=Object.fromEntries(fieldIds.map((id)=>[id,getConfigFieldBlock(id)]));
+  const fields=Object.fromEntries(fieldIds.map((id)=>[id,getFormFieldBlock(id)]));
   configContent.innerHTML='';
+  registrationsContent.innerHTML='';
 
   appendConfigRow(configContent,[
     fields.visible_judges,fields.visible_participants,fields.visible_schedule,fields.visible_results,fields.visible_statistics
@@ -217,7 +224,7 @@ function rebuildEventConfigLayout(){
     fields.show_flags,fields.send_stats_code,fields.hide_judges,fields.has_judge_feedback,fields.judges_vis_results
   ],'col-12 col-md-6 col-lg');
   appendConfigRow(configContent,[
-    fields.has_penalties,fields.has_clubs,fields.has_registrations,fields.registration_start,fields.registration_end
+    fields.has_penalties,fields.has_clubs,fields.has_registrations,fields.has_tied_positions,createConfigSpacer()
   ],'col-12 col-md-6 col-lg');
   appendConfigRow(configContent,[
     fields.category_class_type,fields.score_type,fields.criteria_config,fields.total_system,fields.criteria_per_judge
@@ -225,9 +232,13 @@ function rebuildEventConfigLayout(){
   appendConfigRow(configContent,[
     fields.min_styles,fields.autorefresh_minutes,fields.can_decide_positions,fields.restrict_voting,fields.results_filter
   ],'col-12 col-md-6 col-lg');
+  appendConfigRow(registrationsContent,[
+    fields.registration_start,fields.registration_end
+  ],'col-12 col-md-6 col-lg-4');
+  syncRegistrationsTabState();
 }
 
-function getConfigFieldBlock(id){
+function getFormFieldBlock(id){
   return document.getElementById(id)?.closest('[class*="col-"]')||null;
 }
 
@@ -246,6 +257,12 @@ function appendConfigRow(container,blocks,columnClass){
   container.appendChild(wrapper);
 }
 
+function createConfigSpacer(){
+  const spacer=document.createElement('div');
+  spacer.setAttribute('aria-hidden','true');
+  return spacer;
+}
+
 function bindStaticEvents(){
   document.getElementById('auth-btn')?.addEventListener('click',logout);
   document.getElementById('createNewEventBtn')?.addEventListener('click',openCreateEventMode);
@@ -260,6 +277,7 @@ function bindStaticEvents(){
   document.getElementById('deleteSelectedEventBtn')?.addEventListener('click',()=>currentEventDetail&&confirmDeleteEvent(currentEventDetail));
   ['eventStatusFilter','eventVisibleFilter','eventTrialFilter'].forEach((id)=>document.getElementById(id)?.addEventListener('change',()=>renderEvents()));
   ['visible','trial'].forEach((id)=>document.getElementById(id)?.addEventListener('change',syncEventPanelBadgesFromForm));
+  document.getElementById('has_registrations')?.addEventListener('change',syncRegistrationsTabState);
   document.getElementById('clearEventDataCodeInput')?.addEventListener('input',()=>{document.getElementById('clearEventDataCodeInput')?.classList.remove('is-invalid');document.getElementById('clearEventDataFeedback')?.classList.add('d-none');});
   document.addEventListener('click',handleDocumentClick);
 }
@@ -392,7 +410,7 @@ function populateEventForm(eventObj){
   document.getElementById('can_decide_positions').value=eventObj.can_decide_positions??0;
   document.getElementById('restrict_voting').value=eventObj.restrict_voting??0;
   document.getElementById('results_filter').value=eventObj.results_filter||'BY_CAT';
-  ['visible','trial','visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','has_clubs','has_penalties','has_registrations','has_judge_feedback','judges_vis_results','show_flags','send_stats_code','hide_judges','notice_active'].forEach((id)=>{document.getElementById(id).checked=Number(eventObj[id])===1;});
+  ['visible','trial','visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','has_clubs','has_penalties','has_registrations','has_tied_positions','has_judge_feedback','judges_vis_results','show_flags','send_stats_code','hide_judges','notice_active'].forEach((id)=>{document.getElementById(id).checked=Number(eventObj[id])===1;});
   document.getElementById('registration_start').value=eventObj.registration_start?String(eventObj.registration_start).slice(0,10):'';
   document.getElementById('registration_end').value=eventObj.registration_end?String(eventObj.registration_end).slice(0,10):'';
   document.getElementById('notice_text').value=eventObj.notice_text||'';
@@ -403,6 +421,7 @@ function populateEventForm(eventObj){
   updateUrlPreview();
   setEventPanelState(eventObj);
   setEventWelcomeInfo({...eventObj,organizer_info:buildOrganizerInfo(eventObj)});
+  syncRegistrationsTabState();
 }
 
 function resetEventForm(){
@@ -426,7 +445,22 @@ function resetEventForm(){
   populateClientSelect();
   setEventWelcomeInfo(null);
   setEventPanelState(null);
+  syncRegistrationsTabState();
   activateEventDetailTab();
+}
+
+function syncRegistrationsTabState(){
+  const hasRegistrations=document.getElementById('has_registrations')?.checked===true;
+  const registrationsTab=document.getElementById('event-registrations-tab');
+  if(!registrationsTab) return;
+
+  registrationsTab.disabled=!hasRegistrations;
+  registrationsTab.classList.toggle('disabled',!hasRegistrations);
+  registrationsTab.setAttribute('aria-disabled',hasRegistrations?'false':'true');
+
+  if(!hasRegistrations&&registrationsTab.classList.contains('active')){
+    activateEventDetailTab('event-config-tab');
+  }
 }
 
 function setEventPanelState(eventObj){
@@ -490,7 +524,7 @@ async function saveEvent(){
 
 function collectEventFormData(){
   return {
-    code:document.getElementById('code').value.trim(),name:document.getElementById('name').value.trim(),language:document.getElementById('language').value,status:document.getElementById('status').value,start:document.getElementById('start').value||null,end:document.getElementById('end').value||null,password:parseInt(document.getElementById('password').value,10)||0,eventurl:document.getElementById('eventurl').value.trim()||null,eventlogo:document.getElementById('eventlogo').value.trim()||null,client_id:parseInt(document.getElementById('clientSelect').value,10)||null,visible:document.getElementById('visible').checked?1:0,trial:document.getElementById('trial').checked?1:0,min_styles:parseInt(document.getElementById('min_styles').value,10)||null,autorefresh_minutes:parseInt(document.getElementById('autorefresh_minutes').value,10)||0,category_class_type:document.getElementById('category_class_type').value||'NO',criteria_config:document.getElementById('criteria_config').value||'NO_CONFIG',total_system:document.getElementById('total_system').value||'SUM_SCORES',visible_judges:document.getElementById('visible_judges').checked?1:0,visible_participants:document.getElementById('visible_participants').checked?1:0,visible_schedule:document.getElementById('visible_schedule').checked?1:0,visible_results:document.getElementById('visible_results').checked?1:0,visible_statistics:document.getElementById('visible_statistics').checked?1:0,has_clubs:document.getElementById('has_clubs').checked?1:0,criteria_per_judge:parseInt(document.getElementById('criteria_per_judge').value,10)||0,has_penalties:document.getElementById('has_penalties').checked?1:0,has_registrations:document.getElementById('has_registrations').checked?1:0,has_judge_feedback:document.getElementById('has_judge_feedback').checked?1:0,judges_vis_results:document.getElementById('judges_vis_results').checked?1:0,registration_start:document.getElementById('registration_start').value||null,registration_end:document.getElementById('registration_end').value||null,notice_text:document.getElementById('notice_text').value.trim(),notice_active:document.getElementById('notice_active').checked?1:0,notice_type:document.getElementById('notice_type').value,score_type:document.getElementById('score_type').value,can_decide_positions:parseInt(document.getElementById('can_decide_positions').value,10)||0,restrict_voting:parseInt(document.getElementById('restrict_voting').value,10)||0,results_filter:document.getElementById('results_filter').value||'BY_CAT',show_flags:document.getElementById('show_flags').checked?1:0,send_stats_code:document.getElementById('send_stats_code').checked?1:0,hide_judges:document.getElementById('hide_judges').checked?1:0
+    code:document.getElementById('code').value.trim(),name:document.getElementById('name').value.trim(),language:document.getElementById('language').value,status:document.getElementById('status').value,start:document.getElementById('start').value||null,end:document.getElementById('end').value||null,password:parseInt(document.getElementById('password').value,10)||0,eventurl:document.getElementById('eventurl').value.trim()||null,eventlogo:document.getElementById('eventlogo').value.trim()||null,client_id:parseInt(document.getElementById('clientSelect').value,10)||null,visible:document.getElementById('visible').checked?1:0,trial:document.getElementById('trial').checked?1:0,min_styles:parseInt(document.getElementById('min_styles').value,10)||null,autorefresh_minutes:parseInt(document.getElementById('autorefresh_minutes').value,10)||0,category_class_type:document.getElementById('category_class_type').value||'NO',criteria_config:document.getElementById('criteria_config').value||'NO_CONFIG',total_system:document.getElementById('total_system').value||'SUM_SCORES',visible_judges:document.getElementById('visible_judges').checked?1:0,visible_participants:document.getElementById('visible_participants').checked?1:0,visible_schedule:document.getElementById('visible_schedule').checked?1:0,visible_results:document.getElementById('visible_results').checked?1:0,visible_statistics:document.getElementById('visible_statistics').checked?1:0,has_clubs:document.getElementById('has_clubs').checked?1:0,criteria_per_judge:parseInt(document.getElementById('criteria_per_judge').value,10)||0,has_penalties:document.getElementById('has_penalties').checked?1:0,has_registrations:document.getElementById('has_registrations').checked?1:0,has_tied_positions:document.getElementById('has_tied_positions').checked?1:0,has_judge_feedback:document.getElementById('has_judge_feedback').checked?1:0,judges_vis_results:document.getElementById('judges_vis_results').checked?1:0,registration_start:document.getElementById('registration_start').value||null,registration_end:document.getElementById('registration_end').value||null,notice_text:document.getElementById('notice_text').value.trim(),notice_active:document.getElementById('notice_active').checked?1:0,notice_type:document.getElementById('notice_type').value,score_type:document.getElementById('score_type').value,can_decide_positions:parseInt(document.getElementById('can_decide_positions').value,10)||0,restrict_voting:parseInt(document.getElementById('restrict_voting').value,10)||0,results_filter:document.getElementById('results_filter').value||'BY_CAT',show_flags:document.getElementById('show_flags').checked?1:0,send_stats_code:document.getElementById('send_stats_code').checked?1:0,hide_judges:document.getElementById('hide_judges').checked?1:0
   };
 }
 async function loadClients(){
