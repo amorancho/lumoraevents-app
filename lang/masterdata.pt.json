@@ -43,6 +43,7 @@
   "school_modal_edit": "Editar escola",
   "school_name": "Nome",
   "school_location": "Localizacao",
+  "schools_num_participants": "Participantes",
   "schools_empty_title": "Nenhuma escola criada",
   "schools_empty_subtitle": "Adicione a primeira escola com o botao acima.",
   "schools_load_error": "Erro ao carregar as escolas.",

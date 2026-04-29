@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   await ensureTranslationsReady();
   renderAdminLayout();
   syncTiedPositionsFieldOptions();
+  syncSendStatsCodeFieldOptions();
   bindStaticEvents();
   clientModal=new bootstrap.Modal(document.getElementById('clientModal'));
   clearEventDataModal=new bootstrap.Modal(document.getElementById('clearEventDataModal'));
@@ -223,7 +224,7 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
     fields.visible_judges,fields.visible_participants,fields.visible_schedule,fields.visible_results,fields.visible_statistics
   ],'col-12 col-md-6 col-lg');
   appendConfigRow(configContent,[
-    fields.show_flags,fields.send_stats_code,fields.hide_judges,fields.has_judge_feedback,fields.judges_vis_results
+    fields.show_flags,fields.hide_judges,fields.has_judge_feedback,fields.judges_vis_results,createConfigSpacer()
   ],'col-12 col-md-6 col-lg');
   appendConfigRow(configContent,[
     fields.has_penalties,fields.has_clubs,fields.has_registrations,createConfigSpacer(),createConfigSpacer()
@@ -235,7 +236,7 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
     fields.min_styles,fields.autorefresh_minutes,fields.can_decide_positions,fields.restrict_voting,fields.results_filter
   ],'col-12 col-md-6 col-lg');
   appendConfigRow(configContent,[
-    fields.tied_positions
+    fields.tied_positions,fields.send_stats_code
   ],'col-12 col-md-6 col-lg-3');
   appendConfigRow(registrationsContent,[
     fields.registration_start,fields.registration_end
@@ -280,6 +281,29 @@ function syncTiedPositionsFieldOptions(){
     {value:'NO',label:'No posiciones repetidas'},
     {value:'CR',label:'R\u00E1nking con salto'},
     {value:'DR',label:'R\u00E1nking denso'}
+  ];
+  select.innerHTML='';
+  options.forEach(({value,label})=>{
+    const option=document.createElement('option');
+    option.value=value;
+    option.textContent=label;
+    select.appendChild(option);
+  });
+  select.value=currentValue;
+}
+
+function normalizeSendStatsCodeValue(value){
+  return ['NO','BY_DANCER','BY_CLUB'].includes(value)?value:'NO';
+}
+
+function syncSendStatsCodeFieldOptions(){
+  const select=document.getElementById('send_stats_code');
+  if(!select) return;
+  const currentValue=normalizeSendStatsCodeValue(select.value);
+  const options=[
+    {value:'NO',label:'No'},
+    {value:'BY_DANCER',label:'Por Participante'},
+    {value:'BY_CLUB',label:'Por Club/Escuela'}
   ];
   select.innerHTML='';
   options.forEach(({value,label})=>{
@@ -439,7 +463,8 @@ function populateEventForm(eventObj){
   document.getElementById('restrict_voting').value=eventObj.restrict_voting??0;
   document.getElementById('results_filter').value=eventObj.results_filter||'BY_CAT';
   document.getElementById('tied_positions').value=normalizeTiedPositionsValue(eventObj.tied_positions);
-  ['visible','trial','visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','has_clubs','has_penalties','has_registrations','has_judge_feedback','judges_vis_results','show_flags','send_stats_code','hide_judges','notice_active'].forEach((id)=>{document.getElementById(id).checked=Number(eventObj[id])===1;});
+  document.getElementById('send_stats_code').value=normalizeSendStatsCodeValue(eventObj.send_stats_code);
+  ['visible','trial','visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','has_clubs','has_penalties','has_registrations','has_judge_feedback','judges_vis_results','show_flags','hide_judges','notice_active'].forEach((id)=>{document.getElementById(id).checked=Number(eventObj[id])===1;});
   document.getElementById('registration_start').value=eventObj.registration_start?String(eventObj.registration_start).slice(0,10):'';
   document.getElementById('registration_end').value=eventObj.registration_end?String(eventObj.registration_end).slice(0,10):'';
   document.getElementById('notice_text').value=eventObj.notice_text||'';
@@ -470,6 +495,7 @@ function resetEventForm(){
   document.getElementById('can_decide_positions').value='0';
   document.getElementById('results_filter').value='BY_CAT';
   document.getElementById('tied_positions').value='NO';
+  document.getElementById('send_stats_code').value='NO';
   document.getElementById('previewLogo').classList.add('d-none');
   document.getElementById('urlPreview').classList.add('d-none');
   populateClientSelect();
@@ -554,7 +580,7 @@ async function saveEvent(){
 
 function collectEventFormData(){
   return {
-    code:document.getElementById('code').value.trim(),name:document.getElementById('name').value.trim(),language:document.getElementById('language').value,status:document.getElementById('status').value,start:document.getElementById('start').value||null,end:document.getElementById('end').value||null,password:parseInt(document.getElementById('password').value,10)||0,eventurl:document.getElementById('eventurl').value.trim()||null,eventlogo:document.getElementById('eventlogo').value.trim()||null,client_id:parseInt(document.getElementById('clientSelect').value,10)||null,visible:document.getElementById('visible').checked?1:0,trial:document.getElementById('trial').checked?1:0,min_styles:parseInt(document.getElementById('min_styles').value,10)||null,autorefresh_minutes:parseInt(document.getElementById('autorefresh_minutes').value,10)||0,category_class_type:document.getElementById('category_class_type').value||'NO',criteria_config:document.getElementById('criteria_config').value||'NO_CONFIG',total_system:document.getElementById('total_system').value||'SUM_SCORES',visible_judges:document.getElementById('visible_judges').checked?1:0,visible_participants:document.getElementById('visible_participants').checked?1:0,visible_schedule:document.getElementById('visible_schedule').checked?1:0,visible_results:document.getElementById('visible_results').checked?1:0,visible_statistics:document.getElementById('visible_statistics').checked?1:0,has_clubs:document.getElementById('has_clubs').checked?1:0,criteria_per_judge:parseInt(document.getElementById('criteria_per_judge').value,10)||0,has_penalties:document.getElementById('has_penalties').checked?1:0,has_registrations:document.getElementById('has_registrations').checked?1:0,tied_positions:normalizeTiedPositionsValue(document.getElementById('tied_positions').value),has_judge_feedback:document.getElementById('has_judge_feedback').checked?1:0,judges_vis_results:document.getElementById('judges_vis_results').checked?1:0,registration_start:document.getElementById('registration_start').value||null,registration_end:document.getElementById('registration_end').value||null,notice_text:document.getElementById('notice_text').value.trim(),notice_active:document.getElementById('notice_active').checked?1:0,notice_type:document.getElementById('notice_type').value,score_type:document.getElementById('score_type').value,can_decide_positions:parseInt(document.getElementById('can_decide_positions').value,10)||0,restrict_voting:parseInt(document.getElementById('restrict_voting').value,10)||0,results_filter:document.getElementById('results_filter').value||'BY_CAT',show_flags:document.getElementById('show_flags').checked?1:0,send_stats_code:document.getElementById('send_stats_code').checked?1:0,hide_judges:document.getElementById('hide_judges').checked?1:0
+    code:document.getElementById('code').value.trim(),name:document.getElementById('name').value.trim(),language:document.getElementById('language').value,status:document.getElementById('status').value,start:document.getElementById('start').value||null,end:document.getElementById('end').value||null,password:parseInt(document.getElementById('password').value,10)||0,eventurl:document.getElementById('eventurl').value.trim()||null,eventlogo:document.getElementById('eventlogo').value.trim()||null,client_id:parseInt(document.getElementById('clientSelect').value,10)||null,visible:document.getElementById('visible').checked?1:0,trial:document.getElementById('trial').checked?1:0,min_styles:parseInt(document.getElementById('min_styles').value,10)||null,autorefresh_minutes:parseInt(document.getElementById('autorefresh_minutes').value,10)||0,category_class_type:document.getElementById('category_class_type').value||'NO',criteria_config:document.getElementById('criteria_config').value||'NO_CONFIG',total_system:document.getElementById('total_system').value||'SUM_SCORES',visible_judges:document.getElementById('visible_judges').checked?1:0,visible_participants:document.getElementById('visible_participants').checked?1:0,visible_schedule:document.getElementById('visible_schedule').checked?1:0,visible_results:document.getElementById('visible_results').checked?1:0,visible_statistics:document.getElementById('visible_statistics').checked?1:0,has_clubs:document.getElementById('has_clubs').checked?1:0,criteria_per_judge:parseInt(document.getElementById('criteria_per_judge').value,10)||0,has_penalties:document.getElementById('has_penalties').checked?1:0,has_registrations:document.getElementById('has_registrations').checked?1:0,tied_positions:normalizeTiedPositionsValue(document.getElementById('tied_positions').value),has_judge_feedback:document.getElementById('has_judge_feedback').checked?1:0,judges_vis_results:document.getElementById('judges_vis_results').checked?1:0,registration_start:document.getElementById('registration_start').value||null,registration_end:document.getElementById('registration_end').value||null,notice_text:document.getElementById('notice_text').value.trim(),notice_active:document.getElementById('notice_active').checked?1:0,notice_type:document.getElementById('notice_type').value,score_type:document.getElementById('score_type').value,can_decide_positions:parseInt(document.getElementById('can_decide_positions').value,10)||0,restrict_voting:parseInt(document.getElementById('restrict_voting').value,10)||0,results_filter:document.getElementById('results_filter').value||'BY_CAT',show_flags:document.getElementById('show_flags').checked?1:0,send_stats_code:normalizeSendStatsCodeValue(document.getElementById('send_stats_code').value),hide_judges:document.getElementById('hide_judges').checked?1:0
   };
 }
 async function loadClients(){

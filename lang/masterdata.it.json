@@ -43,6 +43,7 @@
   "school_modal_edit": "Modifica scuola",
   "school_name": "Nome",
   "school_location": "Posizione",
+  "schools_num_participants": "Partecipanti",
   "schools_empty_title": "Nessuna scuola creata",
   "schools_empty_subtitle": "Crea la prima scuola con il pulsante in alto.",
   "schools_load_error": "Errore durante il caricamento delle scuole.",

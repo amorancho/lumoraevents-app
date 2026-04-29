@@ -767,6 +767,9 @@ function renderSchoolsTable() {
         const schoolName = school?.name || '-';
         const schoolLocation = school?.location || '-';
         const schoolEmail = school?.email || '-';
+        const schoolParticipants = Number.isFinite(Number(school?.num_participants))
+            ? String(Number(school.num_participants))
+            : '0';
         const nameCell = document.createElement('td');
         nameCell.textContent = schoolName;
 
@@ -775,6 +778,10 @@ function renderSchoolsTable() {
 
         const emailCell = document.createElement('td');
         emailCell.textContent = schoolEmail;
+
+        const participantsCell = document.createElement('td');
+        participantsCell.className = 'text-center align-middle';
+        participantsCell.textContent = schoolParticipants;
 
         const actionsCell = document.createElement('td');
         actionsCell.className = 'text-center align-middle';
@@ -803,6 +810,7 @@ function renderSchoolsTable() {
         row.appendChild(nameCell);
         row.appendChild(locationCell);
         row.appendChild(emailCell);
+        row.appendChild(participantsCell);
         row.appendChild(actionsCell);
 
         tableBody.appendChild(row);
