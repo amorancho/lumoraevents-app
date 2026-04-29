@@ -7,9 +7,9 @@ const SIDEBAR_STATUS_FILTER_NOT_FINISHED = '__NOT_FINISHED__';
 const TRACKING_SIDEBAR_FILTERS_STORAGE_PREFIX = 'lumora.tracking.sidebarFilters';
 const LIVE_TRACKING_POLL_INTERVAL_MS = 15000;
 const classificationExportState = {
-  options: [],
-  mode: 'ALL',
-  categoryIds: []
+  competitions: [],
+  scope: 'FULL',
+  competitionIds: []
 };
 const trackingUiState = {
   selectedCategoryId: null,
@@ -136,47 +136,49 @@ function extractCompetitionRevision(payload) {
   return null;
 }
 
-function normalizeClassificationExportOptions(payload) {
-  const categories = Array.isArray(payload?.categories) ? payload.categories : [];
-  const seenCategoryIds = new Set();
+function getCompetitionExportLabel(competition) {
+  const categoryName = competition?.category_name || competition?.category?.name || t('category', 'Category');
+  const styleName = competition?.style_name || competition?.style?.name || '';
+  return styleName ? `${categoryName} - ${styleName}` : categoryName;
+}
 
-  return categories.reduce((acc, entry) => {
-    const rawCategoryId = entry?.category?.id ?? entry?.general?.category_id;
-    const categoryId = Number(rawCategoryId);
+function normalizeCompetitionExportOptions(competitions) {
+  const source = Array.isArray(competitions) ? competitions : [];
+  const seenCompetitionIds = new Set();
 
-    if (!Number.isFinite(categoryId) || seenCategoryIds.has(categoryId)) {
+  return source.reduce((acc, competition) => {
+    if (competition?.status !== 'FIN') {
       return acc;
     }
 
-    seenCategoryIds.add(categoryId);
+    const competitionId = Number(competition?.id ?? competition?.competition_id);
+    if (!Number.isFinite(competitionId) || seenCompetitionIds.has(competitionId)) {
+      return acc;
+    }
 
-    const categoryName = entry?.category?.name
-      || entry?.general?.category_name
-      || `${t('category')} ${categoryId}`;
-
+    seenCompetitionIds.add(competitionId);
     acc.push({
-      id: categoryId,
-      name: categoryName,
-      stylesCount: Array.isArray(entry?.styles) ? entry.styles.length : 0
+      id: competitionId,
+      name: getCompetitionExportLabel(competition)
     });
-
     return acc;
-  }, []);
+  }, []).sort((left, right) => (
+    String(left?.name || '').localeCompare(String(right?.name || ''), undefined, { sensitivity: 'base' })
+  ));
 }
 
-function renderClassificationExportOptions(categories) {
+function renderClassificationExportOptions(competitions) {
   const modalBody = document.getElementById('classificationExportOptionsBody');
   if (!modalBody) return;
 
-  const categoriesCount = categories.length;
-  const categoryRows = categories.map((category, index) => {
-    const inputId = `export-category-option-${category.id}-${index}`;
+  const competitionsCount = competitions.length;
+  const competitionRows = competitions.map((competition, index) => {
+    const inputId = `export-competition-option-${competition.id}-${index}`;
     return `
       <div class="form-check mb-2">
-        <input class="form-check-input js-export-category-option" type="checkbox" value="${category.id}" id="${inputId}">
+        <input class="form-check-input js-export-competition-option" type="checkbox" value="${competition.id}" id="${inputId}">
         <label class="form-check-label" for="${inputId}">
-          ${escapeHtml(category.name)}
-          <span class="text-muted ms-1">(${category.stylesCount} ${escapeHtml(t('style'))})</span>
+          ${escapeHtml(competition.name)}
         </label>
       </div>
     `;
@@ -185,21 +187,21 @@ function renderClassificationExportOptions(categories) {
   modalBody.innerHTML = `
     <div class="mb-3">
       <div class="form-check">
-        <input class="form-check-input js-export-scope-option" type="radio" name="classificationExportScope" id="exportScopeAll" value="ALL" checked>
-        <label class="form-check-label" for="exportScopeAll">${escapeHtml(t('export_modal_scope_all', 'All'))}</label>
+        <input class="form-check-input js-export-scope-option" type="radio" name="classificationExportScope" id="exportScopeFull" value="FULL" checked>
+        <label class="form-check-label" for="exportScopeFull">${escapeHtml(t('export_modal_scope_full', 'All competitions'))}</label>
       </div>
       <div class="form-check">
-        <input class="form-check-input js-export-scope-option" type="radio" name="classificationExportScope" id="exportScopeCategories" value="CATEGORIES">
-        <label class="form-check-label" for="exportScopeCategories">${escapeHtml(t('export_modal_scope_categories', 'Select categories'))}</label>
+        <input class="form-check-input js-export-scope-option" type="radio" name="classificationExportScope" id="exportScopeSelectedCompetitions" value="SELECTED">
+        <label class="form-check-label" for="exportScopeSelectedCompetitions">${escapeHtml(t('export_modal_scope_selected', 'Select competitions'))}</label>
       </div>
     </div>
-    <div id="exportCategoriesWrapper" class="d-none">
+    <div id="exportCompetitionsWrapper" class="d-none">
       <p class="fw-semibold mb-2">
-        ${escapeHtml(t('export_modal_available_categories', 'Available categories'))}
-        (${categoriesCount})
+        ${escapeHtml(t('export_modal_available_competitions', 'Available competitions'))}
+        (${competitionsCount})
       </p>
-      <div class="border rounded p-3 export-categories-list">
-        ${categoryRows}
+      <div class="border rounded p-3 export-competitions-list">
+        ${competitionRows}
       </div>
     </div>
     <div id="exportSelectionValidation" class="alert alert-warning py-2 mt-3 mb-0 d-none"></div>
@@ -207,8 +209,8 @@ function renderClassificationExportOptions(categories) {
   `;
 
   const scopeInputs = Array.from(modalBody.querySelectorAll('.js-export-scope-option'));
-  const categoryInputs = Array.from(modalBody.querySelectorAll('.js-export-category-option'));
-  const categoriesWrapper = modalBody.querySelector('#exportCategoriesWrapper');
+  const competitionInputs = Array.from(modalBody.querySelectorAll('.js-export-competition-option'));
+  const competitionsWrapper = modalBody.querySelector('#exportCompetitionsWrapper');
   const selectionHint = modalBody.querySelector('#exportSelectionHint');
   const validationEl = modalBody.querySelector('#exportSelectionValidation');
   const confirmBtn = document.getElementById('classificationExportConfirmBtn');
@@ -220,43 +222,43 @@ function renderClassificationExportOptions(categories) {
   };
 
   const syncSelectionState = () => {
-    const selectedScope = scopeInputs.find(input => input.checked)?.value || 'ALL';
-    const isByCategory = selectedScope === 'CATEGORIES';
+    const selectedScope = scopeInputs.find(input => input.checked)?.value || 'FULL';
+    const isCustomSelection = selectedScope === 'SELECTED';
 
-    classificationExportState.mode = selectedScope;
-    if (categoriesWrapper) {
-      categoriesWrapper.classList.toggle('d-none', !isByCategory);
+    classificationExportState.scope = selectedScope;
+    if (competitionsWrapper) {
+      competitionsWrapper.classList.toggle('d-none', !isCustomSelection);
     }
 
-    categoryInputs.forEach(input => {
-      input.disabled = !isByCategory;
-      if (!isByCategory) {
+    competitionInputs.forEach(input => {
+      input.disabled = !isCustomSelection;
+      if (!isCustomSelection) {
         input.checked = false;
       }
     });
 
-    classificationExportState.categoryIds = isByCategory
-      ? categoryInputs
+    classificationExportState.competitionIds = isCustomSelection
+      ? competitionInputs
         .filter(input => input.checked)
         .map(input => Number(input.value))
         .filter(value => Number.isFinite(value))
       : [];
 
     if (confirmBtn) {
-      confirmBtn.disabled = isByCategory && classificationExportState.categoryIds.length === 0;
+      confirmBtn.disabled = isCustomSelection && classificationExportState.competitionIds.length === 0;
     }
 
     if (selectionHint) {
-      selectionHint.textContent = isByCategory
-        ? `${classificationExportState.categoryIds.length}/${categoriesCount} ${t('export_modal_categories_selected', 'categories selected')}`
-        : t('export_modal_all_selected', 'Selected: all categories');
+      selectionHint.textContent = isCustomSelection
+        ? `${classificationExportState.competitionIds.length}/${competitionsCount} ${t('export_modal_competitions_selected', 'competitions selected')}`
+        : t('export_modal_full_selected', 'All finished competitions will be exported.');
     }
 
     clearValidation();
   };
 
   scopeInputs.forEach(input => input.addEventListener('change', syncSelectionState));
-  categoryInputs.forEach(input => input.addEventListener('change', syncSelectionState));
+  competitionInputs.forEach(input => input.addEventListener('change', syncSelectionState));
   syncSelectionState();
 }
 
@@ -310,24 +312,28 @@ function downloadBlobFile(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function exportClassificationResults(eventId, { all = true, categories = [] } = {}) {
+async function exportClassificationResults(eventId, competitionIds = []) {
   if (!eventId) {
     throw new Error(t('error_title'));
   }
 
-  const normalizedCategories = Array.isArray(categories)
-    ? categories
+  const normalizedCompetitionIds = Array.isArray(competitionIds)
+    ? competitionIds
       .map(value => Number(value))
       .filter(value => Number.isFinite(value))
+      .filter((value, index, values) => values.indexOf(value) === index)
     : [];
+
+  if (!normalizedCompetitionIds.length) {
+    throw new Error(t('export_modal_select_competition_validation', 'Select at least one competition to export.'));
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/competitions/results/export`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       event_id: eventId,
-      //all: Boolean(all),
-      //categories: all ? [] : normalizedCategories
+      competitionIds: normalizedCompetitionIds
     })
   });
 
@@ -386,20 +392,17 @@ function initClassificationExportOptions() {
         throw new Error(t('error_title'));
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/competitions/classification-export-options?event_id=${eventId}`);
-      const payload = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(payload?.error || t('error_title'));
+      if (!Array.isArray(trackingUiState.sidebarCompetitions) || trackingUiState.sidebarCompetitions.length === 0) {
+        await loadCompetitionSidebar();
       }
 
-      const categories = normalizeClassificationExportOptions(payload);
+      const competitions = normalizeCompetitionExportOptions(trackingUiState.sidebarCompetitions);
 
-      classificationExportState.options = categories;
-      classificationExportState.mode = 'ALL';
-      classificationExportState.categoryIds = [];
+      classificationExportState.competitions = competitions;
+      classificationExportState.scope = 'FULL';
+      classificationExportState.competitionIds = [];
 
-      if (!categories.length) {
+      if (!competitions.length) {
         modalBody.innerHTML = `
           <div class="alert alert-info mb-0">
             ${escapeHtml(t('export_modal_no_options', 'No classification results are available to export.'))}
@@ -409,13 +412,13 @@ function initClassificationExportOptions() {
         return;
       }
 
-      renderClassificationExportOptions(categories);
+      renderClassificationExportOptions(competitions);
       confirmBtn.disabled = false;
     } catch (error) {
       console.error('Error loading classification export options:', error);
-      classificationExportState.options = [];
-      classificationExportState.mode = 'ALL';
-      classificationExportState.categoryIds = [];
+      classificationExportState.competitions = [];
+      classificationExportState.scope = 'FULL';
+      classificationExportState.competitionIds = [];
 
       modalBody.innerHTML = `
         <div class="alert alert-danger mb-0">
@@ -439,12 +442,13 @@ function initClassificationExportOptions() {
     }
 
     const validationEl = modalBody.querySelector('#exportSelectionValidation');
-    const all = classificationExportState.mode === 'ALL';
-    const categories = all ? [] : [...classificationExportState.categoryIds];
+    const competitionIds = classificationExportState.scope === 'FULL'
+      ? classificationExportState.competitions.map(competition => competition.id)
+      : [...classificationExportState.competitionIds];
 
-    if (!all && categories.length === 0) {
+    if (competitionIds.length === 0) {
       if (validationEl) {
-        validationEl.textContent = t('export_modal_select_category_validation', 'Select at least one category to export.');
+        validationEl.textContent = t('export_modal_select_competition_validation', 'Select at least one competition to export.');
         validationEl.classList.remove('d-none');
       }
       return;
@@ -457,7 +461,7 @@ function initClassificationExportOptions() {
 
     setButtonLoading(confirmBtn, true, t('exporting', 'Exporting...'));
     try {
-      await exportClassificationResults(eventId, { all, categories });
+      await exportClassificationResults(eventId, competitionIds);
       modal.hide();
     } catch (error) {
       console.error('Error exporting results:', error);
@@ -470,8 +474,10 @@ function initClassificationExportOptions() {
 
 function getClassificationExportSelection() {
   return {
-    mode: classificationExportState.mode,
-    categoryIds: [...classificationExportState.categoryIds]
+    scope: classificationExportState.scope,
+    competitionIds: classificationExportState.scope === 'FULL'
+      ? classificationExportState.competitions.map(competition => competition.id)
+      : [...classificationExportState.competitionIds]
   };
 }
 
@@ -2236,7 +2242,9 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
   const progressBarColorClass = progress.percentage >= 100 ? 'bg-success' : 'bg-warning';
   const progressTextClass = progress.percentage >= 100 ? 'text-white' : 'text-dark';
   const progressText = `${progress.completed}/${progress.total} (${progress.percentage}%)`;
-  const exportButtonDisabled = !isFinished ? 'disabled' : '';
+  const competitionId = Number(comp?.id ?? comp?.competition_id);
+  const exportButtonDisabled = !isFinished || !Number.isFinite(competitionId) ? 'disabled' : '';
+  const competitionLabel = getCompetitionExportLabel(comp);
 
   const card = document.createElement('div');
   card.className = 'card mb-4 border-primary-subtle';
@@ -2276,11 +2284,9 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
             <span class="tracking-summary-btn-label">${t('results_button', 'Results')}</span>
           </button>
           <button type="button"
-            class="btn btn-outline-warning btn-sm btn-export-category-results tracking-summary-btn"
-            data-category-id="${comp.category_id}"
-            data-style-id="${comp.style_id}"
-            data-category-name="${escapeHtml(comp.category_name || '-')}"
-            data-style-name="${escapeHtml(comp.style_name || '-')}"
+            class="btn btn-outline-warning btn-sm btn-export-competition-results tracking-summary-btn"
+            data-competition-id="${Number.isFinite(competitionId) ? competitionId : ''}"
+            data-competition-label="${escapeHtml(competitionLabel || '-')}"
             ${exportButtonDisabled}>
             <i class="bi bi-filetype-pdf me-1"></i>
             <span class="tracking-summary-btn-label">${t('export_results_button', 'Export Results')}</span>
@@ -2704,24 +2710,22 @@ function renderCompetitions(competitions) {
 
   container.querySelectorAll('.js-classification-visible-btn').forEach(bindClassificationVisibilityButton);
 
-  container.querySelectorAll('.btn-export-category-results').forEach(button => {
+  container.querySelectorAll('.btn-export-competition-results').forEach(button => {
     button.addEventListener('click', async () => {
       if (button.disabled) return;
 
       const eventId = Number(getEvent()?.id);
-      const categoryId = Number(button.dataset.categoryId);
-      const categoryName = button.dataset.categoryName || '-';
-      const styleName = button.dataset.styleName || '-';
-      const competitionLabel = `${categoryName}-${styleName}`;
+      const competitionId = Number(button.dataset.competitionId);
+      const competitionLabel = button.dataset.competitionLabel || '-';
 
-      if (!Number.isFinite(eventId) || !Number.isFinite(categoryId)) {
+      if (!Number.isFinite(eventId) || !Number.isFinite(competitionId)) {
         showMessageModal(t('error_title'), t('error_title'));
         return;
       }
 
       const confirmTemplate = t(
-        'confirm_export_category_pdf',
-        'Are you sure you want to export to PDF the full category for competition {competition}?'
+        'confirm_export_competition_pdf',
+        'Are you sure you want to export the PDF for competition {competition}?'
       );
       const confirmMessage = confirmTemplate.replace('{competition}', competitionLabel);
 
@@ -2730,9 +2734,9 @@ function renderCompetitions(competitions) {
 
       setButtonLoading(button, true, t('exporting', 'Exporting...'));
       try {
-        await exportClassificationResults(eventId, { all: false, categories: [categoryId] });
+        await exportClassificationResults(eventId, [competitionId]);
       } catch (error) {
-        console.error('Error exporting category results:', error);
+        console.error('Error exporting competition results:', error);
         showMessageModal(error?.message || t('error_title'), t('error_title'));
       } finally {
         if (button.isConnected) {
