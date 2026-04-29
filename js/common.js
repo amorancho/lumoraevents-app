@@ -78,6 +78,51 @@ function getEvent() {
   return eventObj;
 }
 
+const TIED_POSITIONS_NONE = 'NO';
+const TIED_POSITIONS_COMPETITION = 'CR';
+const TIED_POSITIONS_DENSE = 'DR';
+const TIED_POSITIONS_MODES = new Set([
+  TIED_POSITIONS_NONE,
+  TIED_POSITIONS_COMPETITION,
+  TIED_POSITIONS_DENSE
+]);
+
+function normalizeTiedPositionsMode(value) {
+  if (value === true || value === 1 || value === '1') return TIED_POSITIONS_COMPETITION;
+  if (value === false || value === 0 || value === '0' || value == null || value === '') return TIED_POSITIONS_NONE;
+  const normalized = String(value).trim().toUpperCase();
+  return TIED_POSITIONS_MODES.has(normalized) ? normalized : TIED_POSITIONS_NONE;
+}
+
+function getEventTiedPositionsMode(event = getEvent()) {
+  return normalizeTiedPositionsMode(
+    event?.TiedPositions ?? event?.tiedPositions ?? event?.hasTiedPositions
+  );
+}
+
+function getDisplayPositionsByScore(items = [], getScoreKey = () => '') {
+  const tiedPositionsMode = getEventTiedPositionsMode();
+  let previousScoreKey = null;
+  let previousPosition = 0;
+
+  return items.map((item, index) => {
+    const scoreKey = getScoreKey(item, index);
+    const isTied = index > 0 && scoreKey === previousScoreKey;
+
+    if (tiedPositionsMode !== TIED_POSITIONS_NONE && isTied) {
+      return previousPosition;
+    }
+
+    const position = tiedPositionsMode === TIED_POSITIONS_DENSE
+      ? previousPosition + 1
+      : index + 1;
+
+    previousScoreKey = scoreKey;
+    previousPosition = position;
+    return position;
+  });
+}
+
 function setPageTitleAndLang(title, lang) {
   updateElementProperty('screen-title', 'textContent', title);
   updateFlag(lang);
@@ -112,6 +157,10 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
       } else {
         status = 'pending close';
       }
+
+      const tiedPositions = normalizeTiedPositionsMode(
+        data.tied_positions ?? data.TiedPositions ?? data.has_tied_positions
+      );
 
       eventObj = {
         id: data.id,
@@ -151,7 +200,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hasJudgeFeedback: data.has_judge_feedback === 1,
         judgesVisResults: data.judges_vis_results === 1,
         resultsFilter: data.results_filter,
-        hasTiedPositions: data.has_tied_positions === 1
+        TiedPositions: tiedPositions
       };
 
     }

@@ -32,23 +32,10 @@ function formatAvgPlace(avgPlace) {
 }
 
 function getClassificationDisplayPositions(clasification = []) {
-  const hasTiedPositions = getEvent().hasTiedPositions;
-  let previousScoreKey = null;
-  let previousPosition = 0;
-
-  return clasification.map((dancer, index) => {
+  return getDisplayPositionsByScore(clasification, (dancer) => {
     const rawScore = dancer?.total_score;
     const numericScore = Number(rawScore);
-    const scoreKey = Number.isNaN(numericScore) ? String(rawScore ?? '') : `num:${numericScore}`;
-
-    if (hasTiedPositions && index > 0 && scoreKey === previousScoreKey) {
-      return previousPosition;
-    }
-
-    const position = index + 1;
-    previousScoreKey = scoreKey;
-    previousPosition = position;
-    return position;
+    return Number.isNaN(numericScore) ? String(rawScore ?? '') : `num:${numericScore}`;
   });
 }
 

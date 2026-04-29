@@ -408,6 +408,19 @@
 
               <!-- URL y Logo + preview -->
               <div class="col-12">
+                <div class="row">
+                  <div class="col-md-3">
+                    <label class="form-label">Posiciones empatadas</label>
+                    <select id="tied_positions" class="form-select">
+                      <option value="NO">No posiciones repetidas</option>
+                      <option value="CR">RÃ¡nking con salto</option>
+                      <option value="DR">RÃ¡nking denso</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-12">
                 <hr>
               </div>
 
@@ -575,13 +588,6 @@
                     <div class="form-check form-switch mb-2">
                       <input class="form-check-input" type="checkbox" id="has_registrations">
                       <label class="form-check-label" for="has_registrations">Tiene Inscripciones</label>
-                    </div>
-                  </div>
-
-                  <div class="col-md-3">
-                    <div class="form-check form-switch mb-2">
-                      <input class="form-check-input" type="checkbox" id="has_tied_positions">
-                      <label class="form-check-label" for="has_tied_positions">Tiene posiciones empatadas</label>
                     </div>
                   </div>
 

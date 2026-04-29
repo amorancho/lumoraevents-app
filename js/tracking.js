@@ -3574,45 +3574,29 @@ function formatPositionCountKey(positionCount) {
 }
 
 function getResultsDisplayPositions(results) {
-  const hasTiedPositions = getEvent().hasTiedPositions;
-  let previousScoreKey = null;
-  let previousPosition = 0;
-
-  return results.map((result, index) => {
-    const scoreKey = String(formatResultScore(result?.total_score));
-    if (hasTiedPositions && index > 0 && scoreKey === previousScoreKey) {
-      return previousPosition;
-    }
-
-    const position = index + 1;
-    previousScoreKey = scoreKey;
-    previousPosition = position;
-    return position;
-  });
+  return getDisplayPositionsByScore(
+    results,
+    (result) => String(formatResultScore(result?.total_score))
+  );
 }
 
 function updateResultsPositions(tbody) {
   const rows = Array.from(tbody.querySelectorAll('tr'));
-  const hasTiedPositions = getEvent().hasTiedPositions;
-  let previousScoreKey = null;
-  let previousPosition = 0;
+  const displayPositions = getDisplayPositionsByScore(
+    rows,
+    (row) => row.dataset.score || ''
+  );
 
   rows.forEach((row, index) => {
     const cell = row.querySelector('td');
     if (!cell) return;
-    const scoreKey = row.dataset.score || '';
-    const position = hasTiedPositions && index > 0 && scoreKey === previousScoreKey
-      ? previousPosition
-      : index + 1;
+    const position = displayPositions[index];
     const positionText = `${position}`;
     if (row.dataset.draggable === 'true') {
       cell.innerHTML = `<i class="bi bi-grip-vertical text-muted me-2 tie-move-icon" aria-hidden="true"></i>${positionText}`;
     } else {
       cell.textContent = positionText;
     }
-
-    previousScoreKey = scoreKey;
-    previousPosition = position;
   });
 }
 
