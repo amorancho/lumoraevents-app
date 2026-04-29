@@ -272,6 +272,25 @@ function t(key, fallback) {
 
 window.t = t;
 
+function applyTranslatedTitle(el, text) {
+  if (!text) return;
+
+  const usesBootstrapTooltip = el.getAttribute('data-bs-toggle') === 'tooltip';
+  if (!usesBootstrapTooltip) {
+    el.title = text;
+    return;
+  }
+
+  el.setAttribute('data-bs-original-title', text);
+  el.removeAttribute('title');
+
+  const tooltipInstance = window.bootstrap?.Tooltip?.getInstance(el);
+  if (tooltipInstance) {
+    tooltipInstance.setContent({ '.tooltip-inner': text });
+    tooltipInstance.update();
+  }
+}
+
 function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
@@ -287,7 +306,7 @@ function applyTranslations() {
 
   document.querySelectorAll("[data-i18n-title]").forEach(el => {
     const key = el.dataset.i18nTitle;
-    if (translations[key]) el.title = translations[key];
+    if (translations[key]) applyTranslatedTitle(el, translations[key]);
   });
 }
 
