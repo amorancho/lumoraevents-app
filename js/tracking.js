@@ -213,7 +213,9 @@ function renderClassificationExportOptions(competitions) {
   const competitionsWrapper = modalBody.querySelector('#exportCompetitionsWrapper');
   const selectionHint = modalBody.querySelector('#exportSelectionHint');
   const validationEl = modalBody.querySelector('#exportSelectionValidation');
-  const confirmBtn = document.getElementById('classificationExportConfirmBtn');
+  const exportExcelBtn = document.getElementById('classificationExportExcelBtn');
+  const exportPdfBtn = document.getElementById('classificationExportPdfBtn');
+  const exportButtons = [exportExcelBtn, exportPdfBtn].filter(Boolean);
 
   const clearValidation = () => {
     if (!validationEl) return;
@@ -244,9 +246,9 @@ function renderClassificationExportOptions(competitions) {
         .filter(value => Number.isFinite(value))
       : [];
 
-    if (confirmBtn) {
-      confirmBtn.disabled = isCustomSelection && classificationExportState.competitionIds.length === 0;
-    }
+    exportButtons.forEach(button => {
+      button.disabled = isCustomSelection && classificationExportState.competitionIds.length === 0;
+    });
 
     if (selectionHint) {
       selectionHint.textContent = isCustomSelection
@@ -304,7 +306,7 @@ function downloadBlobFile(blob, filename) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = filename || 'results-export.pdf';
+  link.download = filename || 'results-export';
   link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
@@ -312,7 +314,7 @@ function downloadBlobFile(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-async function exportClassificationResults(eventId, competitionIds = []) {
+async function exportClassificationResults(eventId, competitionIds = [], format = 'pdf') {
   if (!eventId) {
     throw new Error(t('error_title'));
   }
@@ -328,12 +330,15 @@ async function exportClassificationResults(eventId, competitionIds = []) {
     throw new Error(t('export_modal_select_competition_validation', 'Select at least one competition to export.'));
   }
 
+  const normalizedFormat = format === 'excel' ? 'excel' : 'pdf';
+
   const response = await fetch(`${API_BASE_URL}/api/competitions/results/export`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       event_id: eventId,
-      competitionIds: normalizedCompetitionIds
+      competitionIds: normalizedCompetitionIds,
+      format: normalizedFormat
     })
   });
 
@@ -350,7 +355,8 @@ async function exportClassificationResults(eventId, competitionIds = []) {
 
   const blob = await response.blob();
   const disposition = response.headers.get('Content-Disposition');
-  const filename = getFilenameFromContentDisposition(disposition) || `results-event-${eventId}.pdf`;
+  const fallbackExtension = normalizedFormat === 'excel' ? 'xlsx' : 'pdf';
+  const filename = getFilenameFromContentDisposition(disposition) || `results-event-${eventId}.${fallbackExtension}`;
 
   downloadBlobFile(blob, filename);
 }
@@ -359,12 +365,16 @@ function initClassificationExportOptions() {
   const exportBtn = document.getElementById('exportBtn');
   const modalEl = document.getElementById('classificationExportOptionsModal');
   const modalBody = document.getElementById('classificationExportOptionsBody');
-  const confirmBtn = document.getElementById('classificationExportConfirmBtn');
+  const exportExcelBtn = document.getElementById('classificationExportExcelBtn');
+  const exportPdfBtn = document.getElementById('classificationExportPdfBtn');
+  const exportButtons = [exportExcelBtn, exportPdfBtn].filter(Boolean);
 
-  if (!exportBtn || !modalEl || !modalBody || !confirmBtn) return;
+  if (!exportBtn || !modalEl || !modalBody || exportButtons.length !== 2) return;
 
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-  confirmBtn.disabled = true;
+  exportButtons.forEach(button => {
+    button.disabled = true;
+  });
 
   exportBtn.addEventListener('click', async () => {
     if (exportBtn.disabled) return;
@@ -382,7 +392,9 @@ function initClassificationExportOptions() {
         <span>${t('loading')}</span>
       </div>
     `;
-    confirmBtn.disabled = true;
+    exportButtons.forEach(button => {
+      button.disabled = true;
+    });
 
     modal.show();
 
@@ -408,12 +420,13 @@ function initClassificationExportOptions() {
             ${escapeHtml(t('export_modal_no_options', 'No classification results are available to export.'))}
           </div>
         `;
-        confirmBtn.disabled = true;
+        exportButtons.forEach(button => {
+          button.disabled = true;
+        });
         return;
       }
 
       renderClassificationExportOptions(competitions);
-      confirmBtn.disabled = false;
     } catch (error) {
       console.error('Error loading classification export options:', error);
       classificationExportState.competitions = [];
@@ -425,15 +438,17 @@ function initClassificationExportOptions() {
           ${escapeHtml(error?.message || t('error_title'))}
         </div>
       `;
-      confirmBtn.disabled = true;
+      exportButtons.forEach(button => {
+        button.disabled = true;
+      });
     } finally {
       exportBtn.innerHTML = originalContent;
       exportBtn.disabled = false;
     }
   });
 
-  confirmBtn.addEventListener('click', async () => {
-    if (confirmBtn.disabled) return;
+  const handleClassificationExport = async (format, triggerButton) => {
+    if (!triggerButton || triggerButton.disabled) return;
 
     const eventId = getEvent()?.id;
     if (!eventId) {
@@ -459,16 +474,35 @@ function initClassificationExportOptions() {
       validationEl.classList.add('d-none');
     }
 
-    setButtonLoading(confirmBtn, true, t('exporting', 'Exporting...'));
+    setButtonLoading(triggerButton, true, t('exporting', 'Exporting...'));
+    exportButtons
+      .filter(button => button !== triggerButton)
+      .forEach(button => {
+        button.disabled = true;
+      });
+
     try {
-      await exportClassificationResults(eventId, competitionIds);
+      await exportClassificationResults(eventId, competitionIds, format);
       modal.hide();
     } catch (error) {
       console.error('Error exporting results:', error);
       showMessageModal(error?.message || t('error_title'), t('error_title'));
     } finally {
-      setButtonLoading(confirmBtn, false);
+      setButtonLoading(triggerButton, false);
+      const requiresSelection = classificationExportState.scope === 'SELECTED'
+        && classificationExportState.competitionIds.length === 0;
+      exportButtons.forEach(button => {
+        button.disabled = requiresSelection;
+      });
     }
+  };
+
+  exportExcelBtn.addEventListener('click', async () => {
+    await handleClassificationExport('excel', exportExcelBtn);
+  });
+
+  exportPdfBtn.addEventListener('click', async () => {
+    await handleClassificationExport('pdf', exportPdfBtn);
   });
 }
 
