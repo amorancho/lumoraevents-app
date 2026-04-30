@@ -407,7 +407,8 @@ async function saveEventData(eventId) {
     notice_type: f('notice_type').value,
     restrict_voting: Number(f('restrict_voting').value || 0),
     registration_start: f('registration_start').value || null,
-    registration_end: f('registration_end').value || null
+    registration_end: f('registration_end').value || null,
+    music_extra_time: Number(f('music_extra_time').value || 0)
   };
 
   try {

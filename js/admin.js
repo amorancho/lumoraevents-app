@@ -485,6 +485,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('registration_end').value = eventObj.registration_end
     ? eventObj.registration_end.slice(0, 10)
     : '';
+  document.getElementById('music_extra_time').value = eventObj.music_extra_time ?? 0;
   document.getElementById('notice_text').value = eventObj.notice_text;
   document.getElementById('notice_active').checked = (Number(eventObj.notice_active) === 1);
   document.getElementById('notice_type').value = eventObj.notice_type;
@@ -542,6 +543,7 @@ async function saveEvent() {
     judges_vis_results: document.getElementById('judges_vis_results').checked ? 1 : 0,
     registration_start: document.getElementById('registration_start').value || null,
     registration_end: document.getElementById('registration_end').value || null,
+    music_extra_time: parseInt(document.getElementById('music_extra_time').value, 10) || 0,
     notice_text: document.getElementById('notice_text').value.trim(),
     notice_active: document.getElementById('notice_active').checked ? 1 : 0,
     notice_type: document.getElementById('notice_type').value,

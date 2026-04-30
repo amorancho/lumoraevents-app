@@ -44,6 +44,7 @@
   "registration_config_title": "Configuracion de Inscripciones",
   "registration_start_label": "Inicio inscripciones",
   "registration_end_label": "Fin inscripciones",
+  "music_extra_time_label": "Tiempo extra musica (seg.)",
   "event_status_finish_btn": "Marcar evento como finalizado",
   "event_status_open_btn": "Abrir Evento",
   "event_status_modal_title_finish": "Finalizar evento",
