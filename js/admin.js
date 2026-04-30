@@ -9,6 +9,32 @@ let clientModal;
 let eventModal;
 let clearEventDataModal;
 
+function setLoadingButtonState(button, isLoading, loadingText = 'Guardando...') {
+  if (!button) return;
+
+  if (isLoading) {
+    if (button.dataset.loading === 'true') return;
+
+    button.dataset.loading = 'true';
+    button.dataset.originalHtml = button.innerHTML;
+    button.disabled = true;
+    button.setAttribute('aria-busy', 'true');
+    button.innerHTML = `
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      ${loadingText}
+    `;
+    return;
+  }
+
+  if (button.dataset.originalHtml) {
+    button.innerHTML = button.dataset.originalHtml;
+  }
+  button.disabled = false;
+  button.removeAttribute('aria-busy');
+  delete button.dataset.loading;
+  delete button.dataset.originalHtml;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
@@ -323,6 +349,7 @@ document.getElementById("createNewClientBtn").addEventListener("click", () => {
 
 document.getElementById("saveClientBtn").addEventListener("click", async () => {
   const form = document.getElementById("clientForm");
+  const saveBtn = document.getElementById("saveClientBtn");
   const action = form.dataset.action;
   const id = form.dataset.id;
 
@@ -333,6 +360,8 @@ document.getElementById("saveClientBtn").addEventListener("click", async () => {
     language: document.getElementById("clientLanguage").value,
     booked_events: parseInt(document.getElementById("clientBookedEvents").value, 10) || 0
   };
+
+  setLoadingButtonState(saveBtn, true, saveBtn?.dataset.loadingText || 'Guardando...');
 
   try {
     let res;
@@ -361,6 +390,8 @@ document.getElementById("saveClientBtn").addEventListener("click", async () => {
 
   } catch (err) {
     console.error("Error saving client:", err);
+  } finally {
+    setLoadingButtonState(saveBtn, false);
   }
 });
 
@@ -476,6 +507,7 @@ function openEditEventModal(eventObj) {
 /* Guardar (create / update) */
 async function saveEvent() {
   const form = document.getElementById('eventForm');
+  const saveBtn = document.getElementById('saveEventBtn');
   const action = form.dataset.action;
   const id = form.dataset.id;
 
@@ -521,6 +553,8 @@ async function saveEvent() {
     hide_judges: document.getElementById('hide_judges') ? (document.getElementById('hide_judges').checked ? 1 : 0) : 0
   };
 
+  setLoadingButtonState(saveBtn, true, saveBtn?.dataset.loadingText || 'Guardando...');
+
   try {
     let res;
     if (action === 'create') {
@@ -550,6 +584,8 @@ async function saveEvent() {
   } catch (err) {
     console.error('Error saving event:', err);
     showMessageModal('Error saving event', 'Error');
+  } finally {
+    setLoadingButtonState(saveBtn, false);
   }
 }
 
