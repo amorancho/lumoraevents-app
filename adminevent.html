@@ -48,6 +48,7 @@
                 <div class="input-group">
                   <input type="text" class="form-control" id="code" disabled>
                   <button class="btn btn-warning" type="button" id="qrBtn" data-bs-toggle="tooltip" data-bs-placement="top" data-i18n-title="qr_tooltip" title="Muestra el QR del evento para compartir el enlace">QR</button>
+                  <button class="btn btn-outline-primary" type="button" id="posterBtn" data-bs-toggle="tooltip" data-bs-placement="top" data-i18n-title="poster_tooltip" title="Genera un póster PDF del evento">Poster</button>
                 </div>
               </div>
 
@@ -311,6 +312,48 @@
         </div>
         <div class="modal-footer justify-content-center">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="posterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="poster_modal_title">Generador de póster del evento</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-title="close" title="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="posterLogoInput" class="form-label" data-i18n="poster_logo_label">Logo del evento</label>
+            <input
+              type="file"
+              class="form-control"
+              id="posterLogoInput"
+              accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+            >
+            <div class="form-text" data-i18n="poster_logo_help">
+              Sube un logo en PNG o JPG, con un mínimo de 300 px. Se recomienda usar un logo de al menos 800 px, buena calidad y, si es posible, PNG con fondo transparente.
+            </div>
+          </div>
+          <div>
+            <label for="posterPhraseInput" class="form-label" data-i18n="poster_phrase_label">Frase</label>
+            <input
+              type="text"
+              class="form-control"
+              id="posterPhraseInput"
+              maxlength="70"
+            >
+            <div class="d-flex justify-content-between align-items-center mt-1">
+              <div class="form-text" data-i18n="poster_phrase_help">Máximo 70 caracteres.</div>
+              <small class="text-muted" id="posterPhraseCounter">0/70</small>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+          <button type="button" class="btn btn-primary" id="generatePosterBtn" data-i18n="poster_generate_btn">Generar póster</button>
         </div>
       </div>
     </div>

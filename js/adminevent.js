@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await ensureTranslationsReady();
 
   initQrModal();
+  initPosterModal();
   initExportEventModal();
   initStatusToggleModal();
   initTooltips();
@@ -59,6 +60,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 let currentEventStatus = null;
+const POSTER_DEFAULT_PHRASE = 'TU COMPETICIÓN EN TIEMPO REAL';
+const POSTER_MAX_PHRASE_LENGTH = 70;
+const POSTER_MIN_DIMENSION = 300;
+const POSTER_UPLOAD_MIN_WIDTH = 800;
+const POSTER_FILE_FIELD_NAMES = ['logo', 'logoFile', 'file', 'posterLogo', 'poster_logo'];
+const POSTER_ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg']);
 
 function applyCloseButtonAriaLabels() {
   const closeLabel = t('close');
@@ -263,12 +270,212 @@ function makeExportFilename(event) {
   return `${safeBase} - ${t('export_file_suffix')}`;
 }
 
+function makePosterFilename(event) {
+  const baseName = (event?.name || t('event_default_name')).trim();
+  const safeBase = sanitizeFilename(baseName) || t('event_default_name');
+  return `${safeBase} - ${t('poster_file_suffix', 'Poster.pdf')}`;
+}
+
 function sanitizeFilename(name) {
   return String(name)
     .replace(/[\\/:*?"<>|]/g, '-') // windows forbidden chars
     .replace(/[\u0000-\u001F\u007F]/g, '') // control chars
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function getFilenameFromContentDisposition(dispositionHeader) {
+  if (!dispositionHeader || typeof dispositionHeader !== 'string') return null;
+
+  const utf8Match = dispositionHeader.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    try {
+      return decodeURIComponent(utf8Match[1].trim());
+    } catch {
+      // ignore malformed uri encoding
+    }
+  }
+
+  const asciiMatch = dispositionHeader.match(/filename=\"?([^\";]+)\"?/i);
+  return asciiMatch?.[1]?.trim() || null;
+}
+
+function isPosterLogoFileTypeAllowed(file) {
+  const mimeType = String(file?.type || '').toLowerCase();
+  const name = String(file?.name || '');
+
+  if (POSTER_ALLOWED_MIME_TYPES.has(mimeType)) {
+    return true;
+  }
+
+  return /\.(png|jpe?g)$/i.test(name);
+}
+
+function readImageDimensions(file) {
+  return new Promise((resolve, reject) => {
+    if (!(file instanceof File)) {
+      reject(new Error(t('poster_error_invalid_logo_file')));
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    const cleanup = () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+
+    image.onload = () => {
+      const width = image.naturalWidth || image.width || 0;
+      const height = image.naturalHeight || image.height || 0;
+      cleanup();
+      resolve({ width, height });
+    };
+
+    image.onerror = () => {
+      cleanup();
+      reject(new Error(t('poster_error_invalid_logo_file')));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+function loadPosterImage(file) {
+  return new Promise((resolve, reject) => {
+    if (!(file instanceof File)) {
+      reject(new Error(t('poster_error_invalid_logo_file')));
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    const cleanup = () => {
+      URL.revokeObjectURL(objectUrl);
+    };
+
+    image.onload = () => {
+      resolve({
+        image,
+        width: image.naturalWidth || image.width || 0,
+        height: image.naturalHeight || image.height || 0,
+        cleanup
+      });
+    };
+
+    image.onerror = () => {
+      cleanup();
+      reject(new Error(t('poster_error_invalid_logo_file')));
+    };
+
+    image.src = objectUrl;
+  });
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+      reject(new Error(t('poster_error_invalid_logo_file')));
+    }, type, quality);
+  });
+}
+
+async function normalizePosterLogoForUpload(file) {
+  const { image, width, height, cleanup } = await loadPosterImage(file);
+
+  try {
+    if (width >= POSTER_UPLOAD_MIN_WIDTH) {
+      return file;
+    }
+
+    const scale = POSTER_UPLOAD_MIN_WIDTH / Math.max(width, 1);
+    const targetWidth = Math.max(POSTER_UPLOAD_MIN_WIDTH, Math.round(width * scale));
+    const targetHeight = Math.max(1, Math.round(height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error(t('poster_error_invalid_logo_file'));
+    }
+
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const blob = await canvasToBlob(canvas, outputType, 0.92);
+
+    return new File([blob], file.name, {
+      type: outputType,
+      lastModified: file.lastModified
+    });
+  } finally {
+    cleanup();
+  }
+}
+
+async function uploadEventPoster(eventId, logoFile, phrase) {
+  let lastErrorMessage = t('error_export_poster');
+
+  for (let index = 0; index < POSTER_FILE_FIELD_NAMES.length; index += 1) {
+    const fieldName = POSTER_FILE_FIELD_NAMES[index];
+    const formData = new FormData();
+    formData.append(fieldName, logoFile);
+    formData.append('phrase', phrase);
+    formData.append('frase', phrase);
+
+    const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/poster`, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (response.ok) {
+      return response;
+    }
+
+    const errorMessage = await getResponseErrorMessage(response, t('error_export_poster'));
+    lastErrorMessage = errorMessage;
+
+    if (!shouldRetryPosterUpload(response.status, errorMessage) || index === POSTER_FILE_FIELD_NAMES.length - 1) {
+      throw new Error(errorMessage);
+    }
+  }
+
+  throw new Error(lastErrorMessage);
+}
+
+async function getResponseErrorMessage(response, fallbackMessage) {
+  try {
+    const text = await response.text();
+    if (!text) return fallbackMessage;
+
+    try {
+      const data = JSON.parse(text);
+      return data?.error || data?.message || text || fallbackMessage;
+    } catch {
+      return text;
+    }
+  } catch {
+    return fallbackMessage;
+  }
+}
+
+function shouldRetryPosterUpload(status, message) {
+  const normalizedMessage = String(message || '').toLowerCase();
+  const looksLikeFieldMappingIssue = /unexpected field|limit_unexpected_file|unknown field|missing file|no file|required file|req\.file|logo.*required/.test(normalizedMessage);
+
+  if (looksLikeFieldMappingIssue) {
+    return true;
+  }
+
+  return [400, 422].includes(Number(status)) && /missing|required/.test(normalizedMessage);
 }
 
 function initTooltips() {
@@ -326,6 +533,98 @@ function initQrModal() {
       showMessageModal(err?.message || t('error_loading_qr'), t('error_title'));
     }
   });
+}
+
+function initPosterModal() {
+  const posterBtn = document.getElementById('posterBtn');
+  const modalEl = document.getElementById('posterModal');
+  const generateBtn = document.getElementById('generatePosterBtn');
+  const logoInput = document.getElementById('posterLogoInput');
+  const phraseInput = document.getElementById('posterPhraseInput');
+  const phraseCounter = document.getElementById('posterPhraseCounter');
+
+  if (!posterBtn || !modalEl || !generateBtn || !logoInput || !phraseInput || !phraseCounter) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+
+  const syncPhraseCounter = () => {
+    phraseCounter.textContent = `${phraseInput.value.length}/${POSTER_MAX_PHRASE_LENGTH}`;
+  };
+
+  const resetPosterForm = () => {
+    logoInput.value = '';
+    phraseInput.value = POSTER_DEFAULT_PHRASE;
+    syncPhraseCounter();
+  };
+
+  phraseInput.maxLength = POSTER_MAX_PHRASE_LENGTH;
+  phraseInput.addEventListener('input', syncPhraseCounter);
+
+  posterBtn.addEventListener('click', () => {
+    if (posterBtn.disabled) return;
+    resetPosterForm();
+    modal.show();
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    resetPosterForm();
+  });
+
+  generateBtn.addEventListener('click', async () => {
+    const id = getEvent()?.id;
+    const logoFile = logoInput.files?.[0] ?? null;
+    const phrase = phraseInput.value.trim();
+
+    if (!id) {
+      showMessageModal(t('error_event_not_loaded'), t('error_title'));
+      return;
+    }
+
+    if (!logoFile) {
+      showMessageModal(t('poster_error_missing_logo'), t('error_title'));
+      return;
+    }
+
+    if (!isPosterLogoFileTypeAllowed(logoFile)) {
+      showMessageModal(t('poster_error_invalid_logo_type'), t('error_title'));
+      return;
+    }
+
+    if (phrase.length > POSTER_MAX_PHRASE_LENGTH) {
+      showMessageModal(t('poster_error_phrase_too_long'), t('error_title'));
+      return;
+    }
+
+    try {
+      const { width, height } = await readImageDimensions(logoFile);
+      if (Math.max(width, height) < POSTER_MIN_DIMENSION) {
+        showMessageModal(t('poster_error_small_logo'), t('error_title'));
+        return;
+      }
+    } catch (err) {
+      showMessageModal(err?.message || t('poster_error_invalid_logo_file'), t('error_title'));
+      return;
+    }
+
+    setButtonLoading(generateBtn, true, t('poster_generating'));
+
+    try {
+      const uploadFile = await normalizePosterLogoForUpload(logoFile);
+      const response = await uploadEventPoster(id, uploadFile, phrase);
+      const blob = await response.blob();
+      const disposition = response.headers.get('Content-Disposition');
+      const filename = getFilenameFromContentDisposition(disposition) || makePosterFilename(getEvent());
+
+      downloadBlob(blob, filename);
+    } catch (err) {
+      console.error('Error generating poster:', err);
+      showMessageModal(err?.message || t('error_export_poster'), t('error_title'));
+    } finally {
+      setButtonLoading(generateBtn, false);
+    }
+  });
+
+  resetPosterForm();
 }
 
 function downloadDataUrl(dataUrl, filename) {
