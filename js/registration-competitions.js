@@ -228,12 +228,12 @@
       return false;
     }
 
-    const TIME_EXTRA = 10;
+    const TIME_EXTRA = getEvent().musicExtraTime || 0;
 
     const maxDuration = audioState.maxDuration + TIME_EXTRA;
     if (maxDuration != null && audioState.duration > maxDuration) {
       audioState.isValid = false;
-      setAudioError(`La duracion supera el maximo permitido (${formatDuration(maxDuration)}).`);
+      setAudioError(`La duración supera el máximo permitido (${formatDuration(maxDuration)}).`);
       if (elements.audioSaveBtn) elements.audioSaveBtn.disabled = true;
       return false;
     }
@@ -249,7 +249,7 @@
     const maxDuration = normalizeNumber(category?.music_max_duration);
     audioState.maxDuration = maxDuration;
     if (elements.audioMax) {
-      elements.audioMax.textContent = maxDuration == null ? '-' : `${formatDuration(maxDuration)} (+10 sec extra)`;
+      elements.audioMax.textContent = maxDuration == null ? '-' : `${formatDuration(maxDuration)} (+${getEvent().musicExtraTime || 0} sec extra)`;
     }
     validateAudioDuration();
   };

@@ -200,7 +200,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hasJudgeFeedback: data.has_judge_feedback === 1,
         judgesVisResults: data.judges_vis_results === 1,
         resultsFilter: data.results_filter,
-        TiedPositions: tiedPositions
+        TiedPositions: tiedPositions,
+        musicExtraTime: data.music_extra_time || 0
       };
 
     }
