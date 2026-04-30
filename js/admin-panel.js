@@ -3,6 +3,26 @@ const allowedRoles=['admin'];
 let clients=[],events=[],selectedEventId=null,currentEventDetail=null,keepCreateMode=false;
 let clientModal,clearEventDataModal;
 
+function setLoadingButtonState(button,isLoading,loadingText='Guardando...'){
+  if(!button) return;
+
+  if(isLoading){
+    if(button.dataset.loading==='true') return;
+    button.dataset.loading='true';
+    button.dataset.originalHtml=button.innerHTML;
+    button.disabled=true;
+    button.setAttribute('aria-busy','true');
+    button.innerHTML=`<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>${loadingText}`;
+    return;
+  }
+
+  if(button.dataset.originalHtml) button.innerHTML=button.dataset.originalHtml;
+  button.disabled=false;
+  button.removeAttribute('aria-busy');
+  delete button.dataset.loading;
+  delete button.dataset.originalHtml;
+}
+
 document.addEventListener('DOMContentLoaded',async()=>{
   validateRoles(allowedRoles);
   await ensureTranslationsReady();
@@ -566,8 +586,10 @@ function activateEventDetailTab(tabId='event-config-tab'){
 
 async function saveEvent(){
   const form=document.getElementById('eventForm');
+  const saveBtn=document.getElementById('saveEventBtn');
   const action=form.dataset.action;
   const id=form.dataset.id;
+  setLoadingButtonState(saveBtn,true,action==='create'?'Creando...':'Guardando...');
   try{
     const response=await fetch(action==='create'?`${API_BASE_URL}/api/events/admin`:`${API_BASE_URL}/api/events/admin/${id}`,{method:action==='create'?'POST':'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(collectEventFormData())});
     if(!response.ok){const errorData=await response.json().catch(()=>({error:'Error guardando el evento'}));showMessageModal(errorData.error||'Error guardando el evento','Error');return;}
@@ -576,6 +598,9 @@ async function saveEvent(){
     await loadClients();
     await loadEvents({preferredEventId:payload.id||id||null,forceReload:true});
   }catch(error){console.error('Error guardando el evento:',error);showMessageModal('Error guardando el evento','Error');}
+  finally{
+    setLoadingButtonState(saveBtn,false);
+  }
 }
 
 function collectEventFormData(){
@@ -644,15 +669,20 @@ function openEditClientModal(client){
 
 async function saveClient(){
   const form=document.getElementById('clientForm');
+  const saveBtn=document.getElementById('saveClientBtn');
   const action=form.dataset.action;
   const id=form.dataset.id;
   const data={name:document.getElementById('clientName').value.trim(),contact_person:document.getElementById('clientContact').value.trim(),email:document.getElementById('clientEmail').value.trim(),language:document.getElementById('clientLanguage').value,booked_events:parseInt(document.getElementById('clientBookedEvents').value,10)||0};
+  setLoadingButtonState(saveBtn,true,action==='create'?'Creando...':'Guardando...');
   try{
     const response=await fetch(action==='create'?`${API_BASE_URL}/api/clients`:`${API_BASE_URL}/api/clients/${id}`,{method:action==='create'?'POST':'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     if(!response.ok){const errorData=await response.json().catch(()=>({error:'Error guardando el cliente'}));showMessageModal(errorData.error||'Error guardando el cliente','Error');return;}
     await loadClients();
     clientModal.hide();
   }catch(error){console.error('Error guardando cliente:',error);}
+  finally{
+    setLoadingButtonState(saveBtn,false);
+  }
 }
 
 function confirmDeleteClient(client){
