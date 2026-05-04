@@ -902,6 +902,40 @@ function initOrganizerDashboard() {
   const renderCharts = (metrics) => {
     const ui = getUiColors();
     const baseOptions = createBaseChartOptions(ui);
+    const verticalBarDataLabels = {
+      enabled: true,
+      formatter: (value) => formatInteger(value),
+      textAnchor: 'middle',
+      offsetY: 0,
+      style: {
+        colors: ['#ffffff'],
+        fontSize: '11px',
+        fontWeight: 700
+      },
+      background: {
+        enabled: false
+      },
+      dropShadow: {
+        enabled: false
+      }
+    };
+    const horizontalBarDataLabels = {
+      enabled: true,
+      formatter: (value) => formatInteger(value),
+      textAnchor: 'middle',
+      offsetX: 0,
+      style: {
+        colors: ['#ffffff'],
+        fontSize: '11px',
+        fontWeight: 700
+      },
+      background: {
+        enabled: false
+      },
+      dropShadow: {
+        enabled: false
+      }
+    };
 
     renderChart('categories', chartElements.categories, {
       ...baseOptions,
@@ -909,6 +943,13 @@ function initOrganizerDashboard() {
         ...baseOptions.chart,
         type: 'bar',
         height: 320
+      },
+      dataLabels: verticalBarDataLabels,
+      grid: {
+        ...baseOptions.grid,
+        padding: {
+          top: 12
+        }
       },
       colors: ['#0d6efd'],
       series: [{
@@ -918,7 +959,10 @@ function initOrganizerDashboard() {
       plotOptions: {
         bar: {
           borderRadius: 4,
-          columnWidth: '48%'
+          columnWidth: '48%',
+          dataLabels: {
+            position: 'center'
+          }
         }
       },
       xaxis: {
@@ -943,6 +987,13 @@ function initOrganizerDashboard() {
         type: 'bar',
         height: 320
       },
+      dataLabels: verticalBarDataLabels,
+      grid: {
+        ...baseOptions.grid,
+        padding: {
+          top: 12
+        }
+      },
       colors: ['#20c997'],
       series: [{
         name: t('registration_dashboard_series_registrations', 'Registrations'),
@@ -951,7 +1002,10 @@ function initOrganizerDashboard() {
       plotOptions: {
         bar: {
           borderRadius: 4,
-          columnWidth: '48%'
+          columnWidth: '48%',
+          dataLabels: {
+            position: 'center'
+          }
         }
       },
       xaxis: {
@@ -1048,12 +1102,22 @@ function initOrganizerDashboard() {
         type: 'bar',
         height: 280
       },
+      dataLabels: horizontalBarDataLabels,
+      grid: {
+        ...baseOptions.grid,
+        padding: {
+          right: 20
+        }
+      },
       colors: ['#212529'],
       plotOptions: {
         bar: {
           horizontal: true,
           borderRadius: 4,
-          barHeight: '58%'
+          barHeight: '58%',
+          dataLabels: {
+            position: 'center'
+          }
         }
       },
       series: [{
@@ -1080,12 +1144,22 @@ function initOrganizerDashboard() {
         type: 'bar',
         height: 280
       },
+      dataLabels: horizontalBarDataLabels,
+      grid: {
+        ...baseOptions.grid,
+        padding: {
+          right: 20
+        }
+      },
       colors: ['#6f42c1'],
       plotOptions: {
         bar: {
           horizontal: true,
           borderRadius: 4,
-          barHeight: '58%'
+          barHeight: '58%',
+          dataLabels: {
+            position: 'center'
+          }
         }
       },
       series: [{
