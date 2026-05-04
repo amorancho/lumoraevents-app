@@ -27,6 +27,84 @@ const registrationSyncEndpoints = {
   organizerRegistrations: '/api/registrations/choreographies',
   synchronization: '/api/registrations/synchronization'
 };
+const REGISTRATION_NAV_ITEMS = [
+  {
+    key: 'dashboard',
+    paneId: 'dashboard',
+    roles: ['school', 'organizer'],
+    icon: 'bi-speedometer2',
+    labelKey: 'registration_tab_dashboard',
+    fallbackLabel: 'Dashboard'
+  },
+  {
+    key: 'school',
+    paneId: 'school',
+    roles: ['school'],
+    icon: 'bi-building',
+    labelKey: 'registration_tab_school',
+    fallbackLabel: 'School details'
+  },
+  {
+    key: 'participants',
+    paneId: 'participants',
+    roles: ['school', 'organizer'],
+    icon: 'bi-people',
+    labelKey: 'registration_tab_participants',
+    fallbackLabel: 'Participants'
+  },
+  {
+    key: 'competitions',
+    paneId: 'competitions',
+    roles: ['school'],
+    icon: 'bi-trophy',
+    labelKey: 'registration_tab_competitions',
+    fallbackLabel: 'Competition registrations'
+  },
+  {
+    key: 'schools',
+    paneId: 'schools',
+    roles: ['organizer'],
+    icon: 'bi-buildings',
+    labelKey: 'registration_tab_schools',
+    fallbackLabel: 'Schools'
+  },
+  {
+    key: 'org-registrations',
+    paneId: 'org-registrations',
+    roles: ['organizer'],
+    icon: 'bi-journal-check',
+    labelKey: 'registration_tab_org_registrations',
+    fallbackLabel: 'Registrations'
+  },
+  {
+    key: 'registration-categories',
+    paneId: 'registration-categories',
+    roles: ['organizer'],
+    icon: 'bi-tags',
+    labelKey: 'registration_tab_categories',
+    fallbackLabel: 'Categories'
+  },
+  {
+    key: 'registration-disciplines',
+    paneId: 'registration-disciplines',
+    roles: ['organizer'],
+    icon: 'bi-music-note-beamed',
+    labelKey: 'registration_tab_disciplines',
+    fallbackLabel: 'Disciplines/Styles'
+  },
+  {
+    key: 'event-sync',
+    paneId: 'event-sync',
+    roles: ['organizer'],
+    icon: 'bi-arrow-repeat',
+    labelKey: 'registration_tab_event_sync',
+    fallbackLabel: 'Event Synchronization'
+  }
+];
+const registrationNavigationState = {
+  role: 'guest',
+  activeKey: ''
+};
 
 function getRegistrationEventKey(eventId = getEvent()?.id) {
   return eventId != null && eventId !== '' ? `${eventId}` : '__all__';
@@ -204,8 +282,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await ensureTranslationsReady();
   const user = getUserFromToken();
   const role = user?.role?.toLowerCase() || 'guest';
-  setRoleTabVisibility(role);
-  setupRegistrationTabs();
+  setupRegistrationNavigation(role);
   if (role === 'school') {
     initSchoolTab();
     initCompetitionsTab();
@@ -220,87 +297,236 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-function setupRegistrationTabs() {
-  const tabButtons = document.querySelectorAll('#registrationTabs button[data-bs-toggle="tab"]');
-  if (!tabButtons.length) {
+function setupRegistrationNavigation(role) {
+  registrationNavigationState.role = role;
+  initRegistrationDashboard(role);
+  applyRegistrationRoleVisibility(role);
+  renderRegistrationSidebar(role);
+
+  const visibleItems = getVisibleRegistrationNavItems(role);
+  const requestedKey = window.location.hash.replace('#', '').trim();
+  const requestedItem = visibleItems.find(item => item.key === requestedKey || item.paneId === requestedKey);
+  const defaultItem = visibleItems.find(item => item.key === 'dashboard') || visibleItems[0] || null;
+
+  if (requestedItem) {
+    showRegistrationPanel(requestedItem.key);
+  } else if (defaultItem) {
+    showRegistrationPanel(defaultItem.key);
+  }
+}
+
+function getVisibleRegistrationNavItems(role = registrationNavigationState.role) {
+  return REGISTRATION_NAV_ITEMS.filter(item => item.roles.includes(role));
+}
+
+function getRegistrationSidebarTitle() {
+  const currentEvent = getEvent();
+  if (currentEvent?.name) {
+    return currentEvent.name;
+  }
+  return t('registration_sidebar_section', 'Registration');
+}
+
+function getRegistrationSidebarCopy() {
+  return {
+    section: t('registration_sidebar_section', 'Registration'),
+    subtitle: t('registration_sidebar_subtitle', 'Private zone'),
+    menuButton: t('registration_sidebar_menu_button', 'Open menu'),
+    closeButton: t('registration_sidebar_close_button', 'Close')
+  };
+}
+
+function buildRegistrationSidebarItemsMarkup(role, activeKey, options = {}) {
+  const itemClassName = options.itemClassName
+    || 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3 text-start';
+
+  return getVisibleRegistrationNavItems(role).map((item) => {
+    const isActive = item.key === activeKey;
+    const activeClasses = isActive ? ' active' : '';
+    const activeAttributes = isActive ? ' aria-current="page"' : '';
+
+    return `
+      <button
+        type="button"
+        class="${itemClassName}${activeClasses}"
+        data-registration-nav-key="${item.key}"${activeAttributes}>
+        <i class="bi ${item.icon}"></i>
+        <span>${t(item.labelKey, item.fallbackLabel)}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function renderRegistrationSidebar(role) {
+  const desktopMount = document.getElementById('registrationSidebarMount');
+  const mobileMount = document.getElementById('registrationSidebarToggle');
+
+  if (!desktopMount && !mobileMount) {
     return;
   }
 
-  const hash = window.location.hash.replace('#', '');
-  if (hash) {
-    const targetButton = document.querySelector(`#registrationTabs button[data-bs-target="#${hash}"]`);
-    if (targetButton && !isTabHidden(targetButton)) {
-      bootstrap.Tab.getOrCreateInstance(targetButton).show();
-    }
+  const visibleItems = getVisibleRegistrationNavItems(role);
+  if (!visibleItems.length) {
+    if (desktopMount) desktopMount.innerHTML = '';
+    if (mobileMount) mobileMount.innerHTML = '';
+    return;
   }
 
-  tabButtons.forEach((button) => {
-    button.addEventListener('shown.bs.tab', (event) => {
-      const target = event.target.getAttribute('data-bs-target');
-      if (target) {
-        history.replaceState(null, '', `${window.location.pathname}${window.location.search}${target}`);
-      }
-    });
-  });
+  const copy = getRegistrationSidebarCopy();
+  const title = getRegistrationSidebarTitle();
+  const activeKey = registrationNavigationState.activeKey;
+
+  const desktopMarkup = `
+    <div class="sticky-lg-top">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body border-bottom">
+          <div class="small text-uppercase text-body-secondary fw-semibold mb-2">${copy.subtitle}</div>
+          <div class="h5 mb-1">${title}</div>
+          <div class="small text-body-secondary">${copy.section}</div>
+        </div>
+        <div class="list-group list-group-flush">
+          ${buildRegistrationSidebarItemsMarkup(role, activeKey, {
+            itemClassName: 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3 border-0 border-bottom text-start'
+          })}
+        </div>
+      </div>
+    </div>
+  `;
+
+  const mobileMarkup = `
+    <button
+      class="btn btn-outline-dark d-inline-flex align-items-center gap-2"
+      type="button"
+      data-bs-toggle="offcanvas"
+      data-bs-target="#registrationSidebarOffcanvas"
+      aria-controls="registrationSidebarOffcanvas">
+      <i class="bi bi-list"></i>
+      <span>${copy.menuButton}</span>
+    </button>
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="registrationSidebarOffcanvas" aria-labelledby="registrationSidebarTitleMobile">
+      <div class="offcanvas-header border-bottom">
+        <div>
+          <div class="h5 mb-1" id="registrationSidebarTitleMobile">${title}</div>
+          <div class="small text-body-secondary">${copy.section}</div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="${copy.closeButton}"></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <div class="list-group list-group-flush">
+          ${buildRegistrationSidebarItemsMarkup(role, activeKey)}
+        </div>
+      </div>
+    </div>
+  `;
+
+  if (desktopMount) {
+    desktopMount.innerHTML = desktopMarkup;
+  }
+  if (mobileMount) {
+    mobileMount.innerHTML = mobileMarkup;
+  }
 }
 
-function isTabHidden(button) {
-  const parent = button?.closest('.nav-item');
-  return parent ? parent.classList.contains('d-none') : true;
+function hideRegistrationSidebarOffcanvas() {
+  const offcanvasEl = document.getElementById('registrationSidebarOffcanvas');
+  if (!offcanvasEl || !offcanvasEl.classList.contains('show')) {
+    return;
+  }
+
+  bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl).hide();
 }
 
-function setRoleTabVisibility(role) {
-  const tabConfig = [
-    { roles: ['organizer'], buttonId: 'schools-tab', paneId: 'schools' },
-    { roles: ['school'], buttonId: 'school-tab', paneId: 'school' },
-    { roles: ['school', 'organizer'], buttonId: 'participants-tab', paneId: 'participants' },
-    { roles: ['organizer'], buttonId: 'org-registrations-tab', paneId: 'org-registrations' },
-    { roles: ['organizer'], buttonId: 'registration-categories-tab', paneId: 'registration-categories' },
-    { roles: ['organizer'], buttonId: 'registration-disciplines-tab', paneId: 'registration-disciplines' },
-    { roles: ['school'], buttonId: 'competitions-tab', paneId: 'competitions' },
-    { roles: ['organizer'], buttonId: 'event-sync-tab', paneId: 'event-sync' }
-  ];
+function showRegistrationPanel(panelKey) {
+  const activeItem = getVisibleRegistrationNavItems().find(item => item.key === panelKey);
+  if (!activeItem) {
+    return false;
+  }
 
-  tabConfig.forEach(({ roles, buttonId, paneId }) => {
-    const button = document.getElementById(buttonId);
+  REGISTRATION_NAV_ITEMS.forEach(({ key, paneId, roles }) => {
     const pane = document.getElementById(paneId);
-    const shouldShow = roles.includes(role);
-
-    if (button) {
-      const navItem = button.closest('.nav-item');
-      if (navItem) {
-        navItem.classList.toggle('d-none', !shouldShow);
-      }
-      button.classList.toggle('active', false);
+    if (!pane) {
+      return;
     }
 
-    if (pane) {
-      pane.classList.toggle('d-none', !shouldShow);
-      pane.classList.remove('show', 'active');
+    const allowedForRole = roles.includes(registrationNavigationState.role);
+    const isActive = allowedForRole && key === activeItem.key;
+    pane.classList.toggle('d-none', !allowedForRole);
+    pane.classList.toggle('show', isActive);
+    pane.classList.toggle('active', isActive);
+  });
+
+  document.querySelectorAll('[data-registration-nav-key]').forEach((button) => {
+    const isActive = button.getAttribute('data-registration-nav-key') === activeItem.key;
+    button.classList.toggle('active', isActive);
+    if (isActive) {
+      button.setAttribute('aria-current', 'page');
+    } else {
+      button.removeAttribute('aria-current');
     }
   });
 
-  let preferredButton = null;
-  if (role === 'organizer') {
-    preferredButton = document.getElementById('schools-tab');
-  } else if (role === 'school') {
-    preferredButton = document.getElementById('school-tab');
-  }
+  registrationNavigationState.activeKey = activeItem.key;
+  history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${activeItem.paneId}`);
+  hideRegistrationSidebarOffcanvas();
+  return true;
+}
 
-  if (preferredButton && !isTabHidden(preferredButton)) {
-    bootstrap.Tab.getOrCreateInstance(preferredButton).show();
+function applyRegistrationRoleVisibility(role) {
+  REGISTRATION_NAV_ITEMS.forEach(({ paneId, roles }) => {
+    const pane = document.getElementById(paneId);
+    if (!pane) {
+      return;
+    }
+
+    const shouldShow = roles.includes(role);
+    pane.classList.toggle('d-none', !shouldShow);
+    pane.classList.remove('show', 'active');
+  });
+}
+
+function initRegistrationDashboard(role) {
+  const badge = document.getElementById('registrationDashboardBadge');
+  const title = document.getElementById('registrationDashboardTitle');
+  const text = document.getElementById('registrationDashboardText');
+
+  if (!badge || !title || !text) {
     return;
   }
 
-  const firstVisibleButton = Array.from(document.querySelectorAll('#registrationTabs .nav-item'))
-    .filter(item => !item.classList.contains('d-none'))
-    .map(item => item.querySelector('button'))
-    .find(Boolean);
-
-  if (firstVisibleButton) {
-    bootstrap.Tab.getOrCreateInstance(firstVisibleButton).show();
+  if (role === 'organizer') {
+    badge.className = 'badge rounded-pill text-bg-primary mb-3';
+    badge.textContent = t('registration_dashboard_badge_organizer', 'Organizer view');
+    title.textContent = t('registration_dashboard_title_organizer', 'Organizer dashboard');
+    text.textContent = t('registration_dashboard_text_organizer', 'Temporary banner for organizer access.');
+    return;
   }
+
+  if (role === 'school') {
+    badge.className = 'badge rounded-pill text-bg-success mb-3';
+    badge.textContent = t('registration_dashboard_badge_school', 'School view');
+    title.textContent = t('registration_dashboard_title_school', 'School dashboard');
+    text.textContent = t('registration_dashboard_text_school', 'Temporary banner for school access.');
+    return;
+  }
+
+  badge.className = 'badge rounded-pill text-bg-secondary mb-3';
+  badge.textContent = t('registration_tab_dashboard', 'Dashboard');
+  title.textContent = t('registration_tab_dashboard', 'Dashboard');
+  text.textContent = t('registration_sidebar_section', 'Registration');
 }
+
+document.addEventListener('click', (event) => {
+  const navButton = event.target.closest('[data-registration-nav-key]');
+  if (!navButton) {
+    return;
+  }
+
+  event.preventDefault();
+  const panelKey = navButton.getAttribute('data-registration-nav-key');
+  if (panelKey) {
+    showRegistrationPanel(panelKey);
+  }
+});
 
 async function fetchSchoolRecord(userId) {
   if (registrationState.school) {

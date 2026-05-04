@@ -17,6 +17,22 @@
     .members-modal .modal-content {
       height: 100%;
     }
+    .registration-dashboard-card {
+      background:
+        radial-gradient(circle at top right, rgba(13, 110, 253, 0.14), transparent 26rem),
+        linear-gradient(135deg, rgba(248, 249, 250, 1) 0%, rgba(255, 255, 255, 1) 100%);
+      overflow: hidden;
+    }
+    .registration-dashboard-icon {
+      width: 4rem;
+      height: 4rem;
+      border-radius: 1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(13, 110, 253, 0.12);
+      color: #0d6efd;
+    }
     .audio-dropzone {
       border-style: dashed;
       transition: border-color 0.15s ease, background-color 0.15s ease;
@@ -31,38 +47,31 @@
   
   <div id="header"></div>  
   <main class="flex-grow-1">
-    <div class="container py-4">
-      <div class="row">
-        <div class="col-12">
-          <ul class="nav nav-tabs mb-3" id="registrationTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="schools-tab" data-bs-toggle="tab" data-bs-target="#schools" type="button" role="tab" aria-controls="schools" aria-selected="true" data-i18n="registration_tab_schools">Escuelas</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="school-tab" data-bs-toggle="tab" data-bs-target="#school" type="button" role="tab" aria-controls="school" aria-selected="false" data-i18n="registration_tab_school">Datos de la Escuela</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="participants-tab" data-bs-toggle="tab" data-bs-target="#participants" type="button" role="tab" aria-controls="participants" aria-selected="false" data-i18n="registration_tab_participants">Participantes</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="org-registrations-tab" data-bs-toggle="tab" data-bs-target="#org-registrations" type="button" role="tab" aria-controls="org-registrations" aria-selected="false" data-i18n="registration_tab_org_registrations">Inscripciones</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="registration-categories-tab" data-bs-toggle="tab" data-bs-target="#registration-categories" type="button" role="tab" aria-controls="registration-categories" aria-selected="false" data-i18n="registration_tab_categories">Categorias</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="registration-disciplines-tab" data-bs-toggle="tab" data-bs-target="#registration-disciplines" type="button" role="tab" aria-controls="registration-disciplines" aria-selected="false" data-i18n="registration_tab_disciplines">Disciplinas/Estilos</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="competitions-tab" data-bs-toggle="tab" data-bs-target="#competitions" type="button" role="tab" aria-controls="competitions" aria-selected="false" data-i18n="registration_tab_competitions">Inscripciones en competiciones</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="event-sync-tab" data-bs-toggle="tab" data-bs-target="#event-sync" type="button" role="tab" aria-controls="event-sync" aria-selected="false" data-i18n="registration_tab_event_sync">Sincronizacion Evento</button>
-            </li>
-          </ul>
+    <div class="container-fluid py-4">
+      <div id="registrationSidebarToggle" class="d-lg-none mb-3"></div>
 
-          <div class="tab-content" id="registrationTabsContent">
-            <div class="tab-pane fade show active" id="school" role="tabpanel" aria-labelledby="school-tab">
+      <div class="row g-4 align-items-start">
+        <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+          <div id="registrationSidebarMount"></div>
+        </aside>
+
+        <section class="col-12 col-lg-9 col-xl-10">
+          <div class="tab-content" id="registrationPanelsContent">
+            <div class="tab-pane fade" id="dashboard" role="tabpanel">
+              <div class="card border-0 shadow-sm registration-dashboard-card">
+                <div class="card-body p-4 p-lg-5">
+                  <div class="registration-dashboard-icon mb-4">
+                    <i class="bi bi-speedometer2 fs-2"></i>
+                  </div>
+                  <span class="badge rounded-pill text-bg-primary mb-3" id="registrationDashboardBadge">Dashboard</span>
+                  <h1 class="display-6 fw-semibold mb-3" id="registrationDashboardTitle">Dashboard</h1>
+                  <p class="lead text-body-secondary mb-0" id="registrationDashboardText">
+                    Panel inicial de inscripciones.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="school" role="tabpanel">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
                   <form id="schoolForm" novalidate>
@@ -131,7 +140,7 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane fade" id="participants" role="tabpanel" aria-labelledby="participants-tab">
+            <div class="tab-pane fade" id="participants" role="tabpanel">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
                   <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
@@ -182,7 +191,7 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane fade" id="org-registrations" role="tabpanel" aria-labelledby="org-registrations-tab">
+            <div class="tab-pane fade" id="org-registrations" role="tabpanel">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
                   <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
@@ -250,7 +259,7 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane fade" id="registration-categories" role="tabpanel" aria-labelledby="registration-categories-tab">
+            <div class="tab-pane fade" id="registration-categories" role="tabpanel">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
                   <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
@@ -288,7 +297,7 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane fade" id="registration-disciplines" role="tabpanel" aria-labelledby="registration-disciplines-tab">
+            <div class="tab-pane fade" id="registration-disciplines" role="tabpanel">
               <div class="col-12 col-lg-6">
                 <div class="card shadow-sm bg-light">
                   <div class="card-body p-4">
@@ -305,7 +314,7 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane fade" id="competitions" role="tabpanel" aria-labelledby="competitions-tab">
+            <div class="tab-pane fade" id="competitions" role="tabpanel">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
                   <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
@@ -343,7 +352,7 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane fade" id="schools" role="tabpanel" aria-labelledby="schools-tab">
+            <div class="tab-pane fade" id="schools" role="tabpanel">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
                   <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3">
@@ -392,7 +401,7 @@
                 </div>
               </div>
             </div>
-            <div class="tab-pane fade" id="event-sync" role="tabpanel" aria-labelledby="event-sync-tab">
+            <div class="tab-pane fade" id="event-sync" role="tabpanel">
               <div class="alert alert-info d-flex align-items-start gap-3 mb-3" role="alert">
                 <i class="bi bi-info-circle-fill fs-5 mt-1"></i>
                 <div data-i18n="event_sync_recommendation">
@@ -441,7 +450,7 @@
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   </main>
