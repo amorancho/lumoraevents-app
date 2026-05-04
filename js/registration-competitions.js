@@ -1132,6 +1132,9 @@
       }
       const data = await res.json();
       registrationState.registrations = Array.isArray(data) ? data : [];
+      if (typeof notifySchoolRegistrationsUpdate === 'function') {
+        notifySchoolRegistrationsUpdate();
+      }
       renderRegistrations();
     } catch (err) {
       showRegistrationsError(err.message || t('registration_competitions_load_error', 'Error loading registrations.'));

@@ -277,6 +277,10 @@ function notifyRegistrationParticipantsUpdate() {
   window.dispatchEvent(new CustomEvent('registration:participants-updated'));
 }
 
+function notifySchoolRegistrationsUpdate() {
+  window.dispatchEvent(new CustomEvent('registration:school-registrations-updated'));
+}
+
 function notifyOrganizerRegistrationsUpdate() {
   window.dispatchEvent(new CustomEvent('registration:organizer-registrations-updated'));
 }
@@ -290,6 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (role === 'school') {
     initSchoolTab();
     initCompetitionsTab();
+    initSchoolDashboard();
   }
   initParticipantsTab(role);
   if (role === 'organizer') {
@@ -500,6 +505,7 @@ function initRegistrationDashboard(role) {
   const title = document.getElementById('registrationDashboardTitle');
   const text = document.getElementById('registrationDashboardText');
   const organizerDashboard = document.getElementById('registrationOrganizerDashboard');
+  const schoolDashboard = document.getElementById('registrationSchoolDashboard');
   const heroCard = document.querySelector('#dashboard .registration-dashboard-card');
 
   if (!badge || !title || !text) {
@@ -513,6 +519,9 @@ function initRegistrationDashboard(role) {
     if (organizerDashboard) {
       organizerDashboard.classList.remove('d-none');
     }
+    if (schoolDashboard) {
+      schoolDashboard.classList.add('d-none');
+    }
     badge.className = 'badge rounded-pill text-bg-primary mb-3';
     badge.textContent = t('registration_dashboard_badge_organizer', 'Organizer view');
     title.textContent = t('registration_dashboard_title_organizer', 'Organizer dashboard');
@@ -523,15 +532,24 @@ function initRegistrationDashboard(role) {
   if (organizerDashboard) {
     organizerDashboard.classList.add('d-none');
   }
+  if (schoolDashboard) {
+    schoolDashboard.classList.add('d-none');
+  }
   if (heroCard) {
     heroCard.classList.remove('d-none');
   }
 
   if (role === 'school') {
+    if (heroCard) {
+      heroCard.classList.add('d-none');
+    }
+    if (schoolDashboard) {
+      schoolDashboard.classList.remove('d-none');
+    }
     badge.className = 'badge rounded-pill text-bg-success mb-3';
     badge.textContent = t('registration_dashboard_badge_school', 'School view');
     title.textContent = t('registration_dashboard_title_school', 'School dashboard');
-    text.textContent = t('registration_dashboard_text_school', 'Temporary banner for school access.');
+    text.textContent = t('registration_dashboard_text_school', 'Overview of your participants and registrations.');
     return;
   }
 
@@ -1115,6 +1133,324 @@ function initOrganizerDashboard() {
   window.addEventListener('registration:config-updated', scheduleRender);
   window.addEventListener('registration:panel-changed', (event) => {
     if (event?.detail?.key !== 'dashboard') {
+      return;
+    }
+    window.setTimeout(scheduleRender, 0);
+  });
+
+  scheduleRender();
+}
+
+function initSchoolDashboard() {
+  const dashboardPane = document.getElementById('dashboard');
+  const dashboardRoot = document.getElementById('registrationSchoolDashboard');
+  if (!dashboardPane || !dashboardRoot) {
+    return;
+  }
+
+  const statElements = {
+    participants: document.getElementById('schoolDashboardParticipantsValue'),
+    registrations: document.getElementById('schoolDashboardRegistrationsValue'),
+    registrationsWithoutMusic: document.getElementById('schoolDashboardRegistrationsWithoutMusicValue'),
+    statusCre: document.getElementById('schoolDashboardStatusCreValue'),
+    statusPen: document.getElementById('schoolDashboardStatusPenValue'),
+    statusVal: document.getElementById('schoolDashboardStatusValValue'),
+    statusRej: document.getElementById('schoolDashboardStatusRejValue')
+  };
+  const chartElements = {
+    categories: document.getElementById('schoolDashboardCategoryChart'),
+    styles: document.getElementById('schoolDashboardStyleChart')
+  };
+  const chartInstances = {};
+  const statusOrder = [
+    { code: 'CRE', label: 'registration_status_creation', fallback: 'In creation' },
+    { code: 'PEN', label: 'registration_status_pending', fallback: 'Pending validation' },
+    { code: 'VAL', label: 'registration_status_validated', fallback: 'Validated' },
+    { code: 'REJ', label: 'registration_status_rejected', fallback: 'Rejected' }
+  ];
+  let renderQueued = false;
+  let needsChartRefresh = true;
+
+  const getLanguage = () => localStorage.getItem('lang') || document.documentElement.getAttribute('lang') || 'es';
+
+  const formatInteger = (value) => {
+    const number = Number(value);
+    return new Intl.NumberFormat(getLanguage()).format(Number.isFinite(number) ? number : 0);
+  };
+
+  const getUiColors = () => {
+    const styles = getComputedStyle(document.documentElement);
+    return {
+      text: (styles.getPropertyValue('--bs-body-color') || '#212529').trim(),
+      muted: (styles.getPropertyValue('--bs-secondary-color') || '#6c757d').trim(),
+      border: 'rgba(33, 37, 41, 0.08)',
+      fontFamily: (styles.getPropertyValue('--bs-body-font-family') || 'inherit').trim()
+    };
+  };
+
+  const getCategoryId = (registration) => registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+  const getStyleId = (registration) => registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
+  const hasMusic = (registration) => Number(registration?.has_music) === 1 || registration?.has_music === true || Boolean(registration?.audio);
+
+  const incrementEntryMap = (map, key, label, amount = 1) => {
+    if (!key) return;
+    const entry = map.get(key) || { label: label || t('registration_dashboard_unassigned', 'Unassigned'), value: 0 };
+    entry.value += amount;
+    if (!entry.label) {
+      entry.label = label || t('registration_dashboard_unassigned', 'Unassigned');
+    }
+    map.set(key, entry);
+  };
+
+  const getAllEntries = (map) => (
+    [...map.values()].sort((left, right) => {
+      if (right.value !== left.value) {
+        return right.value - left.value;
+      }
+      return left.label.localeCompare(right.label, getLanguage());
+    })
+  );
+
+  const isDashboardVisible = () => dashboardPane.classList.contains('active') && !dashboardPane.classList.contains('d-none');
+
+  const destroyChart = (key) => {
+    if (!chartInstances[key]) {
+      return;
+    }
+    chartInstances[key].destroy();
+    delete chartInstances[key];
+  };
+
+  const createBaseChartOptions = (ui) => ({
+    chart: {
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      animations: { speed: 260 },
+      fontFamily: ui.fontFamily
+    },
+    dataLabels: { enabled: false },
+    legend: { show: false },
+    grid: {
+      borderColor: ui.border,
+      strokeDashArray: 4
+    },
+    noData: {
+      text: t('registration_dashboard_no_data', 'No data available')
+    },
+    tooltip: {
+      theme: 'light'
+    }
+  });
+
+  const renderChart = (key, element, options) => {
+    if (!element || typeof ApexCharts === 'undefined') {
+      return;
+    }
+    destroyChart(key);
+    element.innerHTML = '';
+    chartInstances[key] = new ApexCharts(element, options);
+    chartInstances[key].render();
+  };
+
+  const getHorizontalChartHeight = (entries) => Math.max(360, (Array.isArray(entries) ? entries.length : 0) * 52);
+
+  const buildMetrics = () => {
+    const participants = Array.isArray(registrationState.participants) ? registrationState.participants : [];
+    const registrations = Array.isArray(registrationState.registrations) ? registrationState.registrations : [];
+    const categories = Array.isArray(registrationState.registrationCategories) ? registrationState.registrationCategories : [];
+    const styles = Array.isArray(registrationState.registrationDisciplines) ? registrationState.registrationDisciplines : [];
+    const categoriesById = new Map(categories.map((category) => [`${category.id}`, category]));
+    const stylesById = new Map(styles.map((style) => [`${style.id}`, style]));
+    const categoryCounts = new Map();
+    const styleCounts = new Map();
+    const statusCounts = statusOrder.map((statusItem) => ({
+      ...statusItem,
+      count: 0
+    }));
+
+    registrations.forEach((registration) => {
+      const matchingStatus = statusCounts.find((item) => item.code === `${registration?.status || ''}`);
+      if (matchingStatus) {
+        matchingStatus.count += 1;
+      }
+
+      const categoryId = getCategoryId(registration);
+      const categoryLabel = registration?.category_name || categoriesById.get(`${categoryId}`)?.name || t('registration_dashboard_unassigned', 'Unassigned');
+      const categoryKey = categoryId ? `category:${categoryId}` : `category:${categoryLabel}`;
+      incrementEntryMap(categoryCounts, categoryKey, categoryLabel, 1);
+
+      const styleId = getStyleId(registration);
+      const styleLabel = registration?.style_name || stylesById.get(`${styleId}`)?.name || t('registration_dashboard_unassigned', 'Unassigned');
+      const styleKey = styleId ? `style:${styleId}` : `style:${styleLabel}`;
+      incrementEntryMap(styleCounts, styleKey, styleLabel, 1);
+    });
+
+    return {
+      totalParticipants: participants.length,
+      totalRegistrations: registrations.length,
+      registrationsWithoutMusic: registrations.filter((registration) => !hasMusic(registration)).length,
+      status: statusCounts.reduce((summary, item) => {
+        summary[item.code] = item.count;
+        return summary;
+      }, {}),
+      categories: getAllEntries(categoryCounts),
+      styles: getAllEntries(styleCounts)
+    };
+  };
+
+  const renderStats = (metrics) => {
+    if (statElements.participants) statElements.participants.textContent = formatInteger(metrics.totalParticipants);
+    if (statElements.registrations) statElements.registrations.textContent = formatInteger(metrics.totalRegistrations);
+    if (statElements.registrationsWithoutMusic) statElements.registrationsWithoutMusic.textContent = formatInteger(metrics.registrationsWithoutMusic);
+    if (statElements.statusCre) statElements.statusCre.textContent = formatInteger(metrics.status.CRE);
+    if (statElements.statusPen) statElements.statusPen.textContent = formatInteger(metrics.status.PEN);
+    if (statElements.statusVal) statElements.statusVal.textContent = formatInteger(metrics.status.VAL);
+    if (statElements.statusRej) statElements.statusRej.textContent = formatInteger(metrics.status.REJ);
+  };
+
+  const renderCharts = (metrics) => {
+    const ui = getUiColors();
+    const baseOptions = createBaseChartOptions(ui);
+    const horizontalLabelOptions = {
+      minWidth: 300,
+      maxWidth: 420,
+      offsetX: 0,
+      style: {
+        colors: ui.muted,
+        fontSize: '11px'
+      }
+    };
+    const horizontalBarDataLabels = {
+      enabled: true,
+      formatter: (value) => formatInteger(value),
+      textAnchor: 'middle',
+      offsetX: 0,
+      style: {
+        colors: ['#ffffff'],
+        fontSize: '11px',
+        fontWeight: 700
+      },
+      background: {
+        enabled: false
+      },
+      dropShadow: {
+        enabled: false
+      }
+    };
+
+    renderChart('categories', chartElements.categories, {
+      ...baseOptions,
+      chart: {
+        ...baseOptions.chart,
+        type: 'bar',
+        height: getHorizontalChartHeight(metrics.categories),
+        offsetX: -8
+      },
+      dataLabels: horizontalBarDataLabels,
+      grid: {
+        ...baseOptions.grid,
+        padding: {
+          left: 0,
+          right: 8
+        }
+      },
+      colors: ['#0d6efd'],
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          borderRadius: 4,
+          barHeight: '58%',
+          dataLabels: {
+            position: 'center'
+          }
+        }
+      },
+      series: [{
+        name: t('registration_dashboard_series_registrations', 'Registrations'),
+        data: metrics.categories.map((item) => item.value)
+      }],
+      xaxis: {
+        categories: metrics.categories.map((item) => item.label),
+        labels: {
+          style: { colors: ui.muted }
+        }
+      },
+      yaxis: {
+        labels: horizontalLabelOptions
+      }
+    });
+
+    renderChart('styles', chartElements.styles, {
+      ...baseOptions,
+      chart: {
+        ...baseOptions.chart,
+        type: 'bar',
+        height: getHorizontalChartHeight(metrics.styles),
+        offsetX: -8
+      },
+      dataLabels: horizontalBarDataLabels,
+      grid: {
+        ...baseOptions.grid,
+        padding: {
+          left: 0,
+          right: 8
+        }
+      },
+      colors: ['#20c997'],
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          borderRadius: 4,
+          barHeight: '58%',
+          dataLabels: {
+            position: 'center'
+          }
+        }
+      },
+      series: [{
+        name: t('registration_dashboard_series_registrations', 'Registrations'),
+        data: metrics.styles.map((item) => item.value)
+      }],
+      xaxis: {
+        categories: metrics.styles.map((item) => item.label),
+        labels: {
+          style: { colors: ui.muted }
+        }
+      },
+      yaxis: {
+        labels: horizontalLabelOptions
+      }
+    });
+  };
+
+  const renderDashboard = () => {
+    renderQueued = false;
+    const metrics = buildMetrics();
+    renderStats(metrics);
+    if (!isDashboardVisible()) {
+      needsChartRefresh = true;
+      return;
+    }
+    renderCharts(metrics);
+    needsChartRefresh = false;
+  };
+
+  const scheduleRender = () => {
+    if (renderQueued) {
+      return;
+    }
+    renderQueued = true;
+    window.requestAnimationFrame(renderDashboard);
+  };
+
+  window.addEventListener('registration:participants-updated', scheduleRender);
+  window.addEventListener('registration:school-registrations-updated', scheduleRender);
+  window.addEventListener('registration:config-updated', scheduleRender);
+  window.addEventListener('registration:panel-changed', (event) => {
+    if (event?.detail?.key !== 'dashboard') {
+      return;
+    }
+    if (!needsChartRefresh) {
       return;
     }
     window.setTimeout(scheduleRender, 0);

@@ -152,6 +152,24 @@
       background: rgba(220, 53, 69, 0.14);
       color: #dc3545;
     }
+    .registration-dashboard-alert-card {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(255, 255, 255, 1));
+    }
+    .registration-dashboard-alert-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0.35rem;
+      border-radius: 0.35rem;
+      background: #dc3545;
+      opacity: 0.95;
+    }
+    .registration-dashboard-alert-card .registration-dashboard-kpi-icon {
+      background: rgba(220, 53, 69, 0.14);
+      color: #dc3545;
+    }
     .registration-dashboard-chart {
       min-height: 320px;
     }
@@ -320,7 +338,7 @@
                         <div id="organizerDashboardStyleChart" class="registration-dashboard-chart"></div>
                       </div>
                     </div>
-                    <div class="card registration-dashboard-panel-card registration-dashboard-panel-wide">
+                    <div class="card registration-dashboard-panel-card">
                       <div class="card-header">
                         <div class="fw-semibold" data-i18n="registration_dashboard_chart_registrations_per_day">Inscripciones por día</div>
                       </div>
@@ -328,7 +346,7 @@
                         <div id="organizerDashboardRegistrationsByDayChart" class="registration-dashboard-chart"></div>
                       </div>
                     </div>
-                    <div class="card registration-dashboard-panel-card registration-dashboard-panel-wide">
+                    <div class="card registration-dashboard-panel-card">
                       <div class="card-header">
                         <div class="fw-semibold" data-i18n="registration_dashboard_chart_schools_per_day">Altas de escuelas por día</div>
                       </div>
@@ -350,6 +368,96 @@
                       </div>
                       <div class="card-body">
                         <div id="organizerDashboardTopRegistrationSchoolsChart" class="registration-dashboard-chart registration-dashboard-chart-small"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="registrationSchoolDashboard" class="d-none">
+                  <div class="registration-dashboard-summary-grid">
+                    <div class="card registration-dashboard-stat-card">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_participants">Participantes</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-people"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardParticipantsValue">0</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_registrations">Inscripciones</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-journal-check"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardRegistrationsValue">0</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-alert-card">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_registrations_without_music">Inscripciones sin música</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-exclamation-triangle"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardRegistrationsWithoutMusicValue">0</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="registration-dashboard-status-grid mt-4">
+                    <div class="card registration-dashboard-stat-card registration-dashboard-status-card" data-status="CRE">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_status_creation">En creación</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-pencil-square"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardStatusCreValue">0</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-status-card" data-status="PEN">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_status_pending">Pendiente de validación</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-hourglass-split"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardStatusPenValue">0</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-status-card" data-status="VAL">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_status_validated">Validada</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-check2-circle"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardStatusValValue">0</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-status-card" data-status="REJ">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_status_rejected">Rechazada</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-x-circle"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardStatusRejValue">0</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="registration-dashboard-panels mt-4">
+                    <div class="card registration-dashboard-panel-card">
+                      <div class="card-header">
+                        <div class="fw-semibold" data-i18n="registration_dashboard_chart_categories">Inscripciones por categoría</div>
+                      </div>
+                      <div class="card-body">
+                        <div id="schoolDashboardCategoryChart" class="registration-dashboard-chart"></div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-panel-card">
+                      <div class="card-header">
+                        <div class="fw-semibold" data-i18n="registration_dashboard_chart_styles">Inscripciones por estilo</div>
+                      </div>
+                      <div class="card-body">
+                        <div id="schoolDashboardStyleChart" class="registration-dashboard-chart"></div>
                       </div>
                     </div>
                   </div>
