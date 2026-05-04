@@ -273,6 +273,10 @@ function notifyRegistrationSchoolsUpdate() {
   window.dispatchEvent(new CustomEvent('registration:schools-updated'));
 }
 
+function notifyRegistrationParticipantsUpdate() {
+  window.dispatchEvent(new CustomEvent('registration:participants-updated'));
+}
+
 function notifyOrganizerRegistrationsUpdate() {
   window.dispatchEvent(new CustomEvent('registration:organizer-registrations-updated'));
 }
@@ -289,6 +293,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   initParticipantsTab(role);
   if (role === 'organizer') {
+    initOrganizerDashboard();
     initSchoolsTab();
     initOrganizerRegistrationsTab();
     initRegistrationCategoriesTab();
@@ -468,6 +473,12 @@ function showRegistrationPanel(panelKey) {
   registrationNavigationState.activeKey = activeItem.key;
   history.replaceState(null, '', `${window.location.pathname}${window.location.search}#${activeItem.paneId}`);
   hideRegistrationSidebarOffcanvas();
+  window.dispatchEvent(new CustomEvent('registration:panel-changed', {
+    detail: {
+      key: activeItem.key,
+      paneId: activeItem.paneId
+    }
+  }));
   return true;
 }
 
@@ -488,17 +499,32 @@ function initRegistrationDashboard(role) {
   const badge = document.getElementById('registrationDashboardBadge');
   const title = document.getElementById('registrationDashboardTitle');
   const text = document.getElementById('registrationDashboardText');
+  const organizerDashboard = document.getElementById('registrationOrganizerDashboard');
+  const heroCard = document.querySelector('#dashboard .registration-dashboard-card');
 
   if (!badge || !title || !text) {
     return;
   }
 
   if (role === 'organizer') {
+    if (heroCard) {
+      heroCard.classList.add('d-none');
+    }
+    if (organizerDashboard) {
+      organizerDashboard.classList.remove('d-none');
+    }
     badge.className = 'badge rounded-pill text-bg-primary mb-3';
     badge.textContent = t('registration_dashboard_badge_organizer', 'Organizer view');
     title.textContent = t('registration_dashboard_title_organizer', 'Organizer dashboard');
-    text.textContent = t('registration_dashboard_text_organizer', 'Temporary banner for organizer access.');
+    text.textContent = t('registration_dashboard_text_organizer', 'Real-time overview of schools, participants, and registrations.');
     return;
+  }
+
+  if (organizerDashboard) {
+    organizerDashboard.classList.add('d-none');
+  }
+  if (heroCard) {
+    heroCard.classList.remove('d-none');
   }
 
   if (role === 'school') {
@@ -513,6 +539,588 @@ function initRegistrationDashboard(role) {
   badge.textContent = t('registration_tab_dashboard', 'Dashboard');
   title.textContent = t('registration_tab_dashboard', 'Dashboard');
   text.textContent = t('registration_sidebar_section', 'Registration');
+}
+
+function initOrganizerDashboard() {
+  const dashboardPane = document.getElementById('dashboard');
+  const dashboardRoot = document.getElementById('registrationOrganizerDashboard');
+  const panelsContainer = dashboardRoot?.querySelector('.registration-dashboard-panels');
+  if (!dashboardPane || !dashboardRoot) {
+    return;
+  }
+
+  const statElements = {
+    schools: document.getElementById('organizerDashboardSchoolsValue'),
+    participants: document.getElementById('organizerDashboardParticipantsValue'),
+    registrations: document.getElementById('organizerDashboardRegistrationsValue'),
+    categoriesWithout: document.getElementById('organizerDashboardCategoriesWithoutValue'),
+    stylesWithout: document.getElementById('organizerDashboardStylesWithoutValue'),
+    statusCre: document.getElementById('organizerDashboardStatusCreValue'),
+    statusPen: document.getElementById('organizerDashboardStatusPenValue'),
+    statusVal: document.getElementById('organizerDashboardStatusValValue'),
+    statusRej: document.getElementById('organizerDashboardStatusRejValue')
+  };
+  const chartElements = {
+    categories: document.getElementById('organizerDashboardCategoryChart'),
+    styles: document.getElementById('organizerDashboardStyleChart'),
+    registrationsByDay: document.getElementById('organizerDashboardRegistrationsByDayChart'),
+    schoolsByDay: document.getElementById('organizerDashboardSchoolsByDayChart'),
+    topSchools: document.getElementById('organizerDashboardTopSchoolsChart'),
+    topRegistrationSchools: document.getElementById('organizerDashboardTopRegistrationSchoolsChart')
+  };
+  const chartInstances = {};
+  const statusOrder = [
+    { code: 'CRE', label: 'registration_status_creation', fallback: 'In creation', color: '#0d6efd' },
+    { code: 'PEN', label: 'registration_status_pending', fallback: 'Pending validation', color: '#ffc107' },
+    { code: 'VAL', label: 'registration_status_validated', fallback: 'Validated', color: '#198754' },
+    { code: 'REJ', label: 'registration_status_rejected', fallback: 'Rejected', color: '#dc3545' }
+  ];
+  let renderQueued = false;
+  let needsChartRefresh = true;
+
+  const reorderDashboardPanels = () => {
+    if (!panelsContainer) {
+      return;
+    }
+
+    const orderedCards = [
+      panelsContainer.querySelector('#organizerDashboardStatusChart')?.closest('.card'),
+      chartElements.categories?.closest('.card'),
+      chartElements.styles?.closest('.card'),
+      chartElements.topSchools?.closest('.card'),
+      chartElements.topRegistrationSchools?.closest('.card'),
+      chartElements.registrationsByDay?.closest('.card'),
+      chartElements.schoolsByDay?.closest('.card')
+    ].filter(Boolean);
+
+    orderedCards.forEach((card) => {
+      panelsContainer.appendChild(card);
+    });
+  };
+
+  const getLanguage = () => localStorage.getItem('lang') || document.documentElement.getAttribute('lang') || 'es';
+
+  const formatInteger = (value) => {
+    const number = Number(value);
+    return new Intl.NumberFormat(getLanguage()).format(Number.isFinite(number) ? number : 0);
+  };
+
+  const getUiColors = () => {
+    const styles = getComputedStyle(document.documentElement);
+    return {
+      text: (styles.getPropertyValue('--bs-body-color') || '#212529').trim(),
+      muted: (styles.getPropertyValue('--bs-secondary-color') || '#6c757d').trim(),
+      border: 'rgba(33, 37, 41, 0.08)',
+      fontFamily: (styles.getPropertyValue('--bs-body-font-family') || 'inherit').trim()
+    };
+  };
+
+  const parseDashboardDate = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) {
+      return Number.isNaN(value.getTime()) ? null : value;
+    }
+    const rawValue = `${value}`.trim();
+    if (!rawValue) return null;
+    const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(rawValue)
+      ? `${rawValue}T00:00:00`
+      : rawValue.replace(' ', 'T');
+    const parsed = new Date(normalizedValue);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const getDateKey = (value) => {
+    const parsed = parseDashboardDate(value);
+    if (!parsed) return '';
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatShortDate = (dateKey) => {
+    const parsed = parseDashboardDate(dateKey);
+    if (!parsed) return dateKey;
+    return new Intl.DateTimeFormat(getLanguage(), {
+      day: '2-digit',
+      month: '2-digit'
+    }).format(parsed);
+  };
+
+  const getCreatedAt = (item) => item?.created_at || item?.createdAt || item?.date_created || item?.created || '';
+  const getSchoolName = (school) => school?.name || school?.school_name || '';
+  const getSchoolId = (item) => item?.school_id ?? item?.school?.id ?? '';
+  const getCategoryId = (registration) => registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+  const getStyleId = (registration) => registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
+
+  const getRegistrationParticipantsCount = (registration) => {
+    const rawCount = registration?.member_count
+      ?? registration?.participants_count
+      ?? registration?.members_count
+      ?? registration?.num_participants;
+    if (rawCount !== undefined && rawCount !== null) {
+      return Number(rawCount) || 0;
+    }
+    if (Array.isArray(registration?.members)) {
+      return registration.members.length;
+    }
+    if (Array.isArray(registration?.participants)) {
+      return registration.participants.length;
+    }
+    return 0;
+  };
+
+  const incrementEntryMap = (map, key, label, amount = 1) => {
+    if (!key) return;
+    const entry = map.get(key) || { label: label || t('registration_dashboard_unassigned', 'Unassigned'), value: 0 };
+    entry.value += amount;
+    if (!entry.label) {
+      entry.label = label || t('registration_dashboard_unassigned', 'Unassigned');
+    }
+    map.set(key, entry);
+  };
+
+  const getTopEntries = (map, limit = 5) => (
+    [...map.values()]
+      .sort((left, right) => {
+        if (right.value !== left.value) {
+          return right.value - left.value;
+        }
+        return left.label.localeCompare(right.label, getLanguage());
+      })
+      .slice(0, limit)
+  );
+
+  const buildDailySeries = (items, options = {}) => {
+    const counts = new Map();
+    (Array.isArray(items) ? items : []).forEach((item) => {
+      const dateKey = getDateKey(getCreatedAt(item));
+      if (!dateKey) return;
+      counts.set(dateKey, (counts.get(dateKey) || 0) + 1);
+    });
+
+    const startKey = getDateKey(options.start);
+    const endKey = getDateKey(options.end);
+    let orderedKeys = [];
+
+    if (startKey && endKey) {
+      const startDate = parseDashboardDate(startKey);
+      const endDate = parseDashboardDate(endKey);
+      if (startDate && endDate && startDate <= endDate) {
+        const cursor = new Date(startDate.getTime());
+        while (cursor <= endDate) {
+          orderedKeys.push(getDateKey(cursor));
+          cursor.setDate(cursor.getDate() + 1);
+        }
+      }
+    }
+
+    if (!orderedKeys.length) {
+      orderedKeys = [...counts.keys()].sort();
+    }
+
+    return {
+      categories: orderedKeys.map(formatShortDate),
+      values: orderedKeys.map((dateKey) => counts.get(dateKey) || 0)
+    };
+  };
+
+  const getWeeklyTickAmount = (series) => {
+    const totalPoints = Array.isArray(series?.values) ? series.values.length : 0;
+    if (totalPoints <= 1) return totalPoints || 1;
+    return Math.max(2, Math.ceil(totalPoints / 7));
+  };
+
+  const isDashboardVisible = () => dashboardPane.classList.contains('active') && !dashboardPane.classList.contains('d-none');
+
+  const destroyChart = (key) => {
+    if (!chartInstances[key]) {
+      return;
+    }
+    chartInstances[key].destroy();
+    delete chartInstances[key];
+  };
+
+  const createBaseChartOptions = (ui) => ({
+    chart: {
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      animations: { speed: 260 },
+      fontFamily: ui.fontFamily
+    },
+    dataLabels: { enabled: false },
+    legend: { show: false },
+    grid: {
+      borderColor: ui.border,
+      strokeDashArray: 4
+    },
+    noData: {
+      text: t('registration_dashboard_no_data', 'No data available')
+    },
+    tooltip: {
+      theme: 'light'
+    }
+  });
+
+  const renderChart = (key, element, options) => {
+    if (!element || typeof ApexCharts === 'undefined') {
+      return;
+    }
+    destroyChart(key);
+    element.innerHTML = '';
+    chartInstances[key] = new ApexCharts(element, options);
+    chartInstances[key].render();
+  };
+
+  const renderStats = (metrics) => {
+    if (statElements.schools) statElements.schools.textContent = formatInteger(metrics.totalSchools);
+    if (statElements.participants) statElements.participants.textContent = formatInteger(metrics.totalParticipants);
+    if (statElements.registrations) statElements.registrations.textContent = formatInteger(metrics.totalRegistrations);
+    if (statElements.categoriesWithout) statElements.categoriesWithout.textContent = formatInteger(metrics.categoriesWithoutRegistrations);
+    if (statElements.stylesWithout) statElements.stylesWithout.textContent = formatInteger(metrics.stylesWithoutRegistrations);
+    if (statElements.statusCre) statElements.statusCre.textContent = formatInteger(metrics.status.CRE);
+    if (statElements.statusPen) statElements.statusPen.textContent = formatInteger(metrics.status.PEN);
+    if (statElements.statusVal) statElements.statusVal.textContent = formatInteger(metrics.status.VAL);
+    if (statElements.statusRej) statElements.statusRej.textContent = formatInteger(metrics.status.REJ);
+  };
+
+  const buildMetrics = () => {
+    const eventObj = getEvent();
+    const schools = Array.isArray(registrationState.schools) ? registrationState.schools : [];
+    const participants = Array.isArray(registrationState.participants) ? registrationState.participants : [];
+    const registrations = Array.isArray(registrationState.organizerRegistrations) ? registrationState.organizerRegistrations : [];
+    const categories = Array.isArray(registrationState.registrationCategories) ? registrationState.registrationCategories : [];
+    const styles = Array.isArray(registrationState.registrationDisciplines) ? registrationState.registrationDisciplines : [];
+    const schoolsById = new Map(schools.map((school) => [`${school.id}`, school]));
+    const categoriesById = new Map(categories.map((category) => [`${category.id}`, category]));
+    const stylesById = new Map(styles.map((style) => [`${style.id}`, style]));
+    const categoryCounts = new Map();
+    const styleCounts = new Map();
+    const schoolCounts = new Map();
+    const schoolRegistrationCounts = new Map();
+    const categoryIdsWithRegistrations = new Set();
+    const styleIdsWithRegistrations = new Set();
+
+    const statusCounts = statusOrder.map((statusItem) => ({
+      ...statusItem,
+      count: 0
+    }));
+
+    registrations.forEach((registration) => {
+      const matchingStatus = statusCounts.find((item) => item.code === `${registration?.status || ''}`);
+      if (matchingStatus) {
+        matchingStatus.count += 1;
+      }
+
+      const categoryId = getCategoryId(registration);
+      const categoryLabel = registration?.category_name || categoriesById.get(`${categoryId}`)?.name || t('registration_dashboard_unassigned', 'Unassigned');
+      const categoryKey = categoryId ? `category:${categoryId}` : `category:${categoryLabel}`;
+      incrementEntryMap(categoryCounts, categoryKey, categoryLabel, 1);
+      if (categoryId) {
+        categoryIdsWithRegistrations.add(`${categoryId}`);
+      }
+
+      const styleId = getStyleId(registration);
+      const styleLabel = registration?.style_name || stylesById.get(`${styleId}`)?.name || t('registration_dashboard_unassigned', 'Unassigned');
+      const styleKey = styleId ? `style:${styleId}` : `style:${styleLabel}`;
+      incrementEntryMap(styleCounts, styleKey, styleLabel, 1);
+      if (styleId) {
+        styleIdsWithRegistrations.add(`${styleId}`);
+      }
+
+      const schoolId = getSchoolId(registration);
+      const schoolLabel = registration?.school_name
+        || getSchoolName(schoolsById.get(`${schoolId}`))
+        || t('registration_dashboard_unassigned', 'Unassigned');
+      const schoolKey = schoolId ? `school:${schoolId}` : `school:${schoolLabel}`;
+      incrementEntryMap(schoolRegistrationCounts, schoolKey, schoolLabel, 1);
+    });
+
+    if (participants.length) {
+      participants.forEach((participant) => {
+        const schoolId = getSchoolId(participant);
+        const schoolLabel = participant?.school_name
+          || getSchoolName(schoolsById.get(`${schoolId}`))
+          || t('registration_dashboard_unassigned', 'Unassigned');
+        const schoolKey = schoolId ? `school:${schoolId}` : `school:${schoolLabel}`;
+        incrementEntryMap(schoolCounts, schoolKey, schoolLabel, 1);
+      });
+    } else {
+      schools.forEach((school) => {
+        incrementEntryMap(
+          schoolCounts,
+          `school:${school.id}`,
+          getSchoolName(school) || t('registration_dashboard_unassigned', 'Unassigned'),
+          Number(school?.num_participants) || 0
+        );
+      });
+    }
+
+    return {
+      totalSchools: schools.length,
+      totalParticipants: participants.length,
+      totalRegistrations: registrations.length,
+      categoriesWithoutRegistrations: categories.filter((category) => !categoryIdsWithRegistrations.has(`${category.id}`)).length,
+      stylesWithoutRegistrations: styles.filter((style) => !styleIdsWithRegistrations.has(`${style.id}`)).length,
+      status: statusCounts.reduce((summary, item) => {
+        summary[item.code] = item.count;
+        return summary;
+      }, {}),
+      topCategories: getTopEntries(categoryCounts, 10),
+      topStyles: getTopEntries(styleCounts, 10),
+      registrationsByDay: buildDailySeries(registrations, {
+        start: eventObj?.registrationStart,
+        end: eventObj?.registrationEnd
+      }),
+      schoolsByDay: buildDailySeries(schools, {
+        start: eventObj?.registrationStart,
+        end: eventObj?.registrationEnd
+      }),
+      topSchools: getTopEntries(schoolCounts),
+      topRegistrationSchools: getTopEntries(schoolRegistrationCounts)
+    };
+  };
+
+  const renderCharts = (metrics) => {
+    const ui = getUiColors();
+    const baseOptions = createBaseChartOptions(ui);
+
+    renderChart('categories', chartElements.categories, {
+      ...baseOptions,
+      chart: {
+        ...baseOptions.chart,
+        type: 'bar',
+        height: 320
+      },
+      colors: ['#0d6efd'],
+      series: [{
+        name: t('registration_dashboard_series_registrations', 'Registrations'),
+        data: metrics.topCategories.map((item) => item.value)
+      }],
+      plotOptions: {
+        bar: {
+          borderRadius: 4,
+          columnWidth: '48%'
+        }
+      },
+      xaxis: {
+        categories: metrics.topCategories.map((item) => item.label),
+        labels: {
+          style: { colors: ui.muted },
+          rotate: -25,
+          trim: true
+        }
+      },
+      yaxis: {
+        labels: {
+          style: { colors: ui.muted }
+        }
+      }
+    });
+
+    renderChart('styles', chartElements.styles, {
+      ...baseOptions,
+      chart: {
+        ...baseOptions.chart,
+        type: 'bar',
+        height: 320
+      },
+      colors: ['#20c997'],
+      series: [{
+        name: t('registration_dashboard_series_registrations', 'Registrations'),
+        data: metrics.topStyles.map((item) => item.value)
+      }],
+      plotOptions: {
+        bar: {
+          borderRadius: 4,
+          columnWidth: '48%'
+        }
+      },
+      xaxis: {
+        categories: metrics.topStyles.map((item) => item.label),
+        labels: {
+          style: { colors: ui.muted },
+          rotate: -25,
+          trim: true
+        }
+      },
+      yaxis: {
+        labels: {
+          style: { colors: ui.muted }
+        }
+      }
+    });
+
+    renderChart('registrationsByDay', chartElements.registrationsByDay, {
+      ...baseOptions,
+      chart: {
+        ...baseOptions.chart,
+        type: 'line',
+        height: 320
+      },
+      colors: ['#0d6efd'],
+      stroke: {
+        curve: 'smooth',
+        width: 3
+      },
+      markers: {
+        size: 4,
+        strokeWidth: 0
+      },
+      series: [{
+        name: t('registration_dashboard_series_registrations', 'Registrations'),
+        data: metrics.registrationsByDay.values
+      }],
+      xaxis: {
+        categories: metrics.registrationsByDay.categories,
+        tickAmount: getWeeklyTickAmount(metrics.registrationsByDay),
+        labels: {
+          style: { colors: ui.muted },
+          hideOverlappingLabels: true,
+          rotate: 0
+        }
+      },
+      yaxis: {
+        labels: {
+          style: { colors: ui.muted }
+        }
+      }
+    });
+
+    renderChart('schoolsByDay', chartElements.schoolsByDay, {
+      ...baseOptions,
+      chart: {
+        ...baseOptions.chart,
+        type: 'line',
+        height: 320
+      },
+      colors: ['#fd7e14'],
+      stroke: {
+        curve: 'smooth',
+        width: 3
+      },
+      markers: {
+        size: 4,
+        strokeWidth: 0
+      },
+      series: [{
+        name: t('registration_dashboard_series_schools', 'Schools'),
+        data: metrics.schoolsByDay.values
+      }],
+      xaxis: {
+        categories: metrics.schoolsByDay.categories,
+        tickAmount: getWeeklyTickAmount(metrics.schoolsByDay),
+        labels: {
+          style: { colors: ui.muted },
+          hideOverlappingLabels: true,
+          rotate: 0
+        }
+      },
+      yaxis: {
+        labels: {
+          style: { colors: ui.muted }
+        }
+      }
+    });
+
+    renderChart('topSchools', chartElements.topSchools, {
+      ...baseOptions,
+      chart: {
+        ...baseOptions.chart,
+        type: 'bar',
+        height: 280
+      },
+      colors: ['#212529'],
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          borderRadius: 4,
+          barHeight: '58%'
+        }
+      },
+      series: [{
+        name: t('registration_dashboard_kpi_participants', 'Participants'),
+        data: metrics.topSchools.map((item) => item.value)
+      }],
+      xaxis: {
+        categories: metrics.topSchools.map((item) => item.label),
+        labels: {
+          style: { colors: ui.muted }
+        }
+      },
+      yaxis: {
+        labels: {
+          style: { colors: ui.muted }
+        }
+      }
+    });
+
+    renderChart('topRegistrationSchools', chartElements.topRegistrationSchools, {
+      ...baseOptions,
+      chart: {
+        ...baseOptions.chart,
+        type: 'bar',
+        height: 280
+      },
+      colors: ['#6f42c1'],
+      plotOptions: {
+        bar: {
+          horizontal: true,
+          borderRadius: 4,
+          barHeight: '58%'
+        }
+      },
+      series: [{
+        name: t('registration_dashboard_series_registrations', 'Registrations'),
+        data: metrics.topRegistrationSchools.map((item) => item.value)
+      }],
+      xaxis: {
+        categories: metrics.topRegistrationSchools.map((item) => item.label),
+        labels: {
+          style: { colors: ui.muted }
+        }
+      },
+      yaxis: {
+        labels: {
+          style: { colors: ui.muted }
+        }
+      }
+    });
+  };
+
+  const renderDashboard = () => {
+    renderQueued = false;
+    reorderDashboardPanels();
+    const metrics = buildMetrics();
+    renderStats(metrics);
+    if (!isDashboardVisible()) {
+      needsChartRefresh = true;
+      return;
+    }
+    renderCharts(metrics);
+    needsChartRefresh = false;
+  };
+
+  const scheduleRender = () => {
+    if (renderQueued) {
+      return;
+    }
+    renderQueued = true;
+    window.requestAnimationFrame(renderDashboard);
+  };
+
+  window.addEventListener('registration:schools-updated', scheduleRender);
+  window.addEventListener('registration:participants-updated', scheduleRender);
+  window.addEventListener('registration:organizer-registrations-updated', scheduleRender);
+  window.addEventListener('registration:config-updated', scheduleRender);
+  window.addEventListener('registration:panel-changed', (event) => {
+    if (event?.detail?.key !== 'dashboard') {
+      return;
+    }
+    window.setTimeout(scheduleRender, 0);
+  });
+
+  scheduleRender();
 }
 
 document.addEventListener('click', (event) => {
@@ -990,6 +1598,7 @@ function initParticipantsTab(role) {
 
       const data = await res.json();
       registrationState.participants = Array.isArray(data) ? data : [];
+      notifyRegistrationParticipantsUpdate();
       renderParticipants();
     } catch (err) {
       showParticipantsError(err.message || t('registration_participants_load_error', 'Error loading participants.'));
