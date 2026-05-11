@@ -572,11 +572,19 @@ function initOrganizerDashboard() {
     participants: document.getElementById('organizerDashboardParticipantsValue'),
     registrations: document.getElementById('organizerDashboardRegistrationsValue'),
     categoriesWithout: document.getElementById('organizerDashboardCategoriesWithoutValue'),
+    categoriesWithoutAction: document.getElementById('organizerDashboardCategoriesWithoutAction'),
     stylesWithout: document.getElementById('organizerDashboardStylesWithoutValue'),
+    stylesWithoutAction: document.getElementById('organizerDashboardStylesWithoutAction'),
     statusCre: document.getElementById('organizerDashboardStatusCreValue'),
     statusPen: document.getElementById('organizerDashboardStatusPenValue'),
     statusVal: document.getElementById('organizerDashboardStatusValValue'),
     statusRej: document.getElementById('organizerDashboardStatusRejValue')
+  };
+  const missingItemsModalElements = {
+    root: document.getElementById('organizerDashboardMissingItemsModal'),
+    title: document.getElementById('organizerDashboardMissingItemsModalTitle'),
+    list: document.getElementById('organizerDashboardMissingItemsModalList'),
+    empty: document.getElementById('organizerDashboardMissingItemsModalEmpty')
   };
   const chartElements = {
     categories: document.getElementById('organizerDashboardCategoryChart'),
@@ -595,6 +603,7 @@ function initOrganizerDashboard() {
   ];
   let renderQueued = false;
   let needsChartRefresh = true;
+  let currentMetrics = null;
 
   const reorderDashboardPanels = () => {
     if (!panelsContainer) {
@@ -622,6 +631,26 @@ function initOrganizerDashboard() {
     const number = Number(value);
     return new Intl.NumberFormat(getLanguage()).format(Number.isFinite(number) ? number : 0);
   };
+
+  const getDashboardItemLabel = (item) => (
+    item?.name
+    || item?.label
+    || item?.category_name
+    || item?.style_name
+    || item?.discipline_name
+    || t('registration_dashboard_unassigned', 'Unassigned')
+  );
+
+  const sortDashboardItems = (items) => (
+    [...(Array.isArray(items) ? items : [])].sort((left, right) => {
+      const leftPosition = Number.isFinite(Number(left?.position)) ? Number(left.position) : Number.MAX_SAFE_INTEGER;
+      const rightPosition = Number.isFinite(Number(right?.position)) ? Number(right.position) : Number.MAX_SAFE_INTEGER;
+      if (leftPosition !== rightPosition) {
+        return leftPosition - rightPosition;
+      }
+      return getDashboardItemLabel(left).localeCompare(getDashboardItemLabel(right), getLanguage());
+    })
+  );
 
   const getUiColors = () => {
     const styles = getComputedStyle(document.documentElement);
@@ -800,6 +829,57 @@ function initOrganizerDashboard() {
     if (statElements.statusPen) statElements.statusPen.textContent = formatInteger(metrics.status.PEN);
     if (statElements.statusVal) statElements.statusVal.textContent = formatInteger(metrics.status.VAL);
     if (statElements.statusRej) statElements.statusRej.textContent = formatInteger(metrics.status.REJ);
+
+    const showListLabel = t('registration_dashboard_show_list', 'Show list');
+    if (statElements.categoriesWithoutAction) {
+      const hasMissingCategories = metrics.categoriesWithoutRegistrations > 0;
+      statElements.categoriesWithoutAction.disabled = !hasMissingCategories;
+      statElements.categoriesWithoutAction.title = `${showListLabel}: ${t('registration_dashboard_kpi_categories_without_registrations', 'Categories without registrations')}`;
+      statElements.categoriesWithoutAction.setAttribute('aria-label', statElements.categoriesWithoutAction.title);
+    }
+    if (statElements.stylesWithoutAction) {
+      const hasMissingStyles = metrics.stylesWithoutRegistrations > 0;
+      statElements.stylesWithoutAction.disabled = !hasMissingStyles;
+      statElements.stylesWithoutAction.title = `${showListLabel}: ${t('registration_dashboard_kpi_styles_without_registrations', 'Styles without registrations')}`;
+      statElements.stylesWithoutAction.setAttribute('aria-label', statElements.stylesWithoutAction.title);
+    }
+  };
+
+  const openMissingItemsModal = (type) => {
+    if (!missingItemsModalElements.root || !missingItemsModalElements.title || !missingItemsModalElements.list) {
+      return;
+    }
+
+    const metrics = currentMetrics || buildMetrics();
+    const isCategories = type === 'categories';
+    const title = isCategories
+      ? t('registration_dashboard_kpi_categories_without_registrations', 'Categories without registrations')
+      : t('registration_dashboard_kpi_styles_without_registrations', 'Styles without registrations');
+    const items = isCategories
+      ? metrics.categoriesWithoutRegistrationItems
+      : metrics.stylesWithoutRegistrationItems;
+
+    missingItemsModalElements.title.textContent = title;
+    missingItemsModalElements.list.innerHTML = '';
+
+    if (!Array.isArray(items) || !items.length) {
+      if (missingItemsModalElements.empty) {
+        missingItemsModalElements.empty.classList.remove('d-none');
+      }
+    } else {
+      if (missingItemsModalElements.empty) {
+        missingItemsModalElements.empty.classList.add('d-none');
+      }
+
+      items.forEach((item) => {
+        const li = document.createElement('li');
+        li.className = 'list-group-item px-0';
+        li.textContent = getDashboardItemLabel(item);
+        missingItemsModalElements.list.appendChild(li);
+      });
+    }
+
+    bootstrap.Modal.getOrCreateInstance(missingItemsModalElements.root).show();
   };
 
   const buildMetrics = () => {
@@ -880,6 +960,12 @@ function initOrganizerDashboard() {
       totalRegistrations: registrations.length,
       categoriesWithoutRegistrations: categories.filter((category) => !categoryIdsWithRegistrations.has(`${category.id}`)).length,
       stylesWithoutRegistrations: styles.filter((style) => !styleIdsWithRegistrations.has(`${style.id}`)).length,
+      categoriesWithoutRegistrationItems: sortDashboardItems(
+        categories.filter((category) => !categoryIdsWithRegistrations.has(`${category.id}`))
+      ),
+      stylesWithoutRegistrationItems: sortDashboardItems(
+        styles.filter((style) => !styleIdsWithRegistrations.has(`${style.id}`))
+      ),
       status: statusCounts.reduce((summary, item) => {
         summary[item.code] = item.count;
         return summary;
@@ -1184,6 +1270,7 @@ function initOrganizerDashboard() {
     renderQueued = false;
     reorderDashboardPanels();
     const metrics = buildMetrics();
+    currentMetrics = metrics;
     renderStats(metrics);
     if (!isDashboardVisible()) {
       needsChartRefresh = true;
@@ -1205,6 +1292,8 @@ function initOrganizerDashboard() {
   window.addEventListener('registration:participants-updated', scheduleRender);
   window.addEventListener('registration:organizer-registrations-updated', scheduleRender);
   window.addEventListener('registration:config-updated', scheduleRender);
+  statElements.categoriesWithoutAction?.addEventListener('click', () => openMissingItemsModal('categories'));
+  statElements.stylesWithoutAction?.addEventListener('click', () => openMissingItemsModal('styles'));
   window.addEventListener('registration:panel-changed', (event) => {
     if (event?.detail?.key !== 'dashboard') {
       return;
