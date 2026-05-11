@@ -3568,6 +3568,10 @@ function initOrganizerRegistrationsTab() {
     choreographer: document.getElementById('choreographerName'),
     category: document.getElementById('registrationCategory'),
     style: document.getElementById('registrationStyle'),
+    statusWrapper: document.getElementById('registrationStatusWrapper'),
+    statusBadge: document.getElementById('registrationStatusBadge'),
+    rejectWrapper: document.getElementById('registrationRejectReasonWrapper'),
+    rejectReason: document.getElementById('registrationRejectReason'),
     modalTitle: document.getElementById('registrationModalTitle'),
     saveBtn: document.getElementById('registrationSaveBtn')
   };
@@ -3988,6 +3992,35 @@ function initOrganizerRegistrationsTab() {
     return { ...info, label: `${info.label}`.toUpperCase() };
   };
 
+  const getRejectReasonValue = (data) => data?.reject_reason
+    || data?.rejection_reason
+    || data?.rejectReason
+    || data?.reject_note
+    || '';
+
+  const updateModalStatusInfo = (status, rejectReason) => {
+    if (!modalElements.statusWrapper || !modalElements.statusBadge) return;
+    if (!status) {
+      modalElements.statusWrapper.classList.add('d-none');
+      if (modalElements.rejectWrapper) modalElements.rejectWrapper.classList.add('d-none');
+      return;
+    }
+
+    const statusInfo = formatStatusInfo(status);
+    modalElements.statusBadge.className = `badge bg-${statusInfo.color}`;
+    modalElements.statusBadge.textContent = statusInfo.label;
+    modalElements.statusWrapper.classList.remove('d-none');
+
+    if (modalElements.rejectWrapper && modalElements.rejectReason) {
+      if (`${status}` === 'REJ') {
+        modalElements.rejectReason.textContent = rejectReason || '-';
+        modalElements.rejectWrapper.classList.remove('d-none');
+      } else {
+        modalElements.rejectWrapper.classList.add('d-none');
+      }
+    }
+  };
+
   const applyFilters = () => {
     const schoolValue = filterSchool.value;
     const statusValue = filterStatus.value;
@@ -4212,6 +4245,17 @@ function initOrganizerRegistrationsTab() {
     const styleId = registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
     if (modalElements.category) modalElements.category.value = categoryId ? `${categoryId}` : '';
     if (modalElements.style) modalElements.style.value = styleId ? `${styleId}` : '';
+
+    let statusValue = registration.status || '';
+    let rejectReason = getRejectReasonValue(registration);
+    if ((!statusValue || (`${statusValue}` === 'REJ' && !rejectReason)) && registration.id) {
+      const details = await fetchRegistrationDetails(registration.id);
+      if (details) {
+        statusValue = details.status || statusValue;
+        rejectReason = rejectReason || getRejectReasonValue(details);
+      }
+    }
+    updateModalStatusInfo(statusValue, rejectReason);
 
     modalEl.dataset.viewOnly = 'true';
     setModalViewMode(true);
@@ -4445,6 +4489,7 @@ function initOrganizerRegistrationsTab() {
   modalEl.addEventListener('hidden.bs.modal', () => {
     if (modalEl.dataset.viewOnly !== 'true') return;
     setModalViewMode(false);
+    updateModalStatusInfo('', '');
     delete modalEl.dataset.viewOnly;
   });
   membersModalEl.addEventListener('hidden.bs.modal', () => {
