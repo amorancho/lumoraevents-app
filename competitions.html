@@ -44,6 +44,52 @@
     .modal-backdrop.bulk-delete-confirm-backdrop {
       z-index: 1060;
     }
+    .competitions-card-header {
+      row-gap: 0.75rem;
+    }
+    .competitions-card-header-title {
+      flex: 1 1 100%;
+    }
+    .competitions-card-header-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+    }
+    .competitions-card-header-controls .competitions-filter {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+    .competitions-card-header-controls .competitions-count {
+      flex: 0 0 auto;
+    }
+    .competitions-card-header-controls .competitions-bulk-delete-btn {
+      width: 100%;
+    }
+    @media (min-width: 576px) {
+      .competitions-card-header-title {
+        flex: 0 0 auto;
+      }
+      .competitions-card-header-controls {
+        justify-content: flex-end;
+      }
+      .competitions-card-header-controls .competitions-filter {
+        flex: 1 1 10rem;
+      }
+      .competitions-card-header-controls .competitions-bulk-delete-btn {
+        width: auto;
+      }
+    }
+    @media (min-width: 992px) {
+      .competitions-card-header-controls {
+        width: auto;
+        flex: 0 1 auto;
+      }
+      .competitions-card-header-controls .competitions-filter {
+        flex: 0 1 11rem;
+      }
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -109,19 +155,19 @@
 
     <!-- Tabla competiciones -->
     <div class="card shadow-sm">
-      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h5 class="mb-0 d-flex align-items-center" data-i18n="competitions">
+      <div class="card-header competitions-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0 d-flex align-items-center competitions-card-header-title" data-i18n="competitions">
               <i class="bi bi-list-ul me-2"></i>Competitions</h5>
-            <div class="d-flex align-items-center gap-3">              
-              <select class="form-select form-select-sm w-auto" id="categoryFilter">
+            <div class="competitions-card-header-controls">              
+              <select class="form-select form-select-sm competitions-filter" id="categoryFilter">
                 <option value="" data-i18n="all_categories">All Categories</option>
               </select>
-              <select class="form-select form-select-sm w-auto" id="styleFilter">
+              <select class="form-select form-select-sm competitions-filter" id="styleFilter">
                 <option value="" data-i18n="all_styles">All Styles</option>
               </select>
-              <span id="count-competitions" class="badge bg-secondary rounded-pill">0 Comp.</span>
-              <span id="count-participants" class="badge bg-secondary rounded-pill">0 Part.</span>
-              <button id="openBulkDeleteCompetitionsBtn" type="button" class="btn btn-outline-danger btn-sm" data-i18n="bulk_delete_competitions_button">
+              <span id="count-competitions" class="badge bg-secondary rounded-pill competitions-count">0 Comp.</span>
+              <span id="count-participants" class="badge bg-secondary rounded-pill competitions-count">0 Part.</span>
+              <button id="openBulkDeleteCompetitionsBtn" type="button" class="btn btn-outline-danger btn-sm competitions-bulk-delete-btn" data-i18n="bulk_delete_competitions_button">
                 Delete Competitions
               </button>
             </div>
