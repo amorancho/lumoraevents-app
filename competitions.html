@@ -82,12 +82,25 @@
       }
     }
     @media (min-width: 992px) {
+      .competitions-card-header {
+        flex-wrap: nowrap !important;
+      }
       .competitions-card-header-controls {
+        min-width: 0;
         width: auto;
-        flex: 0 1 auto;
+        flex: 1 1 auto;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+      }
+      .competitions-card-header-title {
+        flex: 0 0 auto;
       }
       .competitions-card-header-controls .competitions-filter {
-        flex: 0 1 11rem;
+        flex: 1 1 0;
+        max-width: 11rem;
+      }
+      .competitions-card-header-controls .competitions-bulk-delete-btn {
+        flex: 0 0 auto;
       }
     }
   </style>

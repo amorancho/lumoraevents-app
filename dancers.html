@@ -83,12 +83,25 @@
       }
     }
     @media (min-width: 992px) {
+      .dancers-card-header {
+        flex-wrap: nowrap !important;
+      }
       .dancers-card-header-controls {
+        min-width: 0;
         width: auto;
-        flex: 0 1 auto;
+        flex: 1 1 auto;
+        flex-wrap: nowrap;
+        justify-content: flex-end;
+      }
+      .dancers-card-header-title {
+        flex: 0 0 auto;
       }
       .dancers-card-header-controls .dancers-filter {
-        flex: 0 1 11rem;
+        flex: 1 1 0;
+        max-width: 11rem;
+      }
+      .dancers-card-header-controls .dancers-bulk-delete-btn {
+        flex: 0 0 auto;
       }
     }
   </style>
