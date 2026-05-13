@@ -93,6 +93,7 @@ async function loadSchedule() {
 }
 
 function getParticipantClubLabel(participant) {
+    if (getEvent()?.hideSchoolInfo) return '';
     const clubName = String(participant?.club_name || '').trim();
     const clubLocation = String(participant?.club_location || '').trim();
     if (!clubName) return '';

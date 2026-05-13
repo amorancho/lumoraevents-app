@@ -40,6 +40,7 @@ function getClassificationDisplayPositions(clasification = []) {
 }
 
 function getDancerClubLabel(dancer) {
+  if (getEvent()?.hideSchoolInfo) return '';
   const clubName = String(dancer?.club_name || '').trim();
   const clubLocation = String(dancer?.club_location || '').trim();
   if (!clubName) return '';

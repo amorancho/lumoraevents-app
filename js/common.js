@@ -201,7 +201,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         judgesVisResults: data.judges_vis_results === 1,
         resultsFilter: data.results_filter,
         TiedPositions: tiedPositions,
-        musicExtraTime: data.music_extra_time || 0
+        musicExtraTime: data.music_extra_time || 0,
+        hideSchoolInfo: data.hide_school_info === 1
       };
 
     }

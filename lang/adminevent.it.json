@@ -53,6 +53,7 @@
   "registration_start_label": "Inizio iscrizioni",
   "registration_end_label": "Fine iscrizioni",
   "music_extra_time_label": "Tempo extra musica (sec.)",
+  "hide_school_info": "Nascondi info club",
   "event_status_finish_btn": "Segna evento come concluso",
   "event_status_open_btn": "Apri Evento",
   "event_status_modal_title_finish": "Concludi evento",
