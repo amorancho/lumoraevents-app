@@ -272,7 +272,8 @@ function normalizeScheduleDateKey(value) {
 }
 
 function canShowScheduleParticipants() {
-    return getEvent().visibleParticipants == 1 || validateRoles(['admin', 'organizer'], false);
+    return true;
+    //return getEvent().visibleParticipants == 1 || validateRoles(['admin', 'organizer'], false);
 }
 
 function createScheduleItemCard(item, { uniqueKey, expandParticipants = false, highlightLive = false } = {}) {
