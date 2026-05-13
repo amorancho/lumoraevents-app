@@ -1692,6 +1692,9 @@ function initSchoolTab() {
     alert: document.getElementById('schoolSaveAlert')
   };
 
+  if (elements.username) elements.username.setAttribute('readonly', 'readonly');
+  if (elements.password) elements.password.setAttribute('readonly', 'readonly');
+
   if (elements.togglePassword && elements.password) {
     elements.togglePassword.addEventListener('click', () => {
       const isHidden = elements.password.type === 'password';
