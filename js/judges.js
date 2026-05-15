@@ -30,9 +30,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 });
 
+function eventHasMasters() {
+  return Boolean(getEvent()?.hasMasters);
+}
+
+function syncMasterVisibility() {
+  const showMaster = eventHasMasters();
+  const masterColumnHeader = document.getElementById('masterColumnHeader');
+  const masterField = document.getElementById('judgeMasterField');
+  const nameField = document.getElementById('judgeNameField');
+
+  masterColumnHeader?.classList.toggle('d-none', !showMaster);
+  masterField?.classList.toggle('d-none', !showMaster);
+
+  if (nameField) {
+    nameField.classList.toggle('col-9', showMaster);
+    nameField.classList.toggle('col-12', !showMaster);
+  }
+}
+
 function initJudgeManagement() {
   const editModalElement = document.getElementById('editModal');
   const editModal = new bootstrap.Modal(editModalElement);
+
+  syncMasterVisibility();
 
   if (editModalElement) {
     editModalElement.addEventListener('hidden.bs.modal', () => hideActionFeedback());
@@ -75,7 +96,7 @@ function initJudgeManagement() {
 
       const tr = button.closest('tr');
       const id = tr.dataset.id;
-      const master = tr.dataset.master === '1';
+      const master = eventHasMasters() && tr.dataset.master === '1';
       const judge = judges.find(d => d.id == id);
 
       document.getElementById('judgeName').value = judge.name;
@@ -147,7 +168,7 @@ function initJudgeManagement() {
     const judgeData = {
       name: inputName.value.trim() || null,
       email: inputEmail.value.trim() || null,
-      ismaster: inputMaster.checked ? 1 : 0,
+      ismaster: eventHasMasters() && inputMaster.checked ? 1 : 0,
       username: inputUsername.value.trim() || null,
       //welcomesended: inputWelcomeSended.value || null,
       language: inputLanguage.value,
@@ -342,6 +363,7 @@ async function loadJudges() {
 function renderJudges() {
   const judgesTable = document.getElementById('judgesTable');
   judgesTable.innerHTML = '';
+  const showMaster = eventHasMasters();
 
   judges.forEach(judge => {
 
@@ -356,15 +378,19 @@ function renderJudges() {
 
     const { badgeClass, badgeLabel, badgeTooltip } = getWelcomeEmailBadge(judge);
     const badgeTooltipAttr = badgeTooltip ? `data-bs-toggle="tooltip" data-bs-placement="top" title="${badgeTooltip}"` : '';
-
-    row.innerHTML = `
-      <td>${judge.name}</td>
-      <td>${judge.email}</td>
+    const masterCellHtml = showMaster
+      ? `
       <td class="align-middle text-center">
         ${Number(judge.ismaster) === 1
           ? '<i class="bi bi-check-circle-fill text-success"></i>'
           : '<i class="bi bi-dash-circle text-muted"></i>'}
-      </td>
+      </td>`
+      : '';
+
+    row.innerHTML = `
+      <td>${judge.name}</td>
+      <td>${judge.email}</td>
+      ${masterCellHtml}
       <td class="align-middle text-center">
         <span class="badge ${badgeClass}" ${badgeTooltipAttr}>${badgeLabel}</span>
       </td>

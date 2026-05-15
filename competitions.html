@@ -292,11 +292,13 @@
             <span id="modalTitleCategory" class="fw-bold text-primary"></span>
             <span class="text-muted">/</span>
             <span id="modalTitleStyle" class="fw-bold text-secondary"></span>
+            <span id="modalStatusBadge" class="badge bg-secondary ms-2 align-middle"></span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
           <form id="editForm">
+            <input type="hidden" id="editStatus">
             <div class="row">
               <div class="col-md-6 mb-3">
                 <label class="form-label" data-i18n="col_estimated_start_time">Hora estimada de inicio</label>
@@ -327,7 +329,7 @@
               </select>
               <div class="form-text" data-i18n="form_text_select_multiple">Usa Ctrl (Windows) o Cmd (Mac) para seleccionar varios.</div>
             </div>
-            <div class="mb-3">
+            <div class="mb-3" id="editJudgeReserveSection">
               <label class="form-label" data-i18n="col_judge_reserve">
                 Juez reserva
                 <i class="bi bi-info-circle text-danger ms-1"
@@ -348,14 +350,6 @@
                 </select>
               </div>
               <div class="form-text mb-3" data-i18n="judge_head_note">Judge with authority to apply penalties</div>
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label" data-i18n="col_status">Estado</label>
-              <select class="form-select" id="editStatus" disabled>
-                <option value="CLO">CLOSED</option>
-                <option value="OPE">OPEN</option>
-                <option value="FIN">FINISHED</option>                  
-              </select>
             </div>
             <!--div class="row">
               <div class="col-md-6 mb-3">

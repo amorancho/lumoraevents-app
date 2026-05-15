@@ -476,6 +476,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('has_registrations').checked = (Number(eventObj.has_registrations) === 1);
   document.getElementById('has_judge_feedback').checked = (Number(eventObj.has_judge_feedback) === 1);
   document.getElementById('judges_vis_results').checked = (Number(eventObj.judges_vis_results) === 1);
+  document.getElementById('has_masters').checked = (Number(eventObj.has_masters) === 1);
   document.getElementById('show_flags').checked = (Number(eventObj.show_flags) === 1);
   document.getElementById('send_stats_code').checked = (Number(eventObj.send_stats_code) === 1);
   document.getElementById('hide_judges').checked = (Number(eventObj.hide_judges) === 1);
@@ -541,6 +542,7 @@ async function saveEvent() {
     has_registrations: document.getElementById('has_registrations').checked ? 1 : 0,
     has_judge_feedback: document.getElementById('has_judge_feedback').checked ? 1 : 0,
     judges_vis_results: document.getElementById('judges_vis_results').checked ? 1 : 0,
+    has_masters: document.getElementById('has_masters').checked ? 1 : 0,
     registration_start: document.getElementById('registration_start').value || null,
     registration_end: document.getElementById('registration_end').value || null,
     music_extra_time: parseInt(document.getElementById('music_extra_time').value, 10) || 0,

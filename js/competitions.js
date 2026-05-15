@@ -438,6 +438,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   setupHeadJudgeFieldVisibility();
+  setupReserveJudgeFieldVisibility();
   updateSubstituteJudgeHeadNoticeVisibility();
   updateTopActionButtonsVisibility();
 
@@ -496,6 +497,10 @@ function shouldShowHeadJudgeField() {
   return false;
 }
 
+function shouldShowReserveJudgeField() {
+  return Boolean(getEvent()?.hasMasters);
+}
+
 function shouldShowCriteriaPerJudgeButton() {
   const rawCriteriaPerJudge = getEvent()?.criteriaPerJudge;
   if (rawCriteriaPerJudge === true || rawCriteriaPerJudge === 1) return true;
@@ -539,11 +544,32 @@ function setupHeadJudgeFieldVisibility() {
   }
 }
 
+function setupReserveJudgeFieldVisibility() {
+  const section = document.getElementById('editJudgeReserveSection');
+  const reserveSelect = document.getElementById('editJudgeReserve');
+  if (!section) return;
+
+  const showReserveJudge = shouldShowReserveJudgeField();
+  section.classList.toggle('d-none', !showReserveJudge);
+
+  if (!showReserveJudge && reserveSelect) {
+    reserveSelect.value = '';
+  }
+}
+
 function updateSubstituteJudgeHeadNoticeVisibility() {
   const noticeWrapper = document.getElementById('substituteJudgeHeadNoticeWrapper');
   if (!noticeWrapper) return;
 
   noticeWrapper.classList.toggle('d-none', !Boolean(getEvent()?.has_penalties));
+}
+
+function updateEditCompetitionStatusBadge(status) {
+  const statusBadge = document.getElementById('modalStatusBadge');
+  if (!statusBadge) return;
+
+  statusBadge.className = `badge bg-${statusColor[status] || 'secondary'} ms-2 align-middle`;
+  statusBadge.textContent = convertStatus[status] || status || '';
 }
 
 function loadCompetitions() {
@@ -875,7 +901,7 @@ async function saveCompetitionEdits(editModal) {
     estimated_start: inputEstimatedStart.value,
     status: inputStatus.value,
     judges: inputJudges,
-    judge_reserve: inputReserveJudge ? (inputReserveJudge.value || null) : null,
+    judge_reserve: shouldShowReserveJudgeField() && inputReserveJudge ? (inputReserveJudge.value || null) : null,
     max_time: maxTimeSeconds,
     event_id: getEvent().id
   };
@@ -976,6 +1002,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const estimatedStartValue = toDatetimeLocalFormat(competition.estimated_start_form);
         document.getElementById('editStartTime').value = estimatedStartValue;
         document.getElementById('editStatus').value = competition.status;
+        updateEditCompetitionStatusBadge(competition.status);
         const scheduleNotice = document.getElementById('scheduleConfigNotice');
         const hasScheduleConfig = competition.schedule_config !== null && competition.schedule_config !== undefined;
         editForm.dataset.schedule_config = hasScheduleConfig ? String(competition.schedule_config) : '';
@@ -996,9 +1023,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           opt.selected = judgeIds.includes(opt.value);
         });
 
-        if (reserveSelect) {
+        if (reserveSelect && shouldShowReserveJudgeField()) {
           const reserveJudge = judges.find(j => isJudgeFlagEnabled(j.reserve));
           reserveSelect.value = reserveJudge ? String(reserveJudge.id) : '';
+        } else if (reserveSelect) {
+          reserveSelect.value = '';
         }
         if (headSelect && shouldShowHeadJudgeField()) {
           const headJudge = judges.find(j => isJudgeFlagEnabled(j.head));
@@ -1798,8 +1827,10 @@ async function loadMasters() {
   const reserveSelect = document.getElementById('editJudgeReserve');
   const headSelect = document.getElementById('editJudgeHead');
   masterSelect.innerHTML = ''; // Limpiar opciones anteriores
-  if (reserveSelect) {
+  if (reserveSelect && shouldShowReserveJudgeField()) {
     reserveSelect.innerHTML = `<option value=\"\">${t('ninguno')}</option>`;
+  } else if (reserveSelect) {
+    reserveSelect.innerHTML = '';
   }
   if (headSelect && shouldShowHeadJudgeField()) {
     headSelect.innerHTML = `<option value=\"\">${t('ninguno')}</option>`;
@@ -1816,7 +1847,7 @@ async function loadMasters() {
       option.textContent = master.name;
       masterSelect.appendChild(option);
 
-      if (reserveSelect) {
+      if (reserveSelect && shouldShowReserveJudgeField()) {
         const reserveOption = document.createElement('option');
         reserveOption.value = master.id;
         reserveOption.textContent = master.name;
@@ -4159,7 +4190,9 @@ async function updateCompetitionJudgesAssignment(competition, judgeIds, headJudg
 
   setAssignmentResult(competition.id, 'updating');
 
-  const reserveJudge = (competition.judges || []).find(j => isJudgeFlagEnabled(j.reserve));
+  const reserveJudge = shouldShowReserveJudgeField()
+    ? (competition.judges || []).find(j => isJudgeFlagEnabled(j.reserve))
+    : null;
   const reserveId = reserveJudge ? String(reserveJudge.id) : null;
   const reserveToSend = reserveId && judgeIds.includes(reserveId) ? reserveId : null;
 

@@ -68,6 +68,10 @@ function shouldShowDancerClubs() {
   return false;
 }
 
+function shouldShowDancerMasters() {
+  return Boolean(getEvent()?.hasMasters);
+}
+
 function applyClubsVisibility() {
   const showClubs = shouldShowDancerClubs();
 
@@ -92,14 +96,18 @@ function applyClubsVisibility() {
 
 function applyFlagsVisibility() {
   const showFlags = shouldShowDancerFlags();
+  const showMasters = shouldShowDancerMasters();
 
   const nationalityFieldCol = document.getElementById('nationalityFieldCol');
   if (nationalityFieldCol) {
     nationalityFieldCol.classList.toggle('d-none', !showFlags);
+    nationalityFieldCol.classList.remove('col-md-6', 'col-md-12');
+    nationalityFieldCol.classList.add(showFlags && showMasters ? 'col-md-6' : 'col-md-12');
   }
 
   const masterFieldCol = document.getElementById('masterFieldCol');
   if (masterFieldCol) {
+    masterFieldCol.classList.toggle('d-none', !showMasters);
     masterFieldCol.classList.remove('col-md-6', 'col-md-12');
     masterFieldCol.classList.add(showFlags ? 'col-md-6' : 'col-md-12');
   }
@@ -107,6 +115,11 @@ function applyFlagsVisibility() {
   const nationalityHeader = document.getElementById('nationalityHeader');
   if (nationalityHeader) {
     nationalityHeader.classList.toggle('d-none', !showFlags);
+  }
+
+  const masterHeader = document.getElementById('masterHeader');
+  if (masterHeader) {
+    masterHeader.classList.toggle('d-none', !showMasters);
   }
 }
 
@@ -513,7 +526,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   loadCategories();
   loadStyles();
-  loadMasters(); 
+  if (shouldShowDancerMasters()) {
+    loadMasters();
+  }
   if (shouldShowDancerClubs()) {
     loadClubs();
   }
@@ -648,7 +663,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       document.getElementById('dancerEmail').value = dancer.email;
       document.getElementById('dancerLanguage').value = dancer.language;
       document.getElementById('editCategory').value = dancer.category_id;
-      document.getElementById('editMaster').value = dancer.master_id;
+      document.getElementById('editMaster').value = shouldShowDancerMasters() ? (dancer.master_id || '') : '';
       document.getElementById('nationality').tomselect.setValue(dancer.nationality || '');
       if (shouldShowDancerClubs()) {
         document.getElementById('editClub').value = dancer.club_id;
@@ -711,7 +726,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       name: inputName.value.trim().toUpperCase(),
       category_id: parseInt(inputCategory.value, 10),
       styles: selectedValues,
-      master_id: inputMaster.value ? parseInt(inputMaster.value, 10) : null,
+      master_id: shouldShowDancerMasters() && inputMaster.value ? parseInt(inputMaster.value, 10) : null,
       nationality: inputNationality.value.trim().toUpperCase() || null,
       event_id: getEvent().id,
       email: inputEmail.value.trim().toLowerCase(),
@@ -839,6 +854,7 @@ async function fetchDancersFromAPI() {
 function loadDancers() {
   const showFlags = shouldShowDancerFlags();
   const showClubs = shouldShowDancerClubs();
+  const showMasters = shouldShowDancerMasters();
   const dancersTable = document.getElementById('dancersTable');
   dancersTable.innerHTML = ''; // Clear existing rows
   dancers.forEach(dancer => {
@@ -873,10 +889,10 @@ function loadDancers() {
       <td class="align-middle">${dancer.category_name}</td>
       <td class="align-middle">${stylesSpans}</td>
       ${showClubs ? `<td class="align-middle">${clubName}</td>` : ''}
-      <td class="align-middle">
+      ${showMasters ? `<td class="align-middle">
         <i class="bi bi-people me-1 text-muted"></i>
         ${dancer.master_name || ''}
-      </td>
+      </td>` : ''}
       ${showFlags ? `<td class="align-middle">${dancer.nationality || ''}</td>` : ''}
       <td class="text-center align-middle">
           <div class="btn-group" role="group">
@@ -985,15 +1001,19 @@ async function loadMasters() {
   const masterSelect = document.getElementById('editMaster');
   masterSelect.innerHTML = ''; // Limpiar opciones anteriores
 
+  const emptyOption1 = document.createElement('option');
+  emptyOption1.value = '';
+  emptyOption1.textContent = '';
+  masterSelect.appendChild(emptyOption1);
+
+  if (!shouldShowDancerMasters()) {
+    return;
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/api/judges?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching masters');
     const masters = await response.json();
-
-    const emptyOption1 = document.createElement('option');
-    emptyOption1.value = '';
-    emptyOption1.textContent = '';
-    masterSelect.appendChild(emptyOption1);
 
     masters.forEach(master => {
       if (master.ismaster == 1) {

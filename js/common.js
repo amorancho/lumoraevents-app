@@ -202,7 +202,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         resultsFilter: data.results_filter,
         TiedPositions: tiedPositions,
         musicExtraTime: data.music_extra_time || 0,
-        hideSchoolInfo: data.hide_school_info === 1
+        hideSchoolInfo: data.hide_school_info === 1,
+        hasMasters: data.has_masters === 1
       };
 
     }
