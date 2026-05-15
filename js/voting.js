@@ -189,6 +189,10 @@ function setCriteriaColumnsVisibility(visible, { persist = false } = {}) {
   if (persist) saveCriteriaColumnsVisibility(criteriaColumnsVisible);
 }
 
+function shouldShowJudgeFeedbackColumn() {
+  return Boolean(getEvent()?.hasJudgeFeedback);
+}
+
 function syncCommentsColumnPresentation() {
   const feedbackLabel = t('feedback', 'Feedback');
   const commentsLabel = t('comments', 'Comments');
@@ -1861,8 +1865,9 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
 
     if (hasPrimaryAction && canShowPenaltiesButton) {
       const penaltiesCount = Number(d?.num_penalties) || 0;
+      const penaltiesButtonClass = penaltiesCount > 0 ? 'btn-outline-danger' : 'btn-outline-warning';
       const btnPenalties = document.createElement('button');
-      btnPenalties.className = 'btn btn-sm btn-outline-warning';
+      btnPenalties.className = `btn btn-sm ${penaltiesButtonClass}`;
       btnPenalties.textContent = `${t('penalties', 'Penalties')} (${penaltiesCount})`;
       btnPenalties.addEventListener('click', async () => {
         await openPenaltyAssignmentModal({
@@ -1882,30 +1887,30 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
 
     tr.appendChild(tdActions);
 
-    // Columna Feedback (ultima)
-    const tdComments = document.createElement('td');
-    tdComments.className = 'text-center';
+    if (shouldShowJudgeFeedbackColumn()) {
+      // Columna Feedback (ultima)
+      const tdComments = document.createElement('td');
+      tdComments.className = 'text-center';
 
-    const hasComments = typeof d.comments === 'string' && d.comments.trim().length > 0;
-    const hasAudioFeedback = parseJudgeFlag(d?.has_feedback);
-    if (d.status === 'Completed') {
-      const feedbackActions = document.createElement('div');
-      feedbackActions.className = 'feedback-actions';
+      const hasComments = typeof d.comments === 'string' && d.comments.trim().length > 0;
+      const hasAudioFeedback = parseJudgeFlag(d?.has_feedback);
+      if (d.status === 'Completed') {
+        const feedbackActions = document.createElement('div');
+        feedbackActions.className = 'feedback-actions';
 
-      const btnComments = document.createElement('button');
-      btnComments.type = 'button';
-      btnComments.className = `btn btn-sm btn-feedback-icon ${hasComments ? 'btn-comments' : 'btn-outline-comments'}`;
-      btnComments.dataset.role = 'comments-btn';
-      btnComments.dataset.hasComments = hasComments ? 'true' : 'false';
-      btnComments.addEventListener('click', () => {
-        if (!commentsModal) return;
-        commentsContext = { competitionId: d.competition_id, dancerId: d.id };
-        commentsTextarea.value = d.comments || '';
-        commentsModal.show();
-      });
-      feedbackActions.appendChild(btnComments);
+        const btnComments = document.createElement('button');
+        btnComments.type = 'button';
+        btnComments.className = `btn btn-sm btn-feedback-icon ${hasComments ? 'btn-comments' : 'btn-outline-comments'}`;
+        btnComments.dataset.role = 'comments-btn';
+        btnComments.dataset.hasComments = hasComments ? 'true' : 'false';
+        btnComments.addEventListener('click', () => {
+          if (!commentsModal) return;
+          commentsContext = { competitionId: d.competition_id, dancerId: d.id };
+          commentsTextarea.value = d.comments || '';
+          commentsModal.show();
+        });
+        feedbackActions.appendChild(btnComments);
 
-      if (getEvent()?.hasJudgeFeedback) {
         const btnAudioFeedback = document.createElement('button');
         btnAudioFeedback.type = 'button';
         btnAudioFeedback.className = `btn btn-sm btn-feedback-icon ${hasAudioFeedback ? 'btn-audio-feedback' : 'btn-outline-audio-feedback'}`;
@@ -1920,14 +1925,14 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
           });
         });
         feedbackActions.appendChild(btnAudioFeedback);
+
+        tdComments.appendChild(feedbackActions);
+      } else {
+        tdComments.textContent = '-';
       }
 
-      tdComments.appendChild(feedbackActions);
-    } else {
-      tdComments.textContent = '-';
+      tr.appendChild(tdComments);
     }
-
-    tr.appendChild(tdComments);
 
     const scoreType = getScoreType();
 
@@ -1978,7 +1983,7 @@ function renderDancersTableHeader() {
 
   headRow.appendChild(th(t('col_status', 'Status'), 'text-center'));
   headRow.appendChild(th(t('col_action', 'Action'), 'text-center'));
-  {
+  if (shouldShowJudgeFeedbackColumn()) {
     const el = th(t('feedback', 'Feedback'), 'text-center');
     el.dataset.col = 'comments';
     headRow.appendChild(el);
