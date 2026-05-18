@@ -461,6 +461,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('total_system').value = eventObj.total_system;  
   document.getElementById('can_decide_positions').value = eventObj.can_decide_positions;
   document.getElementById('restrict_voting').value = eventObj.restrict_voting;
+  document.getElementById('judge_feedback').value = eventObj.judge_feedback;
 
   // switches -> convertir 1/0 a checkbox
   document.getElementById('visible').checked = (Number(eventObj.visible) === 1);
@@ -474,7 +475,6 @@ function openEditEventModal(eventObj) {
   document.getElementById('criteria_per_judge').checked = (Number(eventObj.criteria_per_judge) === 1);
   document.getElementById('has_penalties').checked = (Number(eventObj.has_penalties) === 1);
   document.getElementById('has_registrations').checked = (Number(eventObj.has_registrations) === 1);
-  document.getElementById('has_judge_feedback').checked = (Number(eventObj.has_judge_feedback) === 1);
   document.getElementById('judges_vis_results').checked = (Number(eventObj.judges_vis_results) === 1);
   document.getElementById('has_masters').checked = (Number(eventObj.has_masters) === 1);
   document.getElementById('show_flags').checked = (Number(eventObj.show_flags) === 1);
@@ -540,7 +540,7 @@ async function saveEvent() {
     criteria_per_judge: document.getElementById('criteria_per_judge').checked ? 1 : 0,
     has_penalties: document.getElementById('has_penalties').checked ? 1 : 0,
     has_registrations: document.getElementById('has_registrations').checked ? 1 : 0,
-    has_judge_feedback: document.getElementById('has_judge_feedback').checked ? 1 : 0,
+    judge_feedback: document.getElementById('judge_feedback').value || '',
     judges_vis_results: document.getElementById('judges_vis_results').checked ? 1 : 0,
     has_masters: document.getElementById('has_masters').checked ? 1 : 0,
     registration_start: document.getElementById('registration_start').value || null,

@@ -197,7 +197,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hideJudges: data.hide_judges === 1,
         hasClubs: data.has_clubs === 1,
         criteriaPerJudge: data.criteria_per_judge === 1,
-        hasJudgeFeedback: data.has_judge_feedback === 1,
+        JudgeFeedback: data.judge_feedback,
         judgesVisResults: data.judges_vis_results === 1,
         resultsFilter: data.results_filter,
         TiedPositions: tiedPositions,
