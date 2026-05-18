@@ -9,30 +9,125 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <style>
-    .card-judge-emphasis {
-      border: 2px solid #f2c94c;
-      box-shadow: 0 0.75rem 1.75rem rgba(242, 201, 76, 0.25);
-    }
-
     .card-organizer-emphasis {
-      border: 2px solid #2d9cdb;
-      box-shadow: 0 0.75rem 1.75rem rgba(45, 156, 219, 0.22);
+      --menu-card-accent: #0f6fff;
     }
 
     .card-registration-emphasis {
-      border: 2px solid #27ae60;
-      box-shadow: 0 0.75rem 1.75rem rgba(39, 174, 96, 0.22);
+      --menu-card-accent: #1f9d55;
+    }
+
+    .card-judge-emphasis {
+      --menu-card-accent: #d97706;
+    }
+
+    .menu-card-public {
+      --menu-card-accent: #475569;
+    }
+
+    .home-menu-section + .home-menu-section {
+      margin-top: 0.5rem;
+    }
+
+    .menu-card {
+      --menu-card-accent: #2563eb;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      min-height: 112px;
+      padding: 1rem 1.15rem;
+      border-radius: 22px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+      color: inherit;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      overflow: hidden;
+    }
+
+    .menu-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 4px;
+      background: linear-gradient(180deg, var(--menu-card-accent), rgba(255, 255, 255, 0.4));
+    }
+
+    .menu-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(15, 23, 42, 0.14);
+      box-shadow: 0 20px 42px rgba(15, 23, 42, 0.12);
+    }
+
+    .menu-card-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      flex: 0 0 56px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+      color: var(--menu-card-accent);
+      font-size: 1.5rem;
+    }
+
+    .menu-card-title {
+      flex: 1 1 auto;
+      min-width: 0;
+      padding-right: 2.25rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: #0f172a;
+    }
+
+    .menu-card-arrow {
+      position: absolute;
+      top: 50%;
+      right: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.8);
+      color: #475569;
+      opacity: 0.6;
+      transform: translate(-6px, -50%);
+      transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    }
+
+    .menu-card:hover .menu-card-arrow {
+      opacity: 1;
+      transform: translate(0, -50%);
+      background: rgba(255, 255, 255, 0.96);
+    }
+
+    @media (max-width: 767.98px) {
+      .menu-card {
+        min-height: 96px;
+      }
+
+      .menu-card-title {
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
-  
-  <div id="header"></div>  
-  
+
+  <div id="header"></div>
+
   <div id="principalContainer" class="container py-4">
 
     <div id="noticePanel" class="mb-4" style="display: none;">
-      <div class="alert d-flex flex-column text-center alert-dismissible fade show" role="alert" id="notice_type">       
+      <div class="alert d-flex flex-column text-center alert-dismissible fade show" role="alert" id="notice_type">
         <div id="notice_text">
           El festival ha dado comienzo. Si modifica estos datos puede provocar inconsistencias en los datos.
         </div>
@@ -40,87 +135,102 @@
       </div>
     </div>
 
-    <div class="row"> 
+    <div class="row">
       <div class="col text-center">
-        <img src="" alt="Logo del Evento" class="img-fluid mb-3" style="max-width: 200px;" id="event-logo">
+        <img src="" alt="Logo del Evento" class="img-fluid mb-3" style="max-width: 150px;" id="event-logo">
       </div>
     </div>
 
-    
-    <div class="row g-4 justify-content-center pt-4" id="home-menu-row">
+    <div class="pt-4" id="home-menu-grid">
+      <div class="row g-3 justify-content-center home-menu-section d-none" id="home-access-row">
+        <div class="col-12 col-md-6 col-xl-4 d-none" id="col-configUrl">
+          <a href="dashboard.html" class="menu-card card-organizer-emphasis" id="configUrl">
+            <div class="menu-card-icon">
+              <i class="bi bi-building-gear"></i>
+            </div>
+            <div class="menu-card-title" data-i18n="org_access">Organization Access</div>
+            <div class="menu-card-arrow">
+              <i class="bi bi-arrow-right"></i>
+            </div>
+          </a>
+        </div>
 
-      <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-none" id="col-configUrl">
-        <a href="dashboard.html" class="card h-100 text-center text-decoration-none shadow-sm hover-shadow card-organizer-emphasis" id="configUrl">
-          <div class="card-body">
-            <div class="fs-1 text-primary">⚙️</div>
-            <h5 class="card-title mt-3" data-i18n="org_access">Organization Access</h5>
-            <p class="card-text text-muted" data-i18n="org_access_sub">Exclusive panel to configure the event.</p>
-          </div>
-        </a>
+        <div class="col-12 col-md-6 col-xl-4 d-none" id="col-registrationUrl">
+          <a href="registrationhome.html" class="menu-card card-registration-emphasis" id="registrationUrl">
+            <div class="menu-card-icon">
+              <i class="bi bi-journal-check"></i>
+            </div>
+            <div class="menu-card-title" data-i18n="reg_access">Schools Access</div>
+            <div class="menu-card-arrow">
+              <i class="bi bi-arrow-right"></i>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-12 col-md-6 col-xl-4 d-none" id="col-votingUrl">
+          <a href="voting.html" class="menu-card card-judge-emphasis" id="votingUrl">
+            <div class="menu-card-icon">
+              <i class="bi bi-trophy"></i>
+            </div>
+            <div class="menu-card-title" data-i18n="jud_access">Voting</div>
+            <div class="menu-card-arrow">
+              <i class="bi bi-arrow-right"></i>
+            </div>
+          </a>
+        </div>
       </div>
 
-      <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-none" id="col-registrationUrl">
-        <a href="registrationhome.html" class="card h-100 text-center text-decoration-none shadow-sm hover-shadow card-registration-emphasis" id="registrationUrl">
-          <div class="card-body">
-            <div class="fs-1 text-primary">📑​</div>
-            <h5 class="card-title mt-3" data-i18n="reg_access">Schools Access</h5>
-            <p class="card-text text-muted" data-i18n="reg_access_sub">Participant Registration Area.</p>
-          </div>
-        </a>
-      </div>
+      <div class="row g-3 justify-content-center home-menu-section d-none" id="home-public-row">
+        <div class="col-12 col-md-6 col-xl-3 d-none" id="col-participantsUrl">
+          <a href="participants.html" class="menu-card menu-card-public" id="participantsUrl">
+            <div class="menu-card-icon">
+              <i class="bi bi-people"></i>
+            </div>
+            <div class="menu-card-title" data-i18n="par_access">Participants</div>
+            <div class="menu-card-arrow">
+              <i class="bi bi-arrow-right"></i>
+            </div>
+          </a>
+        </div>
 
-      <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-none" id="col-votingUrl">
-        <a href="voting.html" class="card h-100 text-center text-decoration-none shadow-sm card-judge-emphasis" id="votingUrl">
-          <div class="card-body">
-            <div class="fs-1 text-primary">⚖️</div>
-            <h5 class="card-title mt-3" data-i18n="jud_access">Voting</h5>
-            <p class="card-text text-muted" data-i18n="jud_access_sub">Exclusive panel for the event's jury.</p>
-          </div>
-        </a>
-      </div>
+        <div class="col-12 col-md-6 col-xl-3 d-none" id="col-scheduleUrl">
+          <a href="schedule.html" class="menu-card menu-card-public" id="scheduleUrl">
+            <div class="menu-card-icon">
+              <i class="bi bi-calendar3"></i>
+            </div>
+            <div class="menu-card-title" data-i18n="sch_access">Schedule</div>
+            <div class="menu-card-arrow">
+              <i class="bi bi-arrow-right"></i>
+            </div>
+          </a>
+        </div>
 
-      <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-none" id="col-participantsUrl">
-        <a href="participants.html" class="card h-100 text-center text-decoration-none shadow-sm" id="participantsUrl">
-          <div class="card-body">
-            <div class="fs-1 text-primary">💃</div>
-            <h5 class="card-title mt-3" data-i18n="par_access">Participants</h5>
-            <p class="card-text text-muted" data-i18n="par_access_sub">Explore the participants of the event.</p>
-          </div>
-        </a>
-      </div>
+        <div class="col-12 col-md-6 col-xl-3 d-none" id="col-resultsUrl">
+          <a href="results.html" class="menu-card menu-card-public" id="resultsUrl">
+            <div class="menu-card-icon">
+              <i class="bi bi-award"></i>
+            </div>
+            <div class="menu-card-title" data-i18n="res_access">Results</div>
+            <div class="menu-card-arrow">
+              <i class="bi bi-arrow-right"></i>
+            </div>
+          </a>
+        </div>
 
-      <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-none" id="col-scheduleUrl">
-        <a href="schedule.html" class="card h-100 text-center text-decoration-none shadow-sm" id="scheduleUrl">
-          <div class="card-body">
-            <div class="fs-1 text-primary">🕒</div>
-            <h5 class="card-title mt-3" data-i18n="sch_access">Schedule</h5>
-            <p class="card-text text-muted" data-i18n="sch_access_sub">Planning of the Event.</p>
-          </div>
-        </a>
+        <div class="col-12 col-md-6 col-xl-3 d-none" id="col-statisticsUrl">
+          <a href="statistics.html" class="menu-card menu-card-public" id="statisticsUrl">
+            <div class="menu-card-icon">
+              <i class="bi bi-bar-chart-line"></i>
+            </div>
+            <div class="menu-card-title" data-i18n="sta_access">Statistics</div>
+            <div class="menu-card-arrow">
+              <i class="bi bi-arrow-right"></i>
+            </div>
+          </a>
+        </div>
       </div>
-
-      <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-none" id="col-resultsUrl">
-        <a href="results.html" class="card h-100 text-center text-decoration-none shadow-sm" id="resultsUrl">
-          <div class="card-body">
-            <div class="fs-1 text-primary">🏆</div>
-            <h5 class="card-title mt-3" data-i18n="res_access">Results</h5>
-            <p class="card-text text-muted" data-i18n="res_access_sub">Display of classifications and scores</p>
-          </div>
-        </a>
-      </div>
-
-      <div class="col-12 col-sm-12 col-md-12 col-lg-3 d-none" id="col-statisticsUrl">
-        <a href="statistics.html" class="card h-100 text-center text-decoration-none shadow-sm" id="statisticsUrl">
-          <div class="card-body">
-            <div class="fs-1 text-primary">📈​</div>
-            <h5 class="card-title mt-3" data-i18n="sta_access">Statistics</h5>
-            <p class="card-text text-muted" data-i18n="sta_access_sub">Your statistics for this Event</p>
-          </div>
-        </a>
-      </div>
-
     </div>
-    
+
   </div>
 
   <div id="eventHiddenMessage" class="container py-5 d-none text-center">
