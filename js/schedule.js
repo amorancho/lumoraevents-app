@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     initScheduleRefreshButton();
+    setScheduleRefreshButtonMode('hidden');
     loadSchedule();
 });
 
@@ -50,6 +51,34 @@ function setScheduleRefreshButtonLoading(isLoading) {
     refreshBtn.disabled = false;
 }
 
+function setScheduleRefreshButtonMode(mode, liveSlotOverride = null) {
+    const refreshBtn = document.getElementById('refreshScheduleBtn');
+    const defaultSlot = document.getElementById('scheduleRefreshDefaultSlot');
+    const liveSlot = liveSlotOverride || document.getElementById('scheduleRefreshLiveSlot');
+
+    if (!refreshBtn || !defaultSlot) return;
+
+    const nextMode = mode === 'live' && liveSlot
+        ? 'live'
+        : mode === 'default'
+            ? 'default'
+            : 'hidden';
+
+    if (nextMode === 'live') {
+        liveSlot.appendChild(refreshBtn);
+    } else {
+        defaultSlot.appendChild(refreshBtn);
+    }
+
+    refreshBtn.className = nextMode === 'live'
+        ? 'btn btn-sm rounded-pill schedule-refresh-btn-live'
+        : 'btn btn-outline-primary';
+
+    refreshBtn.hidden = nextMode === 'hidden';
+    defaultSlot.hidden = nextMode !== 'default';
+    refreshBtn.dataset.mode = nextMode;
+}
+
 function initScheduleRefreshButton() {
     const refreshBtn = document.getElementById('refreshScheduleBtn');
     if (!refreshBtn || refreshBtn.dataset.initialized === '1') return;
@@ -69,6 +98,7 @@ async function loadSchedule() {
     const highlightContainer = document.getElementById('scheduleHighlightContainer');
 
     container.innerHTML = '<div class="text-center my-5"><div class="spinner-border text-primary" role="status"></div></div>';
+    setScheduleRefreshButtonMode('hidden');
     if (highlightContainer) {
         highlightContainer.innerHTML = '';
         highlightContainer.style.display = 'none';
@@ -158,6 +188,7 @@ function renderScheduleHighlight(data) {
     const highlightContainer = document.getElementById('scheduleHighlightContainer');
     if (!highlightContainer) return;
 
+    setScheduleRefreshButtonMode('hidden');
     highlightContainer.innerHTML = '';
     highlightContainer.style.display = 'none';
 
@@ -202,7 +233,7 @@ function renderScheduleHighlight(data) {
                         <span class="schedule-live-dot" aria-hidden="true"></span>
                         ${t('live_now', 'Live now')}
                     </span>
-                    <h3 class="h5 mb-0">${t(titleKey)}</h3>                    
+                    <div id="scheduleRefreshLiveSlot" class="schedule-live-refresh-slot"></div>
                 </div>
             </div>
         `
@@ -222,6 +253,11 @@ function renderScheduleHighlight(data) {
     col.appendChild(wrapper);
     row.appendChild(col);
     highlightContainer.appendChild(row);
+    if (showLiveHighlight) {
+        setScheduleRefreshButtonMode('live', wrapper.querySelector('#scheduleRefreshLiveSlot'));
+    } else {
+        setScheduleRefreshButtonMode('default');
+    }
     highlightContainer.style.display = 'block';
 }
 
@@ -283,12 +319,6 @@ function createScheduleItemCard(item, { uniqueKey, expandParticipants = false, h
 
     card.innerHTML = `
         <div class="card-body">
-            ${isLiveItem ? `
-                <div class="schedule-item-live-callout">
-                    <i class="bi bi-broadcast-pin" aria-hidden="true"></i>
-                    <span>${t('competition_live_message', 'Participants are on stage right now.')}</span>
-                </div>
-            ` : ''}
             <div class="row text-center align-items-center">
                 <div class="col-6 col-md-3 mb-2 mb-md-0">
                     <p class="mb-1 fw-semibold">${t('category', 'Category')}</p>

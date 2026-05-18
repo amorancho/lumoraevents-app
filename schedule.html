@@ -56,18 +56,35 @@
       background: rgba(255, 255, 255, 0.92);
     }
 
-    .schedule-item-live-callout {
+    .schedule-live-refresh-slot {
       display: flex;
+      justify-content: center;
+      width: 100%;
+      margin-top: 0.1rem;
+    }
+
+    .schedule-refresh-btn-live {
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.55rem;
-      margin-bottom: 1rem;
-      padding: 0.7rem 0.9rem;
-      border-radius: 0.9rem;
-      background: rgba(13, 110, 253, 0.08);
+      gap: 0.45rem;
+      padding: 0.45rem 1rem;
+      border: 1px solid rgba(13, 110, 253, 0.16);
+      background: rgba(255, 255, 255, 0.88);
       color: #0a58ca;
+      font-size: 0.88rem;
       font-weight: 600;
-      text-align: center;
+      box-shadow: 0 0.45rem 1.2rem rgba(13, 110, 253, 0.1);
+      backdrop-filter: blur(6px);
+    }
+
+    .schedule-refresh-btn-live:hover,
+    .schedule-refresh-btn-live:focus,
+    .schedule-refresh-btn-live:active {
+      border-color: rgba(13, 110, 253, 0.24) !important;
+      background: #ffffff !important;
+      color: #084298 !important;
+      box-shadow: 0 0.55rem 1.35rem rgba(13, 110, 253, 0.14) !important;
     }
 
     @keyframes scheduleLivePulse {
@@ -106,7 +123,7 @@
 
   <div class="container my-4">
 
-    <div class="d-flex justify-content-center mb-3">
+    <div id="scheduleRefreshDefaultSlot" class="mb-3 text-center" hidden>
       <button type="button" class="btn btn-outline-primary" id="refreshScheduleBtn" data-i18n="update">
         <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>
         <span>Update</span>
