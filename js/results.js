@@ -838,6 +838,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  if (getEvent().notice_active && getEvent().notice_text.trim() !== '') {
+    const noticePanel = document.getElementById('noticePanel');
+    const noticeInnerPanel = document.getElementById('notice_type');
+    noticeInnerPanel.classList.add(`alert-${getEvent().notice_type === 'IMP' ? 'danger' : 'success'}`);
+    const noticeTextDiv = document.getElementById('notice_text');
+    noticeTextDiv.innerText = getEvent().notice_text;
+    noticePanel.style.display = 'block';
+  }
+
   const categorySelect = document.getElementById('categorySelect');
   const styleSelect = document.getElementById('styleSelect');
   const refreshBtn = document.getElementById('refreshBtn');
