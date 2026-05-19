@@ -769,9 +769,10 @@ async function createCompetitionRequest(categoryId, styleId) {
   const payload = {
     event_id: getEvent().id,
     category_id: categoryId,
-    style_id: styleId,
-    startTime: '',
-    status: 'CLO'
+    style_id: styleId
+    //,
+    //startTime: '',
+    //status: 'CLO'
   };
 
   try {
@@ -797,6 +798,110 @@ async function createCompetitionRequest(categoryId, styleId) {
     return {
       ok: false,
       message: error?.message || t('create_competitions_result_error', 'Unexpected error')
+    };
+  }
+}
+
+function buildCreateCompetitionCombinationKey(categoryId, styleId) {
+  return `${String(categoryId)}::${String(styleId)}`;
+}
+
+function normalizeCreateCompetitionBulkResult(result) {
+  const normalizedStatus = String(result?.status || '').toUpperCase();
+  const status = normalizedStatus === 'OK' || normalizedStatus === 'KO' || normalizedStatus === 'SKIP'
+    ? normalizedStatus
+    : 'KO';
+  const ok = status === 'OK';
+
+  return {
+    categoryId: String(result?.category_id ?? ''),
+    styleId: String(result?.style_id ?? ''),
+    status,
+    ok,
+    textError: result?.text_error || null,
+    message: status === 'OK'
+      ? t('create_competitions_result_ok', 'Created')
+      : (status === 'SKIP'
+        ? result?.text_error || t('create_competitions_result_skip', 'Skipped')
+        : result?.text_error || t('create_competitions_result_error', 'Error'))
+  };
+}
+
+async function createCompetitionsBulkRequest(combinations, options = {}) {
+  const onlyWithDancers = Boolean(options?.onlyWithDancers);
+  const payload = {
+    event_id: getEvent().id,
+    onlyWithDancers,
+    status: 'CLO',
+    competitions: combinations.map((combo) => ({
+      category_id: combo.categoryId,
+      style_id: combo.styleId
+    }))
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitions/bulk`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        ok: false,
+        message: data?.error || t('create_competitions_error_save', 'Error saving competition'),
+        results: []
+      };
+    }
+
+    const normalizedResults = Array.isArray(data)
+      ? data.map(normalizeCreateCompetitionBulkResult)
+      : [];
+    const resultsByKey = new Map(
+      normalizedResults.map((result) => [
+        buildCreateCompetitionCombinationKey(result.categoryId, result.styleId),
+        result
+      ])
+    );
+
+    const orderedResults = combinations.map((combo) => {
+      const normalizedResult = resultsByKey.get(
+        buildCreateCompetitionCombinationKey(combo.categoryId, combo.styleId)
+      );
+
+      if (!normalizedResult) {
+        return {
+          categoryId: combo.categoryId,
+          styleId: combo.styleId,
+          status: 'KO',
+          ok: false,
+          message: t('create_competitions_result_error', 'Error')
+        };
+      }
+
+      return {
+        ...normalizedResult,
+        categoryId: combo.categoryId,
+        styleId: combo.styleId
+      };
+    });
+
+    return {
+      ok: true,
+      results: orderedResults,
+      successCount: orderedResults.filter((result) => result.status === 'OK').length,
+      skippedCount: orderedResults.filter((result) => result.status === 'SKIP').length,
+      failedResults: orderedResults.filter((result) => result.status === 'KO')
+    };
+  } catch (error) {
+    console.error('Error creating competitions in bulk:', error);
+    return {
+      ok: false,
+      message: error?.message || t('create_competitions_result_error', 'Unexpected error'),
+      results: []
     };
   }
 }
@@ -1481,6 +1586,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const createCompetitionsBtn = document.getElementById('createCompetitionsBtn');
     const createCompsSelectAllCategories = document.getElementById('createCompsSelectAllCategories');
     const createCompsSelectAllStyles = document.getElementById('createCompsSelectAllStyles');
+    const createCompsOnlyWithDancers = document.getElementById('createCompsOnlyWithDancers');
     const createCompetitionsApplyBtn = document.getElementById('createCompetitionsApplyBtn');
 
     if (createCompetitionsBtn && createCompetitionsModal) {
@@ -1544,34 +1650,46 @@ document.addEventListener('DOMContentLoaded', async () => {
         createCompetitionsApplyBtn.disabled = true;
         const originalText = createCompetitionsApplyBtn.textContent;
         createCompetitionsApplyBtn.textContent = t('create_competitions_creating', 'Creating...');
-
-        const combinations = [];
-        selectedCategories.forEach((categoryId) => {
-          selectedStyles.forEach((styleId) => {
-            combinations.push({
-              categoryId,
-              styleId,
-              categoryName: getSelectOptionLabel('categoryDropdown', categoryId),
-              styleName: getSelectOptionLabel('styleDropdown', styleId)
+        try {
+          const combinations = [];
+          selectedCategories.forEach((categoryId) => {
+            selectedStyles.forEach((styleId) => {
+              combinations.push({
+                categoryId,
+                styleId,
+                categoryName: getSelectOptionLabel('categoryDropdown', categoryId),
+                styleName: getSelectOptionLabel('styleDropdown', styleId)
+              });
             });
           });
-        });
 
-        const results = [];
-        for (const combo of combinations) {
-          const result = await createCompetitionRequest(combo.categoryId, combo.styleId);
-          results.push({
-            ...combo,
-            ok: result.ok,
-            message: result.message
+          const onlyWithDancers = Boolean(createCompsOnlyWithDancers?.checked);
+          const bulkResult = await createCompetitionsBulkRequest(combinations, { onlyWithDancers });
+          if (!bulkResult.ok) {
+            showMessageModal(
+              bulkResult.message,
+              t('error_title', 'Error')
+            );
+            return;
+          }
+
+          const results = combinations.map((combo, index) => {
+            const result = bulkResult.results[index] || {};
+            return {
+              ...combo,
+              status: result.status,
+              ok: result.ok,
+              textError: result.textError,
+              message: result.message
+            };
           });
+
+          renderCreateCompsResults(results);
+          await fetchCompetitionsFromAPI();
+        } finally {
+          createCompetitionsApplyBtn.disabled = false;
+          createCompetitionsApplyBtn.textContent = originalText;
         }
-
-        renderCreateCompsResults(results);
-        await fetchCompetitionsFromAPI();
-
-        createCompetitionsApplyBtn.disabled = false;
-        createCompetitionsApplyBtn.textContent = originalText;
       });
     }
 
@@ -4119,19 +4237,32 @@ function renderCreateCompsResults(results) {
   const listEl = document.getElementById('createCompsResultList');
   if (!panelEl || !summaryEl || !listEl) return;
 
-  const okCount = results.filter(item => item.ok).length;
-  const errorCount = results.length - okCount;
+  const okCount = results.filter(item => String(item?.status || '').toUpperCase() === 'OK').length;
+  const skipCount = results.filter(item => String(item?.status || '').toUpperCase() === 'SKIP').length;
+  const errorCount = results.filter(item => String(item?.status || '').toUpperCase() === 'KO').length;
   const summaryTemplate = t(
     'create_competitions_results_summary',
-    'Total: {total} | OK: {ok} | Error: {error}'
+    'Total: {total} | OK: {ok} | Skip: {skip} | Error: {error}'
   );
   summaryEl.innerHTML = summaryTemplate
     .replace('{total}', `<strong>${results.length}</strong>`)
     .replace('{ok}', `<span class="text-success"><strong>${okCount}</strong></span>`)
+    .replace('{skip}', `<span class="text-warning"><strong>${skipCount}</strong></span>`)
     .replace('{error}', `<span class="text-danger"><strong>${errorCount}</strong></span>`);
 
   listEl.innerHTML = '';
   results.forEach((result) => {
+    const normalizedStatus = String(result?.status || '').toUpperCase();
+    const resultStatus = normalizedStatus === 'OK' || normalizedStatus === 'KO' || normalizedStatus === 'SKIP'
+      ? normalizedStatus
+      : (result.ok ? 'OK' : 'KO');
+    const statusTextClass = resultStatus === 'OK'
+      ? 'text-success'
+      : (resultStatus === 'SKIP' ? 'text-warning' : 'text-danger');
+    const statusBadgeClass = resultStatus === 'OK'
+      ? 'bg-success'
+      : (resultStatus === 'SKIP' ? 'bg-warning text-dark' : 'bg-danger');
+
     const row = document.createElement('div');
     row.className = 'list-group-item d-flex align-items-start justify-content-between gap-3';
 
@@ -4140,19 +4271,19 @@ function renderCreateCompsResults(results) {
     title.className = 'fw-semibold';
     title.textContent = `${result.categoryName} / ${result.styleName}`;
     const message = document.createElement('div');
-    message.className = `small ${result.ok ? 'text-success' : 'text-danger'}`;
-    message.textContent = result.message || (result.ok
+    message.className = `small ${statusTextClass}`;
+    message.textContent = result.message || (resultStatus === 'OK'
       ? t('create_competitions_result_ok', 'Created')
-      : t('create_competitions_result_error', 'Error'));
+      : (resultStatus === 'SKIP'
+        ? t('create_competitions_result_skip', 'Skipped')
+        : t('create_competitions_result_error', 'Error')));
 
     left.appendChild(title);
     left.appendChild(message);
 
     const badge = document.createElement('span');
-    badge.className = `badge ${result.ok ? 'bg-success' : 'bg-danger'}`;
-    badge.textContent = result.ok
-      ? t('create_competitions_result_ok_short', 'OK')
-      : t('create_competitions_result_error_short', 'ERROR');
+    badge.className = `badge ${statusBadgeClass}`;
+    badge.textContent = resultStatus;
 
     row.appendChild(left);
     row.appendChild(badge);
