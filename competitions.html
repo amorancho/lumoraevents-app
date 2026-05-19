@@ -178,6 +178,10 @@
               <select class="form-select form-select-sm competitions-filter" id="styleFilter">
                 <option value="" data-i18n="all_styles">All Styles</option>
               </select>
+              <div class="form-check form-check-inline m-0 competitions-filter-check">
+                <input class="form-check-input" type="checkbox" id="emptyParticipantsFilter">
+                <label class="form-check-label small" for="emptyParticipantsFilter" data-i18n="filter_without_participants">Comp. sin Part.</label>
+              </div>
               <span id="count-competitions" class="badge bg-secondary rounded-pill competitions-count">0 Comp.</span>
               <span id="count-participants" class="badge bg-secondary rounded-pill competitions-count">0 Part.</span>
               <button id="openBulkDeleteCompetitionsBtn" type="button" class="btn btn-outline-danger btn-sm competitions-bulk-delete-btn" data-i18n="bulk_delete_competitions_button">

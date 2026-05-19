@@ -114,6 +114,7 @@
   "competitions": "Compétitions",
   "all_categories": "Toutes les Catégories",
   "all_styles": "Tous les Styles",
+  "filter_without_participants": "Comp. sans Part.",
   "col_category": "Catégorie",
   "col_style": "Style",
   "col_estimated_start_time": "H. Début Est.",

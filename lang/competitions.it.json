@@ -114,6 +114,7 @@
   "competitions": "Competizioni",
   "all_categories": "Tutte le Categorie",
   "all_styles": "Tutti gli Stili",
+  "filter_without_participants": "Comp. senza Part.",
   "col_category": "Categoria",
   "col_style": "Stile",
   "col_estimated_start_time": "Ora Stimata di Inizio",

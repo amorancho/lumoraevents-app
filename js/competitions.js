@@ -61,14 +61,18 @@ const allowedRoles = ["admin", "organizer"];
 function getCurrentCompetitionFilters() {
   return {
     category: `${document.getElementById('categoryFilter')?.value || ''}`.trim().toLowerCase(),
-    style: `${document.getElementById('styleFilter')?.value || ''}`.trim().toLowerCase()
+    style: `${document.getElementById('styleFilter')?.value || ''}`.trim().toLowerCase(),
+    withoutParticipants: Boolean(document.getElementById('emptyParticipantsFilter')?.checked)
   };
 }
 
 function competitionMatchesFilters(competition, filters = getCurrentCompetitionFilters()) {
   const category = `${competition?.category_name || ''}`.trim().toLowerCase();
   const style = `${competition?.style_name || ''}`.trim().toLowerCase();
-  return (!filters.category || category === filters.category) && (!filters.style || style === filters.style);
+  const numDancers = Number(competition?.num_dancers) || 0;
+  return (!filters.category || category === filters.category)
+    && (!filters.style || style === filters.style)
+    && (!filters.withoutParticipants || numDancers === 0);
 }
 
 function getFilteredCompetitions() {
@@ -444,12 +448,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const categoryFilter = document.getElementById('categoryFilter');
   const styleFilter = document.getElementById('styleFilter');
+  const emptyParticipantsFilter = document.getElementById('emptyParticipantsFilter');
 
   if (categoryFilter) {
     categoryFilter.addEventListener('change', applyCategoryFilter);
   }
   if (styleFilter) {
     styleFilter.addEventListener('change', applyCategoryFilter);
+  }
+  if (emptyParticipantsFilter) {
+    emptyParticipantsFilter.addEventListener('change', applyCategoryFilter);
   }
 
   loadCategories();
@@ -1926,7 +1934,8 @@ function updateCompetitionsCounter(totalCount, visibleCount, totalParticipants, 
 
   const hasActiveFilter = Boolean(
     (document.getElementById('categoryFilter')?.value || '') ||
-    (document.getElementById('styleFilter')?.value || '')
+    (document.getElementById('styleFilter')?.value || '') ||
+    document.getElementById('emptyParticipantsFilter')?.checked
   );
   if (hasActiveFilter) {
     if (competitionsCountEl) {
