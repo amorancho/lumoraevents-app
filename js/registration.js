@@ -809,6 +809,35 @@ function initOrganizerDashboard() {
     }
   });
 
+  const buildTodayAnnotation = (series) => {
+    const categories = Array.isArray(series?.categories) ? series.categories : [];
+    const todayLabel = formatShortDate(getDateKey(new Date()));
+    if (!todayLabel || !categories.includes(todayLabel)) {
+      return null;
+    }
+
+    return {
+      xaxis: [{
+        x: todayLabel,
+        borderColor: '#198754',
+        borderWidth: 2,
+        strokeDashArray: 5,
+        label: {
+          text: todayLabel,
+          borderColor: '#198754',
+          orientation: 'horizontal',
+          offsetY: -6,
+          style: {
+            background: '#198754',
+            color: '#ffffff',
+            fontSize: '10px',
+            fontWeight: 700
+          }
+        }
+      }]
+    };
+  };
+
   const renderChart = (key, element, options) => {
     if (!element || typeof ApexCharts === 'undefined') {
       return;
@@ -988,6 +1017,8 @@ function initOrganizerDashboard() {
   const renderCharts = (metrics) => {
     const ui = getUiColors();
     const baseOptions = createBaseChartOptions(ui);
+    const registrationsByDayAnnotation = buildTodayAnnotation(metrics.registrationsByDay);
+    const schoolsByDayAnnotation = buildTodayAnnotation(metrics.schoolsByDay);
     const verticalBarDataLabels = {
       enabled: true,
       formatter: (value) => formatInteger(value),
@@ -1116,6 +1147,7 @@ function initOrganizerDashboard() {
         type: 'line',
         height: 320
       },
+      ...(registrationsByDayAnnotation ? { annotations: registrationsByDayAnnotation } : {}),
       colors: ['#0d6efd'],
       stroke: {
         curve: 'smooth',
@@ -1130,7 +1162,9 @@ function initOrganizerDashboard() {
         data: metrics.registrationsByDay.values
       }],
       xaxis: {
+        type: 'category',
         categories: metrics.registrationsByDay.categories,
+        tickPlacement: 'on',
         tickAmount: getWeeklyTickAmount(metrics.registrationsByDay),
         labels: {
           style: { colors: ui.muted },
@@ -1152,6 +1186,7 @@ function initOrganizerDashboard() {
         type: 'line',
         height: 320
       },
+      ...(schoolsByDayAnnotation ? { annotations: schoolsByDayAnnotation } : {}),
       colors: ['#fd7e14'],
       stroke: {
         curve: 'smooth',
@@ -1166,7 +1201,9 @@ function initOrganizerDashboard() {
         data: metrics.schoolsByDay.values
       }],
       xaxis: {
+        type: 'category',
         categories: metrics.schoolsByDay.categories,
+        tickPlacement: 'on',
         tickAmount: getWeeklyTickAmount(metrics.schoolsByDay),
         labels: {
           style: { colors: ui.muted },
