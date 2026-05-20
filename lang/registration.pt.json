@@ -190,6 +190,7 @@
   "registration_categories_min_years": "Min anos",
   "registration_categories_max_years": "Max anos",
   "registration_categories_music_max_duration": "Duracao musica",
+  "registration_categories_choreo_status_none": "SEM INSCRICOES",
   "registration_categories_syncro": "Syncro",
   "registration_categories_syncro_status_not": "Nao sincronizado",
   "registration_categories_syncro_status_not_applicable": "Não aplicável",

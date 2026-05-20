@@ -2685,6 +2685,77 @@ function getSyncroStatusBadgeInfo(status) {
   }
 }
 
+function parseChoreoStatusSummary(status) {
+  if (status === null || status === undefined) {
+    return [];
+  }
+
+  const order = { CRE: 0, PEN: 1, VAL: 2, REJ: 3 };
+  return `${status}`
+    .split('|')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => {
+      const [rawCode, rawCount] = item.split(':');
+      const code = `${rawCode || ''}`.trim().toUpperCase();
+      if (!code) {
+        return null;
+      }
+      const count = Number.parseInt(`${rawCount ?? ''}`.trim(), 10);
+      return {
+        code,
+        count: Number.isFinite(count) ? count : 0
+      };
+    })
+    .filter((item) => item && order[item.code] !== undefined)
+    .sort((left, right) => order[left.code] - order[right.code]);
+}
+
+function getChoreoStatusBadgeInfo(code, count) {
+  switch (`${code || ''}`.toUpperCase()) {
+    case 'CRE':
+      return { label: `${count}`, className: 'bg-primary' };
+    case 'PEN':
+      return { label: `${count}`, className: 'bg-warning text-dark' };
+    case 'VAL':
+      return { label: `${count}`, className: 'bg-success' };
+    case 'REJ':
+      return { label: `${count}`, className: 'bg-danger' };
+    default:
+      return { label: `${count}`, className: 'bg-secondary' };
+  }
+}
+
+function createChoreoStatusBadges(status, options = {}) {
+  const wrap = document.createElement('div');
+  wrap.className = options.className || 'd-flex flex-wrap gap-1';
+
+  const choreoStatuses = parseChoreoStatusSummary(status);
+  const totalChoreoCount = choreoStatuses.reduce((sum, statusItem) => sum + (Number(statusItem.count) || 0), 0);
+  const totalBadge = document.createElement('span');
+  totalBadge.className = 'badge bg-dark';
+  totalBadge.textContent = `${totalChoreoCount}`;
+  wrap.appendChild(totalBadge);
+
+  if (!choreoStatuses.length) {
+    const emptyBadge = document.createElement('span');
+    emptyBadge.className = 'badge bg-danger';
+    emptyBadge.textContent = t('registration_categories_choreo_status_none', 'NO REGISTRATIONS').toUpperCase();
+    wrap.appendChild(emptyBadge);
+    return wrap;
+  }
+
+  choreoStatuses.forEach((statusItem) => {
+    const badge = document.createElement('span');
+    const badgeInfo = getChoreoStatusBadgeInfo(statusItem.code, statusItem.count);
+    badge.className = `badge ${badgeInfo.className}`;
+    badge.textContent = badgeInfo.label;
+    wrap.appendChild(badge);
+  });
+
+  return wrap;
+}
+
 function countSyncroStatuses(items, options = {}) {
   return (Array.isArray(items) ? items : []).reduce((summary, item) => {
     const status = `${item?.syncro_status || ''}`;
@@ -3101,6 +3172,13 @@ function initRegistrationCategoriesTab() {
       musicMaxCell.textContent = category.music_max_duration ?? '-';
       row.appendChild(musicMaxCell);
 
+      const choreoStatusCell = document.createElement('td');
+      choreoStatusCell.className = 'text-start';
+      choreoStatusCell.appendChild(createChoreoStatusBadges(category.choreo_status, {
+        className: 'd-flex flex-wrap justify-content-start gap-1'
+      }));
+      row.appendChild(choreoStatusCell);
+
       const syncroCell = document.createElement('td');
       syncroCell.className = 'text-center';
       const syncroBadge = document.createElement('span');
@@ -3145,7 +3223,7 @@ function initRegistrationCategoriesTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 8;
+    cell.colSpan = 9;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -3377,7 +3455,11 @@ function initRegistrationDisciplinesTab() {
       li.appendChild(leftDiv);
 
       const rightDiv = document.createElement('div');
-      rightDiv.className = 'd-flex align-items-center gap-2 ms-3';
+      rightDiv.className = 'd-flex align-items-center gap-2 ms-3 flex-wrap';
+
+      rightDiv.appendChild(createChoreoStatusBadges(discipline.choreo_status, {
+        className: 'd-flex flex-wrap justify-content-start gap-1'
+      }));
 
       const syncroBadge = document.createElement('span');
       const syncroInfo = getSyncroStatusBadgeInfo(discipline.syncro_status);
