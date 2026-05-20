@@ -31,6 +31,7 @@
 
     .menu-card {
       --menu-card-accent: #2563eb;
+      --menu-card-line-accent: var(--menu-card-accent);
       position: relative;
       display: flex;
       align-items: center;
@@ -52,7 +53,11 @@
       position: absolute;
       inset: 0 auto 0 0;
       width: 4px;
-      background: linear-gradient(180deg, var(--menu-card-accent), rgba(255, 255, 255, 0.4));
+      background: linear-gradient(180deg, var(--menu-card-line-accent), rgba(255, 255, 255, 0.4));
+    }
+
+    #home-access-row .menu-card {
+      --menu-card-line-accent: #1f9d55;
     }
 
     .menu-card:hover {
