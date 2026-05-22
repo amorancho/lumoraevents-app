@@ -221,6 +221,7 @@ function initExportEventModal() {
       const { applyRestrictionVoting } = getPlanBRestrictionState();
       setExportLoadingState(triggerButton, true);
       await downloadEventPlanBExport(format, applyRestrictionVoting);
+      setExportLoadingState(triggerButton, false);
       modal.hide();
     } catch (err) {
       console.error('Export error:', err);

@@ -83,7 +83,7 @@
   "export_event_title": "Esporta evento",
   "export_event_format_prompt": "Scegli il formato di esportazione del Plan B.",
   "export_event_confirm": "Sei sicuro di voler esportare questo evento?",
-  "export_event_info": "L esportazione generera un PDF per ogni giudice, consentendo di completare il voto su carta in caso di perdita della connessione internet e impossibilita di usare l app nel giorno dell evento. Questo processo puo richiedere alcuni secondi. Non chiudere o ricaricare la pagina durante l esportazione.",
+  "export_event_info": "L esportazione generera un file ZIP con un PDF o un file Excel per ogni giudice, in base al formato selezionato. Questo processo puo richiedere alcuni secondi. Non chiudere o ricaricare la pagina durante l esportazione.",
   "export_apply_restriction_voting_label": "Vuoi applicare la restrizione delle votazioni nella generazione delle pagine per giudice?",
   "export_event_confirm_btn": "Si, esporta",
   "event_status_modal_default_title": "Conferma azione",
