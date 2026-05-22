@@ -358,9 +358,9 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-title="close" title="Close"></button>
         </div>
         <div class="modal-body">
-          <p class="mb-2" data-i18n="export_event_confirm">Are you sure you want to export this event?</p>
+          <p class="mb-2" data-i18n="export_event_format_prompt">Choose the export format for Plan B.</p>
           <div class="text-muted small" data-i18n="export_event_info">
-            The export will generate a PDF for each judge, allowing them to complete the voting on paper in case an internet connection is lost and the app cannot be used on the event day.
+            The export will generate a ZIP file with one PDF or Excel file per judge, depending on the selected format, so voting can continue if the internet connection is lost on the event day.
             <br>
             This process may take a few seconds. Please do not close or refresh the page while the export is in progress.
           </div>
@@ -373,7 +373,6 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
-          <button type="button" class="btn btn-primary" id="exportEventConfirmBtn" data-i18n="export_event_confirm_btn">Yes, export</button>
         </div>
       </div>
     </div>

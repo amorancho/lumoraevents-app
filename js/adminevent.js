@@ -66,6 +66,33 @@ const POSTER_MIN_DIMENSION = 300;
 const POSTER_UPLOAD_MIN_WIDTH = 800;
 const POSTER_FILE_FIELD_NAMES = ['logo', 'logoFile', 'file', 'posterLogo', 'poster_logo'];
 const POSTER_ALLOWED_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg']);
+const PLANB_EXPORT_MODAL_COPY = {
+  en: {
+    prompt: 'Choose the export format for Plan B.',
+    info: 'The export will generate a ZIP file with one PDF or Excel file per judge, depending on the selected format.',
+    loadingHint: 'This process may take a few seconds. Please do not close or refresh the page while export is in progress.'
+  },
+  es: {
+    prompt: 'Elige el formato de exportacion del Plan B.',
+    info: 'La exportacion generara un ZIP con un PDF o un Excel por cada juez, segun el formato seleccionado.',
+    loadingHint: 'Este proceso puede tardar unos segundos. No cierres ni recargues la pagina durante la exportacion.'
+  },
+  fr: {
+    prompt: 'Choisissez le format d export Plan B.',
+    info: 'L export generera un fichier ZIP avec un PDF ou un fichier Excel par juge, selon le format choisi.',
+    loadingHint: 'Ce processus peut prendre quelques secondes. Ne fermez pas et ne rechargez pas la page pendant l export.'
+  },
+  it: {
+    prompt: 'Scegli il formato di esportazione del Plan B.',
+    info: 'L esportazione generera un file ZIP con un PDF o un file Excel per ogni giudice, in base al formato selezionato.',
+    loadingHint: 'Questo processo puo richiedere alcuni secondi. Non chiudere o ricaricare la pagina durante l esportazione.'
+  },
+  pt: {
+    prompt: 'Escolha o formato de exportacao do Plan B.',
+    info: 'A exportacao vai gerar um ficheiro ZIP com um PDF ou um ficheiro Excel por juiz, conforme o formato selecionado.',
+    loadingHint: 'Este processo pode demorar alguns segundos. Nao feche nem atualize a pagina durante a exportacao.'
+  }
+};
 
 function applyCloseButtonAriaLabels() {
   const closeLabel = t('close');
@@ -74,26 +101,112 @@ function applyCloseButtonAriaLabels() {
   });
 }
 
+function syncPlanBExportModalCopy() {
+  const promptEl = document.querySelector('#exportEventModal [data-i18n="export_event_format_prompt"]');
+  const infoEl = document.querySelector('#exportEventModal [data-i18n="export_event_info"]');
+  const language = String(localStorage.getItem('lang') || getEvent()?.language || 'en').toLowerCase();
+  const copy = PLANB_EXPORT_MODAL_COPY[language] || PLANB_EXPORT_MODAL_COPY.en;
+
+  if (promptEl) {
+    promptEl.textContent = t('export_event_format_prompt', copy.prompt);
+  }
+
+  if (infoEl) {
+    infoEl.innerHTML = `${copy.info}<br>${copy.loadingHint}`;
+  }
+}
+
+function ensurePlanBExportFormatButtons(modalEl) {
+  if (!modalEl) return null;
+
+  let buttonsContainer = modalEl.querySelector('#exportEventFormatButtons');
+  if (buttonsContainer) {
+    return buttonsContainer;
+  }
+
+  const modalBody = modalEl.querySelector('.modal-body');
+  if (!modalBody) return null;
+
+  buttonsContainer = document.createElement('div');
+  buttonsContainer.id = 'exportEventFormatButtons';
+  buttonsContainer.className = 'd-grid gap-2 mt-4';
+  buttonsContainer.innerHTML = `
+    <button type="button" class="btn btn-outline-danger fw-semibold" id="exportEventPdfBtn">
+      <i class="bi bi-file-earmark-pdf me-2"></i>PDF
+    </button>
+    <button type="button" class="btn btn-outline-success fw-semibold" id="exportEventExcelBtn">
+      <i class="bi bi-file-earmark-excel me-2"></i>Excel
+    </button>
+  `;
+
+  const applyRestrictionContainer = modalBody.querySelector('#exportApplyRestrictionContainer');
+  if (applyRestrictionContainer) {
+    applyRestrictionContainer.insertAdjacentElement('afterend', buttonsContainer);
+  } else {
+    modalBody.appendChild(buttonsContainer);
+  }
+
+  return buttonsContainer;
+}
+
 function initExportEventModal() {
   const exportBtn = document.getElementById('exportEventBtn');
   const modalEl = document.getElementById('exportEventModal');
-  const confirmBtn = document.getElementById('exportEventConfirmBtn');
+  const buttonsContainer = ensurePlanBExportFormatButtons(modalEl);
+  const exportPdfBtn = buttonsContainer?.querySelector('#exportEventPdfBtn');
+  const exportExcelBtn = buttonsContainer?.querySelector('#exportEventExcelBtn');
   const applyRestrictionContainer = document.getElementById('exportApplyRestrictionContainer');
   const applyRestrictionCheck = document.getElementById('exportApplyRestrictionCheck');
 
-  if (!exportBtn || !modalEl || !confirmBtn) return;
+  if (!exportBtn || !modalEl || !exportPdfBtn || !exportExcelBtn) return;
 
   const modal = new bootstrap.Modal(modalEl);
+  const actionButtons = [exportPdfBtn, exportExcelBtn];
+  const dismissButtons = Array.from(modalEl.querySelectorAll('.btn-close, [data-bs-dismiss="modal"]'));
+  let exportInProgress = false;
+
+  syncPlanBExportModalCopy();
+
+  const syncRestrictionOption = () => {
+    const { canApplyRestriction } = getPlanBRestrictionState();
+    if (applyRestrictionContainer) {
+      applyRestrictionContainer.classList.toggle('d-none', !canApplyRestriction);
+    }
+    if (applyRestrictionCheck && !canApplyRestriction) {
+      applyRestrictionCheck.checked = false;
+    }
+  };
+
+  const setExportLoadingState = (activeButton, isLoading) => {
+    exportInProgress = isLoading;
+    exportBtn.disabled = isLoading;
+
+    actionButtons.forEach((button) => {
+      if (button === activeButton) {
+        setButtonLoading(button, isLoading, t('exporting'));
+        return;
+      }
+      button.disabled = isLoading;
+    });
+
+    dismissButtons.forEach((button) => {
+      button.disabled = isLoading;
+    });
+  };
+
+  modalEl.addEventListener('hide.bs.modal', (event) => {
+    if (exportInProgress) {
+      event.preventDefault();
+    }
+  });
+
+  modalEl.addEventListener('show.bs.modal', () => {
+    syncRestrictionOption();
+  });
 
   exportBtn.addEventListener('click', () => {
     if (exportBtn.disabled) return;
 
-    const restrictVotingInput = document.getElementById('restrict_voting');
-    const restrictVotingValue = Number(restrictVotingInput?.value ?? 0);
-    const canApplyRestriction = Number.isFinite(restrictVotingValue) && restrictVotingValue > 0;
-    if (applyRestrictionContainer) {
-      applyRestrictionContainer.classList.toggle('d-none', !canApplyRestriction);
-    }
     if (applyRestrictionCheck) {
       applyRestrictionCheck.checked = false;
     }
@@ -101,48 +214,71 @@ function initExportEventModal() {
     modal.show();
   });
 
-  confirmBtn.addEventListener('click', async () => {
-    confirmBtn.disabled = true;
-    modal.hide();
-
-    setButtonLoading(exportBtn, true, t('exporting'));
-
+  const handleExport = async (format, triggerButton) => {
     try {
-      const id = getEvent()?.id;
-      if (!id) throw new Error(t('error_event_not_loaded'));
+      if (triggerButton.disabled) return;
 
-      const restrictVotingInput = document.getElementById('restrict_voting');
-      const restrictVotingValue = Number(restrictVotingInput?.value ?? 0);
-      const canApplyRestriction = Number.isFinite(restrictVotingValue) && restrictVotingValue > 0;
-      const applyRestrictionVoting = canApplyRestriction && Boolean(applyRestrictionCheck?.checked);
-
-      const planbUrl = new URL(`${API_BASE_URL}/api/events/${id}/planb`);
-      planbUrl.searchParams.set('apply_restrictions', applyRestrictionVoting ? 'true' : 'false');
-
-      const res = await fetch(planbUrl.toString(), { method: 'GET' });
-      if (!res.ok) {
-        let message = t('error_export_event');
-        try {
-          const data = await res.json();
-          message = data?.error || data?.message || message;
-        } catch {
-          // ignore json parse errors for non-json bodies
-        }
-        throw new Error(message);
-      }
-
-      const blob = await res.blob();
-      const filename = makeExportFilename(getEvent());
-
-      downloadBlob(blob, filename);
+      const { applyRestrictionVoting } = getPlanBRestrictionState();
+      setExportLoadingState(triggerButton, true);
+      await downloadEventPlanBExport(format, applyRestrictionVoting);
+      modal.hide();
     } catch (err) {
       console.error('Export error:', err);
       showMessageModal(err?.message || t('error_export_event'), t('error_title'));
     } finally {
-      setButtonLoading(exportBtn, false);
-      confirmBtn.disabled = false;
+      setExportLoadingState(triggerButton, false);
     }
+  };
+
+  exportPdfBtn.addEventListener('click', async () => {
+    await handleExport('pdf', exportPdfBtn);
   });
+
+  exportExcelBtn.addEventListener('click', async () => {
+    await handleExport('excel', exportExcelBtn);
+  });
+}
+
+function getPlanBRestrictionState() {
+  const restrictVotingInput = document.getElementById('restrict_voting');
+  const applyRestrictionCheck = document.getElementById('exportApplyRestrictionCheck');
+  const restrictVotingValue = Number(restrictVotingInput?.value ?? 0);
+  const canApplyRestriction = Number.isFinite(restrictVotingValue) && restrictVotingValue > 0;
+
+  return {
+    canApplyRestriction,
+    applyRestrictionVoting: canApplyRestriction && Boolean(applyRestrictionCheck?.checked)
+  };
+}
+
+async function downloadEventPlanBExport(format, applyRestrictionVoting) {
+  const id = getEvent()?.id;
+  if (!id) {
+    throw new Error(t('error_event_not_loaded'));
+  }
+
+  const normalizedFormat = format === 'excel' ? 'excel' : 'pdf';
+  const planbUrl = new URL(`${API_BASE_URL}/api/events/${id}/planb`);
+  planbUrl.searchParams.set('format', normalizedFormat);
+  planbUrl.searchParams.set('apply_restrictions', applyRestrictionVoting ? 'true' : 'false');
+
+  const res = await fetch(planbUrl.toString(), { method: 'GET' });
+  if (!res.ok) {
+    let message = t('error_export_event');
+    try {
+      const data = await res.json();
+      message = data?.error || data?.message || message;
+    } catch {
+      // ignore json parse errors for non-json bodies
+    }
+    throw new Error(message);
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get('Content-Disposition');
+  const filename = getFilenameFromContentDisposition(disposition) || makeExportFilename(getEvent(), normalizedFormat);
+
+  downloadBlob(blob, filename);
 }
 
 function initStatusToggleModal() {
@@ -264,10 +400,11 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function makeExportFilename(event) {
+function makeExportFilename(event, format = 'pdf') {
   const baseName = (event?.name || t('event_default_name')).trim();
   const safeBase = sanitizeFilename(baseName) || t('event_default_name');
-  return `${safeBase} - ${t('export_file_suffix')}`;
+  const normalizedFormat = format === 'excel' ? 'excel' : 'pdf';
+  return `${safeBase} - planb-${normalizedFormat}.zip`;
 }
 
 function makePosterFilename(event) {
