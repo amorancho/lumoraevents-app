@@ -122,10 +122,23 @@ function renderTable(table, fullData) {
 
         li.appendChild(leftDiv);
 
+        let actionsDiv = null;
+        if (table === "categories" || table === "styles") {
+            actionsDiv = document.createElement("div");
+            actionsDiv.className = "d-flex align-items-center gap-3";
+
+            const participantsBadge = document.createElement("span");
+            participantsBadge.className = "badge bg-secondary rounded-pill";
+            participantsBadge.textContent = Number.isFinite(Number(item?.num_participants))
+                ? String(Number(item.num_participants))
+                : "0";
+            actionsDiv.appendChild(participantsBadge);
+        }
+
         if (getEvent().status !== 'finished') {
 
             // botón eliminar
-            const actionsDiv = document.createElement("div");
+            actionsDiv = actionsDiv || document.createElement("div");
             actionsDiv.className = "d-flex align-items-center gap-3";
 
             const editBtn = document.createElement("button");
@@ -167,6 +180,8 @@ function renderTable(table, fullData) {
                 }
             };
             actionsDiv.appendChild(deleteBtn);
+            li.appendChild(actionsDiv);
+        } else if (actionsDiv) {
             li.appendChild(actionsDiv);
         }
 
