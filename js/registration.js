@@ -4458,6 +4458,13 @@ function initOrganizerRegistrationsTab() {
       participantsCell.textContent = `${getParticipantsCount(registration)}`;
       row.appendChild(participantsCell);
 
+      const musicCell = document.createElement('td');
+      musicCell.className = 'text-center';
+      musicCell.textContent = Number(registration?.has_music) === 1
+        ? t('registration_competitions_music_yes', 'Sí')
+        : t('registration_competitions_music_no', 'No');
+      row.appendChild(musicCell);
+
       const syncroCell = document.createElement('td');
       syncroCell.className = 'text-center';
       const syncroBadge = document.createElement('span');
