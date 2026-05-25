@@ -556,6 +556,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const importCreateMissingEntitiesCheck = document.getElementById('importCreateMissingEntitiesCheck');
   const importParticipantsBtn = document.getElementById('importParticipantsBtn');
   const openBulkDeleteDancersBtn = document.getElementById('openBulkDeleteDancersBtn');
+  const exportDancersBtn = document.getElementById('exportDancersBtn');
   const bulkDeleteModalElement = document.getElementById('bulkDeleteDancersModal');
   const bulkDeleteDancersDeleteBtn = document.getElementById('bulkDeleteDancersDeleteBtn');
   const bulkDeleteDancersCloseTopBtn = document.getElementById('bulkDeleteDancersCloseTopBtn');
@@ -581,6 +582,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     openBulkDeleteDancersBtn.addEventListener('click', () => {
       openBulkDeleteDancersModal();
     });
+  }
+
+  if (exportDancersBtn) {
+    bindTableTsvExportButton(exportDancersBtn, '#dancersTable');
   }
 
   if (bulkDeleteDancersDeleteBtn) {

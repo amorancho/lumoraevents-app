@@ -443,6 +443,313 @@ function getDancerFlagImgHtml(nationality, options = {}) {
   return `<img src="${getDancerFlagUrl(nationality, safeSize)}"${safeClassName ? ` class="${safeClassName}"` : ''}${safeStyle ? ` style="${safeStyle}"` : ''} width="${safeWidth}" height="${safeHeight}" alt="${safeAlt}">`;
 }
 
+function ensureToastContainer() {
+  let container = document.getElementById('commonToastContainer');
+  if (container) {
+    return container;
+  }
+
+  container = document.createElement('div');
+  container.id = 'commonToastContainer';
+  container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+  container.style.zIndex = '1080';
+  document.body.appendChild(container);
+  return container;
+}
+
+function shouldUseLightToastCloseButton(type) {
+  return ['success', 'danger', 'primary', 'secondary', 'dark'].includes(type);
+}
+
+function showToastNotice(message, type = 'success', options = {}) {
+  if (!message || !document.body) return;
+
+  const container = ensureToastContainer();
+  const toastEl = document.createElement('div');
+  const toastClassMap = {
+    success: 'text-bg-success',
+    danger: 'text-bg-danger',
+    warning: 'text-bg-warning',
+    info: 'text-bg-info',
+    primary: 'text-bg-primary',
+    secondary: 'text-bg-secondary',
+    dark: 'text-bg-dark'
+  };
+
+  toastEl.className = `toast align-items-center border-0 ${toastClassMap[type] || toastClassMap.success}`;
+  toastEl.setAttribute('role', 'status');
+  toastEl.setAttribute('aria-live', 'polite');
+  toastEl.setAttribute('aria-atomic', 'true');
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'd-flex';
+
+  const body = document.createElement('div');
+  body.className = 'toast-body';
+  body.textContent = message;
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = `btn-close me-2 m-auto${shouldUseLightToastCloseButton(type) ? ' btn-close-white' : ''}`;
+  closeBtn.setAttribute('data-bs-dismiss', 'toast');
+  closeBtn.setAttribute('aria-label', t('close', 'Close'));
+
+  wrapper.appendChild(body);
+  wrapper.appendChild(closeBtn);
+  toastEl.appendChild(wrapper);
+  container.appendChild(toastEl);
+
+  if (window.bootstrap?.Toast) {
+    const toast = new bootstrap.Toast(toastEl, { delay: options.delay ?? 3000 });
+    toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove(), { once: true });
+    toast.show();
+    return;
+  }
+
+  toastEl.classList.add('show');
+  window.setTimeout(() => {
+    toastEl.remove();
+  }, options.delay ?? 3000);
+}
+
+function resolveDomElement(elementOrSelector) {
+  if (!elementOrSelector) return null;
+  if (elementOrSelector instanceof Element) return elementOrSelector;
+  if (typeof elementOrSelector === 'string') {
+    return document.querySelector(elementOrSelector);
+  }
+  return null;
+}
+
+function resolveTableElement(tableOrSelector) {
+  const element = resolveDomElement(tableOrSelector);
+  if (!element) return null;
+  if (element instanceof HTMLTableElement) return element;
+  if (element instanceof HTMLElement) return element.closest('table');
+  return null;
+}
+
+function isTableExportHidden(element) {
+  if (!element) return true;
+  if (element.hidden || element.getAttribute('aria-hidden') === 'true') return true;
+  if (element.classList?.contains('d-none')) return true;
+
+  const style = window.getComputedStyle ? window.getComputedStyle(element) : null;
+  if (!style) return false;
+  return style.display === 'none' || style.visibility === 'hidden';
+}
+
+function normalizeTableExportText(value) {
+  return String(value ?? '')
+    .replace(/\u00A0/g, ' ')
+    .replace(/\r?\n|\r/g, ' ')
+    .replace(/\t/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getTableCellExportText(cell) {
+  if (!cell) return '';
+
+  const explicitValue = cell.getAttribute('data-tsv-value');
+  if (explicitValue !== null) {
+    return normalizeTableExportText(explicitValue);
+  }
+
+  const field = cell.querySelector('input, textarea, select');
+  if (field) {
+    if (field.tagName === 'SELECT') {
+      const selectedOption = field.options?.[field.selectedIndex];
+      return normalizeTableExportText(selectedOption?.textContent || field.value || '');
+    }
+    return normalizeTableExportText(field.value || field.textContent || '');
+  }
+
+  return normalizeTableExportText(cell.innerText || cell.textContent || '');
+}
+
+function getIgnoredTableColumnIndexes(table, options = {}) {
+  const indexes = new Set(
+    Array.isArray(options.excludeColumnIndexes) ? options.excludeColumnIndexes : []
+  );
+  const headerRow = table.tHead?.rows?.[0] || table.querySelector('thead tr');
+  const ignoreSelector = options.ignoreSelector ?? '[data-tsv-ignore="true"]';
+
+  if (!headerRow) {
+    return indexes;
+  }
+
+  Array.from(headerRow.cells).forEach((cell, index) => {
+    if (ignoreSelector && cell.matches(ignoreSelector)) {
+      indexes.add(index);
+      return;
+    }
+
+    if (options.skipHiddenColumns !== false && isTableExportHidden(cell)) {
+      indexes.add(index);
+    }
+  });
+
+  return indexes;
+}
+
+function extractTableRowValues(row, ignoredColumnIndexes, options = {}) {
+  return Array.from(row?.cells || [])
+    .filter((cell, index) => {
+      if (ignoredColumnIndexes.has(index)) return false;
+      if (options.skipHiddenColumns !== false && isTableExportHidden(cell)) return false;
+      if (options.ignoreSelector && cell.matches(options.ignoreSelector)) return false;
+      return true;
+    })
+    .map(cell => getTableCellExportText(cell));
+}
+
+function tableToTsv(tableOrSelector, options = {}) {
+  const table = resolveTableElement(tableOrSelector);
+  if (!table) {
+    return '';
+  }
+
+  const ignoredColumnIndexes = getIgnoredTableColumnIndexes(table, options);
+  const lines = [];
+  const includeHeaders = options.includeHeaders !== false;
+  const ignoreEmptyRows = options.ignoreEmptyRows !== false;
+  const onlyVisibleRows = options.onlyVisibleRows !== false;
+
+  if (includeHeaders) {
+    const headerRow = table.tHead?.rows?.[0] || table.querySelector('thead tr');
+    const headerValues = extractTableRowValues(headerRow, ignoredColumnIndexes, options);
+    if (headerValues.length && (!ignoreEmptyRows || headerValues.some(value => value !== ''))) {
+      lines.push(headerValues);
+    }
+  }
+
+  const bodyRows = Array.from(table.tBodies).flatMap(section => Array.from(section.rows));
+  const rows = bodyRows.length
+    ? bodyRows
+    : Array.from(table.querySelectorAll('tr')).filter(row => !row.closest('thead'));
+
+  rows.forEach(row => {
+    if (onlyVisibleRows && isTableExportHidden(row)) {
+      return;
+    }
+
+    const values = extractTableRowValues(row, ignoredColumnIndexes, options);
+    if (!values.length) {
+      return;
+    }
+    if (ignoreEmptyRows && !values.some(value => value !== '')) {
+      return;
+    }
+    lines.push(values);
+  });
+
+  return lines.map(values => values.join('\t')).join('\n');
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '-9999px';
+  textarea.style.left = '-9999px';
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    const copied = document.execCommand('copy');
+    if (!copied) {
+      throw new Error('Clipboard copy command failed.');
+    }
+  } finally {
+    textarea.remove();
+  }
+}
+
+async function copyTableToClipboardAsTsv(tableOrSelector, options = {}) {
+  const table = resolveTableElement(tableOrSelector);
+  if (!table) {
+    const error = new Error(options.tableNotFoundMessage || 'Table not found.');
+    if (options.showNotice !== false) {
+      showToastNotice(
+        options.errorMessage || t('clipboard_copy_error', 'Could not copy the data to the clipboard.'),
+        options.errorType || 'danger',
+        options.toastOptions
+      );
+    }
+    throw error;
+  }
+
+  const dataOnlyTsv = tableToTsv(table, { ...options, includeHeaders: false });
+  if (!dataOnlyTsv) {
+    if (options.showNotice !== false) {
+      showToastNotice(
+        options.emptyMessage || t('clipboard_copy_empty', 'There is no data to copy.'),
+        options.emptyType || 'warning',
+        options.toastOptions
+      );
+    }
+    return { ok: false, tsv: '' };
+  }
+
+  const tsv = tableToTsv(table, options);
+
+  try {
+    await copyTextToClipboard(tsv);
+  } catch (error) {
+    if (options.showNotice !== false) {
+      showToastNotice(
+        options.errorMessage || t('clipboard_copy_error', 'Could not copy the data to the clipboard.'),
+        options.errorType || 'danger',
+        options.toastOptions
+      );
+    }
+    throw error;
+  }
+
+  if (options.showNotice !== false) {
+    showToastNotice(
+      options.successMessage || t('clipboard_copy_success', 'Data copied to the clipboard.'),
+      options.successType || 'success',
+      options.toastOptions
+    );
+  }
+
+  return { ok: true, tsv };
+}
+
+function bindTableTsvExportButton(buttonOrSelector, tableOrSelector, options = {}) {
+  const button = resolveDomElement(buttonOrSelector);
+  if (!button) {
+    return null;
+  }
+
+  const onError = typeof options.onError === 'function' ? options.onError : null;
+  const exportOptions = { ...options };
+  delete exportOptions.onError;
+
+  const handleClick = async () => {
+    try {
+      await copyTableToClipboardAsTsv(tableOrSelector, exportOptions);
+    } catch (error) {
+      if (onError) {
+        onError(error);
+        return;
+      }
+      console.error('Error exporting table as TSV:', error);
+    }
+  };
+
+  button.addEventListener('click', handleClick);
+  return handleClick;
+}
+
 function showMessageModal(message, title = "Mensaje", variant = 'danger') {
   const modalEl = document.getElementById('messageModal');
   const headerEl = modalEl?.querySelector('.modal-header');
@@ -499,9 +806,13 @@ async function WaitEventLoaded() {
 
 // 5. Hacer la función global para usarla desde cualquier script inline o externo
 window.showMessageModal = showMessageModal;
+window.showToastNotice = showToastNotice;
 window.shouldShowDancerFlags = shouldShowDancerFlags;
 window.getDancerFlagUrl = getDancerFlagUrl;
 window.getDancerFlagImgHtml = getDancerFlagImgHtml;
+window.tableToTsv = tableToTsv;
+window.copyTableToClipboardAsTsv = copyTableToClipboardAsTsv;
+window.bindTableTsvExportButton = bindTableTsvExportButton;
 
 
 

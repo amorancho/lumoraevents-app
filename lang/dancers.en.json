@@ -78,5 +78,8 @@
   "bulk_delete_dancers_confirm": "Are you sure you want to delete the {count} displayed participants?",
   "bulk_delete_dancers_deleting": "Deleting...",
   "bulk_delete_dancers_delete_error": "Error deleting participant.",
-  "bulk_delete_dancers_summary": "Total: {total} | OK: {ok} | KO: {ko}"
+  "bulk_delete_dancers_summary": "Total: {total} | OK: {ok} | KO: {ko}",
+  "clipboard_copy_success": "Data copied to the clipboard.",
+  "clipboard_copy_empty": "There is no data to copy.",
+  "clipboard_copy_error": "The data could not be copied to the clipboard."
 }

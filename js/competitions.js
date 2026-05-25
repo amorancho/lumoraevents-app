@@ -1045,6 +1045,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editModal = new bootstrap.Modal(document.getElementById('editModal'));
     const bulkDeleteCompetitionsModalEl = document.getElementById('bulkDeleteCompetitionsModal');
     const openBulkDeleteCompetitionsBtn = document.getElementById('openBulkDeleteCompetitionsBtn');
+    const exportCompetitionsBtn = document.getElementById('exportCompetitionsBtn');
     const bulkDeleteCompetitionsDeleteBtn = document.getElementById('bulkDeleteCompetitionsDeleteBtn');
     const bulkDeleteCompetitionsCloseTopBtn = document.getElementById('bulkDeleteCompetitionsCloseTopBtn');
     const scheduleConfigWarningModalEl = document.getElementById('scheduleConfigWarningModal');
@@ -1086,6 +1087,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       openBulkDeleteCompetitionsBtn.addEventListener('click', () => {
         openBulkDeleteCompetitionsModal();
       });
+    }
+
+    if (exportCompetitionsBtn) {
+      bindTableTsvExportButton(exportCompetitionsBtn, '#competitionsTable');
     }
 
     if (bulkDeleteCompetitionsDeleteBtn) {

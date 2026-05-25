@@ -78,5 +78,8 @@
   "bulk_delete_dancers_confirm": "Estas seguro de que deseas eliminar los {count} participantes mostrados?",
   "bulk_delete_dancers_deleting": "Eliminando...",
   "bulk_delete_dancers_delete_error": "Error al eliminar el participante.",
-  "bulk_delete_dancers_summary": "Total: {total} | OK: {ok} | KO: {ko}"
+  "bulk_delete_dancers_summary": "Total: {total} | OK: {ok} | KO: {ko}",
+  "clipboard_copy_success": "Datos copiados al portapapeles.",
+  "clipboard_copy_empty": "No hay datos para copiar.",
+  "clipboard_copy_error": "No se han podido copiar los datos al portapapeles."
 }

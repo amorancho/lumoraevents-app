@@ -1859,6 +1859,7 @@ function initParticipantsTab(role) {
   const countEl = document.getElementById('participantsCount');
   const emptyEl = document.getElementById('participantsEmpty');
   const addBtn = document.getElementById('addParticipantBtn');
+  const copyTsvBtn = document.getElementById('participantsCopyTsvBtn');
   const actionsHeader = document.querySelector('th[data-i18n="registration_participants_actions"]');
   const filtersForm = document.getElementById('participantsFilters');
   const filterSchool = document.getElementById('participantsFilterSchool');
@@ -2071,6 +2072,7 @@ function initParticipantsTab(role) {
       if (allowEdit) {
         const actionsCell = document.createElement('td');
         actionsCell.className = 'text-center';
+        actionsCell.setAttribute('data-tsv-ignore', 'true');
         const actionGroup = document.createElement('div');
         actionGroup.className = 'btn-group';
         actionGroup.setAttribute('role', 'group');
@@ -2365,6 +2367,10 @@ function initParticipantsTab(role) {
     addBtn.addEventListener('click', () => openParticipantModal('create'));
   }
 
+  if (copyTsvBtn) {
+    bindTableTsvExportButton(copyTsvBtn, tableBody);
+  }
+
   if (elements.saveBtn && allowEdit) {
     elements.saveBtn.addEventListener('click', () => saveParticipant(true));
   }
@@ -2476,6 +2482,7 @@ function initSchoolsTab() {
   const filterName = document.getElementById('schoolsFilterName');
   const filterCountry = document.getElementById('schoolsFilterCountry');
   const filterClear = document.getElementById('schoolsFilterClear');
+  const copyTsvBtn = document.getElementById('schoolsCopyTsvBtn');
   const modalEl = document.getElementById('schoolDetailsModal');
 
   if (!filterForm || !tableBody || !filterName || !filterCountry || !modalEl) {
@@ -2597,6 +2604,7 @@ function initSchoolsTab() {
 
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
+      actionsCell.setAttribute('data-tsv-ignore', 'true');
       const detailBtn = document.createElement('button');
       detailBtn.type = 'button';
       detailBtn.className = 'btn btn-outline-primary btn-sm btn-school-detail';
@@ -2653,6 +2661,10 @@ function initSchoolsTab() {
       filterCountry.value = '';
       applyFilters();
     });
+  }
+
+  if (copyTsvBtn) {
+    bindTableTsvExportButton(copyTsvBtn, tableBody);
   }
 
   tableBody.addEventListener('click', (event) => {
@@ -3666,6 +3678,7 @@ function initOrganizerRegistrationsTab() {
   const filterCategory = document.getElementById('orgRegistrationsFilterCategory');
   const filterStyle = document.getElementById('orgRegistrationsFilterStyle');
   const filterClear = document.getElementById('orgRegistrationsFilterClear');
+  const copyTsvBtn = document.getElementById('orgRegistrationsCopyTsvBtn');
   const modalEl = document.getElementById('registrationModal');
   const membersModalEl = document.getElementById('registrationMembersModal');
   const validateModalEl = document.getElementById('orgRegistrationValidateModal');
@@ -4456,6 +4469,7 @@ function initOrganizerRegistrationsTab() {
 
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
+      actionsCell.setAttribute('data-tsv-ignore', 'true');
       const actionGroup = document.createElement('div');
       actionGroup.className = 'btn-group';
       actionGroup.setAttribute('role', 'group');
@@ -4554,6 +4568,10 @@ function initOrganizerRegistrationsTab() {
     filterStyle.value = '';
     renderRegistrations();
   });
+
+  if (copyTsvBtn) {
+    bindTableTsvExportButton(copyTsvBtn, tableBody);
+  }
 
   const handleConfigUpdate = () => {
     loadRegistrationConfig()

@@ -602,18 +602,23 @@
                       <span data-i18n="registration_participants_add">Alta participantes</span>
                     </button>
                     <form id="participantsFilters" class="row g-3 align-items-end flex-grow-1">
-                      <div class="col-12 col-md-4">
+                      <div class="col-12 col-md-6 col-lg-3">
                         <label class="form-label" for="participantsFilterSchool" data-i18n="participants_filter_school">Escuela</label>
                         <select id="participantsFilterSchool" class="form-select">
                           <option value=""></option>
                         </select>
                       </div>
-                      <div class="col-12 col-md-4">
+                      <div class="col-12 col-md-6 col-lg-4">
                         <label class="form-label" for="participantsFilterName" data-i18n="participants_filter_name">Nombre</label>
                         <input type="text" class="form-control" id="participantsFilterName" data-i18n-placeholder="participants_filter_name_placeholder" placeholder="Buscar...">
                       </div>
-                      <div class="col-12 col-md-3">
+                      <div class="col-12 col-md-6 col-lg-2">
                         <button type="button" class="btn btn-outline-secondary w-100" id="participantsFilterClear" data-i18n="clear_filters">Limpiar</button>
+                      </div>
+                      <div class="col-12 col-md-auto d-flex align-items-end">
+                        <button type="button" class="btn btn-outline-success btn-sm text-nowrap" id="participantsCopyTsvBtn">
+                          <i class="bi bi-file-earmark-excel me-2"></i>Export
+                        </button>
                       </div>
                     </form>
                     <div class="d-flex align-items-center gap-2 ms-lg-auto">
@@ -631,7 +636,7 @@
                           <th data-i18n="registration_participants_birth">Fecha nacimiento</th>
                           <th data-i18n="registration_participants_age">Edad</th>
                           <th data-i18n="registration_participants_country">Pais</th>
-                          <th class="text-center" data-i18n="registration_participants_actions">Acciones</th>
+                          <th class="text-center" data-i18n="registration_participants_actions" data-tsv-ignore="true">Acciones</th>
                         </tr>
                       </thead>
                       <tbody id="participantsTable"></tbody>
@@ -649,13 +654,13 @@
                 <div class="card-body p-4">
                   <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
                     <form id="orgRegistrationsFilters" class="row g-3 align-items-end flex-grow-1">
-                      <div class="col-12 col-md-3">
+                      <div class="col-12 col-md-6 col-lg-3">
                         <label class="form-label" for="orgRegistrationsFilterSchool" data-i18n="org_registrations_filter_school">Escuela</label>
                         <select id="orgRegistrationsFilterSchool" class="form-select">
                           <option value=""></option>
                         </select>
                       </div>
-                      <div class="col-12 col-md-2">
+                      <div class="col-12 col-md-6 col-lg-2">
                         <label class="form-label" for="orgRegistrationsFilterStatus" data-i18n="org_registrations_filter_status">Estado</label>
                         <select id="orgRegistrationsFilterStatus" class="form-select">
                           <option value=""></option>
@@ -665,27 +670,30 @@
                           <option value="REJ">Rechazada</option>
                         </select>
                       </div>
-                      <div class="col-12 col-md-2">
+                      <div class="col-12 col-md-6 col-lg-2">
                         <label class="form-label" for="orgRegistrationsFilterCategory" data-i18n="org_registrations_filter_category">Categoria</label>
                         <select id="orgRegistrationsFilterCategory" class="form-select">
                           <option value=""></option>
                         </select>
                       </div>
-                      <div class="col-12 col-md-2">
+                      <div class="col-12 col-md-6 col-lg-2">
                         <label class="form-label" for="orgRegistrationsFilterStyle" data-i18n="org_registrations_filter_style">Disciplina/Estilo</label>
                         <select id="orgRegistrationsFilterStyle" class="form-select">
                           <option value=""></option>
                         </select>
                       </div>
-                      <div class="col-12 col-md-2">
+                      <div class="col-12 col-md-6 col-lg-2">
                         <button type="button" class="btn btn-outline-secondary w-100" id="orgRegistrationsFilterClear" data-i18n="clear_filters">Limpiar</button>
                       </div>
-                      <div class="col-12 col-md-1">
-                        <div class="d-flex align-items-center justify-content-end h-100">
-                          <span class="badge bg-secondary" id="orgRegistrationsCount">0</span>
-                        </div>
+                      <div class="col-12 col-md-auto d-flex align-items-end">
+                        <button type="button" class="btn btn-outline-success btn-sm text-nowrap" id="orgRegistrationsCopyTsvBtn">
+                          <i class="bi bi-file-earmark-excel me-2"></i>Export
+                        </button>
                       </div>
                     </form>
+                    <div class="d-flex align-items-center justify-content-lg-end">
+                      <span class="badge bg-secondary" id="orgRegistrationsCount">0</span>
+                    </div>
                   </div>
 
                   <div class="table-responsive">
@@ -699,7 +707,7 @@
                           <th data-i18n="org_registrations_table_status">Estado</th>
                           <th class="text-center" data-i18n="org_registrations_table_participants"># Participantes</th>
                           <th class="text-center" data-i18n="registration_categories_syncro">Syncro</th>
-                          <th class="text-center" data-i18n="org_registrations_table_actions">Acciones</th>
+                          <th class="text-center" data-i18n="org_registrations_table_actions" data-tsv-ignore="true">Acciones</th>
                         </tr>
                       </thead>
                       <tbody id="orgRegistrationsTable"></tbody>
@@ -772,10 +780,15 @@
               <div class="card shadow-sm">
                 <div class="card-body p-4">
                   <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
-                    <button type="button" class="btn btn-primary" id="createRegistrationBtn">
-                      <i class="bi bi-plus-circle me-2"></i>
-                      <span data-i18n="registration_competitions_add">Crear inscripcion</span>
-                    </button>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-primary" id="createRegistrationBtn">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        <span data-i18n="registration_competitions_add">Crear inscripcion</span>
+                      </button>
+                      <button type="button" class="btn btn-outline-success btn-sm" id="competitionsCopyTsvBtn">
+                        <i class="bi bi-file-earmark-excel me-2"></i>Export
+                      </button>
+                    </div>
                     <div class="d-flex align-items-center gap-2 ms-sm-auto">
                       <span class="text-muted" data-i18n="registration_competitions_total">Total inscripciones</span>
                       <span class="badge bg-secondary" id="registrationsCount">0</span>
@@ -793,7 +806,7 @@
                           <th data-i18n="registration_competitions_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_participants">Participantes</th>
                           <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
-                          <th class="text-center" data-i18n="registration_competitions_table_actions">Acciones</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_actions" data-tsv-ignore="true">Acciones</th>
                         </tr>
                       </thead>
                       <tbody id="registrationsTable"></tbody>
@@ -811,11 +824,11 @@
                 <div class="card-body p-4">
                   <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3">
                     <form id="schoolsFilters" class="row g-3 align-items-end flex-grow-1">
-                      <div class="col-12 col-md-3">
+                      <div class="col-12 col-md-4">
                       <label class="form-label" for="schoolsFilterName" data-i18n="schools_filter_name">Nombre</label>
                       <input type="text" class="form-control" id="schoolsFilterName" data-i18n-placeholder="schools_filter_name_placeholder" placeholder="Buscar...">
                       </div>
-                      <div class="col-12 col-md-4">
+                      <div class="col-12 col-md-3">
                         <label class="form-label" for="schoolsFilterCountry" data-i18n="schools_filter_country">Pais</label>
                         <select id="schoolsFilterCountry" class="form-select">
                           <option value=""></option>
@@ -823,6 +836,11 @@
                       </div>
                       <div class="col-12 col-md-2">
                         <button type="button" class="btn btn-outline-secondary w-100" id="schoolsFilterClear" data-i18n="clear_filters">Limpiar</button>
+                      </div>
+                      <div class="col-12 col-md-auto d-flex align-items-end">
+                        <button type="button" class="btn btn-outline-success btn-sm text-nowrap" id="schoolsCopyTsvBtn">
+                          <i class="bi bi-file-earmark-excel me-2"></i>Export
+                        </button>
                       </div>
                     </form>
                     <div class="d-flex align-items-center gap-2 ms-lg-auto">
@@ -842,7 +860,7 @@
                           <th class="text-center" data-i18n="schools_table_choreos"># de choreos</th>
                           <th class="text-center" data-i18n="schools_table_choreos_status">Estados de las coreos</th>
                           <th class="text-center" data-i18n="schools_table_syncro">Syncro</th>
-                          <th class="text-center" data-i18n="schools_table_actions">Acciones</th>
+                          <th class="text-center" data-i18n="schools_table_actions" data-tsv-ignore="true">Acciones</th>
                         </tr>
                       </thead>
                       <tbody id="schoolsTable"></tbody>

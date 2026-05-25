@@ -192,6 +192,9 @@
   "bulk_delete_competitions_confirm": "Are you sure you want to delete the {count} displayed competitions?",
   "bulk_delete_competitions_deleting": "Deleting...",
   "bulk_delete_competitions_delete_error": "Error deleting competition.",
-  "bulk_delete_competitions_summary": "Total: {total} | OK: {ok} | KO: {ko}"
+  "bulk_delete_competitions_summary": "Total: {total} | OK: {ok} | KO: {ko}",
+  "clipboard_copy_success": "Data copied to the clipboard.",
+  "clipboard_copy_empty": "There is no data to copy.",
+  "clipboard_copy_error": "The data could not be copied to the clipboard."
 }
 

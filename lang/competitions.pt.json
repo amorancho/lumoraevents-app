@@ -192,5 +192,8 @@
   "bulk_delete_competitions_confirm": "Tem a certeza de que pretende eliminar as {count} competicoes mostradas?",
   "bulk_delete_competitions_deleting": "A eliminar...",
   "bulk_delete_competitions_delete_error": "Erro ao eliminar a competicao.",
-  "bulk_delete_competitions_summary": "Total: {total} | OK: {ok} | KO: {ko}"
+  "bulk_delete_competitions_summary": "Total: {total} | OK: {ok} | KO: {ko}",
+  "clipboard_copy_success": "Dados copiados para a área de transferência.",
+  "clipboard_copy_empty": "Não há dados para copiar.",
+  "clipboard_copy_error": "Não foi possível copiar os dados para a área de transferência."
 }

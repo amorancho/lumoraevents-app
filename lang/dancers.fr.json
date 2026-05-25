@@ -78,5 +78,8 @@
   "bulk_delete_dancers_confirm": "Etes-vous sur de vouloir supprimer les {count} participants affiches ?",
   "bulk_delete_dancers_deleting": "Suppression...",
   "bulk_delete_dancers_delete_error": "Erreur lors de la suppression du participant.",
-  "bulk_delete_dancers_summary": "Total: {total} | OK: {ok} | KO: {ko}"
+  "bulk_delete_dancers_summary": "Total: {total} | OK: {ok} | KO: {ko}",
+  "clipboard_copy_success": "Données copiées dans le presse-papiers.",
+  "clipboard_copy_empty": "Il n'y a aucune donnée à copier.",
+  "clipboard_copy_error": "Les données n'ont pas pu être copiées dans le presse-papiers."
 }

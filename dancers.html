@@ -170,6 +170,9 @@
               <button id="openBulkDeleteDancersBtn" type="button" class="btn btn-outline-danger btn-sm dancers-bulk-delete-btn" data-i18n="bulk_delete_dancers_button">
                 Delete Participants
               </button>
+              <button id="exportDancersBtn" type="button" class="btn btn-outline-success btn-sm dancers-bulk-delete-btn">
+                <i class="bi bi-file-earmark-excel me-2"></i>Export
+              </button>
             </div>
           </div>
           <div class="card-body p-2">
@@ -184,7 +187,7 @@
                       <th id="clubHeader" scope="col" style="width: 17%;" data-i18n="col_club">Club / School</th>
                       <th id="masterHeader" scope="col" style="width: 14%;" data-i18n="col_master">Master</th>
                       <th id="nationalityHeader" scope="col" style="width: 6%;" data-i18n="col_nationality">Nationality</th>
-                      <th scope="col" style="width: 6%;" class="text-center" data-i18n="col_actions">Actions</th>
+                      <th scope="col" style="width: 6%;" class="text-center" data-i18n="col_actions" data-tsv-ignore="true">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="dancersTable">                                        

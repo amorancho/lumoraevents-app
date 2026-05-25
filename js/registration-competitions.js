@@ -3,6 +3,7 @@
   const countEl = document.getElementById('registrationsCount');
   const emptyEl = document.getElementById('registrationsEmpty');
   const createBtn = document.getElementById('createRegistrationBtn');
+  const copyTsvBtn = document.getElementById('competitionsCopyTsvBtn');
   const modalEl = document.getElementById('registrationModal');
   const deleteModalEl = document.getElementById('deleteRegistrationModal');
   const deleteAudioModalEl = document.getElementById('deleteAudioModal');
@@ -1046,6 +1047,7 @@
 
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
+      actionsCell.setAttribute('data-tsv-ignore', 'true');
       const actionGroup = document.createElement('div');
       actionGroup.className = 'btn-group';
       actionGroup.setAttribute('role', 'group');
@@ -1543,6 +1545,10 @@
 
   if (createBtn) {
     createBtn.addEventListener('click', () => openRegistrationModal('create'));
+  }
+
+  if (copyTsvBtn) {
+    bindTableTsvExportButton(copyTsvBtn, tableBody);
   }
 
   tableBody.addEventListener('click', (event) => {

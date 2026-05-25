@@ -187,6 +187,9 @@
               <button id="openBulkDeleteCompetitionsBtn" type="button" class="btn btn-outline-danger btn-sm competitions-bulk-delete-btn" data-i18n="bulk_delete_competitions_button">
                 Delete Competitions
               </button>
+              <button id="exportCompetitionsBtn" type="button" class="btn btn-outline-success btn-sm competitions-bulk-delete-btn">
+                <i class="bi bi-file-earmark-excel me-2"></i>Export
+              </button>
             </div>
           </div>
       <div class="card-body p-2">
@@ -202,7 +205,7 @@
                 <th scope="col" style="width: 25%;" data-i18n="col_judges">Judges</th>
                 <th scope="col" style="width: 8%;" id="criteriaColumnHeader" class="d-none text-center" data-i18n="col_criteria">Criteria</th>
                 <th scope="col" style="width: 10%;" data-i18n="col_num_dancers">#Dancers</th>
-                <th scope="col" style="width: 10%;" class="text-center" data-i18n="col_actions">Actions</th>
+                <th scope="col" style="width: 10%;" class="text-center" data-i18n="col_actions" data-tsv-ignore="true">Actions</th>
               </tr>
             </thead>
             <tbody id="competitionsTable">
