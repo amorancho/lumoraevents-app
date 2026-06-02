@@ -21,7 +21,6 @@
   "voting_restrictions_field": "Límite",
   "voting_restrictions_tooltip": "Indica cuántos participantes a la vez puede votar un juez. Si se indica vacío o 0, significa que no hay restricción.",
   "prop_num_judges": "Jueces por defecto para votar en Competiciones",
-  "prop_autorefresh": "Auto Refresco (minutos)",
   "prop_class_type": "Tipo de Clasificación por Categorías",
   "no_cat_class": "Sin Clasificación por Categorías",
   "num_medals": "Por Número de Medallas en Estilos",

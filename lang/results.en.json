@@ -1,7 +1,6 @@
 {
   "title": "Results",
   "refresh": "Refresh",
-  "auto_refresh": "Auto-Refresh",
   "info_click_dancer": "Click on each participant to see their voting details",
   "voting_details": "Voting Details",
   "style_voting_details": "Style Voting Details",

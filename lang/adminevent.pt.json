@@ -22,7 +22,6 @@
   "voting_restrictions_field": "Limite",
   "voting_restrictions_tooltip": "Indica quantos participantes um jurado pode votar ao mesmo tempo. Se estiver vazio ou 0, nao ha restricao.",
   "prop_num_judges": "Jurados padrão para votar em Competições",
-  "prop_autorefresh": "Auto Atualização (minutos)",
   "prop_class_type": "Tipo de Classificação por Categorias",
   "no_cat_class": "Sem Classificação por Categorias",
   "num_medals": "Por Número de Medalhas nos Estilos",

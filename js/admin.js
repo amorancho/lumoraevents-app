@@ -454,7 +454,6 @@ function openEditEventModal(eventObj) {
   document.getElementById('eventurl').value = eventObj.eventurl;
   document.getElementById('eventlogo').value = eventObj.eventlogo;
   document.getElementById('min_styles').value = eventObj.min_styles;
-  document.getElementById('autorefresh_minutes').value = eventObj.autorefresh_minutes;
   document.getElementById('category_class_type').value = eventObj.category_class_type;
   document.getElementById('score_type').value = eventObj.score_type;
   document.getElementById('criteria_config').value = eventObj.criteria_config;
@@ -527,7 +526,6 @@ async function saveEvent() {
     visible: document.getElementById('visible').checked ? 1 : 0,
     trial: document.getElementById('trial').checked ? 1 : 0,
     min_styles: parseInt(document.getElementById('min_styles').value, 10) || null,
-    autorefresh_minutes: parseInt(document.getElementById('autorefresh_minutes').value, 10) || 0,
     category_class_type: document.getElementById('category_class_type').value || '',
     criteria_config: document.getElementById('criteria_config').value || 'NO_CONFIG',
     total_system: document.getElementById('total_system').value || 'SUM_SCORES',

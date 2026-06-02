@@ -1,8 +1,6 @@
 //var title = 'Results';
 let categoryName;
 
-let autoRefreshInterval = null;
-
 const RESULTS_FILTER_MODE_BY_CATEGORY = 'BY_CAT';
 const RESULTS_FILTER_MODE_BY_CATEGORY_STYLE = 'BY_CAT_STY';
 const RESULTS_FILTER_MODE_BY_STYLE_CATEGORY = 'BY_STY_CAT';
@@ -692,21 +690,10 @@ function clearRenderedResults() {
   window.resultsData = null;
 }
 
-function stopAutoRefresh(resetToggle = true) {
-  clearInterval(autoRefreshInterval);
-  autoRefreshInterval = null;
-
-  const autoRefreshToggle = document.getElementById('autoRefreshToggle');
-  if (autoRefreshToggle && resetToggle) {
-    autoRefreshToggle.checked = false;
-  }
-}
-
 function updateResultsSelectionUi() {
   const categoriaBadge = document.getElementById('categoriaBadge');
   const infoText = document.getElementById('infoText');
   const refreshBtn = document.getElementById('refreshBtn');
-  const autoRefreshToggle = document.getElementById('autoRefreshToggle');
   const hasCompleteSelection = isResultsSelectionComplete();
 
   if (categoriaBadge) {
@@ -724,16 +711,8 @@ function updateResultsSelectionUi() {
     infoText.classList.toggle('d-block', hasCompleteSelection);
   }
 
-  if (!hasCompleteSelection && autoRefreshInterval) {
-    stopAutoRefresh();
-  }
-
   if (refreshBtn) {
     refreshBtn.disabled = !hasCompleteSelection;
-  }
-
-  if (autoRefreshToggle) {
-    autoRefreshToggle.disabled = !hasCompleteSelection;
   }
 }
 
@@ -757,7 +736,6 @@ function setResultsControlsLoadingState(isLoading) {
   const categorySelect = document.getElementById('categorySelect');
   const styleSelect = document.getElementById('styleSelect');
   const refreshBtn = document.getElementById('refreshBtn');
-  const autoRefreshToggle = document.getElementById('autoRefreshToggle');
 
   if (categorySelect) {
     categorySelect.disabled = isLoading || categorySelect.options.length <= 1;
@@ -770,10 +748,6 @@ function setResultsControlsLoadingState(isLoading) {
 
   if (refreshBtn) {
     refreshBtn.disabled = isLoading || !isResultsSelectionComplete();
-  }
-
-  if (autoRefreshToggle) {
-    autoRefreshToggle.disabled = isLoading || !isResultsSelectionComplete();
   }
 }
 
@@ -850,15 +824,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const categorySelect = document.getElementById('categorySelect');
   const styleSelect = document.getElementById('styleSelect');
   const refreshBtn = document.getElementById('refreshBtn');
-  const autoRefreshToggle = document.getElementById('autoRefreshToggle');
-  const autoRefreshLabel = document.getElementById('autoRefreshLabel');
 
   resultsFilterState.mode = getResultsFilterMode();
 
   refreshBtn.disabled = true;
-  autoRefreshToggle.disabled = true;
-
-  autoRefreshLabel.textContent += ` (${getEvent().autoRefreshMin || 2} min)`;
 
   const votingModalEl = document.getElementById('votingDetailsModal');
   let votingModal = null;
@@ -900,18 +869,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   refreshBtn.addEventListener('click', async () => {
     await runResultsSearch();
-  });
-
-  autoRefreshToggle.addEventListener('change', () => {
-    const shouldEnableAutoRefresh = autoRefreshToggle.checked;
-    stopAutoRefresh(false);
-
-    if (shouldEnableAutoRefresh) {
-      autoRefreshToggle.checked = true;
-      autoRefreshInterval = setInterval(() => {
-        runResultsSearch();
-      }, 60000 * (getEvent().autoRefreshMin || 2));
-    }
   });
 
   document.addEventListener('click', (event) => {

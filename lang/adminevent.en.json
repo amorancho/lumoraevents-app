@@ -21,7 +21,6 @@
   "voting_restrictions_field": "Limit",
   "voting_restrictions_tooltip": "Indicates how many participants a judge can vote at the same time. If left empty or 0, there is no restriction.",
   "prop_num_judges": "Default Judges to vote in Competitions",
-  "prop_autorefresh": "Auto Refresh (minutes)",
   "prop_class_type": "Category Classification Type",
   "no_cat_class": "No Category Classification",
   "num_medals": "By Number of Medals in Styles",
