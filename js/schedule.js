@@ -550,11 +550,16 @@ function getStatusBadge(status) {
 }
 
 function getDancerScheduleStatusBadge(status) {
-    switch (status) {
+    const normalizedStatus = String(status || '').trim().toUpperCase();
+
+    switch (normalizedStatus) {
         case 'FIN':
             return '<span class="badge bg-success">FINISHED</span>';
         case 'PEN':
             return '<span class="badge bg-warning text-dark">PENDING</span>';
+        case 'NOS':
+        case 'NO SHOW':
+            return '<span class="badge bg-noshown status-badge">NO SHOW</span>';
         default:
             return '';
     }
