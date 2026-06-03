@@ -89,7 +89,7 @@ function renderStats(data) {
   const fragment = document.createDocumentFragment();
 
   if (data.personalData) {
-    fragment.appendChild(buildPersonalCard(data.personalData, data.results));
+    fragment.appendChild(buildPersonalCard(data.personalData, data.results, data.styleStats));
   }
 
   if (Array.isArray(data.results?.styles) && data.results.styles.length > 0) {
@@ -126,9 +126,10 @@ function isEventHideJudgesEnabled() {
   return false;
 }
 
-function buildPersonalCard(personalData, results) {
+function buildPersonalCard(personalData, results, styleStats) {
   const { id, name, nationality, category_name, category_position } = personalData;
   const hasGeneralClassification = getEvent().catClassification === 'NUM_MEDALS';
+  const singleStyleSummary = getSingleStyleSummary(results, styleStats, id);
   const card = document.createElement('div');
   card.className = 'col-12 col-lg-10';
 
@@ -152,6 +153,9 @@ function buildPersonalCard(personalData, results) {
             ${hasGeneralClassification
               ? `<span class="badge bg-warning text-dark fw-semibold fs-6 px-3 py-2"><i class="bi bi-trophy me-1"></i>Pos. ${category_position ?? '-'}</span>`
               : ''}
+            ${singleStyleSummary
+              ? `<span class="badge bg-info-subtle text-info-emphasis fw-semibold fs-6 px-3 py-2"><i class="bi bi-music-note-beamed me-1"></i>${escapeHtml(singleStyleSummary.name)} · Pos. ${escapeHtml(singleStyleSummary.position ?? '-')}</span>`
+              : ''}
           </div>
         </div>
       </div>
@@ -159,6 +163,42 @@ function buildPersonalCard(personalData, results) {
   `;
 
   return card;
+}
+
+function getSingleStyleSummary(results, styleStats, dancerId) {
+  const statsList = Array.isArray(styleStats) ? styleStats.filter(Boolean) : [];
+  if (statsList.length === 1) {
+    const style = statsList[0];
+    return {
+      name: style?.style_name ?? style?.name ?? '-',
+      position: getStylePositionValue(style)
+    };
+  }
+
+  const resultStyles = Array.isArray(results?.styles) ? results.styles.filter(Boolean) : [];
+  if (resultStyles.length !== 1) {
+    return null;
+  }
+
+  const style = resultStyles[0];
+  const classification = pickClassification(style?.clasification, dancerId);
+
+  return {
+    name: style?.style_name ?? style?.name ?? '-',
+    position: getStylePositionValue(style, classification)
+  };
+}
+
+function getStylePositionValue(style, classification = null) {
+  return style?.position
+    ?? style?.style_position
+    ?? style?.stylePosition
+    ?? classification?.position
+    ?? classification?.style_position
+    ?? classification?.stylePosition
+    ?? classification?.classification_position
+    ?? classification?.classificationPosition
+    ?? null;
 }
 
 function buildVotesDetailCard(results, personalData) {
