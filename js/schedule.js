@@ -200,6 +200,7 @@ function renderScheduleHighlight(data) {
     let titleKey = '';
     let expandParticipants = false;
     let showLiveHighlight = false;
+    let previousBreakItems = [];
 
     if (inProgressItem) {
         selectedItem = inProgressItem;
@@ -207,13 +208,10 @@ function renderScheduleHighlight(data) {
         expandParticipants = true;
         showLiveHighlight = true;
     } else {
-        const lastFinishedIndex = todayItems.reduce((lastIndex, item, index) => {
-            return item?.status === 'FIN' ? index : lastIndex;
-        }, -1);
-
-        selectedItem = todayItems.slice(lastFinishedIndex + 1).find(item => item?.status !== 'FIN') || null;
+        const nextCompetitionContext = getNextCompetitionHighlightContext(todayItems);
+        selectedItem = nextCompetitionContext.item;
+        previousBreakItems = nextCompetitionContext.previousBreaks;
         if (!selectedItem) return;
-
         titleKey = 'next_competition';
     }
 
@@ -239,11 +237,14 @@ function renderScheduleHighlight(data) {
         `
         : `
             <div class="card-body">
-                <h3 class="h5 mb-3 text-center">${t(titleKey)}</h3>
+                <h3 class="h5 mb-3 text-center">${t(titleKey, 'Next competition')}</h3>
             </div>
         `;
 
     const wrapperBody = wrapper.querySelector('.card-body');
+    if (!showLiveHighlight && previousBreakItems.length) {
+        wrapperBody.appendChild(createScheduleHighlightBreakStrip(previousBreakItems));
+    }
     wrapperBody.appendChild(createScheduleItemCard(selectedItem, {
         uniqueKey: `highlight-${selectedItem?.id ?? 'today'}`,
         expandParticipants,
@@ -259,6 +260,52 @@ function renderScheduleHighlight(data) {
         setScheduleRefreshButtonMode('default');
     }
     highlightContainer.style.display = 'block';
+}
+
+function getNextCompetitionHighlightContext(todayItems) {
+    const items = Array.isArray(todayItems) ? todayItems : [];
+    const lastFinishedIndex = items.reduce((lastIndex, item, index) => {
+        return item?.status === 'FIN' ? index : lastIndex;
+    }, -1);
+
+    const remainingItems = items.slice(lastFinishedIndex + 1);
+    const nextCompetitionIndex = remainingItems.findIndex((item) => {
+        return getScheduleItemBlockType(item) === 'COMP' && item?.status !== 'FIN';
+    });
+
+    if (nextCompetitionIndex < 0) {
+        return { item: null, previousBreaks: [] };
+    }
+
+    const previousBreaks = remainingItems
+        .slice(0, nextCompetitionIndex)
+        .filter((item) => getScheduleItemBlockType(item) === 'BREAK');
+
+    return {
+        item: remainingItems[nextCompetitionIndex],
+        previousBreaks
+    };
+}
+
+function createScheduleHighlightBreakStrip(breakItems) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'schedule-highlight-breaks';
+
+    const itemsHtml = breakItems.map((item) => {
+        return `
+            <span class="schedule-highlight-break-chip">
+                <span class="schedule-highlight-break-name">${escapeHtml(getScheduleBreakName(item))}</span>
+                <span class="schedule-highlight-break-time">${escapeHtml(formatBreakMinutesLabel(getScheduleBreakMinutes(item)))}</span>
+            </span>
+        `;
+    }).join('');
+
+    wrapper.innerHTML = `
+        <div class="schedule-highlight-breaks-label">${t('break_label', 'Break')}</div>
+        <div class="schedule-highlight-breaks-list">${itemsHtml}</div>
+    `;
+
+    return wrapper;
 }
 
 function getTodayScheduleItems(data) {
@@ -313,6 +360,14 @@ function canShowScheduleParticipants() {
 }
 
 function createScheduleItemCard(item, { uniqueKey, expandParticipants = false, highlightLive = false } = {}) {
+    if (getScheduleItemBlockType(item) === 'BREAK') {
+        return createScheduleBreakCard(item, { highlightLive });
+    }
+
+    return createCompetitionScheduleItemCard(item, { uniqueKey, expandParticipants, highlightLive });
+}
+
+function createCompetitionScheduleItemCard(item, { uniqueKey, expandParticipants = false, highlightLive = false } = {}) {
     const card = document.createElement('div');
     const isLiveItem = highlightLive && item?.status === 'PRO';
     card.className = `card mb-3 border border-secondary-subtle rounded-3 shadow-none${isLiveItem ? ' schedule-item-live' : ''}`;
@@ -404,6 +459,49 @@ function createScheduleItemCard(item, { uniqueKey, expandParticipants = false, h
     card.querySelector('.card-body').appendChild(rowWrapper);
 
     return card;
+}
+
+function createScheduleBreakCard(item, { highlightLive = false } = {}) {
+    const card = document.createElement('div');
+    const isLiveItem = highlightLive && item?.status === 'PRO';
+    const breakName = getScheduleBreakName(item);
+    const breakDuration = formatBreakMinutesLabel(getScheduleBreakMinutes(item));
+
+    card.className = `card mb-3 border rounded-3 shadow-none schedule-item-break${isLiveItem ? ' schedule-item-live' : ''}`;
+    card.innerHTML = `
+        <div class="card-body">
+            <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 text-center">
+                <div class="schedule-break-title">${escapeHtml(breakName)}</div>
+                <div>
+                    <span class="badge text-bg-warning fs-6">${escapeHtml(breakDuration)}</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return card;
+}
+
+function getScheduleItemBlockType(item) {
+    const rawType = item?.block_type ?? item?.blockType ?? item?.detail?.block_type ?? item?.detail?.blockType ?? item?.type ?? 'COMP';
+    const normalizedType = String(rawType || 'COMP').trim().toUpperCase();
+    return normalizedType === 'BREAK' ? 'BREAK' : 'COMP';
+}
+
+function getScheduleBreakName(item) {
+    const name = item?.break_name ?? item?.breakName ?? item?.detail?.break_name ?? item?.detail?.breakName ?? item?.name ?? '';
+    return String(name || '').trim() || t('break_label', 'Break');
+}
+
+function getScheduleBreakMinutes(item) {
+    const value = item?.break_time ?? item?.breakTime ?? item?.detail?.break_time ?? item?.detail?.breakTime ?? item?.minutes ?? null;
+    const numericValue = Number(value);
+    return Number.isFinite(numericValue) && numericValue >= 0 ? numericValue : null;
+}
+
+function formatBreakMinutesLabel(minutes) {
+    if (minutes == null) return '-';
+    return `${Math.trunc(minutes)} ${t('minutes_short', 'min')}`;
 }
 
 function formatDate(dateStr) {
