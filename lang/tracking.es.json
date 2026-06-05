@@ -105,6 +105,8 @@
   "confirm_export_competition_pdf": "Seguro que desea exportar a PDF la competicion {competition}?",
   "allow_vote_changes_enabled": "Cambios de voto permitidos",
   "allow_vote_changes_disabled": "Cambios de voto bloqueados",
+  "tracking_summary_allow_vote_changes_enabled": "JUECES PUEDEN CAMBIAR VOTOS",
+  "tracking_summary_allow_vote_changes_disabled": "JUECES NO PUEDEN CAMBIAR VOTOS",
   "allow_vote_changes_enable_action": "Permitir el cambio de votos a los jueces",
   "allow_vote_changes_disable_action": "No permitir cambio de votos a los jueces",
   "classification_visible": "Resultado visible",

@@ -36,6 +36,7 @@ const audioFeedbackState = {
 let competitionSelect, competitionInfo, dancersTableContainer, refreshBtn, previousCompetitionBtn, nextCompetitionBtn;
 let competitionTomSelect = null;
 let availableCompetitions = [];
+let activeCompetition = null;
 let headJudgeTooltip = null;
 const penaltyAssignmentState = {
   context: null,
@@ -51,8 +52,20 @@ function isMobileViewport() {
   return window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`).matches;
 }
 
-function canJudgeChangeVotes() {
-  return Boolean(getEvent()?.judgesCanChangeVotes);
+function getActiveCompetitionForVoting() {
+  if (activeCompetition) return activeCompetition;
+
+  const selectedCompetitionId = getSelectedCompetitionId();
+  return availableCompetitions.find(comp => String(comp?.id) === String(selectedCompetitionId)) || null;
+}
+
+function competitionAllowsVoteChanges(competition = null) {
+  return parseJudgeFlag(competition?.allow_changes);
+}
+
+function canJudgeChangeVotes(competition = null) {
+  return Boolean(getEvent()?.judgesCanChangeVotes)
+    && competitionAllowsVoteChanges(competition || getActiveCompetitionForVoting());
 }
 
 function generateScoreOptions(scoreType, min = DEFAULT_MIN_SCORE, max = DEFAULT_MAX_SCORE) {
@@ -144,10 +157,10 @@ function getCriteriaColumnsVisibilityStorageKey() {
 function loadCriteriaColumnsVisibility() {
   try {
     const raw = localStorage.getItem(getCriteriaColumnsVisibilityStorageKey());
-    if (raw === null) return false;
+    if (raw === null) return true;
     return raw === 'true';
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -1060,6 +1073,7 @@ async function loadCompetitionAndDancers() {
   if (!category || !style) return;
 
   const data = await fetchVoting(category, style);
+  activeCompetition = data?.competition || selectedCompetition || null;
   syncCompetitionStatusInDropdown(selectedCompetitionId, data?.competition?.status);
   const loadedCriteria = Array.isArray(data.criteria) ? data.criteria : [];
   criteriaList = loadedCriteria
@@ -1085,7 +1099,9 @@ async function loadCompetitionAndDancers() {
 
 function showVotesModal(dancer, mode = "details") {
   const eventData = typeof getEvent === 'function' ? getEvent() : null;
-  const isChangeVoteMode = mode === "vote" && dancer?.status === 'Completed' && Boolean(eventData?.judgesCanChangeVotes);
+  const isChangeVoteMode = mode === "vote"
+    && dancer?.status === 'Completed'
+    && canJudgeChangeVotes(getActiveCompetitionForVoting());
   const scoreType = getScoreType();
   const normalizedScoreType = (scoreType || 'INT').toUpperCase();
   const criteriaConfig = eventData?.criteriaConfig;

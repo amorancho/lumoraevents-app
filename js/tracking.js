@@ -131,6 +131,17 @@ function renderSidebarAllowChangesButtonContent(allowChanges) {
   `;
 }
 
+function renderTrackingSummaryAllowChangesBadge(allowChanges) {
+  const badgeClass = allowChanges
+    ? 'bg-white text-success border border-success'
+    : 'bg-white text-danger border border-danger';
+  const label = allowChanges
+    ? t('tracking_summary_allow_vote_changes_enabled', 'JUECES PUEDEN CAMBIAR VOTOS')
+    : t('tracking_summary_allow_vote_changes_disabled', 'JUECES NO PUEDEN CAMBIAR VOTOS');
+
+  return `<span class="badge ${badgeClass} fs-6 px-2 py-1">${escapeHtml(label)}</span>`;
+}
+
 function refreshSidebarAllowChangesTooltip(button, allowChanges) {
   if (!button) return;
 
@@ -2242,12 +2253,14 @@ async function changeCompetitionStatus(compId, action, options = {}) {
 
   if (reloadMain) {
     await reloadSelectedCompetition();
-    return;
+    return data;
   }
 
   if (reloadSidebar) {
     await loadCompetitionSidebar();
   }
+
+  return data;
 }
 
 async function setCompetitionAllowChanges(compId, nextAllowChanges) {
@@ -2343,6 +2356,46 @@ function shouldShowTrackingPenaltyAction() {
 function getCompetitionStatusFromAction(action) {
   if (action === 'open') return 'OPE';
   if (action === 'close') return 'CLO';
+  return null;
+}
+
+function extractCompetitionAllowChangesValue(payload) {
+  if (payload === null || payload === undefined) return null;
+
+  const candidates = [
+    payload?.allow_changes,
+    payload?.allowChanges,
+    payload?.competition?.allow_changes,
+    payload?.competition?.allowChanges,
+    payload?.data?.allow_changes,
+    payload?.data?.allowChanges,
+    payload?.data?.competition?.allow_changes,
+    payload?.data?.competition?.allowChanges
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate === null || candidate === undefined || candidate === '') continue;
+    return parseJudgeFlag(candidate);
+  }
+
+  return null;
+}
+
+function extractCompetitionStatusValue(payload) {
+  if (payload === null || payload === undefined) return null;
+
+  const candidates = [
+    payload?.status,
+    payload?.competition?.status,
+    payload?.data?.status,
+    payload?.data?.competition?.status
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeSidebarCompetitionStatus(candidate);
+    if (normalized) return normalized;
+  }
+
   return null;
 }
 
@@ -2829,16 +2882,17 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
 
       btn.disabled = true;
       try {
-        await changeCompetitionStatus(compId, action);
-        const nextStatus = getCompetitionStatusFromAction(action);
+        const result = await changeCompetitionStatus(compId, action);
+        const nextStatus = extractCompetitionStatusValue(result) || getCompetitionStatusFromAction(action);
+        const nextAllowChanges = extractCompetitionAllowChangesValue(result);
+
         updateSidebarCompetitionStatusInState(compId, nextStatus);
+        if (nextAllowChanges !== null) {
+          updateSidebarCompetitionAllowChangesInState(compId, nextAllowChanges);
+        }
         rerenderSidebarPreservingScroll();
 
-        const isSelectedCompetition = String(trackingUiState.selectedCategoryId) === String(categoryId)
-          && String(trackingUiState.selectedStyleId) === String(styleId);
-        if (isSelectedCompetition) {
-          await reloadSelectedCompetition();
-        }
+        await executeGetCompetitions(categoryId, styleId, { competitionId: compId });
       } catch (error) {
         console.error('Error changing competition status:', error);
         showMessageModal(error?.message || t('error_change_competition_status'), t('error_title'));
@@ -2995,6 +3049,10 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
   const competitionId = Number(comp?.id ?? comp?.competition_id);
   const exportButtonDisabled = !isFinished || !Number.isFinite(competitionId) ? 'disabled' : '';
   const competitionLabel = getCompetitionExportLabel(comp);
+  const canJudgesChangeVotesAtEventLevel = Boolean(getEvent()?.judgesCanChangeVotes);
+  const allowChangesSummaryBadge = canJudgesChangeVotesAtEventLevel
+    ? renderTrackingSummaryAllowChangesBadge(parseJudgeFlag(comp?.allow_changes))
+    : '';
 
   const card = document.createElement('div');
   card.className = 'card mb-4 border-primary-subtle';
@@ -3006,6 +3064,7 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
             <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.category_name || '-')}</span>
             <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.style_name || '-')}</span>
             <span class="badge ${statusBadgeClass} fs-6 px-2 py-1">${escapeHtml(statusText || '-')}</span>
+            ${allowChangesSummaryBadge}
           </div>
           <div class="d-flex align-items-center gap-3 tracking-summary-progress">
             <div class="progress flex-grow-1 position-relative" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.percentage}" style="height: 30px;">
