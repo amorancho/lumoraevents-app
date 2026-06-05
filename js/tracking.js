@@ -105,6 +105,54 @@ function parseJudgeFlag(value) {
   return false;
 }
 
+function shouldShowSidebarAllowChangesButton() {
+  return Boolean(getEvent()?.judgesCanChangeVotes);
+}
+
+function getSidebarAllowChangesButtonClass(allowChanges) {
+  return allowChanges ? 'btn-outline-success' : 'btn-outline-secondary';
+}
+
+function getSidebarAllowChangesButtonLabel(allowChanges) {
+  return allowChanges
+    ? t('allow_vote_changes_disable_action', 'Do not allow judges to change votes')
+    : t('allow_vote_changes_enable_action', 'Allow judges to change votes');
+}
+
+function renderSidebarAllowChangesButtonContent(allowChanges) {
+  const iconClass = allowChanges ? 'bi-unlock-fill' : 'bi-lock-fill';
+  const stateLabel = allowChanges
+    ? t('allow_vote_changes_enabled', 'Vote changes allowed')
+    : t('allow_vote_changes_disabled', 'Vote changes blocked');
+
+  return `
+    <i class="bi ${iconClass}" aria-hidden="true"></i>
+    <span class="visually-hidden">${escapeHtml(stateLabel)}</span>
+  `;
+}
+
+function refreshSidebarAllowChangesTooltip(button, allowChanges) {
+  if (!button) return;
+
+  const tooltipText = getSidebarAllowChangesButtonLabel(allowChanges);
+  button.setAttribute('data-bs-title', tooltipText);
+  button.setAttribute('data-bs-original-title', tooltipText);
+  button.setAttribute('aria-label', tooltipText);
+  button.removeAttribute('title');
+
+  if (!window.bootstrap?.Tooltip) return;
+
+  const existingTooltip = bootstrap.Tooltip.getInstance(button);
+  if (existingTooltip) {
+    if (typeof existingTooltip.setContent === 'function') {
+      existingTooltip.setContent({ '.tooltip-inner': tooltipText });
+    }
+    existingTooltip.update();
+    return;
+  }
+  bootstrap.Tooltip.getOrCreateInstance(button);
+}
+
 function normalizeCompetitionRevision(value) {
   if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
@@ -1654,6 +1702,25 @@ async function changeCompetitionStatus(compId, action, options = {}) {
   }
 }
 
+async function setCompetitionAllowChanges(compId, nextAllowChanges) {
+  const response = await fetch(`${API_BASE_URL}/api/competitions/allow-changes`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      event_id: Number(getEvent().id),
+      competition_id: Number(compId),
+      'allow-changes': nextAllowChanges
+    })
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || t('error_set_allow_vote_changes', 'Error updating vote change access.'));
+  }
+
+  return data;
+}
+
 
 async function loadCompetitions(categoryId, styleId, options = {}) {
   const {
@@ -2002,6 +2069,7 @@ function syncSelectedCompetitionSidebarState(competitions, categoryId, styleId) 
 
   sidebarCompetition.status = normalizeSidebarCompetitionStatus(selectedCompetition?.status) || sidebarCompetition.status;
   sidebarCompetition.clasification_visible = parseClassificationVisible(selectedCompetition?.clasification_visible) ? 1 : 0;
+  sidebarCompetition.allow_changes = parseJudgeFlag(selectedCompetition?.allow_changes) ? 1 : 0;
   const selectedRevision = extractCompetitionRevision(selectedCompetition);
   if (selectedRevision !== null) {
     sidebarCompetition.revision = selectedRevision;
@@ -2024,6 +2092,37 @@ function updateSidebarCompetitionClassificationVisibilityInState(categoryId, sty
 
   target.clasification_visible = isVisible ? 1 : 0;
   return true;
+}
+
+function updateSidebarCompetitionAllowChangesInState(compId, allowChanges) {
+  if (!Array.isArray(trackingUiState.sidebarCompetitions) || trackingUiState.sidebarCompetitions.length === 0) {
+    return false;
+  }
+
+  const normalizedCompId = String(compId || '').trim();
+  if (!normalizedCompId) return false;
+
+  const target = trackingUiState.sidebarCompetitions.find(comp => String(comp?.id ?? comp?.competition_id ?? '').trim() === normalizedCompId);
+  if (!target) return false;
+
+  target.allow_changes = allowChanges ? 1 : 0;
+  return true;
+}
+
+function syncSidebarCompetitionAllowChangesControls(compId, allowChanges) {
+  const normalizedCompId = String(compId || '').trim();
+  if (!normalizedCompId) return;
+
+  updateSidebarCompetitionAllowChangesInState(normalizedCompId, allowChanges);
+
+  document.querySelectorAll('.js-sidebar-allow-changes-btn').forEach(button => {
+    if (String(button.dataset.compId || '').trim() !== normalizedCompId) return;
+    button.dataset.allowChanges = allowChanges ? '1' : '0';
+    button.classList.remove('btn-outline-success', 'btn-outline-secondary');
+    button.classList.add(getSidebarAllowChangesButtonClass(allowChanges));
+    button.innerHTML = renderSidebarAllowChangesButtonContent(allowChanges);
+    refreshSidebarAllowChangesTooltip(button, allowChanges);
+  });
 }
 
 function rerenderSidebarPreservingScroll() {
@@ -2061,10 +2160,42 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
     const isFinished = comp?.status === 'FIN';
     const isOpen = comp?.status === 'OPE' || comp?.status === 'PRO';
     const isClassificationVisible = parseClassificationVisible(comp?.clasification_visible);
+    const allowChanges = parseJudgeFlag(comp?.allow_changes);
     const btnDisabled = getEvent().status === 'finished' ? 'disabled' : '';
     const statusBadgeClass = getCompetitionListStatusBadgeClass(comp?.status);
     const estimatedStart = comp?.estimated_start_form || t('not_defined');
     const visibilityButtonDisabled = !isFinished ? 'disabled' : '';
+    const classificationVisibilityActionButton = isFinished
+      ? `
+        <button
+          type="button"
+          class="btn btn-sm ${getSidebarClassificationVisibleButtonClass(isClassificationVisible)} js-classification-visible-btn sidebar-classification-visible-btn"
+          data-control-variant="sidebar"
+          data-category-id="${categoryId}"
+          data-style-id="${styleId}"
+          data-visible="${isClassificationVisible ? '1' : '0'}"
+          ${visibilityButtonDisabled}>
+          ${renderClassificationVisibleButtonContent(isClassificationVisible, 'sidebar')}
+        </button>
+      `
+      : '';
+    const allowChangesActionButton = shouldShowSidebarAllowChangesButton() && compId !== ''
+      ? `
+        <button
+          type="button"
+          class="btn btn-sm ${getSidebarAllowChangesButtonClass(allowChanges)} js-sidebar-allow-changes-btn sidebar-allow-changes-btn"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          data-bs-title="${escapeHtml(getSidebarAllowChangesButtonLabel(allowChanges))}"
+          data-comp-id="${compId}"
+          data-category-id="${categoryId}"
+          data-style-id="${styleId}"
+          data-allow-changes="${allowChanges ? '1' : '0'}"
+          aria-label="${escapeHtml(getSidebarAllowChangesButtonLabel(allowChanges))}">
+          ${renderSidebarAllowChangesButtonContent(allowChanges)}
+        </button>
+      `
+      : '';
     const statusActionButton = !isFinished
       ? `
         <button
@@ -2115,18 +2246,12 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
               class="text-muted js-classification-visible-text sidebar-classification-visible-text"
               data-category-id="${categoryId}"
               data-style-id="${styleId}">${escapeHtml(getClassificationVisibilityText(isClassificationVisible))}</small>
-            <button
-              type="button"
-              class="btn btn-sm ${getSidebarClassificationVisibleButtonClass(isClassificationVisible)} js-classification-visible-btn sidebar-classification-visible-btn"
-              data-control-variant="sidebar"
-              data-category-id="${categoryId}"
-              data-style-id="${styleId}"
-              data-visible="${isClassificationVisible ? '1' : '0'}"
-              ${visibilityButtonDisabled}>
-              ${renderClassificationVisibleButtonContent(isClassificationVisible, 'sidebar')}
-            </button>
             ` : ''}
-            ${statusActionButton}
+            <div class="sidebar-competition-actions-row">
+              ${classificationVisibilityActionButton}
+              ${statusActionButton}
+              ${allowChangesActionButton}
+            </div>
           </div>
         </div>
       </div>
@@ -2178,6 +2303,49 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
   });
 
   container.querySelectorAll('.js-classification-visible-btn').forEach(bindClassificationVisibilityButton);
+  container.querySelectorAll('.js-sidebar-allow-changes-btn').forEach(button => {
+    refreshSidebarAllowChangesTooltip(button, button.dataset.allowChanges === '1');
+  });
+  container.querySelectorAll('.js-sidebar-allow-changes-btn').forEach(button => {
+    button.addEventListener('click', async event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (button.disabled) return;
+
+      const compId = String(button.dataset.compId || '').trim();
+      const categoryId = button.dataset.categoryId;
+      const styleId = button.dataset.styleId;
+      const currentAllowChanges = button.dataset.allowChanges === '1';
+      const nextAllowChanges = !currentAllowChanges;
+
+      if (!compId) {
+        showMessageModal(t('error_set_allow_vote_changes', 'Error updating vote change access.'), t('error_title'));
+        return;
+      }
+
+      button.disabled = true;
+      try {
+        await setCompetitionAllowChanges(compId, nextAllowChanges);
+        syncSidebarCompetitionAllowChangesControls(compId, nextAllowChanges);
+
+        const isSelectedCompetition = String(trackingUiState.selectedCategoryId) === String(categoryId)
+          && String(trackingUiState.selectedStyleId) === String(styleId);
+        if (isSelectedCompetition) {
+          await reloadSelectedCompetition({ syncSidebarState: true });
+        }
+      } catch (error) {
+        console.error('Error changing allow vote changes state:', error);
+        showMessageModal(
+          error?.message || t('error_set_allow_vote_changes', 'Error updating vote change access.'),
+          t('error_title')
+        );
+      } finally {
+        if (button.isConnected) {
+          button.disabled = false;
+        }
+      }
+    });
+  });
 }
 
 async function loadCompetitionSidebar() {

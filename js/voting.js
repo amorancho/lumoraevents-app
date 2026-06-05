@@ -51,6 +51,10 @@ function isMobileViewport() {
   return window.matchMedia(`(max-width: ${MOBILE_MAX_WIDTH}px)`).matches;
 }
 
+function canJudgeChangeVotes() {
+  return Boolean(getEvent()?.judgesCanChangeVotes);
+}
+
 function generateScoreOptions(scoreType, min = DEFAULT_MIN_SCORE, max = DEFAULT_MAX_SCORE) {
   const normalizedType = (scoreType || 'INT').toUpperCase();
   const step = normalizedType === 'DEC' ? 0.1 : normalizedType === 'MED' ? 0.5 : 1;
@@ -1081,6 +1085,7 @@ async function loadCompetitionAndDancers() {
 
 function showVotesModal(dancer, mode = "details") {
   const eventData = typeof getEvent === 'function' ? getEvent() : null;
+  const isChangeVoteMode = mode === "vote" && dancer?.status === 'Completed' && Boolean(eventData?.judgesCanChangeVotes);
   const scoreType = getScoreType();
   const normalizedScoreType = (scoreType || 'INT').toUpperCase();
   const criteriaConfig = eventData?.criteriaConfig;
@@ -1090,8 +1095,13 @@ function showVotesModal(dancer, mode = "details") {
   const isMobile = isMobileViewport();
   const useMobileLayout = mode !== "vote" || isMobile;
   const minScore = DEFAULT_MIN_SCORE;
+  const detailsModalModeBadge = document.getElementById('detailsModalModeBadge');
   document.getElementById('detailsModalLabel').textContent =
     mode === "details" ? `${t('votes_for')} ${dancer.name}` : `${t('vote_for')} ${dancer.name}`;
+  if (detailsModalModeBadge) {
+    detailsModalModeBadge.textContent = t('change_vote_mode_badge', 'CAMBIO DE VOTACION');
+    detailsModalModeBadge.classList.toggle('d-none', !isChangeVoteMode);
+  }
 
   const dialog = modal._element.querySelector('.modal-dialog');
   dialog.classList.remove('modal-lg', 'modal-xl', 'modal-dialog-scrollable', 'modal-fullscreen', 'modal-dialog-centered');
@@ -1235,6 +1245,37 @@ function showVotesModal(dancer, mode = "details") {
     }
 
     return calculateTotalScore(criteria => getStoredCriteriaScore(criteria));
+  };
+
+  const renderChangeVoteSummary = () => {
+    if (!isChangeVoteMode) return;
+
+    const summaryBlock = document.createElement('div');
+    summaryBlock.className = useMobileLayout ? 'col-12' : 'w-100';
+
+    const criteriaSummary = criteriaList.map((criteria) => {
+      const currentScore = getDetailCriteriaScore(criteria);
+      const formattedValue = currentScore === null ? '-' : formatScoreForDisplay(currentScore, scoreType);
+      return `
+        <span class="badge text-bg-light border">
+          ${escapeHtml(formatCriteriaLabel(criteria))}: <span class="fw-semibold">${escapeHtml(formattedValue)}</span>
+        </span>
+      `;
+    }).join('');
+
+    summaryBlock.innerHTML = `
+      <div class="alert alert-warning border shadow-sm mb-0 text-start">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+          <div class="fw-semibold">${escapeHtml(t('change_vote_previous_summary', 'Current submitted votes'))}</div>
+          <span class="badge bg-dark">${escapeHtml(t('total', 'Total'))}: ${escapeHtml(formatTotalScore(getInitialTotalScore()) || '0')}</span>
+        </div>
+        <div class="d-flex flex-wrap gap-2 mt-2">
+          ${criteriaSummary}
+        </div>
+      </div>
+    `;
+
+    criteriaContainer.appendChild(summaryBlock);
   };
 
   const getVoteControlType = (criteria) => {
@@ -1443,6 +1484,8 @@ function showVotesModal(dancer, mode = "details") {
     criteriaContainer.appendChild(totalCol);
   }
 
+  renderChangeVoteSummary();
+
   if (mode === "details") {
     criteriaList.forEach(c => {
       const col = document.createElement('div');
@@ -1586,14 +1629,18 @@ function showVotesModal(dancer, mode = "details") {
   
     // --- funcion auxiliar para enviar votos ---
     async function sendVotes(scores) {
+      const originalContent = sendBtn.innerHTML;
+      const voteEndpoint = isChangeVoteMode
+        ? `${API_BASE_URL}/api/voting/changeVote`
+        : `${API_BASE_URL}/api/voting`;
+
       try {
         setVoteButtonsDisabled(true);
-        const originalContent = sendBtn.innerHTML;
         sendBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> ${t('sending')}`;    
         sendBtn.disabled = true;
         noShowBtn.disabled = true;
   
-        const response = await fetch(`${API_BASE_URL}/api/voting`, {
+        const response = await fetch(voteEndpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -1620,7 +1667,10 @@ function showVotesModal(dancer, mode = "details") {
   
       } catch (err) {
         console.error("Error sending votes", err);
-        alert("Error sending votes");
+        showMessageModal('Error sending votes', 'Error');
+        setVoteButtonsDisabled(false);
+        sendBtn.disabled = false;
+        noShowBtn.disabled = false;
         sendBtn.innerHTML = originalContent;
       }
     }
@@ -1653,6 +1703,45 @@ function showVotesModal(dancer, mode = "details") {
     const confirmOutlierBtn = document.getElementById("confirmOutlierBtn");
     const outlierMessageEl = document.getElementById("outlierConfirmMessage");
     const outlierListEl = document.getElementById("outlierConfirmList");
+
+    if (!document.getElementById("changeVoteConfirmModal")) {
+      document.body.insertAdjacentHTML("beforeend", `
+        <div class="modal fade" id="changeVoteConfirmModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">${t('confirm_change_vote_title', 'Confirm vote change')}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p class="mb-0">${t('confirm_change_vote_text', 'Are you sure you want to change the votes?')}</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t('cancel')}</button>
+                <button type="button" class="btn btn-primary" id="confirmChangeVoteBtn">${t('confirm')}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+    }
+
+    const changeVoteConfirmModal = new bootstrap.Modal(document.getElementById("changeVoteConfirmModal"));
+    const confirmChangeVoteBtn = document.getElementById("confirmChangeVoteBtn");
+
+    const submitVotesWithChangeConfirmation = (scores) => {
+      if (!isChangeVoteMode) {
+        sendVotes(scores);
+        return;
+      }
+
+      confirmChangeVoteBtn.onclick = async () => {
+        changeVoteConfirmModal.hide();
+        await sendVotes(scores);
+      };
+
+      changeVoteConfirmModal.show();
+    };
 
     // --- boton normal: enviar votos manuales ---
     sendBtn.addEventListener('click', async () => {
@@ -1698,16 +1787,18 @@ function showVotesModal(dancer, mode = "details") {
           if (outlierListEl) {
             outlierListEl.textContent = outlierNames;
           }
-          confirmOutlierBtn.onclick = async () => {
+          confirmOutlierBtn.onclick = () => {
             outlierModal.hide();
-            await sendVotes(scores);
+            window.setTimeout(() => {
+              submitVotesWithChangeConfirmation(scores);
+            }, isChangeVoteMode ? 150 : 0);
           };
           outlierModal.show();
           return;
         }
       }
 
-      await sendVotes(scores);
+      submitVotesWithChangeConfirmation(scores);
     });
   
     // --- modal de confirmacion (solo se crea si no existe aun) ---
@@ -1803,6 +1894,7 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
   dancersTableBody.innerHTML = ''; // limpiar
   syncCriteriaToggleButtonState();
 
+  const allowCompletedVoteChanges = canJudgeChangeVotes();
   const canShowPenaltiesButton = getEvent()?.status !== 'finished' && Boolean(isJudgeHead);
   const selectedCompetitionId = getSelectedCompetitionId();
   const selectedCompetition = availableCompetitions
@@ -1858,8 +1950,10 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
     if (d.status === 'Completed') {
       const btnDetails = document.createElement('button');
       btnDetails.className = 'btn btn-sm btn-secondary';
-      btnDetails.textContent = t('details');
-      btnDetails.addEventListener('click', () => showVotesModal(d, "details"));
+      btnDetails.textContent = allowCompletedVoteChanges
+        ? t('details_change_votes', 'Details/change votes')
+        : t('details');
+      btnDetails.addEventListener('click', () => showVotesModal(d, allowCompletedVoteChanges ? "vote" : "details"));
       actionsWrap.appendChild(btnDetails);
       hasPrimaryAction = true;
     } else if (d.status === 'Pending' && (compStatus === 'OPE' || compStatus === 'PRO') && d.can_vote) {

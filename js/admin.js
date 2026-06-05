@@ -475,6 +475,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('has_penalties').checked = (Number(eventObj.has_penalties) === 1);
   document.getElementById('has_registrations').checked = (Number(eventObj.has_registrations) === 1);
   document.getElementById('judges_vis_results').checked = (Number(eventObj.judges_vis_results) === 1);
+  document.getElementById('judges_can_change_votes').checked = (Number(eventObj.judges_can_change_votes) === 1);
   document.getElementById('has_masters').checked = (Number(eventObj.has_masters) === 1);
   document.getElementById('show_flags').checked = (Number(eventObj.show_flags) === 1);
   document.getElementById('send_stats_code').checked = (Number(eventObj.send_stats_code) === 1);
@@ -540,6 +541,7 @@ async function saveEvent() {
     has_registrations: document.getElementById('has_registrations').checked ? 1 : 0,
     judge_feedback: document.getElementById('judge_feedback').value || '',
     judges_vis_results: document.getElementById('judges_vis_results').checked ? 1 : 0,
+    judges_can_change_votes: document.getElementById('judges_can_change_votes').checked ? 1 : 0,
     has_masters: document.getElementById('has_masters').checked ? 1 : 0,
     registration_start: document.getElementById('registration_start').value || null,
     registration_end: document.getElementById('registration_end').value || null,

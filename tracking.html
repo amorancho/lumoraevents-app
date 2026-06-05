@@ -404,7 +404,16 @@
     }
     .sidebar-competition-actions {
       flex: 0 0 auto;
-      max-width: 48%;
+      max-width: none;
+      min-width: fit-content;
+    }
+    .sidebar-competition-actions-row {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      flex-wrap: nowrap;
+      white-space: nowrap;
     }
     .sidebar-classification-visible-btn {
       display: inline-flex;
@@ -416,6 +425,14 @@
     .sidebar-classification-visible-text {
       font-size: 0.72rem;
       line-height: 1.2;
+    }
+    .sidebar-allow-changes-btn {
+      width: 2rem;
+      height: 2rem;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
     .tracking-live-indicator {
       display: inline-flex;

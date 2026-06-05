@@ -99,6 +99,10 @@
   "back_to_dashboard": "Retour au Dashboard",
   "export_results_button": "Exporter Resultats",
   "confirm_export_competition_pdf": "Voulez-vous exporter le PDF de la competition {competition} ?",
+  "allow_vote_changes_enabled": "Modification des votes autorisee",
+  "allow_vote_changes_disabled": "Modification des votes bloquee",
+  "allow_vote_changes_enable_action": "Permettre aux juges de modifier les votes",
+  "allow_vote_changes_disable_action": "Ne pas permettre aux juges de modifier les votes",
   "classification_visible": "Resultat visible",
   "classification_visibility_hide_results": "Masquer resultats",
   "classification_visibility_show_results": "Resultats visibles",
@@ -108,6 +112,7 @@
   "classification_visibility_action_hide": "Masquer",
   "confirm_classification_visible_on": "Voulez-vous rendre le resultat visible ?",
   "confirm_classification_visible_off": "Voulez-vous masquer le resultat ?",
+  "error_set_allow_vote_changes": "Erreur lors de la mise a jour des modifications de vote.",
   "error_set_classification_visible": "Erreur lors de la mise a jour de la visibilite du resultat.",
   "save_classification": "Enregistrer le classement"
 }

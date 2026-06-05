@@ -98,6 +98,10 @@
   "back_to_dashboard": "Back to Dashboard",
   "export_results_button": "Export Results",
   "confirm_export_competition_pdf": "Are you sure you want to export the PDF for competition {competition}?",
+  "allow_vote_changes_enabled": "Vote changes allowed",
+  "allow_vote_changes_disabled": "Vote changes blocked",
+  "allow_vote_changes_enable_action": "Allow judges to change votes",
+  "allow_vote_changes_disable_action": "Do not allow judges to change votes",
   "classification_visible": "Result visible",
   "classification_visibility_hide_results": "Hide Results",
   "classification_visibility_show_results": "Results Visible",
@@ -107,6 +111,7 @@
   "classification_visibility_action_hide": "Hide",
   "confirm_classification_visible_on": "Are you sure you want to make the result visible?",
   "confirm_classification_visible_off": "Are you sure you want to hide the result?",
+  "error_set_allow_vote_changes": "Error updating vote change access.",
   "error_set_classification_visible": "Error updating result visibility.",
   "top_by_criteria": "Ranking by criteria",
   "save_classification": "Save Classification"
