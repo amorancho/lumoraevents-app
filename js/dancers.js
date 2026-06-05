@@ -1,5 +1,6 @@
 let dancers = [];
 let clubsById = new Map();
+let availableStyles = [];
 var title = 'Dancers';
 
 const allowedRoles = ["admin", "organizer"];
@@ -555,6 +556,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const analyzeParticipantsFileBtn = document.getElementById('analyzeParticipantsFileBtn');
   const importCreateMissingEntitiesCheck = document.getElementById('importCreateMissingEntitiesCheck');
   const importParticipantsBtn = document.getElementById('importParticipantsBtn');
+  const importManualStyleInput = document.getElementById('importManualStyleInput');
   const openBulkDeleteDancersBtn = document.getElementById('openBulkDeleteDancersBtn');
   const exportDancersBtn = document.getElementById('exportDancersBtn');
   const bulkDeleteModalElement = document.getElementById('bulkDeleteDancersModal');
@@ -834,6 +836,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
+  if (importManualStyleInput) {
+    importManualStyleInput.addEventListener('input', () => {
+      importManualStyleInput.classList.remove('is-invalid');
+    });
+  }
+
   if (importDancersModalElement) {
     importDancersModalElement.addEventListener('hidden.bs.modal', () => {
       resetImportParticipantsState();
@@ -966,6 +974,7 @@ async function loadStyles() {
   styleSelect.innerHTML = ''; // Limpiar opciones anteriores
   const styleFilter = document.getElementById('styleFilter');
   const selectedStyleFilterValue = styleFilter ? styleFilter.value : '';
+  availableStyles = [];
   if (styleFilter) {
     styleFilter.innerHTML = '';
     const defaultOption = document.createElement('option');
@@ -978,8 +987,9 @@ async function loadStyles() {
     const response = await fetch(`${API_BASE_URL}/api/styles?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching styles');
     const styles = await response.json();
+    availableStyles = Array.isArray(styles) ? styles : [];
 
-    styles.forEach(style => {
+    availableStyles.forEach(style => {
       const option = document.createElement('option');
       option.value = style.id || style;
       option.textContent = style.name || style;
@@ -998,6 +1008,7 @@ async function loadStyles() {
       styleFilter.value = hasPreviousSelection ? selectedStyleFilterValue : '';
     }
   } catch (err) {
+    availableStyles = [];
     console.error('Failed to load styles:', err);
   }
 }
@@ -1223,6 +1234,8 @@ function resetImportParticipantsState() {
     importParticipantsBtn.textContent = t('import_participants', 'Import participants');
   }
 
+  clearImportManualStyleField({ hide: true });
+
   setImportMappingsPanelExpanded(false);
 }
 
@@ -1430,6 +1443,98 @@ function resetImportAnalysisResultsUi() {
     importParticipantsBtn.disabled = true;
     importParticipantsBtn.textContent = t('import_participants', 'Import participants');
   }
+
+  clearImportManualStyleField({ hide: true });
+}
+
+function getImportManualStyleElements() {
+  return {
+    row: document.getElementById('importManualStyleRow'),
+    input: document.getElementById('importManualStyleInput')
+  };
+}
+
+function clearImportManualStyleField({ hide = false } = {}) {
+  const { row, input } = getImportManualStyleElements();
+  if (input) {
+    input.value = '';
+    input.disabled = hide;
+    input.classList.remove('is-invalid');
+  }
+  if (row) {
+    row.classList.toggle('d-none', hide);
+  }
+}
+
+function hasImportStyleMapping(mappingByColumn = importState.mappingByColumn) {
+  const values = Object.values(mappingByColumn || {}).map(sanitizeImportMappingValue).filter(Boolean);
+  return values.includes('style') || values.includes('category_style') || values.includes('style_category');
+}
+
+function hasImportCategoryMapping(mappingByColumn = importState.mappingByColumn) {
+  const values = Object.values(mappingByColumn || {}).map(sanitizeImportMappingValue).filter(Boolean);
+  return values.includes('category') || values.includes('category_style') || values.includes('style_category');
+}
+
+function shouldRequireImportManualStyle() {
+  if (!hasImportStyleMapping()) {
+    return true;
+  }
+
+  return Array.isArray(importState.analysis?.receivedStyles)
+    && importState.analysis.receivedStyles.length === 0;
+}
+
+function updateImportManualStyleVisibility() {
+  const { row, input } = getImportManualStyleElements();
+  if (!row || !input) return;
+
+  const shouldShow = shouldRequireImportManualStyle();
+  row.classList.toggle('d-none', !shouldShow);
+  input.disabled = !shouldShow;
+
+  if (!shouldShow) {
+    input.value = '';
+    input.classList.remove('is-invalid');
+  }
+}
+
+function getImportManualStyleValue() {
+  const { input } = getImportManualStyleElements();
+  return `${input?.value || ''}`.trim();
+}
+
+function validateImportManualStyle({ showError = false } = {}) {
+  const { input } = getImportManualStyleElements();
+  if (!shouldRequireImportManualStyle()) {
+    if (input) {
+      input.classList.remove('is-invalid');
+    }
+    return { isValid: true, value: '' };
+  }
+
+  const value = getImportManualStyleValue();
+  const isValid = Boolean(value);
+
+  if (input) {
+    input.classList.toggle('is-invalid', !isValid);
+  }
+
+  if (!isValid && showError) {
+    showMessageModal(t('import_style_required_error', 'You must provide a style.'), t('error', 'Error'));
+    input?.focus();
+  }
+
+  return { isValid, value };
+}
+
+function findAvailableStyleByName(styleName) {
+  const normalizedStyleName = normalizeImportCompareValue(styleName);
+  if (!normalizedStyleName) return null;
+
+  return availableStyles.find((style) => (
+    normalizeImportCompareValue(style?.name || style) === normalizedStyleName
+  )) || null;
 }
 
 function applyImportApiAnalysis(data) {
@@ -1449,6 +1554,7 @@ function applyImportApiAnalysis(data) {
   renderImportDetectedList('style', receivedStyles);
   renderImportDetectedList('club', receivedClubs);
   refreshImportParticipantsSummary(participants);
+  updateImportManualStyleVisibility();
 
   const apiResultsWrap = document.getElementById('importApiAnalyzeResults');
   if (apiResultsWrap) {
@@ -1536,12 +1642,17 @@ function normalizeImportCompareValue(value) {
   return normalizeImportLabel(value || '');
 }
 
-function buildCreateParticipantsPayload(createMissingEntities) {
+function buildCreateParticipantsPayload(createMissingEntities, manualStyleName = '') {
   const analysis = importState.analysis || {};
   const receivedCategories = Array.isArray(analysis.receivedCategories) ? analysis.receivedCategories : [];
   const receivedStyles = Array.isArray(analysis.receivedStyles) ? analysis.receivedStyles : [];
   const receivedClubs = Array.isArray(analysis.receivedClubs) ? analysis.receivedClubs : [];
   const participants = Array.isArray(analysis.participants) ? analysis.participants : [];
+  const normalizedManualStyleName = `${manualStyleName || ''}`.trim();
+  const existingManualStyle = normalizedManualStyleName
+    ? findAvailableStyleByName(normalizedManualStyleName)
+    : null;
+  const existingManualStyleId = existingManualStyle?.id ?? null;
 
   const createCategories = createMissingEntities
     ? [...new Set(
@@ -1560,6 +1671,12 @@ function buildCreateParticipantsPayload(createMissingEntities) {
         .filter(Boolean)
     )]
     : [];
+  const createStyleKeys = new Set(createStyles.map(normalizeImportCompareValue).filter(Boolean));
+
+  if (normalizedManualStyleName && !existingManualStyle && !createStyleKeys.has(normalizeImportCompareValue(normalizedManualStyleName))) {
+    createStyles.push(normalizedManualStyleName);
+    createStyleKeys.add(normalizeImportCompareValue(normalizedManualStyleName));
+  }
 
   const createClubs = createMissingEntities
     ? receivedClubs
@@ -1581,10 +1698,16 @@ function buildCreateParticipantsPayload(createMissingEntities) {
     const name = `${participant?.name || ''}`.trim();
     if (!name) return;
 
+    const participantStyleId = participant?.styleId ?? null;
+    const participantStyleAssigned = `${participant?.style_assigned || ''}`.trim();
+    const shouldApplyManualStyle = shouldRequireImportManualStyle() && !participantStyleId && !participantStyleAssigned && !!normalizedManualStyleName;
+    const effectiveStyleId = participantStyleId || (shouldApplyManualStyle ? existingManualStyleId : null);
+    const effectiveStyleAssigned = participantStyleAssigned || (shouldApplyManualStyle && !existingManualStyle ? normalizedManualStyleName : '');
     const hasMissingCategory = !participant?.categoryId && !!`${participant?.category_assigned || ''}`.trim();
-    const hasMissingStyle = !participant?.styleId && !!`${participant?.style_assigned || ''}`.trim();
+    const hasMissingStyle = !effectiveStyleId && !!effectiveStyleAssigned;
+    const hasExplicitManualStyle = shouldApplyManualStyle && !existingManualStyle;
 
-    if (!createMissingEntities && (hasMissingCategory || hasMissingStyle)) {
+    if (!createMissingEntities && (hasMissingCategory || (hasMissingStyle && !hasExplicitManualStyle))) {
       skippedParticipants.push(name);
       return;
     }
@@ -1594,14 +1717,19 @@ function buildCreateParticipantsPayload(createMissingEntities) {
       return;
     }
 
+    if (!effectiveStyleId && !effectiveStyleAssigned) {
+      skippedParticipants.push(name);
+      return;
+    }
+
     participantsPayload.push({
       name,
       exists: Boolean(participant?.exists),
       categoryId: participant?.categoryId ?? null,
-      styleId: participant?.styleId ?? null,
+      styleId: effectiveStyleId,
       clubId: participant?.clubId ?? null,
       category_assigned: participant?.category_assigned || null,
-      style_assigned: participant?.style_assigned || null,
+      style_assigned: effectiveStyleAssigned || null,
       club_assigned: participant?.club_assigned || null,
       club_email_assigned: participant?.club_email_assigned || null,
       club_location_assigned: participant?.club_location_assigned || null
@@ -1740,8 +1868,13 @@ async function handleImportParticipantsClick() {
   const importParticipantsBtn = document.getElementById('importParticipantsBtn');
   const createMissingEntitiesCheck = document.getElementById('importCreateMissingEntitiesCheck');
   const createMissingEntities = createMissingEntitiesCheck?.checked ?? true;
+  const manualStyleValidation = validateImportManualStyle({ showError: true });
 
-  const payload = buildCreateParticipantsPayload(createMissingEntities);
+  if (!manualStyleValidation.isValid) {
+    return;
+  }
+
+  const payload = buildCreateParticipantsPayload(createMissingEntities, manualStyleValidation.value);
 
   if (!payload.participantsPayload.length) {
     const message = payload.skippedParticipants.length > 0
@@ -2178,6 +2311,7 @@ function renderImportMappingsTable() {
       importState.mappingByColumn[columnIndex] = sanitizeImportMappingValue(target.value);
       persistCurrentImportMappings();
       updateImportMappingValidationHint();
+      updateImportManualStyleVisibility();
     });
 
     mappingCell.appendChild(select);
@@ -2213,20 +2347,15 @@ function updateImportMappingValidationHint() {
 function validateImportMappings(mappingByColumn) {
   const values = Object.values(mappingByColumn || {}).map(sanitizeImportMappingValue).filter(Boolean);
   const hasParticipantName = values.includes('participant_name');
-  const hasCategory = values.includes('category');
-  const hasStyle = values.includes('style');
-  const hasCategoryStyle = values.includes('category_style');
-  const hasStyleCategory = values.includes('style_category');
-
-  const hasCategoryAndStyle = (hasCategory && hasStyle) || hasCategoryStyle || hasStyleCategory;
+  const hasCategory = hasImportCategoryMapping(mappingByColumn);
   const errors = [];
 
   if (!hasParticipantName) {
     errors.push('Debes mapear al menos una columna como \"Nombre Grupo/participante\".');
   }
 
-  if (!hasCategoryAndStyle) {
-    errors.push('Debes mapear \"Categoria\" y \"Estilo\", o \"Categoria - Estilo\", o \"Estilo - Categoria\".');
+  if (!hasCategory) {
+    errors.push('Debes mapear \"Categoria\", o \"Categoria - Estilo\", o \"Estilo - Categoria\".');
   }
 
   return {

@@ -405,7 +405,7 @@
                 <div class="card-body">
                   <div class="alert alert-info py-2 mb-3 small">
                     <div class="fw-semibold">Reglas de mapeo</div>
-                    <div>Debes mapear: <strong>Nombre Grupo/participante</strong> y (<strong>Categoria + Estilo</strong> o <strong>Categoria - Estilo</strong> o <strong>Estilo - Categoria</strong>).</div>
+                    <div>Debes mapear: <strong>Nombre Grupo/participante</strong> y <strong>Categoria</strong> (o <strong>Categoria - Estilo</strong> o <strong>Estilo - Categoria</strong>).</div>
                   </div>
 
                   <div id="importDetectedHeaderRowInfo" class="small text-muted mb-2"></div>
@@ -441,6 +441,21 @@
                 <div class="col-12 col-md-4">
                   <h6 class="fw-semibold mb-2">Clubs detectados</h6>
                   <div id="importClubsList" class="list-group"></div>
+                </div>
+              </div>
+
+              <div id="importManualStyleRow" class="row g-2 mb-3 d-none">
+                <div class="col-12">
+                  <label for="importManualStyleInput" class="form-label mb-1" data-i18n="import_manual_style_label">Style</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="importManualStyleInput"
+                    placeholder="Enter style"
+                    data-i18n-placeholder="import_manual_style_placeholder"
+                    autocomplete="off"
+                    maxlength="80"
+                    disabled>
                 </div>
               </div>
 
