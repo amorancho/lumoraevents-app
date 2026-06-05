@@ -486,6 +486,59 @@ function setupPenaltiesTab() {
     pane.classList.toggle('d-none', !showPenalties);
 }
 
+function getEmailStatusLabel(status) {
+    switch (status) {
+        case 'P':
+            return t('email_status_sending', 'SENDING');
+        case 'S':
+            return t('email_status_sent', 'SENT');
+        case 'E':
+            return t('email_status_error', 'ERROR');
+        default:
+            return t('email_status_not_sent', 'NOT SENT');
+    }
+}
+
+function formatEmailSendDate(sendDate) {
+    if (!sendDate) return null;
+
+    const parsed = new Date(sendDate);
+    if (Number.isNaN(parsed.getTime())) {
+        return sendDate;
+    }
+
+    return parsed.toLocaleString();
+}
+
+function getSchoolStatisticsStatusInfo(school = {}) {
+    const status = school?.email_status ?? school?.statistics_email_status ?? school?.status ?? null;
+    const sendDate = school?.email_send_date ?? school?.statistics_send_date ?? school?.send_date ?? null;
+    const badgeLabel = getEmailStatusLabel(status);
+    const badgeTooltip = sendDate ? formatEmailSendDate(sendDate) : null;
+
+    switch (status) {
+        case 'P':
+            return { badgeClass: 'bg-warning text-dark', badgeLabel, badgeTooltip, sendDate };
+        case 'S':
+            return { badgeClass: 'bg-success', badgeLabel, badgeTooltip, sendDate };
+        case 'E':
+            return { badgeClass: 'bg-danger', badgeLabel, badgeTooltip, sendDate };
+        default:
+            return { badgeClass: 'bg-secondary', badgeLabel, badgeTooltip: null, sendDate: null };
+    }
+}
+
+function setSchoolStatisticsInfo(school = {}) {
+    const infoWrapper = document.getElementById('schoolStatisticsInfo');
+    const statusField = document.getElementById('schoolStatisticsStatus');
+    const sendDateField = document.getElementById('schoolStatisticsSendDate');
+    if (!infoWrapper || !statusField || !sendDateField) return;
+
+    const { badgeLabel, sendDate } = getSchoolStatisticsStatusInfo(school);
+    statusField.value = badgeLabel;
+    sendDateField.value = sendDate ? (formatEmailSendDate(sendDate) || sendDate) : t('not_sent', 'Not sent');
+}
+
 function parseBooleanValue(value) {
     if (value === true || value === 1) return true;
     if (typeof value === 'string') {
@@ -726,7 +779,8 @@ function openSchoolModal({ modal, action, school = null }) {
     const nameInput = document.getElementById('schoolNameInput');
     const locationInput = document.getElementById('schoolLocationInput');
     const emailInput = document.getElementById('schoolEmailInput');
-    if (!form || !title || !nameInput || !locationInput || !emailInput) return;
+    const statisticsInfo = document.getElementById('schoolStatisticsInfo');
+    if (!form || !title || !nameInput || !locationInput || !emailInput || !statisticsInfo) return;
 
     form.dataset.action = action;
     if (action === 'edit' && school) {
@@ -735,12 +789,17 @@ function openSchoolModal({ modal, action, school = null }) {
         locationInput.value = school.location || '';
         emailInput.value = school.email || '';
         title.textContent = t('school_modal_edit', 'Edit school');
+        setSchoolStatisticsInfo(school);
+        statisticsInfo.classList.remove('d-none');
     } else {
         delete form.dataset.id;
         nameInput.value = '';
         locationInput.value = '';
         emailInput.value = '';
         title.textContent = t('school_modal_create', 'Create school');
+        document.getElementById('schoolStatisticsStatus').value = '';
+        document.getElementById('schoolStatisticsSendDate').value = '';
+        statisticsInfo.classList.add('d-none');
     }
 
     modal.show();
@@ -794,6 +853,19 @@ function renderSchoolsTable() {
         const emailCell = document.createElement('td');
         emailCell.textContent = schoolEmail;
 
+        const statisticsCell = document.createElement('td');
+        statisticsCell.className = 'text-center align-middle';
+        const { badgeClass, badgeLabel, badgeTooltip } = getSchoolStatisticsStatusInfo(school);
+        const badge = document.createElement('span');
+        badge.className = `badge ${badgeClass}`;
+        badge.textContent = badgeLabel;
+        if (badgeTooltip) {
+            badge.setAttribute('data-bs-toggle', 'tooltip');
+            badge.setAttribute('data-bs-placement', 'top');
+            badge.setAttribute('title', badgeTooltip);
+        }
+        statisticsCell.appendChild(badge);
+
         const participantsCell = document.createElement('td');
         participantsCell.className = 'text-center align-middle';
         participantsCell.textContent = schoolParticipants;
@@ -825,6 +897,7 @@ function renderSchoolsTable() {
         row.appendChild(nameCell);
         row.appendChild(locationCell);
         row.appendChild(emailCell);
+        row.appendChild(statisticsCell);
         row.appendChild(participantsCell);
         row.appendChild(actionsCell);
 
@@ -840,6 +913,10 @@ function renderSchoolsTable() {
     if (emptyState) {
         emptyState.classList.toggle('d-none', clubsList.length > 0);
     }
+
+    document.querySelectorAll('#clubsTable [data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
 }
 
 async function saveSchool(action, schoolId, schoolModal, saveBtn) {

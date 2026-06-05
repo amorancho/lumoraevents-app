@@ -220,6 +220,7 @@
                         <th data-i18n="school_name">Nombre</th>
                         <th data-i18n="school_location">UbicaciÃ³n</th>
                         <th data-i18n="field_email">Email</th>
+                        <th class="text-center" data-i18n="school_statistics">Estadísticas</th>
                         <th class="text-center" data-i18n="schools_num_participants">Participantes</th>
                         <th class="text-center" data-i18n="criteria_config_actions">Acciones</th>
                       </tr>
@@ -415,6 +416,16 @@
             <div class="mb-3">
               <label class="form-label" for="schoolEmailInput" data-i18n="field_email">Email</label>
               <input type="email" id="schoolEmailInput" class="form-control" maxlength="120">
+            </div>
+            <div class="row d-none" id="schoolStatisticsInfo">
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="schoolStatisticsStatus" data-i18n="school_statistics_status">Estado email estadísticas</label>
+                <input type="text" id="schoolStatisticsStatus" class="form-control bg-light" readonly>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label" for="schoolStatisticsSendDate" data-i18n="school_statistics_send_date">Fecha envío estadísticas</label>
+                <input type="text" id="schoolStatisticsSendDate" class="form-control bg-light" readonly>
+              </div>
             </div>
           </form>
         </div>
