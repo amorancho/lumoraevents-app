@@ -24,6 +24,15 @@
     .results-draggable:active {
       cursor: grabbing;
     }
+    .draggable-item {
+      cursor: grab;
+    }
+    .draggable-item:active {
+      cursor: grabbing;
+    }
+    .drag-icon {
+      cursor: grab;
+    }
     .tie-move-icon {
       font-size: 0.9rem;
     }
@@ -803,6 +812,24 @@
           <div class="modal-footer">
             <button type="button" class="btn btn-primary btn-sm" id="penaltyAssignmentSaveBtn" data-i18n="penalty_modal_save">Save</button>
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="dancersOrderModal" tabindex="-1" aria-labelledby="dancersOrderModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-md">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="dancersOrderModalLabel" data-i18n="dancers_order_modal_title">Ordenar bailarinas</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <ul id="sortableDancers" class="list-group"></ul>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" id="saveDancerOrder" data-i18n="save_dancer_order">Guardar orden</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
           </div>
         </div>
       </div>

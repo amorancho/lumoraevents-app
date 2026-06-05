@@ -33,6 +33,10 @@ const penaltyAssignmentState = {
   penalties: [],
   competitionPenalties: []
 };
+const trackingDancersOrderState = {
+  sortable: null,
+  modal: null
+};
 
 updateElementProperty('backToDashboardBtn', 'href', `dashboard.html?eventId=${encodeURIComponent(eventId)}`);
 
@@ -2029,6 +2033,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await ensureTranslationsReady();
   trackingUiState.sidebarFilters = loadTrackingSidebarFilters();
   initClassificationExportOptions();
+  initTrackingDancersOrderModal();
   initPenaltyAssignmentModal();
   bindSidebarFilters();
   window.addEventListener('beforeunload', stopLiveTrackingPolling);
@@ -3230,6 +3235,8 @@ function renderCompetitions(competitions) {
       alertDiv.textContent = t('no_data');
       container.appendChild(alertDiv);
     } else {
+      const competitionId = comp.id ?? comp.competition_id ?? '';
+      const competitionLabel = `${comp.category_name || ''}${comp.style_name ? ` - ${comp.style_name}` : ''}`.trim();
       const tableContainer = document.createElement('div');
       tableContainer.className = 'table-responsive mx-auto mb-4';
 
@@ -3237,7 +3244,18 @@ function renderCompetitions(competitions) {
         <table class="table table-bordered align-middle text-center">
           <thead class="table-light">
             <tr>
-              <th>${t('dancer')}</th>
+              <th class="position-relative text-center">
+                <span>${t('dancer')}</span>
+                <div class="position-absolute top-50 end-0 translate-middle-y me-2">
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm js-change-dancers-order"
+                    data-competition-id="${escapeHtml(competitionId)}"
+                    ${btnDisabled}>
+                    ${escapeHtml(t('change_order', 'Change order'))}
+                  </button>
+                </div>
+              </th>
               ${comp.judges.map(j => `
                 <th class="text-center">
                   ${j.name}
@@ -3251,9 +3269,6 @@ function renderCompetitions(competitions) {
           </thead>
           <tbody>
       `;
-
-      const competitionId = comp.id ?? comp.competition_id ?? '';
-      const competitionLabel = `${comp.category_name || ''}${comp.style_name ? ` - ${comp.style_name}` : ''}`.trim();
 
       comp.dancers.forEach(d => {
         const dancerFlagHtml = getDancerFlagImgHtml(d.nationality, {
@@ -3518,6 +3533,12 @@ function renderCompetitions(competitions) {
   });
 
   container.querySelectorAll('.js-classification-visible-btn').forEach(bindClassificationVisibilityButton);
+  container.querySelectorAll('.js-change-dancers-order').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (btn.disabled) return;
+      await openTrackingDancersOrderModal(btn.dataset.competitionId);
+    });
+  });
 
   container.querySelectorAll('.btn-export-competition-results').forEach(button => {
     button.addEventListener('click', async () => {
@@ -3556,6 +3577,116 @@ function renderCompetitions(competitions) {
   });
 
   initActionDropdowns(container);
+}
+
+function initTrackingDancersOrderModal() {
+  const modalEl = document.getElementById('dancersOrderModal');
+  const listEl = document.getElementById('sortableDancers');
+  const saveBtn = document.getElementById('saveDancerOrder');
+  if (!modalEl || !listEl || !saveBtn) return;
+  if (modalEl.dataset.initialized === '1') return;
+
+  trackingDancersOrderState.modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  if (window.Sortable) {
+    trackingDancersOrderState.sortable = new Sortable(listEl, {
+      animation: 150,
+      onEnd: () => {
+        document.querySelectorAll('#sortableDancers .order-number').forEach((el, index) => {
+          el.textContent = `${index + 1}.`;
+        });
+      }
+    });
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    const competitionId = String(listEl.dataset.competitionId || '').trim();
+    if (!competitionId) return;
+
+    const dancerIds = Array.from(listEl.querySelectorAll('li'))
+      .map(item => item.dataset.id)
+      .filter(Boolean);
+
+    setButtonLoading(saveBtn, true, t('loading'));
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}/order?event_id=${getEvent().id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          competition_id: competitionId,
+          order: dancerIds
+        })
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error || payload?.message || t('error_title'));
+      }
+
+      trackingDancersOrderState.modal?.hide();
+      await reloadSelectedCompetition({ syncSidebarState: true });
+    } catch (error) {
+      console.error('Error saving dancers order:', error);
+      showMessageModal(error?.message || t('error_title'), t('error_title'));
+    } finally {
+      setButtonLoading(saveBtn, false);
+    }
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    listEl.innerHTML = '';
+    delete listEl.dataset.competitionId;
+  });
+
+  modalEl.dataset.initialized = '1';
+}
+
+async function openTrackingDancersOrderModal(competitionId) {
+  const modalEl = document.getElementById('dancersOrderModal');
+  const listEl = document.getElementById('sortableDancers');
+  if (!modalEl || !listEl || !competitionId) return;
+
+  const modal = trackingDancersOrderState.modal || bootstrap.Modal.getOrCreateInstance(modalEl);
+  trackingDancersOrderState.modal = modal;
+
+  listEl.innerHTML = `
+    <li class="list-group-item d-flex align-items-center justify-content-center py-4">
+      <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+      <span>${escapeHtml(t('loading'))}</span>
+    </li>
+  `;
+  listEl.dataset.competitionId = competitionId;
+  modal.show();
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}/dancers?event_id=${getEvent().id}`);
+    if (!response.ok) {
+      throw new Error('Error fetching dancers');
+    }
+
+    const dancers = await response.json();
+    listEl.innerHTML = '';
+
+    dancers.forEach(dancer => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex align-items-center draggable-item';
+      li.dataset.id = dancer.id;
+      li.innerHTML = `
+        <span class="me-3 text-muted drag-icon"><i class="bi bi-grip-vertical"></i></span>
+        <span class="me-2 order-number">${dancer.position}.</span>
+        ${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'width: 24px;' })}
+        <span class="dancer-name">${escapeHtml(dancer.dancer_name)}</span>
+      `;
+      listEl.appendChild(li);
+    });
+  } catch (error) {
+    console.error('Error loading dancers order modal:', error);
+    listEl.innerHTML = `
+      <li class="list-group-item text-danger text-center py-3">
+        ${escapeHtml(error?.message || t('error_title'))}
+      </li>
+    `;
+  }
 }
 
 function initActionDropdowns(container) {
