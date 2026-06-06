@@ -58,6 +58,19 @@ var title = 'Competitions';
 
 const allowedRoles = ["admin", "organizer"];
 
+function escapeTooltipHtml(value) {
+  return `${value ?? ''}`
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getCompetitionOpenErrors(competition) {
+  return Array.isArray(competition?.open_errors) ? competition.open_errors : [];
+}
+
 function getCurrentCompetitionFilters() {
   return {
     category: `${document.getElementById('categoryFilter')?.value || ''}`.trim().toLowerCase(),
@@ -604,10 +617,18 @@ function loadCompetitions() {
     const isFinished = comp.status === 'FIN';
     const isOpen = comp.status === 'OPE' || comp.status === 'PRO';
     const isClosed = comp.status === 'CLO';
-    const parsedHasCriteria = Number(comp.has_criteria);
-    const hasCriteriaConfigured = Number.isFinite(parsedHasCriteria)
-      ? parsedHasCriteria > 0
-      : Boolean(comp.has_criteria);
+    const openErrors = getCompetitionOpenErrors(comp);
+    const hasOpenErrors = openErrors.length > 0;
+    const openErrorsTooltipItems = openErrors
+      .map((error) => {
+        if (typeof error === 'string') return error.trim();
+        return `${error?.text_error ?? ''}`.trim();
+      })
+      .filter(Boolean)
+      .map((errorText) => `<li>${escapeTooltipHtml(errorText)}</li>`);
+    const openErrorsTooltipHtml = openErrorsTooltipItems.length
+      ? `<div style='text-align:left;'><ul class='mb-0 ps-3'>${openErrorsTooltipItems.join('')}</ul></div>`
+      : escapeTooltipHtml(t('alerts_status_has_errors', 'Open alerts'));
 
     let btnDisabled = '';
     if (getEvent().status === 'finished') {
@@ -636,12 +657,18 @@ function loadCompetitions() {
       `;
     }
 
-    const criteriaCellIcon = hasCriteriaConfigured
-      ? `<i class="bi bi-patch-check-fill text-success" title="${t('criteria_status_configured', 'Criteria configured')}"></i>`
-      : `<i class="bi bi-exclamation-triangle-fill text-warning" title="${t('criteria_status_missing', 'No criteria configured')}"></i>`;
-    const criteriaCell = `
-      <td data-col-criteria class="${showCriteriaPerJudgeUi ? '' : 'd-none'} text-center align-middle">
-        ${criteriaCellIcon}
+    const alertsCellIcon = hasOpenErrors
+      ? `<i class="bi bi-exclamation-triangle-fill text-warning"
+            data-bs-toggle="tooltip"
+            data-bs-placement="top"
+            data-bs-custom-class="alerts-tooltip"
+            data-bs-html="true"
+            data-bs-title="${openErrorsTooltipHtml}"
+            aria-label="${t('alerts_status_has_errors', 'Open alerts')}"></i>`
+      : `<i class="bi bi-patch-check-fill text-success" aria-label="${t('alerts_status_ok', 'No alerts')}"></i>`;
+    const alertsCell = `
+      <td data-col-alerts class="${showCriteriaPerJudgeUi ? '' : 'd-none'} text-center align-middle">
+        ${alertsCellIcon}
       </td>
     `;
     const viewCriteriaActionBtn = showCriteriaPerJudgeUi
@@ -674,7 +701,7 @@ function loadCompetitions() {
           .join(', ')
         }
       </td>
-      ${criteriaCell}
+      ${alertsCell}
       <td class="text-center">
         <span class="badge bg-secondary">${comp.num_dancers}</span>
       </td>
