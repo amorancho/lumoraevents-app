@@ -18,6 +18,14 @@ const resultsFilterState = {
   selectedStyleId: '',
   selectedStyleName: ''
 };
+const STYLE_DETAILS_PLACE_COLUMN_WIDTH_PX = 80;
+const STYLE_DETAILS_TOTAL_COLUMN_WIDTH_PX = 120;
+const STYLE_DETAILS_DANCER_MIN_WIDTH_PX = 0;
+const STYLE_DETAILS_DANCER_MAX_WIDTH_PX = 420;
+const STYLE_DETAILS_MODAL_MAX_WIDTH_PX = 1600;
+const STYLE_DETAILS_MODAL_MIN_WIDTH_PX = 0;
+const STYLE_DETAILS_MODAL_CHROME_WIDTH_PX = 96;
+const STYLE_DETAILS_ROTATE_HINT_MAX_WIDTH_PX = 575;
 
 function shouldShowAvgPlaceBadge() {
   return getEvent().totalSystem === 'AVG_POSJUD';
@@ -163,12 +171,20 @@ function getCriteriaColumnStyle() {
   return `width: ${widthRem}rem; min-width: ${widthRem}rem; max-width: ${widthRem}rem;`;
 }
 
+function getPlaceColumnStyle() {
+  return `width: ${STYLE_DETAILS_PLACE_COLUMN_WIDTH_PX}px; min-width: ${STYLE_DETAILS_PLACE_COLUMN_WIDTH_PX}px; max-width: ${STYLE_DETAILS_PLACE_COLUMN_WIDTH_PX}px;`;
+}
+
 function getPenaltyColumnStyle() {
   return 'width: 3.5rem; min-width: 3.5rem; max-width: 3.5rem;';
 }
 
 function getDancerColumnStyle() {
-  return 'width: 14rem; min-width: 14rem;';
+  return `width: auto; min-width: ${STYLE_DETAILS_DANCER_MIN_WIDTH_PX}px; max-width: ${STYLE_DETAILS_DANCER_MAX_WIDTH_PX}px;`;
+}
+
+function getTotalScoreColumnStyle() {
+  return `width: ${STYLE_DETAILS_TOTAL_COLUMN_WIDTH_PX}px; min-width: ${STYLE_DETAILS_TOTAL_COLUMN_WIDTH_PX}px; max-width: ${STYLE_DETAILS_TOTAL_COLUMN_WIDTH_PX}px;`;
 }
 
 function getCriteriaHeaderTextStyle() {
@@ -196,9 +212,9 @@ function renderStyleTableDancerCell(dancer) {
   const clubLabel = getDancerClubLabel(dancer);
 
   return `
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 style-voting-dancer-cell">
       ${getDancerFlagImgHtml(dancer?.dancer_nationality, { width: 20, height: 20 })}
-      <div class="d-flex flex-column">
+      <div class="d-flex flex-column style-voting-dancer-copy">
         <span class="fw-semibold">${escapeHtml(dancer?.dancer_name || '-')}</span>
         ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
       </div>
@@ -206,27 +222,179 @@ function renderStyleTableDancerCell(dancer) {
   `;
 }
 
+function syncStyleVotingStickyColumns(container = document) {
+  if (!container || typeof container.querySelectorAll !== 'function') return;
+
+  container.querySelectorAll('.style-voting-details-table').forEach((table) => {
+    table.style.setProperty('--style-voting-sticky-place-width', `${STYLE_DETAILS_PLACE_COLUMN_WIDTH_PX}px`);
+    table.style.setProperty('--style-voting-sticky-dancer-width', `${STYLE_DETAILS_DANCER_MAX_WIDTH_PX}px`);
+
+    const dancerCell = table.querySelector('tbody .style-voting-sticky-dancer')
+      || table.querySelector('thead .style-voting-sticky-dancer');
+    if (!dancerCell) return;
+
+    const dancerWidth = Math.ceil(dancerCell.getBoundingClientRect().width);
+    if (dancerWidth > 0) {
+      const clampedDancerWidth = Math.max(
+        STYLE_DETAILS_DANCER_MIN_WIDTH_PX,
+        Math.min(dancerWidth, STYLE_DETAILS_DANCER_MAX_WIDTH_PX)
+      );
+      table.style.setProperty('--style-voting-sticky-dancer-width', `${clampedDancerWidth}px`);
+    }
+  });
+}
+
+function syncStyleVotingModalWidth(styleVotingModalEl) {
+  if (!styleVotingModalEl) return;
+
+  const modalDialog = styleVotingModalEl.querySelector('.modal-dialog');
+  const table = styleVotingModalEl.querySelector('.style-voting-details-table');
+  if (!modalDialog || !table) return;
+
+  const viewportMaxWidth = Math.floor(window.innerWidth * 0.96);
+  const maxAllowedWidth = Math.min(STYLE_DETAILS_MODAL_MAX_WIDTH_PX, viewportMaxWidth);
+  const desiredWidth = Math.ceil(table.scrollWidth) + STYLE_DETAILS_MODAL_CHROME_WIDTH_PX;
+  const clampedWidth = Math.min(
+    maxAllowedWidth,
+    Math.max(STYLE_DETAILS_MODAL_MIN_WIDTH_PX, desiredWidth)
+  );
+
+  modalDialog.style.setProperty('--bs-modal-width', `${clampedWidth}px`);
+}
+
+function shouldShowStyleVotingOrientationHint() {
+  return window.innerWidth <= STYLE_DETAILS_ROTATE_HINT_MAX_WIDTH_PX
+    && window.innerHeight > window.innerWidth;
+}
+
+function syncStyleVotingOrientationHint(styleVotingModalEl) {
+  if (!styleVotingModalEl) return;
+
+  const hintEl = styleVotingModalEl.querySelector('#styleVotingOrientationHint');
+  if (!hintEl) return;
+
+  hintEl.classList.toggle('d-none', !shouldShowStyleVotingOrientationHint());
+}
+
+function updateStyleVotingScrollHint(wrapper) {
+  if (!wrapper) return;
+
+  const hasHorizontalOverflow = wrapper.scrollWidth > wrapper.clientWidth + 1;
+  const maxScrollLeft = Math.max(wrapper.scrollWidth - wrapper.clientWidth, 0);
+  const isAtStart = wrapper.scrollLeft <= 1;
+  const isAtEnd = wrapper.scrollLeft >= maxScrollLeft - 1;
+
+  wrapper.classList.toggle('style-voting-details-table-wrap-scrollable', hasHorizontalOverflow);
+  wrapper.classList.toggle('style-voting-details-table-wrap-can-scroll-left', hasHorizontalOverflow && !isAtStart);
+  wrapper.classList.toggle('style-voting-details-table-wrap-can-scroll-right', hasHorizontalOverflow && !isAtEnd);
+}
+
+function syncStyleVotingScrollHints(container = document) {
+  if (!container || typeof container.querySelectorAll !== 'function') return;
+
+  container.querySelectorAll('.style-voting-details-table-wrap').forEach((wrapper) => {
+    if (!wrapper.dataset.scrollHintBound) {
+      wrapper.addEventListener('scroll', () => {
+        updateStyleVotingScrollHint(wrapper);
+      }, { passive: true });
+      wrapper.dataset.scrollHintBound = 'true';
+    }
+
+    updateStyleVotingScrollHint(wrapper);
+  });
+}
+
+function getCriteriaPositionNumber(criteria) {
+  const rawPosition = criteria?.criteria_position;
+  if (rawPosition === undefined || rawPosition === null || rawPosition === '') return null;
+
+  const numericPosition = Number(rawPosition);
+  return Number.isFinite(numericPosition) ? numericPosition : null;
+}
+
+function sumCriteriaMaxScore(currentMaxScore, nextMaxScore) {
+  if (nextMaxScore === undefined || nextMaxScore === null || nextMaxScore === '') {
+    return currentMaxScore ?? null;
+  }
+
+  const numericNextMaxScore = Number(nextMaxScore);
+  if (!Number.isFinite(numericNextMaxScore)) {
+    return currentMaxScore ?? nextMaxScore;
+  }
+
+  const numericCurrentMaxScore = Number(currentMaxScore);
+  return Number.isFinite(numericCurrentMaxScore)
+    ? numericCurrentMaxScore + numericNextMaxScore
+    : numericNextMaxScore;
+}
+
+function compareCriteriaByPosition(a, b) {
+  const positionA = getCriteriaPositionNumber(a);
+  const positionB = getCriteriaPositionNumber(b);
+
+  if (positionA !== null || positionB !== null) {
+    if (positionA === null) return 1;
+    if (positionB === null) return -1;
+    if (positionA !== positionB) return positionA - positionB;
+  }
+
+  return (a?._orderIndex ?? 0) - (b?._orderIndex ?? 0);
+}
+
 function collectStyleCriteriaSummary(styleObj) {
-  const criteria = [];
-  const criteriaKeys = new Set();
+  const criteriaMap = new Map();
+  let orderIndex = 0;
 
   (styleObj?.clasification || []).forEach((dancer) => {
-    (dancer?.votes || []).forEach((vote) => {
+    (dancer?.votes || []).forEach((vote, voteIndex) => {
+      const voteJudgeKey = normalizeLookupKey(vote?.judge_id ?? vote?.judge_name ?? `judge_${voteIndex}`);
       (vote?.criteria || []).forEach((criterion) => {
         const key = normalizeLookupKey(criterion?.name);
-        if (!key || criteriaKeys.has(key)) return;
-        criteriaKeys.add(key);
-        criteria.push({
-          key,
-          name: String(criterion?.name || '').trim(),
-          percentage: criterion?.percentage,
-          max_score: criterion?.max_score
-        });
+        if (!key) return;
+
+        let summary = criteriaMap.get(key);
+        if (!summary) {
+          summary = {
+            key,
+            name: String(criterion?.name || '').trim(),
+            percentage: criterion?.percentage,
+            max_score: null,
+            criteria_position: criterion?.criteria_position,
+            _orderIndex: orderIndex++,
+            _maxScoreSources: new Set()
+          };
+          criteriaMap.set(key, summary);
+        }
+
+        if (!summary.name) {
+          summary.name = String(criterion?.name || '').trim();
+        }
+
+        if ((summary.percentage === undefined || summary.percentage === null || summary.percentage === '')
+          && criterion?.percentage !== undefined && criterion?.percentage !== null && criterion?.percentage !== '') {
+          summary.percentage = criterion.percentage;
+        }
+
+        const currentPosition = getCriteriaPositionNumber(summary);
+        const nextPosition = getCriteriaPositionNumber(criterion);
+        if (currentPosition === null && nextPosition !== null) {
+          summary.criteria_position = criterion.criteria_position;
+        } else if (currentPosition !== null && nextPosition !== null && nextPosition < currentPosition) {
+          summary.criteria_position = criterion.criteria_position;
+        }
+
+        const maxScoreSourceKey = `${voteJudgeKey}::${key}`;
+        if (!summary._maxScoreSources.has(maxScoreSourceKey)) {
+          summary._maxScoreSources.add(maxScoreSourceKey);
+          summary.max_score = sumCriteriaMaxScore(summary.max_score, criterion?.max_score);
+        }
       });
     });
   });
 
-  return criteria;
+  return Array.from(criteriaMap.values())
+    .sort(compareCriteriaByPosition)
+    .map(({ _maxScoreSources, ...criterion }) => criterion);
 }
 
 function collectStyleJudgeGroups(styleObj) {
@@ -289,14 +457,17 @@ function renderStyleCriteriaSummaryTable(styleObj) {
       (vote?.criteria || []).forEach((criterion) => {
         const criterionKey = normalizeLookupKey(criterion?.name);
         if (!criterionKey) return;
-        const currentTotal = criteriaTotals.get(criterionKey) || 0;
-        criteriaTotals.set(criterionKey, currentTotal + (Number(criterion?.score) || 0));
+
+        const currentTotals = criteriaTotals.get(criterionKey) || { score: 0, max_score: null };
+        currentTotals.score += Number(criterion?.score) || 0;
+        currentTotals.max_score = sumCriteriaMaxScore(currentTotals.max_score, criterion?.max_score);
+        criteriaTotals.set(criterionKey, currentTotals);
       });
     });
 
     const criteriaCells = criteria.map((criterion) => {
-      const hasValue = criteriaTotals.has(criterion.key);
-      return `<td class="text-center align-middle" style="${getCriteriaColumnStyle()}">${hasValue ? formatScoreValue(criteriaTotals.get(criterion.key)) : '-'}</td>`;
+      const currentTotals = criteriaTotals.get(criterion.key);
+      return `<td class="text-center align-middle" style="${getCriteriaColumnStyle()}">${currentTotals ? formatScoreValue(currentTotals.score) : '-'}</td>`;
     }).join('');
     const penaltiesCell = showPenalties
       ? `<td class="text-center fw-semibold" style="${getPenaltyColumnStyle()}">${formatScoreValue(getPenaltyTotal(dancer?.penalties))}</td>`
@@ -304,9 +475,9 @@ function renderStyleCriteriaSummaryTable(styleObj) {
 
     return `
       <tr>
-        <td class="text-center fw-semibold">${displayPositions[index]}</td>
-        <td>${renderStyleTableDancerCell(dancer)}</td>
-        <td class="text-center fw-semibold">${formatScoreValue(dancer?.total_score)}</td>
+        <td class="text-center fw-semibold style-voting-sticky-col style-voting-sticky-place" style="${getPlaceColumnStyle()}">${displayPositions[index]}</td>
+        <td class="style-voting-sticky-col style-voting-sticky-dancer" style="${getDancerColumnStyle()}">${renderStyleTableDancerCell(dancer)}</td>
+        <td class="text-center fw-semibold" style="${getTotalScoreColumnStyle()}">${formatScoreValue(dancer?.total_score)}</td>
         ${penaltiesCell}
         ${criteriaCells}
       </tr>
@@ -314,20 +485,20 @@ function renderStyleCriteriaSummaryTable(styleObj) {
   }).join('');
 
   return `
-    <div class="table-responsive">
-      <table class="table table-bordered table-sm align-middle mb-0">
+    <div class="table-responsive style-voting-details-table-wrap">
+      <table class="table table-bordered table-sm align-middle mb-0 style-voting-details-table">
         <colgroup>
-          <col>
+          <col style="${getPlaceColumnStyle()}">
           <col style="${getDancerColumnStyle()}">
-          <col>
+          <col style="${getTotalScoreColumnStyle()}">
           ${showPenalties ? `<col style="${getPenaltyColumnStyle()}">` : ''}
           ${criteria.map(() => `<col style="${getCriteriaColumnStyle()}">`).join('')}
         </colgroup>
         <thead class="table-light">
           <tr>
-            <th class="text-center">${escapeHtml(t('place', 'Place'))}</th>
-            <th>${escapeHtml(t('dancer', 'Dancer'))}</th>
-            <th class="text-center">${escapeHtml(t('total_score', 'Total Score'))}</th>
+            <th class="text-center style-voting-sticky-col style-voting-sticky-place" style="${getPlaceColumnStyle()}">${escapeHtml(t('place', 'Place'))}</th>
+            <th class="style-voting-sticky-col style-voting-sticky-dancer" style="${getDancerColumnStyle()}">${escapeHtml(t('dancer', 'Dancer'))}</th>
+            <th class="text-center style-voting-total-header" style="${getTotalScoreColumnStyle()}">${escapeHtml(t('total_score', 'Total Score'))}</th>
             ${showPenalties ? `<th class="text-center" style="${getPenaltyColumnStyle()}">${escapeHtml(t('penalties_abbr', 'Pen.'))}</th>` : ''}
             ${headerCells}
           </tr>
@@ -397,9 +568,9 @@ function renderStyleJudgeGroupedTable(styleObj) {
 
     return `
       <tr>
-        <td class="text-center fw-semibold">${displayPositions[index]}</td>
-        <td>${renderStyleTableDancerCell(dancer)}</td>
-        <td class="text-center fw-semibold">${formatScoreValue(dancer?.total_score)}</td>
+        <td class="text-center fw-semibold style-voting-sticky-col style-voting-sticky-place" style="${getPlaceColumnStyle()}">${displayPositions[index]}</td>
+        <td class="style-voting-sticky-col style-voting-sticky-dancer" style="${getDancerColumnStyle()}">${renderStyleTableDancerCell(dancer)}</td>
+        <td class="text-center fw-semibold" style="${getTotalScoreColumnStyle()}">${formatScoreValue(dancer?.total_score)}</td>
         ${penaltiesCell}
         ${judgeCells}
       </tr>
@@ -407,12 +578,12 @@ function renderStyleJudgeGroupedTable(styleObj) {
   }).join('');
 
   return `
-    <div class="table-responsive">
-      <table class="table table-bordered table-sm align-middle mb-0">
+    <div class="table-responsive style-voting-details-table-wrap">
+      <table class="table table-bordered table-sm align-middle mb-0 style-voting-details-table">
         <colgroup>
-          <col>
+          <col style="${getPlaceColumnStyle()}">
           <col style="${getDancerColumnStyle()}">
-          <col>
+          <col style="${getTotalScoreColumnStyle()}">
           ${showPenalties ? `<col style="${getPenaltyColumnStyle()}">` : ''}
           ${judgeGroups.map((judgeGroup) => {
             if (!judgeGroup.criteria.length) {
@@ -423,9 +594,9 @@ function renderStyleJudgeGroupedTable(styleObj) {
         </colgroup>
         <thead class="table-light">
           <tr>
-            <th class="text-center" rowspan="2">${escapeHtml(t('place', 'Place'))}</th>
-            <th rowspan="2">${escapeHtml(t('dancer', 'Dancer'))}</th>
-            <th class="text-center" rowspan="2">${escapeHtml(t('total_score', 'Total Score'))}</th>
+            <th class="text-center style-voting-sticky-col style-voting-sticky-place" rowspan="2" style="${getPlaceColumnStyle()}">${escapeHtml(t('place', 'Place'))}</th>
+            <th class="style-voting-sticky-col style-voting-sticky-dancer" rowspan="2" style="${getDancerColumnStyle()}">${escapeHtml(t('dancer', 'Dancer'))}</th>
+            <th class="text-center style-voting-total-header" rowspan="2" style="${getTotalScoreColumnStyle()}">${escapeHtml(t('total_score', 'Total Score'))}</th>
             ${showPenalties ? `<th class="text-center" rowspan="2" style="${getPenaltyColumnStyle()}">${escapeHtml(t('penalties_abbr', 'Pen.'))}</th>` : ''}
             ${judgeHeaderRow}
           </tr>
@@ -837,7 +1008,32 @@ document.addEventListener('DOMContentLoaded', async () => {
   const styleVotingModalEl = document.getElementById('styleVotingDetailsModal');
   let styleVotingModal = null;
   const styleDetailsContainer = document.getElementById('styleVotingDetailsContainer');
-  if (styleVotingModalEl) styleVotingModal = new bootstrap.Modal(styleVotingModalEl);
+  if (styleVotingModalEl) {
+    styleVotingModal = new bootstrap.Modal(styleVotingModalEl);
+    styleVotingModalEl.addEventListener('show.bs.modal', () => {
+      requestAnimationFrame(() => {
+        syncStyleVotingOrientationHint(styleVotingModalEl);
+        syncStyleVotingStickyColumns(styleVotingModalEl);
+        syncStyleVotingModalWidth(styleVotingModalEl);
+        syncStyleVotingScrollHints(styleVotingModalEl);
+      });
+    });
+    styleVotingModalEl.addEventListener('shown.bs.modal', () => {
+      syncStyleVotingOrientationHint(styleVotingModalEl);
+      syncStyleVotingStickyColumns(styleVotingModalEl);
+      syncStyleVotingModalWidth(styleVotingModalEl);
+      syncStyleVotingScrollHints(styleVotingModalEl);
+    });
+  }
+
+  window.addEventListener('resize', () => {
+    if (styleVotingModalEl?.classList.contains('show')) {
+      syncStyleVotingOrientationHint(styleVotingModalEl);
+      syncStyleVotingStickyColumns(styleVotingModalEl);
+      syncStyleVotingModalWidth(styleVotingModalEl);
+      syncStyleVotingScrollHints(styleVotingModalEl);
+    }
+  });
 
   categorySelect.addEventListener('change', async () => {
     syncResultsFilterStateFromControls();

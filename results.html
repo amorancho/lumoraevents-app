@@ -123,6 +123,118 @@
         white-space: nowrap;
       }
     }
+    .style-voting-details-table-wrap {
+      position: relative;
+      overflow-x: auto;
+      overflow-y: visible;
+    }
+    .style-voting-details-table {
+      --style-voting-sticky-place-width: 120px;
+      --style-voting-sticky-dancer-width: 420px;
+      width: max-content;
+      min-width: max-content;
+      table-layout: auto;
+    }
+    .style-voting-details-table th,
+    .style-voting-details-table td {
+      white-space: nowrap;
+    }
+    .style-voting-details-table .style-voting-sticky-col {
+      position: sticky;
+      overflow: hidden;
+      background: #fff;
+    }
+    .style-voting-details-table .style-voting-sticky-place {
+      left: 0;
+      z-index: 3;
+    }
+    .style-voting-details-table .style-voting-sticky-dancer {
+      left: var(--style-voting-sticky-place-width);
+      z-index: 2;
+      min-width: 0;
+      white-space: normal;
+      box-shadow: 0.65rem 0 0.9rem -0.8rem rgba(15, 23, 42, 0.32);
+    }
+    .style-voting-details-table .style-voting-sticky-total {
+      left: calc(var(--style-voting-sticky-place-width) + var(--style-voting-sticky-dancer-width));
+      z-index: 1;
+    }
+    .style-voting-details-table thead .style-voting-sticky-col {
+      background: var(--bs-light);
+    }
+    .style-voting-details-table thead .style-voting-sticky-place {
+      z-index: 9;
+    }
+    .style-voting-details-table thead .style-voting-sticky-dancer {
+      z-index: 8;
+    }
+    .style-voting-details-table thead .style-voting-sticky-total {
+      z-index: 7;
+    }
+    .style-voting-details-table .style-voting-total-header {
+      white-space: normal;
+      line-height: 1.1;
+    }
+    .style-voting-orientation-hint {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .style-voting-details-table tbody tr:nth-child(odd) > * {
+      background: #f8fafc;
+    }
+    .style-voting-details-table tbody tr:nth-child(even) > * {
+      background: #ffffff;
+    }
+    .style-voting-details-table tbody tr:nth-child(odd) > .style-voting-sticky-col {
+      background: #f8fafc;
+    }
+    .style-voting-details-table tbody tr:nth-child(even) > .style-voting-sticky-col {
+      background: #ffffff;
+    }
+    .style-voting-dancer-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+      white-space: normal;
+    }
+    .style-voting-dancer-copy {
+      flex: 1 1 auto;
+      min-width: 0;
+      white-space: normal;
+    }
+    .style-voting-dancer-copy .fw-semibold,
+    .style-voting-dancer-copy .text-muted {
+      display: block;
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    @media (max-width: 767.98px) {
+      .style-voting-details-table-wrap::before,
+      .style-voting-details-table-wrap::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 18px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.18s ease;
+        z-index: 11;
+      }
+      .style-voting-details-table-wrap.style-voting-details-table-wrap-can-scroll-left::before {
+        left: 0;
+        opacity: 1;
+        background: linear-gradient(to right, rgba(15, 23, 42, 0.12), rgba(15, 23, 42, 0));
+      }
+      .style-voting-details-table-wrap.style-voting-details-table-wrap-can-scroll-right::after {
+        right: 0;
+        opacity: 1;
+        background: linear-gradient(to left, rgba(15, 23, 42, 0.22), rgba(15, 23, 42, 0));
+      }
+    }
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
@@ -217,7 +329,7 @@
   </div>
 
   <div class="modal fade" id="styleVotingDetailsModal" tabindex="-1" aria-labelledby="styleVotingDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -226,6 +338,10 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
         <div class="modal-body">
+          <div id="styleVotingOrientationHint" class="alert alert-warning py-2 px-3 small d-none style-voting-orientation-hint" role="alert">
+            <i class="bi bi-phone-landscape"></i>
+            <span data-i18n="rotate_device_hint">For a better view of this table, rotate your device horizontally.</span>
+          </div>
           <div id="styleVotingDetailsContainer"></div>
         </div>
         <div class="modal-footer">
