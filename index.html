@@ -7,6 +7,348 @@
   <title>LumoraEvents</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --event-details-hero-start: #0b2545;
+      --event-details-hero-end: #1f5aa6;
+      --event-details-accent: #ffd24d;
+      --event-details-surface: #f6f9fc;
+    }
+
+    .event-details-modal .modal-content {
+      border: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      box-shadow: 0 32px 80px rgba(15, 45, 85, 0.24);
+    }
+
+    .event-details-modal .modal-header {
+      position: relative;
+      padding: 0;
+      border-bottom: 0;
+      background:
+        radial-gradient(circle at top right, rgba(255, 210, 77, 0.3), transparent 32%),
+        radial-gradient(circle at left center, rgba(255, 255, 255, 0.12), transparent 28%),
+        linear-gradient(135deg, var(--event-details-hero-start) 0%, var(--event-details-hero-end) 100%);
+      color: #fff;
+    }
+
+    .event-details-modal .modal-header::after {
+      content: "";
+      position: absolute;
+      inset: auto -10% -28px;
+      height: 64px;
+      background: rgba(255, 255, 255, 0.08);
+      filter: blur(18px);
+    }
+
+    .event-details-hero {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      padding: 1.35rem 1.5rem 1.55rem;
+    }
+
+    .event-details-close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      z-index: 2;
+      width: 2.9rem;
+      height: 2.9rem;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      backdrop-filter: blur(10px);
+    }
+
+    .event-details-close:hover {
+      background: rgba(255, 255, 255, 0.24);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .event-details-close i {
+      font-size: 1rem;
+      line-height: 1;
+    }
+
+    .event-details-logo-shell {
+      width: min(100%, 180px);
+      min-height: 120px;
+      padding: 0.85rem;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .event-details-logo-shell img {
+      max-width: 100%;
+      max-height: 105px;
+      object-fit: contain;
+    }
+
+    .event-details-title {
+      font-size: clamp(1.7rem, 3vw, 2.45rem);
+      line-height: 1.1;
+    }
+
+    .event-details-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.95rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.16);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .event-details-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .event-details-meta-card {
+      padding: 1rem 1.1rem;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      min-height: 100%;
+    }
+
+    .event-details-meta-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255, 255, 255, 0.72);
+      margin-bottom: 0.35rem;
+    }
+
+    .event-details-meta-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      word-break: break-word;
+    }
+
+    .event-details-modal .modal-body {
+      padding: 1.75rem 2rem 2rem;
+      background:
+        radial-gradient(circle at top right, rgba(31, 90, 166, 0.06), transparent 24%),
+        linear-gradient(180deg, var(--event-details-surface) 0%, #ffffff 100%);
+    }
+
+    .event-details-panel {
+      height: 100%;
+      border: 1px solid rgba(11, 37, 69, 0.08);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 18px 40px rgba(15, 45, 85, 0.08);
+      padding: 1.35rem;
+    }
+
+    .event-details-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      color: #0b2545;
+      margin-bottom: 1rem;
+    }
+
+    .event-details-panel-title i {
+      color: #1f5aa6;
+      font-size: 1.1rem;
+    }
+
+    .event-details-description {
+      color: #24384d;
+      line-height: 1.7;
+    }
+
+    .event-details-description :last-child {
+      margin-bottom: 0;
+    }
+
+    .event-details-fallback {
+      color: #6c7c8f;
+      font-style: italic;
+      margin-bottom: 0;
+    }
+
+    .event-details-info-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.85rem;
+    }
+
+    .event-details-info-item {
+      display: flex;
+      gap: 0.9rem;
+      align-items: flex-start;
+      padding: 0.9rem 1rem;
+      border-radius: 18px;
+      background: #f7faff;
+      border: 1px solid rgba(31, 90, 166, 0.08);
+      min-height: 100%;
+    }
+
+    .event-details-info-icon {
+      width: 2.4rem;
+      height: 2.4rem;
+      border-radius: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(31, 90, 166, 0.12), rgba(255, 210, 77, 0.28));
+      color: #1f5aa6;
+      flex: 0 0 auto;
+    }
+
+    .event-details-info-label {
+      display: block;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #73869a;
+      margin-bottom: 0.15rem;
+    }
+
+    .event-details-info-value {
+      color: #17314a;
+      font-weight: 600;
+      word-break: break-word;
+    }
+
+    .event-details-placeholder {
+      color: #7c8ea1;
+      font-weight: 500;
+    }
+
+    .event-details-action {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      padding: 1rem 1.05rem;
+      border-radius: 18px;
+      text-decoration: none;
+      color: #0b2545;
+      background: linear-gradient(135deg, rgba(31, 90, 166, 0.08), rgba(255, 210, 77, 0.12));
+      border: 1px solid rgba(31, 90, 166, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .event-details-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 26px rgba(15, 45, 85, 0.12);
+      border-color: rgba(31, 90, 166, 0.22);
+      color: #0b2545;
+    }
+
+    .event-details-action.is-disabled {
+      cursor: default;
+      box-shadow: none;
+      transform: none;
+      opacity: 0.78;
+    }
+
+    .event-details-action.is-disabled:hover {
+      transform: none;
+      box-shadow: none;
+      border-color: rgba(31, 90, 166, 0.1);
+      color: #0b2545;
+    }
+
+    .event-details-action-icon {
+      width: 2.7rem;
+      height: 2.7rem;
+      border-radius: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: linear-gradient(135deg, #1f5aa6 0%, #347fe4 100%);
+      flex: 0 0 auto;
+    }
+
+    .event-details-action-label {
+      display: block;
+      font-weight: 700;
+    }
+
+    .event-details-action-subtitle {
+      display: block;
+      color: #5f7388;
+      font-size: 0.88rem;
+      word-break: break-word;
+    }
+
+    .event-details-link {
+      color: #17314a;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(23, 49, 74, 0.18);
+    }
+
+    .event-details-link:hover {
+      color: #1f5aa6;
+      border-bottom-color: rgba(31, 90, 166, 0.35);
+    }
+
+    .event-details-bases-card {
+      min-height: 100%;
+    }
+
+    .event-details-loading {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      color: #365676;
+      padding: 0.3rem 0;
+    }
+
+    .event-details-error {
+      border-radius: 18px;
+      margin-bottom: 0;
+    }
+
+    @media (max-width: 767.98px) {
+      .event-details-hero {
+        padding: 1.05rem 1rem 1.15rem;
+      }
+
+      .event-details-modal .modal-body {
+        padding: 1.2rem;
+      }
+
+      .event-details-logo-shell {
+        width: min(100%, 150px);
+        min-height: 100px;
+      }
+
+      .event-details-logo-shell img {
+        max-height: 86px;
+      }
+
+      .event-details-info-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -109,6 +451,57 @@
     <div id="eventsContainer" class="d-flex flex-column gap-4"></div>
   </div>
 
+  <div class="modal fade event-details-modal" id="eventDetailsModal" tabindex="-1" aria-labelledby="eventDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="btn event-details-close" data-bs-dismiss="modal" data-i18n-title="close" title="Close" aria-label="Close">
+            <i class="bi bi-x-lg" aria-hidden="true"></i>
+          </button>
+          <div class="event-details-hero">
+            <div class="row g-4 align-items-center">
+              <div class="col-12 col-lg-4 d-flex justify-content-center justify-content-lg-start">
+                <div class="event-details-logo-shell">
+                  <img id="eventDetailsLogo" src="" alt="">
+                </div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <div class="d-flex flex-column gap-3">
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="event-details-status-badge" id="eventDetailsStatusBadge"></span>
+                  </div>
+                  <div>
+                    <h2 class="fw-bold mb-0 event-details-title" id="eventDetailsModalLabel">Event details</h2>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="row g-4">
+            <div class="col-12">
+              <div id="eventDetailsInfoList" class="event-details-info-list"></div>
+            </div>
+            <div class="col-12">
+              <div class="event-details-panel">
+                <div class="event-details-panel-title">
+                  <i class="bi bi-card-text"></i>
+                  <span data-i18n="event_details_description_title">About this event</span>
+                </div>
+                <div id="eventDetailsDescription" class="event-details-description"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0 px-4 pb-4">
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal" data-i18n="close">Close</button>
+          <a href="#" class="btn btn-warning text-dark fw-semibold rounded-pill px-4" id="eventDetailsGoToEventBtn" data-i18n="go_to_event">Go to Event</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer class="container-fluid bg-dark text-white py-4 mt-auto">
 
     <div class="row text-center text-md-start align-items-center">
@@ -137,6 +530,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/common.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
   <script src="js/index.js"></script>
 
 </body></html>
