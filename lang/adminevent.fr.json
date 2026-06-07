@@ -110,7 +110,25 @@
   "error_loading_event_information": "Erreur lors du chargement des informations de l evenement",
   "error_saving_event_data": "Erreur lors de l enregistrement des donnees de l evenement",
   "success_event_updated": "Evenement mis a jour avec succes",
-  "error_event_update_failed": "Impossible de mettre a jour l evenement"
+  "error_event_update_failed": "Impossible de mettre a jour l evenement",
+  "event_info_button": "Fiche evenement",
+  "event_info_modal_title": "Fiche evenement",
+  "event_info_location": "Localisation",
+  "event_info_google_maps": "Google Maps",
+  "event_info_maps_placeholder": "https://maps.google.com/...",
+  "event_info_email_contact": "Email de contact",
+  "event_info_phone_contact": "Telephone de contact",
+  "event_info_organizer": "Organisateur",
+  "event_info_bases": "Reglement",
+  "event_info_bases_placeholder": "https://.../reglement.pdf",
+  "event_info_description": "Description",
+  "event_info_description_help": "Seuls des formats surs sont enregistres : titres, paragraphes, gras, italique, souligne, listes et liens.",
+  "event_info_save": "Enregistrer",
+  "event_info_unsaved_confirm": "Des modifications non enregistrees existent. Voulez-vous quitter sans enregistrer ?",
+  "event_info_loading_error": "Erreur lors du chargement de la fiche evenement",
+  "event_info_saving_error": "Erreur lors de l enregistrement de la fiche evenement",
+  "event_info_saved": "Fiche evenement enregistree avec succes",
+  "event_info_editor_unavailable": "L editeur de la fiche evenement n est pas disponible."
 }
 
 

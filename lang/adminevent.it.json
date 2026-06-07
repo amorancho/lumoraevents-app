@@ -110,7 +110,25 @@
   "error_loading_event_information": "Errore nel caricamento delle informazioni evento",
   "error_saving_event_data": "Errore nel salvataggio dei dati evento",
   "success_event_updated": "Evento aggiornato correttamente",
-  "error_event_update_failed": "Impossibile aggiornare l evento"
+  "error_event_update_failed": "Impossibile aggiornare l evento",
+  "event_info_button": "Scheda evento",
+  "event_info_modal_title": "Scheda evento",
+  "event_info_location": "Localizzazione",
+  "event_info_google_maps": "Google Maps",
+  "event_info_maps_placeholder": "https://maps.google.com/...",
+  "event_info_email_contact": "Email di contatto",
+  "event_info_phone_contact": "Telefono di contatto",
+  "event_info_organizer": "Organizzatore",
+  "event_info_bases": "Regolamento",
+  "event_info_bases_placeholder": "https://.../regolamento.pdf",
+  "event_info_description": "Descrizione",
+  "event_info_description_help": "Vengono salvati solo formati sicuri: titoli, paragrafi, grassetto, corsivo, sottolineato, liste e link.",
+  "event_info_save": "Salva",
+  "event_info_unsaved_confirm": "Ci sono modifiche non salvate. Vuoi uscire senza salvare?",
+  "event_info_loading_error": "Errore durante il caricamento della scheda evento",
+  "event_info_saving_error": "Errore durante il salvataggio della scheda evento",
+  "event_info_saved": "Scheda evento salvata correttamente",
+  "event_info_editor_unavailable": "L editor della scheda evento non e disponibile."
 }
 
 

@@ -109,7 +109,25 @@
   "error_loading_event_information": "Error loading event information",
   "error_saving_event_data": "Error saving event data",
   "success_event_updated": "Event updated successfully",
-  "error_event_update_failed": "Failed to update event"
+  "error_event_update_failed": "Failed to update event",
+  "event_info_button": "Event sheet",
+  "event_info_modal_title": "Event sheet",
+  "event_info_location": "Location",
+  "event_info_google_maps": "Google Maps",
+  "event_info_maps_placeholder": "https://maps.google.com/...",
+  "event_info_email_contact": "Contact email",
+  "event_info_phone_contact": "Contact phone",
+  "event_info_organizer": "Organizer",
+  "event_info_bases": "Rules",
+  "event_info_bases_placeholder": "https://.../rules.pdf",
+  "event_info_description": "Description",
+  "event_info_description_help": "Only safe formatting is stored: headings, paragraphs, bold, italic, underline, lists and links.",
+  "event_info_save": "Save",
+  "event_info_unsaved_confirm": "There are unsaved changes. Do you want to leave without saving?",
+  "event_info_loading_error": "Error loading the event sheet",
+  "event_info_saving_error": "Error saving the event sheet",
+  "event_info_saved": "Event sheet saved successfully",
+  "event_info_editor_unavailable": "The event sheet editor is not available."
 }
 
 

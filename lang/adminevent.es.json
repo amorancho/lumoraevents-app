@@ -109,7 +109,25 @@
   "error_loading_event_information": "Error cargando información del evento",
   "error_saving_event_data": "Error guardando datos del evento",
   "success_event_updated": "Evento actualizado correctamente",
-  "error_event_update_failed": "No se pudo actualizar el evento"
+  "error_event_update_failed": "No se pudo actualizar el evento",
+  "event_info_button": "Ficha del evento",
+  "event_info_modal_title": "Ficha del evento",
+  "event_info_location": "Localizacion",
+  "event_info_google_maps": "Google maps",
+  "event_info_maps_placeholder": "https://maps.google.com/...",
+  "event_info_email_contact": "Email de contacto",
+  "event_info_phone_contact": "Telefono de contacto",
+  "event_info_organizer": "Organizador",
+  "event_info_bases": "Bases",
+  "event_info_bases_placeholder": "https://.../bases.pdf",
+  "event_info_description": "Descripcion",
+  "event_info_description_help": "Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.",
+  "event_info_save": "Guardar",
+  "event_info_unsaved_confirm": "Hay cambios sin guardar. Quieres salir sin guardar?",
+  "event_info_loading_error": "Error cargando la ficha del evento",
+  "event_info_saving_error": "Error guardando la ficha del evento",
+  "event_info_saved": "Ficha del evento guardada correctamente",
+  "event_info_editor_unavailable": "El editor de la ficha del evento no esta disponible."
 }
 
 

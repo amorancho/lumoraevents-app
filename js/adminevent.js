@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPosterModal();
   initExportEventModal();
   initStatusToggleModal();
+  initEventInfoModal();
   initTooltips();
 
   const toggleVisible = document.getElementById('visible');
@@ -92,6 +93,27 @@ const PLANB_EXPORT_MODAL_COPY = {
     info: 'A exportacao vai gerar um ficheiro ZIP com um PDF ou um ficheiro Excel por juiz, conforme o formato selecionado.',
     loadingHint: 'Este processo pode demorar alguns segundos. Nao feche nem atualize a pagina durante a exportacao.'
   }
+};
+const EVENT_INFO_DEFAULT_DATA = Object.freeze({
+  id: null,
+  location: null,
+  location_maps: null,
+  email_contact: null,
+  phone_contact: null,
+  organizer: null,
+  bases_document: null,
+  event_description: null
+});
+const EVENT_INFO_ALLOWED_TAGS = ['p', 'br', 'strong', 'em', 'u', 's', 'ol', 'ul', 'li', 'a', 'h2', 'h3', 'blockquote'];
+const EVENT_INFO_ALLOWED_ATTRIBUTES = ['href', 'target', 'rel'];
+const EVENT_INFO_ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
+const eventInfoState = {
+  modal: null,
+  editor: null,
+  initialSnapshot: '',
+  skipCloseGuard: false,
+  loading: false,
+  saving: false
 };
 
 function applyCloseButtonAriaLabels() {
@@ -387,6 +409,318 @@ function setButtonLoading(button, isLoading, loadingText = t('loading')) {
     delete button.dataset.originalHtml;
   }
   button.disabled = false;
+}
+
+function initEventInfoModal() {
+  const modalEl = document.getElementById('eventInfoModal');
+  const formEl = document.getElementById('eventInfoForm');
+  const openBtn = document.getElementById('openEventInfoBtn');
+  const saveBtn = document.getElementById('saveEventInfoBtn');
+
+  if (!modalEl || !formEl || !openBtn || !saveBtn) return;
+
+  if (!window.bootstrap?.Modal || !window.Quill || !window.DOMPurify) {
+    console.error('Event info modal dependencies are not available.');
+    openBtn.addEventListener('click', () => {
+      showMessageModal(t('event_info_editor_unavailable', 'The event info editor is not available.'), t('error_title'));
+    });
+    return;
+  }
+
+  const modal = new bootstrap.Modal(modalEl);
+  const editor = new Quill('#eventInfoDescriptionEditor', {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ header: [2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link'],
+        ['clean']
+      ]
+    },
+    formats: ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'bullet', 'link']
+  });
+
+  editor.root.setAttribute('spellcheck', 'true');
+
+  eventInfoState.modal = modal;
+  eventInfoState.editor = editor;
+
+  openBtn.addEventListener('click', async () => {
+    if (eventInfoState.loading || eventInfoState.saving) return;
+
+    const currentEvent = getEvent();
+    if (!currentEvent?.id) {
+      showMessageModal(t('error_event_not_loaded'), t('error_title'));
+      return;
+    }
+
+    eventInfoState.loading = true;
+    setButtonLoading(openBtn, true, t('loading'));
+
+    try {
+      const eventInfo = await fetchEventInfoData(currentEvent.id);
+      populateEventInfoForm(eventInfo);
+      eventInfoState.initialSnapshot = getEventInfoSnapshot();
+      modal.show();
+    } catch (error) {
+      console.error('Error loading event info:', error);
+      showMessageModal(error?.message || t('event_info_loading_error'), t('error_title'));
+    } finally {
+      eventInfoState.loading = false;
+      setButtonLoading(openBtn, false);
+    }
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    if (eventInfoState.loading || eventInfoState.saving) return;
+
+    if (!formEl.reportValidity()) {
+      return;
+    }
+
+    const currentEvent = getEvent();
+    if (!currentEvent?.id) {
+      showMessageModal(t('error_event_not_loaded'), t('error_title'));
+      return;
+    }
+
+    const payload = buildEventInfoPayload(currentEvent.id);
+
+    eventInfoState.saving = true;
+    setEventInfoBusyState(true);
+    setButtonLoading(saveBtn, true, t('guardando'));
+
+    try {
+      await saveEventInfoData(currentEvent.id, payload);
+      eventInfoState.initialSnapshot = JSON.stringify(payload);
+      eventInfoState.skipCloseGuard = true;
+      modal.hide();
+      showAlert('success', t('event_info_saved'));
+    } catch (error) {
+      console.error('Error saving event info:', error);
+      showMessageModal(error?.message || t('event_info_saving_error'), t('error_title'));
+    } finally {
+      eventInfoState.saving = false;
+      setEventInfoBusyState(false);
+      setButtonLoading(saveBtn, false);
+    }
+  });
+
+  modalEl.addEventListener('hide.bs.modal', (event) => {
+    if (eventInfoState.skipCloseGuard) {
+      return;
+    }
+
+    if (eventInfoState.loading || eventInfoState.saving) {
+      event.preventDefault();
+      return;
+    }
+
+    if (!hasEventInfoUnsavedChanges()) {
+      return;
+    }
+
+    event.preventDefault();
+    const shouldDiscard = window.confirm(t('event_info_unsaved_confirm'));
+    if (!shouldDiscard) {
+      return;
+    }
+
+    eventInfoState.skipCloseGuard = true;
+    window.setTimeout(() => modal.hide(), 0);
+  });
+
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    eventInfoState.skipCloseGuard = false;
+  });
+}
+
+function setEventInfoBusyState(isBusy) {
+  const modalEl = document.getElementById('eventInfoModal');
+  const formEl = document.getElementById('eventInfoForm');
+
+  if (modalEl) {
+    modalEl.classList.toggle('event-info-loading', isBusy);
+    modalEl.querySelectorAll('.btn-close, [data-bs-dismiss="modal"]').forEach((button) => {
+      button.disabled = isBusy;
+    });
+  }
+
+  if (formEl) {
+    formEl.querySelectorAll('input, textarea').forEach((field) => {
+      field.disabled = isBusy;
+    });
+  }
+
+  if (eventInfoState.editor) {
+    eventInfoState.editor.enable(!isBusy);
+  }
+}
+
+async function fetchEventInfoData(eventId) {
+  const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/info`);
+  if (!response.ok) {
+    throw new Error(await extractApiErrorMessage(response, t('event_info_loading_error')));
+  }
+
+  const data = await response.json();
+  return { ...EVENT_INFO_DEFAULT_DATA, ...(data || {}), id: eventId };
+}
+
+async function saveEventInfoData(eventId, payload) {
+  const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/info`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(await extractApiErrorMessage(response, t('event_info_saving_error')));
+  }
+}
+
+async function extractApiErrorMessage(response, fallbackMessage) {
+  try {
+    const data = await response.json();
+    return data?.error || data?.message || fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+}
+
+function populateEventInfoForm(data) {
+  const normalized = normalizeEventInfoData(data);
+
+  const fieldMap = {
+    eventInfoLocation: normalized.location,
+    eventInfoMaps: normalized.location_maps,
+    eventInfoEmail: normalized.email_contact,
+    eventInfoPhone: normalized.phone_contact,
+    eventInfoOrganizer: normalized.organizer,
+    eventInfoBases: normalized.bases_document
+  };
+
+  Object.entries(fieldMap).forEach(([fieldId, value]) => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.value = value;
+    }
+  });
+
+  setEventInfoEditorHtml(normalized.event_description);
+}
+
+function normalizeEventInfoData(data) {
+  return {
+    id: data?.id ?? EVENT_INFO_DEFAULT_DATA.id,
+    location: String(data?.location ?? ''),
+    location_maps: String(data?.location_maps ?? ''),
+    email_contact: String(data?.email_contact ?? ''),
+    phone_contact: String(data?.phone_contact ?? ''),
+    organizer: String(data?.organizer ?? ''),
+    bases_document: String(data?.bases_document ?? ''),
+    event_description: sanitizeEventInfoHtml(String(data?.event_description ?? ''))
+  };
+}
+
+function buildEventInfoPayload(eventId) {
+  return {
+    id: eventId,
+    location: normalizeOptionalField(document.getElementById('eventInfoLocation')?.value),
+    location_maps: normalizeOptionalField(document.getElementById('eventInfoMaps')?.value),
+    email_contact: normalizeOptionalField(document.getElementById('eventInfoEmail')?.value),
+    phone_contact: normalizeOptionalField(document.getElementById('eventInfoPhone')?.value),
+    organizer: normalizeOptionalField(document.getElementById('eventInfoOrganizer')?.value),
+    bases_document: normalizeOptionalField(document.getElementById('eventInfoBases')?.value),
+    event_description: normalizeOptionalField(getEventInfoEditorHtml())
+  };
+}
+
+function normalizeOptionalField(value) {
+  const normalized = String(value ?? '').replace(/\r\n/g, '\n').trim();
+  return normalized || null;
+}
+
+function setEventInfoEditorHtml(html) {
+  const editor = eventInfoState.editor;
+  if (!editor) return;
+
+  const sanitizedHtml = sanitizeEventInfoHtml(html);
+  if (!sanitizedHtml) {
+    editor.setText('', 'silent');
+    return;
+  }
+
+  editor.setContents(editor.clipboard.convert(sanitizedHtml), 'silent');
+}
+
+function getEventInfoEditorHtml() {
+  const rawHtml = eventInfoState.editor?.root?.innerHTML || '';
+  return sanitizeEventInfoHtml(rawHtml);
+}
+
+function sanitizeEventInfoHtml(rawHtml) {
+  if (!window.DOMPurify) return '';
+
+  const sanitized = window.DOMPurify.sanitize(String(rawHtml || ''), {
+    ALLOWED_TAGS: EVENT_INFO_ALLOWED_TAGS,
+    ALLOWED_ATTR: EVENT_INFO_ALLOWED_ATTRIBUTES,
+    ALLOW_DATA_ATTR: false,
+    FORBID_ATTR: ['style'],
+    KEEP_CONTENT: true
+  });
+
+  const container = document.createElement('div');
+  container.innerHTML = sanitized;
+
+  container.querySelectorAll('a').forEach((link) => {
+    const href = String(link.getAttribute('href') || '').trim();
+    if (!isSafeEventInfoLink(href)) {
+      link.replaceWith(document.createTextNode(link.textContent || ''));
+      return;
+    }
+
+    link.setAttribute('target', '_blank');
+    link.setAttribute('rel', 'noopener noreferrer');
+  });
+
+  const normalizedHtml = container.innerHTML.trim();
+  return isMeaningfulEventInfoHtml(normalizedHtml) ? normalizedHtml : '';
+}
+
+function isSafeEventInfoLink(href) {
+  if (!href) return false;
+
+  try {
+    const url = new URL(href, window.location.origin);
+    return EVENT_INFO_ALLOWED_PROTOCOLS.has(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function isMeaningfulEventInfoHtml(html) {
+  if (!html) return false;
+
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  const textContent = String(container.textContent || '')
+    .replace(/\u00a0/g, ' ')
+    .trim();
+
+  return textContent.length > 0;
+}
+
+function getEventInfoSnapshot() {
+  const currentEventId = getEvent()?.id ?? null;
+  return JSON.stringify(buildEventInfoPayload(currentEventId));
+}
+
+function hasEventInfoUnsavedChanges() {
+  if (!eventInfoState.initialSnapshot) return false;
+  return eventInfoState.initialSnapshot !== getEventInfoSnapshot();
 }
 
 function downloadBlob(blob, filename) {
