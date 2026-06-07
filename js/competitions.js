@@ -536,15 +536,11 @@ function updateTopActionButtonsVisibility() {
   const actionsRow = document.getElementById('competitionsActionsRow');
   const criteriaPerJudgeCol = document.getElementById('criteriaPerJudgeAssignmentCol');
   const substituteJudgeCol = document.getElementById('substituteJudgeCol');
-  const criteriaColumnHeader = document.getElementById('criteriaColumnHeader');
   if (!actionsRow || !criteriaPerJudgeCol || !substituteJudgeCol) return;
 
   const showCriteriaPerJudgeButton = shouldShowCriteriaPerJudgeButton();
   criteriaPerJudgeCol.classList.toggle('d-none', !showCriteriaPerJudgeButton);
   substituteJudgeCol.classList.toggle('d-none', !showCriteriaPerJudgeButton);
-  if (criteriaColumnHeader) {
-    criteriaColumnHeader.classList.toggle('d-none', !showCriteriaPerJudgeButton);
-  }
   actionsRow.classList.toggle('row-cols-lg-6', showCriteriaPerJudgeButton);
   actionsRow.classList.toggle('row-cols-lg-4', !showCriteriaPerJudgeButton);
   actionsRow.classList.remove('row-cols-lg-5');
@@ -667,7 +663,7 @@ function loadCompetitions() {
             aria-label="${t('alerts_status_has_errors', 'Open alerts')}"></i>`
       : `<i class="bi bi-patch-check-fill text-success" aria-label="${t('alerts_status_ok', 'No alerts')}"></i>`;
     const alertsCell = `
-      <td data-col-alerts class="${showCriteriaPerJudgeUi ? '' : 'd-none'} text-center align-middle">
+      <td data-col-alerts class="text-center align-middle">
         ${alertsCellIcon}
       </td>
     `;
