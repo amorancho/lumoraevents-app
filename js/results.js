@@ -26,6 +26,7 @@ const STYLE_DETAILS_MODAL_MAX_WIDTH_PX = 1600;
 const STYLE_DETAILS_MODAL_MIN_WIDTH_PX = 0;
 const STYLE_DETAILS_MODAL_CHROME_WIDTH_PX = 96;
 const STYLE_DETAILS_ROTATE_HINT_MAX_WIDTH_PX = 575;
+const DEFAULT_CRITERIA_MAX_SCORE = 10;
 
 function shouldShowAvgPlaceBadge() {
   return getEvent().totalSystem === 'AVG_POSJUD';
@@ -312,8 +313,12 @@ function getCriteriaPositionNumber(criteria) {
   return Number.isFinite(numericPosition) ? numericPosition : null;
 }
 
-function sumCriteriaMaxScore(currentMaxScore, nextMaxScore) {
+function sumCriteriaMaxScore(currentMaxScore, nextMaxScore, { fallbackWhenMissing = false } = {}) {
   if (nextMaxScore === undefined || nextMaxScore === null || nextMaxScore === '') {
+    nextMaxScore = fallbackWhenMissing ? DEFAULT_CRITERIA_MAX_SCORE : null;
+  }
+
+  if (nextMaxScore === null) {
     return currentMaxScore ?? null;
   }
 
@@ -326,6 +331,36 @@ function sumCriteriaMaxScore(currentMaxScore, nextMaxScore) {
   return Number.isFinite(numericCurrentMaxScore)
     ? numericCurrentMaxScore + numericNextMaxScore
     : numericNextMaxScore;
+}
+
+function getAccumulatedCriteriaMaxScore(criteriaList, { fallbackWhenMissing = false } = {}) {
+  return (criteriaList || []).reduce(
+    (currentMaxScore, criterion) => sumCriteriaMaxScore(currentMaxScore, criterion?.max_score, { fallbackWhenMissing }),
+    null
+  );
+}
+
+function updateStyleVotingDetailsMaxScore(styleVotingModalEl, styleObj) {
+  if (!styleVotingModalEl) return;
+
+  const maxScoreEl = styleVotingModalEl.querySelector('#styleVotingDetailsModalMaxScore');
+  if (!maxScoreEl) return;
+
+  if (!getEvent()?.criteriaPerJudge) {
+    maxScoreEl.textContent = '';
+    maxScoreEl.classList.add('d-none');
+    return;
+  }
+
+  const accumulatedMaxScore = getAccumulatedCriteriaMaxScore(collectStyleCriteriaSummary(styleObj));
+  if (accumulatedMaxScore === null || accumulatedMaxScore === undefined || accumulatedMaxScore === '') {
+    maxScoreEl.textContent = '';
+    maxScoreEl.classList.add('d-none');
+    return;
+  }
+
+  maxScoreEl.textContent = `Max: ${formatScoreValue(accumulatedMaxScore)}`;
+  maxScoreEl.classList.remove('d-none');
 }
 
 function compareCriteriaByPosition(a, b) {
@@ -386,7 +421,9 @@ function collectStyleCriteriaSummary(styleObj) {
         const maxScoreSourceKey = `${voteJudgeKey}::${key}`;
         if (!summary._maxScoreSources.has(maxScoreSourceKey)) {
           summary._maxScoreSources.add(maxScoreSourceKey);
-          summary.max_score = sumCriteriaMaxScore(summary.max_score, criterion?.max_score);
+          summary.max_score = sumCriteriaMaxScore(summary.max_score, criterion?.max_score, {
+            fallbackWhenMissing: true
+          });
         }
       });
     });
@@ -635,6 +672,7 @@ function showStyleVotingDetailsModal(styleObj, styleVotingModalEl, styleVotingMo
   if (titleSpan) {
     titleSpan.textContent = t('style_voting_details', 'Style Voting Details');
   }
+  updateStyleVotingDetailsMaxScore(styleVotingModalEl, styleObj);
 
   styleVotingModal.show();
 }
