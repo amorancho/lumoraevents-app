@@ -1,8 +1,20 @@
 const pageName = window.location.pathname.split("/").pop().split(".")[0] || "index";
-const savedLang = localStorage.getItem('lang') || 'en';
+const supportedAppLanguages = new Set(['es', 'en', 'it', 'pt', 'fr']);
 let translations = {};
 
-updateFlag(savedLang);
+function getCurrentAppLanguage() {
+  const rawLang = String(
+    localStorage.getItem('lang') ||
+    document.documentElement.getAttribute('lang') ||
+    'en'
+  ).toLowerCase();
+
+  return supportedAppLanguages.has(rawLang) ? rawLang : 'en';
+}
+
+const initialLang = getCurrentAppLanguage();
+
+updateFlag(initialLang);
 
 const eventId = getEventIdFromUrl();
 
@@ -24,7 +36,7 @@ window.fetch = function (url, options = {}) {
   return originalFetch(url, options);
 };
 
-const translationsReady = loadTranslations(savedLang, pageName);
+const translationsReady = loadTranslations(initialLang, pageName);
 window.translationsReady = translationsReady;
 
 async function ensureTranslationsReady() {
@@ -229,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Cargar el modal de mensajes
   document.body.insertAdjacentHTML('beforeend', modalHtml);
-  document.documentElement.setAttribute('lang', savedLang);
+  document.documentElement.setAttribute('lang', getCurrentAppLanguage());
 
   await ensureTranslationsReady();
   applyTranslations();
@@ -239,7 +251,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await eventReadyPromise;
     if (pageName !== 'index' && pageName !== 'admin') {
       generateHeader(() => {
-        setPageTitleAndLang(t('title'), savedLang);
+        setPageTitleAndLang(t('title'), getCurrentAppLanguage());
         applyTranslations();
       });
       generateFooter();

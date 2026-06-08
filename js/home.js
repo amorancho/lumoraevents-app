@@ -1,4 +1,5 @@
 const allowedRoles = ["admin", "organizer"];
+const supportedLanguages = new Set(["es", "en", "it", "pt", "fr"]);
 
 document.addEventListener("DOMContentLoaded", async () => {
     await ensureTranslationsReady();
@@ -7,6 +8,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentEvent = getEvent();
     const currentUser = getUserFromToken();
     const now = new Date();
+    const storedLang = localStorage.getItem("lang");
+    const eventLanguage = String(currentEvent?.language || "").toLowerCase();
+
+    if (!storedLang && supportedLanguages.has(eventLanguage)) {
+        await changeLanguage(eventLanguage);
+    }
 
     if (currentEvent.notice_active && currentEvent.notice_text.trim() !== "") {
         const noticePanel = document.getElementById("noticePanel");
