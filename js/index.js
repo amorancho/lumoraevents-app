@@ -41,6 +41,11 @@ const EVENT_STATUS_META = {
 
 const getCurrentLanguage = () => String(localStorage.getItem('lang') || 'en').toLowerCase();
 
+const COUNTRY_NAME_BY_CODE =
+  typeof countries !== 'undefined' && Array.isArray(countries)
+    ? new Map(countries.map((country) => [String(country.code || '').trim().toUpperCase(), String(country.name || '').trim()]))
+    : new Map();
+
 const getCurrentLocale = () => LOCALE_BY_LANGUAGE[getCurrentLanguage()] || LOCALE_BY_LANGUAGE.en;
 
 const formatDateByLocale = (isoString, options) => {
@@ -162,6 +167,15 @@ const getUrlDisplayText = (value) => {
   }
 };
 
+const getCountryName = (value) => {
+  const normalizedCode = String(value || '').trim().toUpperCase();
+  if (!normalizedCode) {
+    return '';
+  }
+
+  return COUNTRY_NAME_BY_CODE.get(normalizedCode) || normalizedCode;
+};
+
 const sanitizeEventDescriptionHtml = (rawHtml) => {
   if (!window.DOMPurify) {
     return '';
@@ -263,6 +277,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const basesUrl = getSafeExternalUrl(info.bases_document);
     const safeEmailHref = getSafeMailtoHref(info.email_contact);
     const safePhoneHref = getSafeTelHref(info.phone_contact);
+    const countryValue = getCountryName(info.country);
     const formattedStartDate = formatLongDate(event?.start);
     const formattedEndDate = formatLongDate(event?.end);
     const normalizedStartDate = String(event?.start || '').slice(0, 10);
@@ -307,6 +322,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         value: info.organizer
       },
       {
+        icon: 'bi-flag',
+        label: t('event_details_country'),
+        value: countryValue
+      },
+      {
         icon: 'bi-envelope',
         label: t('event_details_email_contact'),
         valueHtml: safeEmailHref
@@ -321,22 +341,22 @@ document.addEventListener('DOMContentLoaded', async () => {
           : `<span class="event-details-placeholder">${placeholderText}</span>`
       },
       {
+        icon: 'bi-globe2',
+        label: t('event_details_event_page'),
+        valueHtml: eventPageUrl
+          ? `<a class="event-details-link" href="${escapeHtml(eventPageUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(getUrlDisplayText(eventPageUrl))}</a>`
+          : `<span class="event-details-placeholder">${placeholderText}</span>`
+      },
+      {
         icon: 'bi-geo-alt',
-        label: t('event_details_location'),
-        value: info.location
+        label: t('event_details_address'),
+        value: info.address
       },
       {
         icon: 'bi-map',
         label: t('event_details_maps'),
         valueHtml: mapsUrl
           ? `<a class="event-details-link" href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(t('event_details_open_map'))}</a>`
-          : `<span class="event-details-placeholder">${placeholderText}</span>`
-      },
-      {
-        icon: 'bi-globe2',
-        label: t('event_details_event_page'),
-        valueHtml: eventPageUrl
-          ? `<a class="event-details-link" href="${escapeHtml(eventPageUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(getUrlDisplayText(eventPageUrl))}</a>`
           : `<span class="event-details-placeholder">${placeholderText}</span>`
       },
       {

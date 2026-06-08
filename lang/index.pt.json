@@ -25,6 +25,8 @@
   "event_details_practical_info_title": "Informacao pratica",
   "event_details_quick_actions_title": "Acessos rapidos",
   "event_details_location": "Localizacao",
+  "event_details_address": "Endereco",
+  "event_details_country": "Pais",
   "event_details_organizer": "Organizador",
   "event_details_bases": "Bases",
   "event_details_bases_available": "Documento disponivel",

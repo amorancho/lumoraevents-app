@@ -25,6 +25,8 @@
   "event_details_practical_info_title": "Informacion practica",
   "event_details_quick_actions_title": "Accesos rapidos",
   "event_details_location": "Localizacion",
+  "event_details_address": "Direccion",
+  "event_details_country": "Pais",
   "event_details_organizer": "Organizador",
   "event_details_bases": "Bases",
   "event_details_bases_available": "Documento disponible",
