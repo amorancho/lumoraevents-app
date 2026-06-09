@@ -120,7 +120,8 @@ function bindScheduleConfigEvents() {
       id: `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       block_type: 'COMP',
       competition_id: competitionId,
-      time_per_dancer: resolvedTimePerDancer
+      time_per_dancer: resolvedTimePerDancer,
+      visible: true
     });
 
     activeDetailId = null;
@@ -138,6 +139,7 @@ function bindScheduleConfigEvents() {
     document.getElementById('breakModalTitle').textContent = t('break_modal_title_add');
     document.getElementById('breakNameInput').value = '';
     document.getElementById('breakTimeInput').value = '';
+    document.getElementById('breakVisibleInput').checked = true;
     const breakModalEl = document.getElementById('breakModal');
     breakModalEl.addEventListener('shown.bs.modal', () => {
       document.getElementById('breakNameInput').focus();
@@ -177,6 +179,7 @@ function bindScheduleConfigEvents() {
         document.getElementById('breakModalTitle').textContent = t('break_modal_title_edit');
         document.getElementById('breakNameInput').value = detail.break_name || '';
         document.getElementById('breakTimeInput').value = detail.break_time || '';
+        document.getElementById('breakVisibleInput').checked = getDetailVisible(detail);
         breakModal.show();
       } else {
         document.getElementById('competitionModalTitle').textContent = t('competition_modal_title_edit');
@@ -249,7 +252,7 @@ async function ensureBlockDetailsLoadedFor(block) {
     if (!response.ok) throw new Error('Error fetching block details');
     const data = await response.json();
 
-    const details = data.details || data.block_details || data.schedule_block_details || data.schedule_block_detail || [];
+    const details = extractBlockDetails(data, []);
     block.details = Array.isArray(details) ? details.map(normalizeDetail) : [];
     block.detailsLoaded = true;
     block.start = data.start || block.start;
@@ -259,8 +262,17 @@ async function ensureBlockDetailsLoadedFor(block) {
   }
 }
 
+function extractBlockDetails(data, fallback = undefined) {
+  if (!data || typeof data !== 'object') return fallback;
+  if (Object.prototype.hasOwnProperty.call(data, 'details')) return data.details;
+  if (Object.prototype.hasOwnProperty.call(data, 'block_details')) return data.block_details;
+  if (Object.prototype.hasOwnProperty.call(data, 'schedule_block_details')) return data.schedule_block_details;
+  if (Object.prototype.hasOwnProperty.call(data, 'schedule_block_detail')) return data.schedule_block_detail;
+  return fallback;
+}
+
 function normalizeBlock(block) {
-  const details = block.details || block.block_details || block.schedule_block_details || block.schedule_block_detail;
+  const details = extractBlockDetails(block);
   const startValue = block.start || block.start_time || block.startDate;
   const colorValue = block.color || block.block_color || '';
   const hasDetails = Array.isArray(details);
@@ -286,7 +298,8 @@ function normalizeDetail(detail) {
     break_time: toNumber(detail.break_time ?? detail.breakTime),
     category_name: detail.category_name ?? detail.category,
     style_name: detail.style_name ?? detail.style,
-    num_dancers: detail.num_dancers ?? detail.dancers
+    num_dancers: detail.num_dancers ?? detail.dancers,
+    visible: normalizeDetailVisible(detail.visible ?? detail.is_visible ?? detail.isVisible, blockType)
   };
 }
 
@@ -677,6 +690,10 @@ function renderDetails() {
     const isBreak = detail.block_type === 'BREAK';
     const typeLabel = isBreak ? t('break_label') : t('competition_label');
     const typeBadge = isBreak ? 'bg-secondary' : 'bg-primary';
+    const isVisibleBreak = isBreak && getDetailVisible(detail);
+    const visibilityBadge = isBreak
+      ? `<span class="badge ${isVisibleBreak ? 'text-bg-success' : 'text-bg-dark'}">${isVisibleBreak ? t('visible', 'Visible') : t('not_visible', 'Not visible')}</span>`
+      : '';
 
     const compInfo = isBreak ? null : getCompetitionInfo(detail);
     const category = compInfo?.category_name || compInfo?.category || t('category');
@@ -711,6 +728,7 @@ function renderDetails() {
             <div>
               <span class="badge ${typeBadge} me-2">${typeLabel}</span>
               <span class="fw-semibold me-2">${title}</span>
+              ${visibilityBadge}
               ${numDancers}
             </div>
             <div class="mt-2 text-muted small d-flex flex-wrap gap-3">
@@ -873,8 +891,9 @@ async function saveSelectedBlock() {
       if (data && typeof data === 'object') {
         block.start = data.start || block.start;
         block.color = data.color || block.color;
-        if (Array.isArray(data.details)) {
-          block.details = data.details.map(normalizeDetail);
+        const responseDetails = extractBlockDetails(data);
+        if (Array.isArray(responseDetails)) {
+          block.details = responseDetails.map(normalizeDetail);
           block.detailsLoaded = true;
         }
       }
@@ -966,6 +985,7 @@ function formatStartForApi(value) {
 function saveBreakDetailFromModal() {
   const breakName = document.getElementById('breakNameInput').value.trim();
   const breakTime = toNumber(document.getElementById('breakTimeInput').value);
+  const breakVisible = document.getElementById('breakVisibleInput').checked;
   const block = getSelectedBlock();
 
   if (!block) return;
@@ -983,13 +1003,15 @@ function saveBreakDetailFromModal() {
     if (detail) {
       detail.break_name = breakName;
       detail.break_time = breakTime;
+      detail.visible = breakVisible;
     }
   } else {
     block.details.push({
       id: `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       block_type: 'BREAK',
       break_name: breakName,
-      break_time: breakTime
+      break_time: breakTime,
+      visible: breakVisible
     });
   }
 
@@ -1165,6 +1187,7 @@ function serializeDetails(details) {
     time_per_dancer: detail.time_per_dancer ?? null,
     break_name: detail.break_name || null,
     break_time: detail.break_time || null,
+    visible: detail.block_type === 'COMP' ? 1 : (getDetailVisible(detail) ? 1 : 0),
     order: index + 1
   }));
 }
@@ -1300,6 +1323,39 @@ function getCompetitionMaxTimeSeconds(competition) {
   }
 
   return null;
+}
+
+function normalizeDetailVisible(value, blockType = 'COMP') {
+  if (blockType === 'COMP') return true;
+  return parseBooleanFlag(value, true);
+}
+
+function getDetailVisible(detail) {
+  return normalizeDetailVisible(detail?.visible, detail?.block_type);
+}
+
+function parseBooleanFlag(value, defaultValue = true) {
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'y', 'si', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) {
+    return false;
+  }
+
+  return defaultValue;
 }
 
 function toDatetimeLocalValue(value) {

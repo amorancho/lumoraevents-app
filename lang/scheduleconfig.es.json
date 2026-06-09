@@ -34,6 +34,8 @@
   "time_before_start": "Tiempo antes de empezar (segundos)",
   "break_name": "Nombre",
   "break_time": "Tiempo (minutos)",
+  "visible": "Visible",
+  "not_visible": "No visible",
   "save": "Guardar",
   "cancel": "Cancelar",
   "close": "Cerrar",
