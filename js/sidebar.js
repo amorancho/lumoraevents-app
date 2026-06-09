@@ -10,6 +10,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     judges: 'Judges',
     participants: 'Participants',
     competitions: 'Competitions',
+    scheduleconfig: 'Schedule Configurator',
     tracking: 'Tracking'
   },
   es: {
@@ -23,6 +24,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     judges: 'Jueces',
     participants: 'Participantes',
     competitions: 'Competiciones',
+    scheduleconfig: 'Configurador de Programacion',
     tracking: 'Tracking'
   },
   it: {
@@ -36,6 +38,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     judges: 'Giudici',
     participants: 'Partecipanti',
     competitions: 'Competizioni',
+    scheduleconfig: 'Configuratore Programmazione',
     tracking: 'Tracking'
   },
   pt: {
@@ -49,6 +52,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     judges: 'Jurados',
     participants: 'Participantes',
     competitions: 'Competicoes',
+    scheduleconfig: 'Configurador de Programacao',
     tracking: 'Tracking'
   },
   fr: {
@@ -62,6 +66,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     judges: 'Juges',
     participants: 'Participants',
     competitions: 'Competitions',
+    scheduleconfig: 'Configurateur de planning',
     tracking: 'Tracking'
   }
 };
@@ -73,6 +78,7 @@ const ORGANIZATION_SIDEBAR_ITEMS = [
   { key: 'judges', href: 'judges.html', icon: 'bi-person-badge', labelKey: 'judges' },
   { key: 'participants', href: 'dancers.html', icon: 'bi-people', labelKey: 'participants' },
   { key: 'competitions', href: 'competitions.html', icon: 'bi-trophy', labelKey: 'competitions' },
+  { key: 'scheduleconfig', href: 'scheduleconfig.html', icon: 'bi-calendar3', labelKey: 'scheduleconfig' },
   { key: 'tracking', href: 'tracking.html', icon: 'bi-activity', labelKey: 'tracking' }
 ];
 
@@ -100,6 +106,7 @@ function getOrganizationSidebarActiveKey() {
     judges: 'judges',
     dancers: 'participants',
     competitions: 'competitions',
+    scheduleconfig: 'scheduleconfig',
     tracking: 'tracking'
   };
 
