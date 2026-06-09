@@ -39,6 +39,59 @@
       align-items: center;
       justify-content: center;
     }
+    .schedule-blocks-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 1rem;
+    }
+    .schedule-blocks-toolbar-group {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .schedule-blocks-inline-field {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .schedule-blocks-inline-field .form-label {
+      margin-bottom: 0;
+      white-space: nowrap;
+    }
+    .schedule-blocks-inline-field .form-select,
+    .schedule-blocks-inline-field .form-control {
+      min-width: 0;
+    }
+    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-select {
+      flex: 1 1 18rem;
+    }
+    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-start {
+      flex: 1 1 19rem;
+    }
+    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-color {
+      flex: 0 1 15rem;
+    }
+    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-actions,
+    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-secondary {
+      flex: 0 1 auto;
+      min-width: 0;
+    }
+    .schedule-blocks-button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .schedule-blocks-inline-field .color-preview {
+      flex: 0 0 auto;
+    }
+    @media (min-width: 1400px) {
+      .schedule-blocks-toolbar {
+        flex-wrap: nowrap;
+      }
+      .schedule-blocks-toolbar-group {
+        min-width: 0;
+      }
+    }
   </style>
 </head>
 
@@ -56,47 +109,60 @@
 
       <main class="col-12 col-lg-9 col-xl-10">
         <div class="row g-4 align-items-start">
-          <div class="col-12 col-xl-4">
+          <div class="col-12">
             <div class="card shadow-sm">
               <div class="card-header">
                 <h5 class="mb-0" data-i18n="schedule_blocks_title">Schedule Blocks</h5>
               </div>
               <div class="card-body">
-                <div class="mb-3">
-                  <label class="form-label fw-semibold" for="blockSelect" data-i18n="block_select_label">Active block</label>
-                  <select class="form-select" id="blockSelect">
-                    <option value="" disabled selected data-i18n="block_select_placeholder">Select a block</option>
-                  </select>
-                </div>
-                <div class="row g-2 mb-3 align-items-end">
-                  <div class="col-12 col-md-7">
-                    <label class="form-label fw-semibold" for="blockStart" data-i18n="block_start_label">Start date/time</label>
-                    <input type="datetime-local" class="form-control" id="blockStart">
+                <div class="schedule-blocks-toolbar">
+                  <div class="schedule-blocks-toolbar-group schedule-blocks-toolbar-group-select">
+                    <div class="schedule-blocks-inline-field">
+                      <label class="form-label fw-semibold" for="blockSelect" data-i18n="block_select_label">Active block</label>
+                      <select class="form-select" id="blockSelect">
+                        <option value="" disabled selected data-i18n="block_select_placeholder">Select a block</option>
+                      </select>
+                    </div>
                   </div>
-                  <div class="col-12 col-md-5">
-                    <label class="form-label fw-semibold" for="blockColor" data-i18n="block_color_label">Color</label>
-                    <div class="d-flex align-items-center gap-2">
-                      <select class="form-select" id="blockColor"></select>
-                      <span class="color-preview" id="blockColorPreview" aria-hidden="true"></span>
+
+                  <div class="schedule-blocks-toolbar-group schedule-blocks-toolbar-group-start">
+                    <div class="schedule-blocks-inline-field">
+                      <label class="form-label fw-semibold" for="blockStart" data-i18n="block_start_label">Start date/time</label>
+                      <input type="datetime-local" class="form-control" id="blockStart">
+                    </div>
+                  </div>
+
+                  <div class="schedule-blocks-toolbar-group schedule-blocks-toolbar-group-color">
+                    <div class="schedule-blocks-inline-field">
+                      <label class="form-label fw-semibold" for="blockColor" data-i18n="block_color_label">Color</label>
+                      <div class="d-flex align-items-center gap-2 flex-grow-1">
+                        <select class="form-select" id="blockColor"></select>
+                        <span class="color-preview" id="blockColorPreview" aria-hidden="true"></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="schedule-blocks-toolbar-group schedule-blocks-toolbar-group-actions">
+                    <div class="schedule-blocks-button-group">
+                      <button class="btn btn-primary" id="addBlockBtn" data-i18n="block_add">Add block</button>
+                      <button class="btn btn-outline-primary" id="updateBlockBtn" data-i18n="block_update">Update block</button>
+                      <button class="btn btn-outline-danger" id="deleteBlockBtn" data-i18n="block_delete">Delete block</button>
+                    </div>
+                  </div>
+
+                  <div class="schedule-blocks-toolbar-group schedule-blocks-toolbar-group-secondary">
+                    <div class="schedule-blocks-button-group">
+                      <button class="btn btn-outline-info" id="previewScheduleBtn" data-i18n="preview_full_schedule">Previsualizar Schedule Completo</button>
+                      <button class="btn btn-outline-info" id="exportPdfBtn" data-i18n="export_pdf">Export PDF</button>
                     </div>
                   </div>
                 </div>
-                <div class="text-uppercase text-muted mb-1 lh-1" style="font-size: .75rem;" data-i18n="block_actions_title">Block actions</div>
-                <div class="border rounded p-2">
-                  <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-primary" id="addBlockBtn" data-i18n="block_add">Add block</button>
-                    <button class="btn btn-outline-primary" id="updateBlockBtn" data-i18n="block_update">Update block</button>
-                    <button class="btn btn-outline-danger" id="deleteBlockBtn" data-i18n="block_delete">Delete block</button>
-                  </div>
-                </div>
-                <div class="d-flex flex-wrap gap-2 mt-3">
-                  <button class="btn btn-outline-info flex-fill" id="previewScheduleBtn" data-i18n="preview_full_schedule">Previsualizar Schedule Completo</button>
-                  <button class="btn btn-outline-info flex-fill" id="exportPdfBtn" data-i18n="export_pdf">Export PDF</button>
-                </div>
               </div>
             </div>
+          </div>
 
-            <div class="d-grid mt-3">
+          <div class="col-12 col-xl-4">
+            <div class="d-grid">
               <button class="btn btn-warning" id="addBreakBtn" data-i18n="add_break">Add Break</button>
             </div>
 
