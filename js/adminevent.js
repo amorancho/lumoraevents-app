@@ -96,7 +96,9 @@ const PLANB_EXPORT_MODAL_COPY = {
 };
 const EVENT_INFO_DEFAULT_DATA = Object.freeze({
   id: null,
+  address: null,
   location: null,
+  country: null,
   location_maps: null,
   email_contact: null,
   phone_contact: null,
@@ -110,6 +112,7 @@ const EVENT_INFO_ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel
 const eventInfoState = {
   modal: null,
   editor: null,
+  countrySelect: null,
   initialSnapshot: '',
   skipCloseGuard: false,
   loading: false,
@@ -416,6 +419,7 @@ function initEventInfoModal() {
   const formEl = document.getElementById('eventInfoForm');
   const openBtn = document.getElementById('openEventInfoBtn');
   const saveBtn = document.getElementById('saveEventInfoBtn');
+  const countryField = document.getElementById('eventInfoCountry');
 
   if (!modalEl || !formEl || !openBtn || !saveBtn) return;
 
@@ -446,6 +450,7 @@ function initEventInfoModal() {
 
   eventInfoState.modal = modal;
   eventInfoState.editor = editor;
+  initEventInfoCountrySelect(countryField);
 
   openBtn.addEventListener('click', async () => {
     if (eventInfoState.loading || eventInfoState.saving) return;
@@ -549,9 +554,17 @@ function setEventInfoBusyState(isBusy) {
   }
 
   if (formEl) {
-    formEl.querySelectorAll('input, textarea').forEach((field) => {
+    formEl.querySelectorAll('input, textarea, select').forEach((field) => {
       field.disabled = isBusy;
     });
+  }
+
+  if (eventInfoState.countrySelect) {
+    if (isBusy) {
+      eventInfoState.countrySelect.disable();
+    } else {
+      eventInfoState.countrySelect.enable();
+    }
   }
 
   if (eventInfoState.editor) {
@@ -594,6 +607,7 @@ function populateEventInfoForm(data) {
   const normalized = normalizeEventInfoData(data);
 
   const fieldMap = {
+    eventInfoAddress: normalized.address,
     eventInfoLocation: normalized.location,
     eventInfoMaps: normalized.location_maps,
     eventInfoEmail: normalized.email_contact,
@@ -609,13 +623,16 @@ function populateEventInfoForm(data) {
     }
   });
 
+  setEventInfoCountryValue(normalized.country);
   setEventInfoEditorHtml(normalized.event_description);
 }
 
 function normalizeEventInfoData(data) {
   return {
     id: data?.id ?? EVENT_INFO_DEFAULT_DATA.id,
+    address: String(data?.address ?? ''),
     location: String(data?.location ?? ''),
+    country: normalizeCountryCode(data?.country),
     location_maps: String(data?.location_maps ?? ''),
     email_contact: String(data?.email_contact ?? ''),
     phone_contact: String(data?.phone_contact ?? ''),
@@ -628,7 +645,9 @@ function normalizeEventInfoData(data) {
 function buildEventInfoPayload(eventId) {
   return {
     id: eventId,
+    address: normalizeOptionalField(document.getElementById('eventInfoAddress')?.value),
     location: normalizeOptionalField(document.getElementById('eventInfoLocation')?.value),
+    country: normalizeOptionalField(normalizeCountryCode(document.getElementById('eventInfoCountry')?.value)),
     location_maps: normalizeOptionalField(document.getElementById('eventInfoMaps')?.value),
     email_contact: normalizeOptionalField(document.getElementById('eventInfoEmail')?.value),
     phone_contact: normalizeOptionalField(document.getElementById('eventInfoPhone')?.value),
@@ -641,6 +660,76 @@ function buildEventInfoPayload(eventId) {
 function normalizeOptionalField(value) {
   const normalized = String(value ?? '').replace(/\r\n/g, '\n').trim();
   return normalized || null;
+}
+
+function normalizeCountryCode(value) {
+  return String(value ?? '').trim().toUpperCase();
+}
+
+function initEventInfoCountrySelect(selectEl) {
+  if (!selectEl) return;
+
+  const countryList = typeof countries !== 'undefined' && Array.isArray(countries) ? countries : null;
+
+  if (selectEl.dataset.countriesLoaded !== 'true' && countryList) {
+    countryList.forEach((country) => {
+      const option = document.createElement('option');
+      option.value = country.code;
+      option.textContent = `${country.code} - ${country.name}`;
+      selectEl.appendChild(option);
+    });
+    selectEl.dataset.countriesLoaded = 'true';
+  }
+
+  if (window.TomSelect) {
+    eventInfoState.countrySelect = new TomSelect(selectEl, {
+      maxOptions: 200,
+      placeholder: 'Type to search...',
+      allowEmptyOption: true
+    });
+  }
+}
+
+function ensureEventInfoCountryOption(value) {
+  const normalizedValue = normalizeCountryCode(value);
+  if (!normalizedValue) return;
+
+  const selectEl = document.getElementById('eventInfoCountry');
+  if (!selectEl) return;
+
+  const hasOption = Array.from(selectEl.options).some((option) => option.value === normalizedValue);
+  if (hasOption) return;
+
+  const option = document.createElement('option');
+  option.value = normalizedValue;
+  option.textContent = `${normalizedValue} - ${normalizedValue}`;
+  selectEl.appendChild(option);
+
+  if (eventInfoState.countrySelect) {
+    eventInfoState.countrySelect.addOption({
+      value: normalizedValue,
+      text: option.textContent
+    });
+  }
+}
+
+function setEventInfoCountryValue(value) {
+  const normalizedValue = normalizeCountryCode(value);
+  ensureEventInfoCountryOption(normalizedValue);
+
+  if (eventInfoState.countrySelect) {
+    if (normalizedValue) {
+      eventInfoState.countrySelect.setValue(normalizedValue, true);
+    } else {
+      eventInfoState.countrySelect.clear(true);
+    }
+    return;
+  }
+
+  const selectEl = document.getElementById('eventInfoCountry');
+  if (selectEl) {
+    selectEl.value = normalizedValue;
+  }
 }
 
 function setEventInfoEditorHtml(html) {
