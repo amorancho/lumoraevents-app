@@ -84,6 +84,14 @@
     .schedule-blocks-inline-field .color-preview {
       flex: 0 0 auto;
     }
+    @media (min-width: 1200px) {
+      .scheduleconfig-sidebar-col {
+        width: 35%;
+      }
+      .scheduleconfig-details-col {
+        width: 65%;
+      }
+    }
     @media (min-width: 1400px) {
       .schedule-blocks-toolbar {
         flex-wrap: nowrap;
@@ -161,7 +169,7 @@
             </div>
           </div>
 
-          <div class="col-12 col-xl-4">
+          <div class="col-12 col-xl-4 scheduleconfig-sidebar-col">
             <div class="d-grid">
               <button class="btn btn-warning" id="addBreakBtn" data-i18n="add_break">Add Break</button>
             </div>
@@ -179,7 +187,7 @@
             </div>
           </div>
 
-          <div class="col-12 col-xl-8">
+          <div class="col-12 col-xl-8 scheduleconfig-details-col">
             <div class="card shadow-sm">
               <div class="card-header">
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">

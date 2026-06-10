@@ -9,6 +9,20 @@ const pastelColors = [
   { value: "#D7C6FF", key: "color_lavender", fallback: "Lavender" }
 ];
 
+const competitionStatusText = {
+  OPE: 'OPEN',
+  FIN: 'FINISHED',
+  CLO: 'CLOSED',
+  PRO: 'IN PROGRESS'
+};
+
+const competitionStatusColor = {
+  OPE: 'warning text-dark',
+  FIN: 'success',
+  CLO: 'danger',
+  PRO: 'primary'
+};
+
 let scheduleBlocks = [];
 let competitions = [];
 let selectedBlockId = null;
@@ -447,12 +461,20 @@ function renderCompetitionsList() {
   }
 
   availableCompetitions.forEach(comp => {
+    const maxTimeSeconds = getCompetitionMaxTimeSeconds(comp);
+    const hasMaxTime = Number.isFinite(maxTimeSeconds) && maxTimeSeconds > 0;
+    const maxTimeBadge = hasMaxTime
+      ? `<span class="badge text-bg-light border"><i class="bi bi-stopwatch me-1"></i>${secondsToMmSs(maxTimeSeconds)}</span>`
+      : `<span class="badge text-bg-warning text-dark">${t('time_not_defined', 'TIME NOT DEFINED')}</span>`;
+
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
     li.innerHTML = `
       <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="fw-semibold">${comp.category_name || comp.category}</span>
         <span class="text-muted">${comp.style_name || comp.style}</span>
+        ${buildCompetitionStatusBadge(comp.status)}
+        ${maxTimeBadge}
         <span class="badge bg-secondary">${comp.num_dancers ?? comp.dancers ?? 0}</span>
       </div>
       <button class="btn btn-sm btn-outline-primary btn-add-competition" data-id="${comp.id}" ${blockSelected ? '' : 'disabled'}>
@@ -719,6 +741,7 @@ function renderDetails() {
           <div>
             <div>
               <span class="badge ${typeBadge} me-2">${typeLabel}</span>
+              ${isBreak ? '' : `${buildCompetitionStatusBadge(compInfo?.status, 'me-2')}`}
               <span class="fw-semibold me-2">${title}</span>
               ${visibilityBadge}
               ${numDancers}
@@ -792,6 +815,13 @@ function getCompetitionInfo(detail) {
   if (comp) return comp;
   if (detail.category_name || detail.style_name) return detail;
   return null;
+}
+
+function buildCompetitionStatusBadge(status, extraClass = '') {
+  const badgeClass = competitionStatusColor[status] || 'secondary';
+  const badgeText = competitionStatusText[status] || status || '-';
+  const normalizedExtraClass = extraClass ? ` ${extraClass}` : '';
+  return `<span class="badge bg-${badgeClass}${normalizedExtraClass}">${badgeText}</span>`;
 }
 
 function getSelectedBlock() {
