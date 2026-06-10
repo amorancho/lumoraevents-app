@@ -107,6 +107,25 @@ const normalizeText = (value) =>
     .toLowerCase()
     .trim();
 
+const parseEventCategories = (value) => {
+  const rawValues = Array.isArray(value)
+    ? value.flatMap((item) => String(item ?? '').split(','))
+    : String(value ?? '').split(',');
+  const seen = new Set();
+
+  return rawValues
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .filter((item) => {
+      const key = item.toLowerCase();
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+};
+
 const escapeHtml = (value) =>
   String(value || '')
     .replace(/&/g, '&amp;')
@@ -222,6 +241,7 @@ const sanitizeEventDescriptionHtml = (rawHtml) => {
 document.addEventListener('DOMContentLoaded', async () => {
   const container = document.getElementById('eventsContainer');
   const searchInput = document.getElementById('eventSearchInput');
+  const categoryFilterSelect = document.getElementById('eventCategoryFilter');
   const filterButtons = Array.from(document.querySelectorAll('[data-status-filter]'));
   const eventDetailsModalEl = document.getElementById('eventDetailsModal');
   const eventDetailsModal = eventDetailsModalEl ? new bootstrap.Modal(eventDetailsModalEl) : null;
@@ -234,6 +254,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   let allEvents = [];
   let selectedStatusFilter = 'all';
+  let selectedCategoryFilter = '';
   let activeDetailsRequestId = 0;
 
   await ensureTranslationsReady();
@@ -256,6 +277,46 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
     applyTranslations();
+  };
+
+  const populateCategoryFilterOptions = () => {
+    if (!categoryFilterSelect) {
+      return;
+    }
+
+    const categories = Array.from(
+      new Map(
+        allEvents
+          .flatMap((event) => parseEventCategories(event.category ?? event.categories))
+          .map((category) => [normalizeText(category), category])
+      ).values()
+    ).sort((left, right) => left.localeCompare(right, getCurrentLocale(), { sensitivity: 'base' }));
+
+    categoryFilterSelect.innerHTML = '';
+
+    const allOption = document.createElement('option');
+    allOption.value = '';
+    allOption.textContent = t('all_categories', 'All Categories');
+    categoryFilterSelect.appendChild(allOption);
+
+    categories.forEach((category) => {
+      const option = document.createElement('option');
+      option.value = category;
+      option.textContent = category;
+      categoryFilterSelect.appendChild(option);
+    });
+
+    const matchingOption = Array.from(categoryFilterSelect.options).find(
+      (option) => normalizeText(option.value) === selectedCategoryFilter
+    );
+    categoryFilterSelect.value = matchingOption ? matchingOption.value : '';
+    if (!matchingOption) {
+      selectedCategoryFilter = '';
+    }
+
+    categoryFilterSelect.disabled = categories.length === 0;
+    categoryFilterSelect.setAttribute('aria-label', t('filter_by_category', 'Filter by category'));
+    categoryFilterSelect.title = t('filter_by_category', 'Filter by category');
   };
 
   const renderEventDetailsLoading = (event) => {
@@ -498,8 +559,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const safeCode = encodeURIComponent(event.code || '');
     const safeLogo = escapeHtml(getSafeExternalUrl(event.eventlogo) || DEFAULT_EVENT_LOGO_URL);
     const safeEventId = escapeHtml(String(event.id ?? ''));
+    const categories = parseEventCategories(event.category ?? event.categories);
     const showRegistrationPeriod =
       Number(event.has_registrations) === 1 && event.registration_start && event.registration_end;
+    const categoriesMarkup = categories.length
+      ? `
+            <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+              ${categories.map((category) => `<span class="badge rounded-pill text-bg-secondary">${escapeHtml(category)}</span>`).join('')}
+            </div>
+          `
+      : '';
 
     return `
       <div class="col-12 col-md-6 col-lg-4">
@@ -518,6 +587,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <i class="bi bi-calendar3 text-primary"></i>
               <span>${formatEventDateRange(event.start, event.end)}</span>
             </p>
+            ${categoriesMarkup}
             ${showRegistrationPeriod ? `
               <p class="text-muted text-center d-flex align-items-center justify-content-center gap-2 small">
                 <i class="bi bi-pencil-square text-success"></i>
@@ -558,8 +628,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const normalizedStatus = normalizeEventStatus(event.event_status);
       const matchesStatus = selectedStatusFilter === 'all' || normalizedStatus === selectedStatusFilter;
       const matchesSearch = !searchTerm || normalizeText(event.name).includes(searchTerm);
+      const matchesCategory =
+        !selectedCategoryFilter ||
+        parseEventCategories(event.category ?? event.categories).some(
+          (category) => normalizeText(category) === selectedCategoryFilter
+        );
 
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesSearch && matchesCategory;
     });
 
     if (!filteredEvents.length) {
@@ -628,6 +703,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   showLoadingSpinner();
 
   searchInput.addEventListener('input', renderEvents);
+  categoryFilterSelect?.addEventListener('change', () => {
+    selectedCategoryFilter = normalizeText(categoryFilterSelect.value);
+    renderEvents();
+  });
 
   container.addEventListener('click', (domEvent) => {
     const detailsButton = domEvent.target.closest('[data-open-event-details="true"]');
@@ -681,6 +760,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             })
         : [];
 
+      populateCategoryFilterOptions();
       updateActiveFilter('all');
       renderEvents();
     })

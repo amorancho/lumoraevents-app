@@ -37,6 +37,27 @@
     .admin-panel-sticky {
       top: 1.5rem;
     }
+    .admin-category-display {
+      min-height: calc(1.5em + 0.75rem + 2px);
+    }
+    .admin-category-empty {
+      line-height: 1.5;
+    }
+    .admin-category-editor-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .admin-category-editor-remove {
+      background: transparent;
+      border: 0;
+      color: inherit;
+      padding: 0;
+      line-height: 1;
+    }
+    .admin-category-editor-remove:hover {
+      opacity: 0.75;
+    }
   </style>
 </head>
 
@@ -337,7 +358,7 @@
                 <input type="text" class="form-control" id="code" maxlength="50" required>
               </div>
 
-              <div class="col-md-8 d-flex align-items-end">
+              <div class="col-md-5 d-flex align-items-end">
                 <div class="w-100">
                   <label for="name" class="form-label" data-i18n="prop_event_name">Event Name</label>
                   <div class="input-group">
@@ -403,6 +424,22 @@
                   <option value="fr">FR</option>
                 </select>
               </div>  
+
+              <div class="col-md-3">
+                <label class="form-label">
+                  <span>Categorías del evento</span>
+                </label>
+                <input type="hidden" id="category">
+                <div class="input-group">
+                <div class="form-control admin-category-display d-flex flex-wrap align-items-center gap-2" id="categoryBadgeField">
+                  <div class="d-flex flex-wrap gap-2" id="categoryBadges"></div>
+                  <span class="text-body-secondary small admin-category-empty" id="categoryEmptyState">Sin categorías</span>
+                </div>
+                  <button type="button" class="btn btn-outline-primary" id="editCategoryBtn">
+                    <i class="bi bi-tags me-1"></i>Editar
+                  </button>
+                </div>
+              </div>
 
               
 
@@ -735,6 +772,32 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           <button type="button" class="btn btn-primary" id="saveEventBtn" data-loading-text="Guardando...">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="categoryEditorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar categorías</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label for="categoryEditorInput" class="form-label">Añadir categoría</label>
+          <div class="input-group mb-3">
+            <input type="text" class="form-control" id="categoryEditorInput" placeholder="URBAN BELLYDANCE" autocomplete="off">
+            <button type="button" class="btn btn-primary" id="addCategoryEditorBtn">Añadir</button>
+          </div>
+          <div class="form-text mb-3">Puedes escribir una o varias categorías separadas por comas.</div>
+          <div class="small text-body-secondary mb-2">Categorías actuales</div>
+          <div class="d-flex flex-wrap gap-2" id="categoryEditorList"></div>
+          <div class="text-body-secondary small" id="categoryEditorEmptyState">No hay categorías añadidas.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="saveCategoryEditorBtn">Guardar</button>
         </div>
       </div>
     </div>

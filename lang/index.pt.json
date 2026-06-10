@@ -6,6 +6,8 @@
   "search_by_name": "Pesquisar por nome",
   "search_by_name_placeholder": "Pesquisar evento",
   "filter_by_status": "Filtrar por estado",
+  "filter_by_category": "Filtrar por categoria",
+  "all_categories": "Todas as categorias",
   "all": "Todos",
   "proximamente": "Em breve",
   "en_curso": "Em curso",

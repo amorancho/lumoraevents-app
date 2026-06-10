@@ -425,7 +425,7 @@
 
   <div class="container mt-4">
     <div class="row g-3 align-items-center mb-4">
-      <div class="col-12 col-lg-5">
+      <div class="col-12 col-lg-4">
         <div class="input-group shadow-sm">
           <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-primary"></i></span>
           <input
@@ -437,7 +437,12 @@
           >
         </div>
       </div>
-      <div class="col-12 col-lg-7">
+      <div class="col-12 col-lg-3">
+        <select id="eventCategoryFilter" class="form-select shadow-sm" data-i18n-aria-label="filter_by_category" aria-label="Filter by category">
+          <option value="" data-i18n="all_categories">All Categories</option>
+        </select>
+      </div>
+      <div class="col-12 col-lg-5">
         <div class="d-flex justify-content-end">
           <div id="eventStatusFilters" class="btn-group flex-wrap justify-content-end shadow-sm" role="group" aria-label="Event status filters">
             <button type="button" class="btn btn-outline-secondary active" data-status-filter="all" aria-pressed="true">

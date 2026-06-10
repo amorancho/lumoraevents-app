@@ -1,7 +1,8 @@
 ﻿var title='Administración LumoraEvents';
 const allowedRoles=['admin'];
 let clients=[],events=[],selectedEventId=null,currentEventDetail=null,keepCreateMode=false;
-let clientModal,clearEventDataModal;
+let clientModal,clearEventDataModal,categoryEditorModal;
+let categoryEditorDraft=[];
 
 function setLoadingButtonState(button,isLoading,loadingText='Guardando...'){
   if(!button) return;
@@ -33,6 +34,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
   bindStaticEvents();
   clientModal=new bootstrap.Modal(document.getElementById('clientModal'));
   clearEventDataModal=new bootstrap.Modal(document.getElementById('clearEventDataModal'));
+  categoryEditorModal=new bootstrap.Modal(document.getElementById('categoryEditorModal'));
+  setEventCategories([]);
   await loadClients();
   await loadEvents();
 });
@@ -177,6 +180,12 @@ function buildEventFormTabs(){
   const welcomeContent=document.getElementById('eventWelcomeContent');
 
   tailNodes.forEach((node)=>{
+    if(nodeContainsIds(node,['category'])){
+      node.className='col-md-3';
+      const statusBlock=getFormFieldBlock('status');
+      if(statusBlock) statusBlock.insertAdjacentElement('beforebegin',node);
+      return;
+    }
     if(nodeContainsIds(node,['notice_type','notice_text','notice_active'])){
       appendNodeToTabContent(noticeContent,node);
       return;
@@ -356,6 +365,117 @@ function syncJudgeFeedbackFieldOptions(){
   select.value=currentValue;
 }
 
+function parseEventCategories(value){
+  const rawValues=Array.isArray(value)
+    ? value.flatMap((item)=>String(item??'').split(','))
+    : String(value??'').split(',');
+  const seen=new Set();
+  return rawValues
+    .map((item)=>String(item??'').trim())
+    .filter(Boolean)
+    .filter((item)=>{
+      const key=item.toLowerCase();
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+}
+
+function formatEventCategoriesValue(categories){
+  return parseEventCategories(categories).join(',');
+}
+
+function getEventCategories(){
+  return parseEventCategories(document.getElementById('category')?.value||'');
+}
+
+function setEventCategories(categories){
+  const normalized=parseEventCategories(categories);
+  const input=document.getElementById('category');
+  if(input) input.value=formatEventCategoriesValue(normalized);
+  renderEventCategoryBadges(normalized);
+}
+
+function renderEventCategoryBadges(categories=getEventCategories()){
+  const badgesContainer=document.getElementById('categoryBadges');
+  const emptyState=document.getElementById('categoryEmptyState');
+  if(!badgesContainer||!emptyState) return;
+
+  badgesContainer.innerHTML='';
+  categories.forEach((category)=>{
+    const badge=document.createElement('span');
+    badge.className='badge text-bg-primary';
+    badge.textContent=category;
+    badgesContainer.appendChild(badge);
+  });
+
+  emptyState.classList.toggle('d-none',categories.length>0);
+}
+
+function renderCategoryEditorDraft(){
+  const list=document.getElementById('categoryEditorList');
+  const emptyState=document.getElementById('categoryEditorEmptyState');
+  if(!list||!emptyState) return;
+
+  list.innerHTML='';
+  categoryEditorDraft.forEach((category,index)=>{
+    const badge=document.createElement('span');
+    badge.className='badge text-bg-primary admin-category-editor-chip';
+
+    const label=document.createElement('span');
+    label.textContent=category;
+    badge.appendChild(label);
+
+    const removeBtn=document.createElement('button');
+    removeBtn.type='button';
+    removeBtn.className='admin-category-editor-remove';
+    removeBtn.dataset.categoryIndex=String(index);
+    removeBtn.setAttribute('aria-label',`Eliminar categoría ${category}`);
+    removeBtn.innerHTML='&times;';
+    badge.appendChild(removeBtn);
+
+    list.appendChild(badge);
+  });
+
+  emptyState.classList.toggle('d-none',categoryEditorDraft.length>0);
+}
+
+function openCategoryEditorModal(){
+  categoryEditorDraft=getEventCategories();
+  const input=document.getElementById('categoryEditorInput');
+  if(input) input.value='';
+  renderCategoryEditorDraft();
+  categoryEditorModal?.show();
+  setTimeout(()=>input?.focus(),150);
+}
+
+function addCategoryEditorValues(){
+  const input=document.getElementById('categoryEditorInput');
+  if(!input) return;
+
+  const nextValues=parseEventCategories(input.value);
+  if(!nextValues.length){
+    input.focus();
+    return;
+  }
+
+  categoryEditorDraft=parseEventCategories([...categoryEditorDraft,...nextValues]);
+  input.value='';
+  renderCategoryEditorDraft();
+  input.focus();
+}
+
+function removeCategoryEditorValue(index){
+  if(!Number.isInteger(index)||index<0||index>=categoryEditorDraft.length) return;
+  categoryEditorDraft=categoryEditorDraft.filter((_,itemIndex)=>itemIndex!==index);
+  renderCategoryEditorDraft();
+}
+
+function saveCategoryEditor(){
+  setEventCategories(categoryEditorDraft);
+  categoryEditorModal?.hide();
+}
+
 function bindStaticEvents(){
   document.getElementById('auth-btn')?.addEventListener('click',logout);
   document.getElementById('createNewEventBtn')?.addEventListener('click',openCreateEventMode);
@@ -368,6 +488,23 @@ function bindStaticEvents(){
   document.getElementById('duplicateSelectedEventBtn')?.addEventListener('click',()=>currentEventDetail&&openDuplicateModal(currentEventDetail.id));
   document.getElementById('clearSelectedEventBtn')?.addEventListener('click',()=>currentEventDetail&&openClearEventDataModal(currentEventDetail));
   document.getElementById('deleteSelectedEventBtn')?.addEventListener('click',()=>currentEventDetail&&confirmDeleteEvent(currentEventDetail));
+  document.getElementById('editCategoryBtn')?.addEventListener('click',openCategoryEditorModal);
+  document.getElementById('addCategoryEditorBtn')?.addEventListener('click',addCategoryEditorValues);
+  document.getElementById('saveCategoryEditorBtn')?.addEventListener('click',saveCategoryEditor);
+  document.getElementById('categoryEditorInput')?.addEventListener('keydown',(event)=>{
+    if(event.key!=='Enter') return;
+    event.preventDefault();
+    addCategoryEditorValues();
+  });
+  document.getElementById('categoryEditorList')?.addEventListener('click',(event)=>{
+    const removeBtn=event.target.closest('[data-category-index]');
+    if(!removeBtn) return;
+    removeCategoryEditorValue(parseInt(removeBtn.dataset.categoryIndex,10));
+  });
+  document.getElementById('categoryEditorModal')?.addEventListener('hidden.bs.modal',()=>{
+    const input=document.getElementById('categoryEditorInput');
+    if(input) input.value='';
+  });
   ['eventStatusFilter','eventVisibleFilter','eventTrialFilter'].forEach((id)=>document.getElementById(id)?.addEventListener('change',()=>renderEvents()));
   ['visible','trial'].forEach((id)=>document.getElementById(id)?.addEventListener('change',syncEventPanelBadgesFromForm));
   document.getElementById('has_registrations')?.addEventListener('change',syncRegistrationsTabState);
@@ -494,6 +631,7 @@ function populateEventForm(eventObj){
   document.getElementById('eventurl').value=eventObj.eventurl||'';
   document.getElementById('eventlogo').value=eventObj.eventlogo||'';
   document.getElementById('min_styles').value=eventObj.min_styles??'';
+  setEventCategories(eventObj.category??eventObj.categories);
   document.getElementById('category_class_type').value=eventObj.category_class_type||'NO';
   document.getElementById('score_type').value=eventObj.score_type||'INT';
   document.getElementById('criteria_config').value=eventObj.criteria_config||'NO_CONFIG';
@@ -539,6 +677,7 @@ function resetEventForm(){
   document.getElementById('tied_positions').value='NO';
   document.getElementById('send_stats_code').value='NO';
   document.getElementById('judge_feedback').value='NO';
+  setEventCategories([]);
   document.getElementById('previewLogo').classList.add('d-none');
   document.getElementById('urlPreview').classList.add('d-none');
   populateClientSelect();
@@ -627,8 +766,53 @@ async function saveEvent(){
 }
 
 function collectEventFormData(){
+  const categoryValue=formatEventCategoriesValue(getEventCategories());
   return {
-    code:document.getElementById('code').value.trim(),name:document.getElementById('name').value.trim(),language:document.getElementById('language').value,status:document.getElementById('status').value,start:document.getElementById('start').value||null,end:document.getElementById('end').value||null,password:parseInt(document.getElementById('password').value,10)||0,eventurl:document.getElementById('eventurl').value.trim()||null,eventlogo:document.getElementById('eventlogo').value.trim()||null,client_id:parseInt(document.getElementById('clientSelect').value,10)||null,visible:document.getElementById('visible').checked?1:0,trial:document.getElementById('trial').checked?1:0,min_styles:parseInt(document.getElementById('min_styles').value,10)||null,category_class_type:document.getElementById('category_class_type').value||'NO',criteria_config:document.getElementById('criteria_config').value||'NO_CONFIG',total_system:document.getElementById('total_system').value||'SUM_SCORES',visible_judges:document.getElementById('visible_judges').checked?1:0,visible_participants:document.getElementById('visible_participants').checked?1:0,visible_schedule:document.getElementById('visible_schedule').checked?1:0,visible_results:document.getElementById('visible_results').checked?1:0,visible_statistics:document.getElementById('visible_statistics').checked?1:0,has_clubs:document.getElementById('has_clubs').checked?1:0,hide_school_info:document.getElementById('hide_school_info').checked?1:0,criteria_per_judge:parseInt(document.getElementById('criteria_per_judge').value,10)||0,has_penalties:document.getElementById('has_penalties').checked?1:0,has_registrations:document.getElementById('has_registrations').checked?1:0,tied_positions:normalizeTiedPositionsValue(document.getElementById('tied_positions').value),judge_feedback:document.getElementById('judge_feedback').value,judges_vis_results:document.getElementById('judges_vis_results').checked?1:0,judges_can_change_votes:document.getElementById('judges_can_change_votes').checked?1:0,has_masters:document.getElementById('has_masters').checked?1:0,registration_start:document.getElementById('registration_start').value||null,registration_end:document.getElementById('registration_end').value||null,music_extra_time:parseInt(document.getElementById('music_extra_time').value,10)||0,notice_text:document.getElementById('notice_text').value.trim(),notice_active:document.getElementById('notice_active').checked?1:0,notice_type:document.getElementById('notice_type').value,score_type:document.getElementById('score_type').value,can_decide_positions:parseInt(document.getElementById('can_decide_positions').value,10)||0,restrict_voting:parseInt(document.getElementById('restrict_voting').value,10)||0,results_filter:document.getElementById('results_filter').value||'BY_CAT',show_flags:document.getElementById('show_flags').checked?1:0,send_stats_code:normalizeSendStatsCodeValue(document.getElementById('send_stats_code').value),hide_judges:document.getElementById('hide_judges').checked?1:0
+    code:document.getElementById('code').value.trim(),
+    name:document.getElementById('name').value.trim(),
+    language:document.getElementById('language').value,
+    status:document.getElementById('status').value,
+    start:document.getElementById('start').value||null,
+    end:document.getElementById('end').value||null,
+    password:parseInt(document.getElementById('password').value,10)||0,
+    eventurl:document.getElementById('eventurl').value.trim()||null,
+    eventlogo:document.getElementById('eventlogo').value.trim()||null,
+    client_id:parseInt(document.getElementById('clientSelect').value,10)||null,
+    visible:document.getElementById('visible').checked?1:0,
+    trial:document.getElementById('trial').checked?1:0,
+    min_styles:parseInt(document.getElementById('min_styles').value,10)||null,
+    category:categoryValue,
+    category_class_type:document.getElementById('category_class_type').value||'NO',
+    criteria_config:document.getElementById('criteria_config').value||'NO_CONFIG',
+    total_system:document.getElementById('total_system').value||'SUM_SCORES',
+    visible_judges:document.getElementById('visible_judges').checked?1:0,
+    visible_participants:document.getElementById('visible_participants').checked?1:0,
+    visible_schedule:document.getElementById('visible_schedule').checked?1:0,
+    visible_results:document.getElementById('visible_results').checked?1:0,
+    visible_statistics:document.getElementById('visible_statistics').checked?1:0,
+    has_clubs:document.getElementById('has_clubs').checked?1:0,
+    hide_school_info:document.getElementById('hide_school_info').checked?1:0,
+    criteria_per_judge:parseInt(document.getElementById('criteria_per_judge').value,10)||0,
+    has_penalties:document.getElementById('has_penalties').checked?1:0,
+    has_registrations:document.getElementById('has_registrations').checked?1:0,
+    tied_positions:normalizeTiedPositionsValue(document.getElementById('tied_positions').value),
+    judge_feedback:document.getElementById('judge_feedback').value,
+    judges_vis_results:document.getElementById('judges_vis_results').checked?1:0,
+    judges_can_change_votes:document.getElementById('judges_can_change_votes').checked?1:0,
+    has_masters:document.getElementById('has_masters').checked?1:0,
+    registration_start:document.getElementById('registration_start').value||null,
+    registration_end:document.getElementById('registration_end').value||null,
+    music_extra_time:parseInt(document.getElementById('music_extra_time').value,10)||0,
+    notice_text:document.getElementById('notice_text').value.trim(),
+    notice_active:document.getElementById('notice_active').checked?1:0,
+    notice_type:document.getElementById('notice_type').value,
+    score_type:document.getElementById('score_type').value,
+    can_decide_positions:parseInt(document.getElementById('can_decide_positions').value,10)||0,
+    restrict_voting:parseInt(document.getElementById('restrict_voting').value,10)||0,
+    results_filter:document.getElementById('results_filter').value||'BY_CAT',
+    show_flags:document.getElementById('show_flags').checked?1:0,
+    send_stats_code:normalizeSendStatsCodeValue(document.getElementById('send_stats_code').value),
+    hide_judges:document.getElementById('hide_judges').checked?1:0
   };
 }
 async function loadClients(){
