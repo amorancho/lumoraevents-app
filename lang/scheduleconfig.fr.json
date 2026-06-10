@@ -33,6 +33,8 @@
   "time_before_start": "Temps avant le début (secondes)",
   "break_name": "Nom",
   "break_time": "Temps (minutes)",
+  "visible": "Visible",
+  "not_visible": "Non visible",
   "save": "Enregistrer",
   "cancel": "Annuler",
   "close": "Fermer",
@@ -76,6 +78,7 @@
   "color_mint": "Menthe",
   "color_sky": "Ciel",
   "color_lavender": "Lavande",
+  "time_not_defined": "TIME NOT DEFINED",
   "error": "Erreur"
 }
 

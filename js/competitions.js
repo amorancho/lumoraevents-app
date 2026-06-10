@@ -440,7 +440,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
 
   await WaitEventLoaded();
-  updateElementProperty('scheduleconfigUrl', 'href', `scheduleconfig.html?eventId=${eventId}`);
 
   const closedPanel = document.getElementById('closedPanel');
 

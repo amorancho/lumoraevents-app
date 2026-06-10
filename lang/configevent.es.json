@@ -11,6 +11,8 @@
   "card_text_dancers": "Configura Participantes.",
   "card_title_competitions": "Competiciones",
   "card_text_competitions": "Configura Competiciones.",
+  "card_title_scheduleconfig": "Schedule Config",
+  "card_text_scheduleconfig": "Configura bloques y tiempos del schedule.",
   "card_title_tracking": "Seguimiento de Competiciones",
   "card_text_tracking": "Sigue las Competiciones en tiempo real."
 }

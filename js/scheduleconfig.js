@@ -9,6 +9,20 @@ const pastelColors = [
   { value: "#D7C6FF", key: "color_lavender", fallback: "Lavender" }
 ];
 
+const competitionStatusText = {
+  OPE: 'OPEN',
+  FIN: 'FINISHED',
+  CLO: 'CLOSED',
+  PRO: 'IN PROGRESS'
+};
+
+const competitionStatusColor = {
+  OPE: 'warning text-dark',
+  FIN: 'success',
+  CLO: 'danger',
+  PRO: 'primary'
+};
+
 let scheduleBlocks = [];
 let competitions = [];
 let selectedBlockId = null;
@@ -20,9 +34,7 @@ let breakModal = null;
 let confirmDeleteModal = null;
 let previewScheduleModal = null;
 let exportScheduleModal = null;
-let unsavedChangesModal = null;
 let beforeUnloadHandlerBound = false;
-let allowNavigateWithoutPrompt = false;
 
 window.renderScheduleConfig = renderScheduleConfig;
 
@@ -36,7 +48,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
   previewScheduleModal = new bootstrap.Modal(document.getElementById('previewScheduleModal'));
   exportScheduleModal = new bootstrap.Modal(document.getElementById('exportScheduleModal'));
-  unsavedChangesModal = new bootstrap.Modal(document.getElementById('unsavedChangesModal'));
 
   initColorSelect();
   bindScheduleConfigEvents();
@@ -120,7 +131,8 @@ function bindScheduleConfigEvents() {
       id: `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       block_type: 'COMP',
       competition_id: competitionId,
-      time_per_dancer: resolvedTimePerDancer
+      time_per_dancer: resolvedTimePerDancer,
+      visible: true
     });
 
     activeDetailId = null;
@@ -138,6 +150,7 @@ function bindScheduleConfigEvents() {
     document.getElementById('breakModalTitle').textContent = t('break_modal_title_add');
     document.getElementById('breakNameInput').value = '';
     document.getElementById('breakTimeInput').value = '';
+    document.getElementById('breakVisibleInput').checked = true;
     const breakModalEl = document.getElementById('breakModal');
     breakModalEl.addEventListener('shown.bs.modal', () => {
       document.getElementById('breakNameInput').focus();
@@ -152,11 +165,6 @@ function bindScheduleConfigEvents() {
     if (exportScheduleModal) exportScheduleModal.show();
   });
   document.getElementById('confirmExportPdfBtn').addEventListener('click', exportSchedulePdf);
-  document.getElementById('backToCompetitionsBtn').addEventListener('click', handleBackToCompetitions);
-  document.getElementById('confirmLeaveBtn').addEventListener('click', () => {
-    if (unsavedChangesModal) unsavedChangesModal.hide();
-    navigateToCompetitions();
-  });
 
   document.getElementById('detailsList').addEventListener('click', (event) => {
     const editButton = event.target.closest('.btn-edit-detail');
@@ -177,6 +185,7 @@ function bindScheduleConfigEvents() {
         document.getElementById('breakModalTitle').textContent = t('break_modal_title_edit');
         document.getElementById('breakNameInput').value = detail.break_name || '';
         document.getElementById('breakTimeInput').value = detail.break_time || '';
+        document.getElementById('breakVisibleInput').checked = getDetailVisible(detail);
         breakModal.show();
       } else {
         document.getElementById('competitionModalTitle').textContent = t('competition_modal_title_edit');
@@ -249,7 +258,7 @@ async function ensureBlockDetailsLoadedFor(block) {
     if (!response.ok) throw new Error('Error fetching block details');
     const data = await response.json();
 
-    const details = data.details || data.block_details || data.schedule_block_details || data.schedule_block_detail || [];
+    const details = extractBlockDetails(data, []);
     block.details = Array.isArray(details) ? details.map(normalizeDetail) : [];
     block.detailsLoaded = true;
     block.start = data.start || block.start;
@@ -259,8 +268,17 @@ async function ensureBlockDetailsLoadedFor(block) {
   }
 }
 
+function extractBlockDetails(data, fallback = undefined) {
+  if (!data || typeof data !== 'object') return fallback;
+  if (Object.prototype.hasOwnProperty.call(data, 'details')) return data.details;
+  if (Object.prototype.hasOwnProperty.call(data, 'block_details')) return data.block_details;
+  if (Object.prototype.hasOwnProperty.call(data, 'schedule_block_details')) return data.schedule_block_details;
+  if (Object.prototype.hasOwnProperty.call(data, 'schedule_block_detail')) return data.schedule_block_detail;
+  return fallback;
+}
+
 function normalizeBlock(block) {
-  const details = block.details || block.block_details || block.schedule_block_details || block.schedule_block_detail;
+  const details = extractBlockDetails(block);
   const startValue = block.start || block.start_time || block.startDate;
   const colorValue = block.color || block.block_color || '';
   const hasDetails = Array.isArray(details);
@@ -286,7 +304,8 @@ function normalizeDetail(detail) {
     break_time: toNumber(detail.break_time ?? detail.breakTime),
     category_name: detail.category_name ?? detail.category,
     style_name: detail.style_name ?? detail.style,
-    num_dancers: detail.num_dancers ?? detail.dancers
+    num_dancers: detail.num_dancers ?? detail.dancers,
+    visible: normalizeDetailVisible(detail.visible ?? detail.is_visible ?? detail.isVisible, blockType)
   };
 }
 
@@ -442,12 +461,20 @@ function renderCompetitionsList() {
   }
 
   availableCompetitions.forEach(comp => {
+    const maxTimeSeconds = getCompetitionMaxTimeSeconds(comp);
+    const hasMaxTime = Number.isFinite(maxTimeSeconds) && maxTimeSeconds > 0;
+    const maxTimeBadge = hasMaxTime
+      ? `<span class="badge text-bg-light border"><i class="bi bi-stopwatch me-1"></i>${secondsToMmSs(maxTimeSeconds)}</span>`
+      : `<span class="badge text-bg-warning text-dark">${t('time_not_defined', 'TIME NOT DEFINED')}</span>`;
+
     const li = document.createElement('li');
     li.className = 'list-group-item d-flex justify-content-between align-items-center';
     li.innerHTML = `
       <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="fw-semibold">${comp.category_name || comp.category}</span>
         <span class="text-muted">${comp.style_name || comp.style}</span>
+        ${buildCompetitionStatusBadge(comp.status)}
+        ${maxTimeBadge}
         <span class="badge bg-secondary">${comp.num_dancers ?? comp.dancers ?? 0}</span>
       </div>
       <button class="btn btn-sm btn-outline-primary btn-add-competition" data-id="${comp.id}" ${blockSelected ? '' : 'disabled'}>
@@ -677,6 +704,10 @@ function renderDetails() {
     const isBreak = detail.block_type === 'BREAK';
     const typeLabel = isBreak ? t('break_label') : t('competition_label');
     const typeBadge = isBreak ? 'bg-secondary' : 'bg-primary';
+    const isVisibleBreak = isBreak && getDetailVisible(detail);
+    const visibilityBadge = isBreak
+      ? `<span class="badge ${isVisibleBreak ? 'text-bg-success' : 'text-bg-dark'}">${isVisibleBreak ? t('visible', 'Visible') : t('not_visible', 'Not visible')}</span>`
+      : '';
 
     const compInfo = isBreak ? null : getCompetitionInfo(detail);
     const category = compInfo?.category_name || compInfo?.category || t('category');
@@ -710,7 +741,9 @@ function renderDetails() {
           <div>
             <div>
               <span class="badge ${typeBadge} me-2">${typeLabel}</span>
+              ${isBreak ? '' : `${buildCompetitionStatusBadge(compInfo?.status, 'me-2')}`}
               <span class="fw-semibold me-2">${title}</span>
+              ${visibilityBadge}
               ${numDancers}
             </div>
             <div class="mt-2 text-muted small d-flex flex-wrap gap-3">
@@ -782,6 +815,13 @@ function getCompetitionInfo(detail) {
   if (comp) return comp;
   if (detail.category_name || detail.style_name) return detail;
   return null;
+}
+
+function buildCompetitionStatusBadge(status, extraClass = '') {
+  const badgeClass = competitionStatusColor[status] || 'secondary';
+  const badgeText = competitionStatusText[status] || status || '-';
+  const normalizedExtraClass = extraClass ? ` ${extraClass}` : '';
+  return `<span class="badge bg-${badgeClass}${normalizedExtraClass}">${badgeText}</span>`;
 }
 
 function getSelectedBlock() {
@@ -873,8 +913,9 @@ async function saveSelectedBlock() {
       if (data && typeof data === 'object') {
         block.start = data.start || block.start;
         block.color = data.color || block.color;
-        if (Array.isArray(data.details)) {
-          block.details = data.details.map(normalizeDetail);
+        const responseDetails = extractBlockDetails(data);
+        if (Array.isArray(responseDetails)) {
+          block.details = responseDetails.map(normalizeDetail);
           block.detailsLoaded = true;
         }
       }
@@ -966,6 +1007,7 @@ function formatStartForApi(value) {
 function saveBreakDetailFromModal() {
   const breakName = document.getElementById('breakNameInput').value.trim();
   const breakTime = toNumber(document.getElementById('breakTimeInput').value);
+  const breakVisible = document.getElementById('breakVisibleInput').checked;
   const block = getSelectedBlock();
 
   if (!block) return;
@@ -983,13 +1025,15 @@ function saveBreakDetailFromModal() {
     if (detail) {
       detail.break_name = breakName;
       detail.break_time = breakTime;
+      detail.visible = breakVisible;
     }
   } else {
     block.details.push({
       id: `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       block_type: 'BREAK',
       break_name: breakName,
-      break_time: breakTime
+      break_time: breakTime,
+      visible: breakVisible
     });
   }
 
@@ -1056,30 +1100,10 @@ function bindBeforeUnloadWarning() {
   if (beforeUnloadHandlerBound) return;
   beforeUnloadHandlerBound = true;
   window.addEventListener('beforeunload', (event) => {
-    if (allowNavigateWithoutPrompt) return;
     if (!hasPendingChanges()) return;
     event.preventDefault();
     event.returnValue = '';
   });
-}
-
-function handleBackToCompetitions() {
-  if (hasPendingChanges()) {
-    if (unsavedChangesModal) {
-      unsavedChangesModal.show();
-      return;
-    }
-  }
-  navigateToCompetitions();
-}
-
-function navigateToCompetitions() {
-  allowNavigateWithoutPrompt = true;
-  window.location.href = getCompetitionsUrl();
-}
-
-function getCompetitionsUrl() {
-  return `competitions.html?eventId=${encodeURIComponent(eventId)}`;
 }
 
 function confirmDelete(message, callback) {
@@ -1165,6 +1189,7 @@ function serializeDetails(details) {
     time_per_dancer: detail.time_per_dancer ?? null,
     break_name: detail.break_name || null,
     break_time: detail.break_time || null,
+    visible: detail.block_type === 'COMP' ? 1 : (getDetailVisible(detail) ? 1 : 0),
     order: index + 1
   }));
 }
@@ -1300,6 +1325,39 @@ function getCompetitionMaxTimeSeconds(competition) {
   }
 
   return null;
+}
+
+function normalizeDetailVisible(value, blockType = 'COMP') {
+  if (blockType === 'COMP') return true;
+  return parseBooleanFlag(value, true);
+}
+
+function getDetailVisible(detail) {
+  return normalizeDetailVisible(detail?.visible, detail?.block_type);
+}
+
+function parseBooleanFlag(value, defaultValue = true) {
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return value !== 0;
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (['1', 'true', 'yes', 'y', 'si', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'n', 'off'].includes(normalized)) {
+    return false;
+  }
+
+  return defaultValue;
 }
 
 function toDatetimeLocalValue(value) {
