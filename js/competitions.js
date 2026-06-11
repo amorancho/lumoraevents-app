@@ -39,6 +39,13 @@ const bulkDeleteCompetitionsState = {
   deletedCount: 0,
   pendingReload: false
 };
+const groupCategoriesState = {
+  styleId: '',
+  sourceCompetitionIds: new Set(),
+  destinationCompetitionId: '',
+  destinationCategoryName: '',
+  isSubmitting: false
+};
 
 const convertStatus = {
   'OPE': 'OPEN',
@@ -91,6 +98,445 @@ function competitionMatchesFilters(competition, filters = getCurrentCompetitionF
 function getFilteredCompetitions() {
   const filters = getCurrentCompetitionFilters();
   return (Array.isArray(competitions) ? competitions : []).filter((competition) => competitionMatchesFilters(competition, filters));
+}
+
+function normalizeCompetitionSelectionId(value) {
+  return String(value ?? '').trim();
+}
+
+function parseCompetitionSelectionId(value) {
+  const normalizedValue = normalizeCompetitionSelectionId(value);
+  const parsedValue = Number(normalizedValue);
+  return normalizedValue !== '' && Number.isFinite(parsedValue)
+    ? parsedValue
+    : normalizedValue;
+}
+
+function getGroupCategoriesElements() {
+  return {
+    styleSelect: document.getElementById('groupCategoriesStyleSelect'),
+    tableWrap: document.getElementById('groupCategoriesCompetitionsTableWrap'),
+    tableBody: document.getElementById('groupCategoriesCompetitionsList'),
+    emptyState: document.getElementById('groupCategoriesEmptyState'),
+    destinationSelect: document.getElementById('groupCategoriesDestinationSelect'),
+    newCategoryInput: document.getElementById('groupCategoriesNewCategoryInput'),
+    originsSummary: document.getElementById('groupCategoriesOriginsSummary'),
+    applyBtn: document.getElementById('groupCategoriesApplyBtn')
+  };
+}
+
+function getClosedCompetitionsForGrouping(styleId = '') {
+  const normalizedStyleId = normalizeCompetitionSelectionId(styleId);
+  return (Array.isArray(competitions) ? competitions : [])
+    .filter((competition) => {
+      const competitionStatus = String(competition?.status || '').toUpperCase();
+      const competitionStyleId = normalizeCompetitionSelectionId(competition?.style_id);
+      return competitionStatus === 'CLO'
+        && (!normalizedStyleId || competitionStyleId === normalizedStyleId);
+    })
+    .sort((left, right) => {
+      const leftCategory = String(left?.category_name || '').toLowerCase();
+      const rightCategory = String(right?.category_name || '').toLowerCase();
+      if (leftCategory !== rightCategory) {
+        return leftCategory.localeCompare(rightCategory);
+      }
+
+      const leftId = normalizeCompetitionSelectionId(left?.id);
+      const rightId = normalizeCompetitionSelectionId(right?.id);
+      return leftId.localeCompare(rightId, undefined, { numeric: true });
+    });
+}
+
+function resetGroupCategoriesState(options = {}) {
+  if (!options.keepStyle) {
+    groupCategoriesState.styleId = '';
+  }
+  groupCategoriesState.sourceCompetitionIds.clear();
+  groupCategoriesState.destinationCompetitionId = '';
+  groupCategoriesState.destinationCategoryName = '';
+  groupCategoriesState.isSubmitting = false;
+}
+
+function buildGroupCategoriesStyleOptions() {
+  const stylesById = new Map();
+  getClosedCompetitionsForGrouping().forEach((competition) => {
+    const styleId = normalizeCompetitionSelectionId(competition?.style_id);
+    if (!styleId) return;
+
+    if (!stylesById.has(styleId)) {
+      stylesById.set(
+        styleId,
+        String(
+          competition?.style_name
+          || getSelectOptionLabel('styleDropdown', styleId)
+          || styleId
+        )
+      );
+    }
+  });
+
+  return Array.from(stylesById.entries())
+    .map(([value, label]) => ({ value, label }))
+    .sort((left, right) => left.label.localeCompare(right.label));
+}
+
+function populateGroupCategoriesStyleSelect() {
+  const { styleSelect } = getGroupCategoriesElements();
+  if (!styleSelect) return;
+
+  const selectedStyleId = normalizeCompetitionSelectionId(groupCategoriesState.styleId);
+  const styleOptions = buildGroupCategoriesStyleOptions();
+
+  styleSelect.innerHTML = '';
+
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.textContent = t('select_style', 'Select a Style');
+  styleSelect.appendChild(placeholderOption);
+
+  styleOptions.forEach((option) => {
+    const optionEl = document.createElement('option');
+    optionEl.value = option.value;
+    optionEl.textContent = option.label;
+    styleSelect.appendChild(optionEl);
+  });
+
+  const hasSelectedStyle = selectedStyleId && styleOptions.some((option) => option.value === selectedStyleId);
+  groupCategoriesState.styleId = hasSelectedStyle ? selectedStyleId : '';
+  styleSelect.value = groupCategoriesState.styleId;
+}
+
+function getGroupCategoriesSelectedOriginCompetitions() {
+  const competitionsById = new Map(
+    getClosedCompetitionsForGrouping(groupCategoriesState.styleId).map((competition) => [
+      normalizeCompetitionSelectionId(competition?.id),
+      competition
+    ])
+  );
+
+  return Array.from(groupCategoriesState.sourceCompetitionIds)
+    .map((competitionId) => competitionsById.get(competitionId))
+    .filter(Boolean);
+}
+
+function getGroupCategoriesSelectedDestinationCompetition() {
+  const destinationCompetitionId = normalizeCompetitionSelectionId(groupCategoriesState.destinationCompetitionId);
+  if (!destinationCompetitionId) return null;
+
+  return getClosedCompetitionsForGrouping(groupCategoriesState.styleId)
+    .find((competition) => normalizeCompetitionSelectionId(competition?.id) === destinationCompetitionId) || null;
+}
+
+function formatGroupCategoriesDestinationOptionLabel(competition) {
+  return t(
+    'group_categories_destination_option_label',
+    '{competition} ({dancers} dancers)'
+  )
+    .replace('{competition}', String(competition?.category_name || '-'))
+    .replace('{dancers}', String(Number(competition?.num_dancers) || 0));
+}
+
+function populateGroupCategoriesDestinationSelect(filteredCompetitions = getClosedCompetitionsForGrouping(groupCategoriesState.styleId)) {
+  const { destinationSelect } = getGroupCategoriesElements();
+  if (!destinationSelect) return;
+
+  const selectedDestinationId = normalizeCompetitionSelectionId(groupCategoriesState.destinationCompetitionId);
+
+  destinationSelect.innerHTML = '';
+
+  const placeholderOption = document.createElement('option');
+  placeholderOption.value = '';
+  placeholderOption.textContent = t(
+    'group_categories_destination_select_placeholder',
+    'Select a competition'
+  );
+  destinationSelect.appendChild(placeholderOption);
+
+  filteredCompetitions.forEach((competition) => {
+    const option = document.createElement('option');
+    option.value = normalizeCompetitionSelectionId(competition?.id);
+    option.textContent = formatGroupCategoriesDestinationOptionLabel(competition);
+    destinationSelect.appendChild(option);
+  });
+
+  const hasSelectedDestination = selectedDestinationId && filteredCompetitions.some((competition) => {
+    return normalizeCompetitionSelectionId(competition?.id) === selectedDestinationId;
+  });
+
+  groupCategoriesState.destinationCompetitionId = hasSelectedDestination ? selectedDestinationId : '';
+  destinationSelect.value = groupCategoriesState.destinationCompetitionId;
+}
+
+function updateGroupCategoriesDestinationControlsState(filteredCompetitions = getClosedCompetitionsForGrouping(groupCategoriesState.styleId)) {
+  const { destinationSelect, newCategoryInput } = getGroupCategoriesElements();
+  const hasStyleSelected = Boolean(normalizeCompetitionSelectionId(groupCategoriesState.styleId));
+  const hasCompetitions = filteredCompetitions.length > 0;
+
+  if (destinationSelect) {
+    destinationSelect.disabled = groupCategoriesState.isSubmitting || !hasStyleSelected || !hasCompetitions;
+  }
+
+  if (newCategoryInput) {
+    newCategoryInput.disabled = groupCategoriesState.isSubmitting || !hasStyleSelected;
+    newCategoryInput.value = groupCategoriesState.destinationCategoryName;
+  }
+}
+
+function updateGroupCategoriesSummary() {
+  const { originsSummary } = getGroupCategoriesElements();
+  if (!originsSummary) return;
+
+  const selectedOriginCompetitions = getGroupCategoriesSelectedOriginCompetitions();
+  const originDancersTotal = selectedOriginCompetitions.reduce((sum, competition) => {
+    return sum + (Number(competition?.num_dancers) || 0);
+  }, 0);
+  originsSummary.textContent = t(
+    'group_categories_origins_summary',
+    '{competitions} competitions | {dancers} dancers'
+  )
+    .replace('{competitions}', String(selectedOriginCompetitions.length))
+    .replace('{dancers}', String(originDancersTotal));
+}
+
+function updateGroupCategoriesApplyButtonState() {
+  const { applyBtn } = getGroupCategoriesElements();
+  if (!applyBtn) return;
+
+  const hasStyleSelected = Boolean(normalizeCompetitionSelectionId(groupCategoriesState.styleId));
+  const hasOrigins = groupCategoriesState.sourceCompetitionIds.size > 0;
+  const hasExistingDestination = Boolean(normalizeCompetitionSelectionId(groupCategoriesState.destinationCompetitionId));
+  const hasNewCategoryName = Boolean(String(groupCategoriesState.destinationCategoryName || '').trim());
+  const hasExactlyOneDestination = (hasExistingDestination || hasNewCategoryName) && !(hasExistingDestination && hasNewCategoryName);
+  applyBtn.disabled = groupCategoriesState.isSubmitting || !hasStyleSelected || !hasOrigins || !hasExactlyOneDestination;
+}
+
+function renderGroupCategoriesCompetitionsList() {
+  const { tableWrap, tableBody, emptyState } = getGroupCategoriesElements();
+  if (!tableWrap || !tableBody || !emptyState) return;
+
+  tableBody.innerHTML = '';
+
+  const selectedStyleId = normalizeCompetitionSelectionId(groupCategoriesState.styleId);
+  const filteredCompetitions = selectedStyleId ? getClosedCompetitionsForGrouping(selectedStyleId) : [];
+  populateGroupCategoriesDestinationSelect(filteredCompetitions);
+  updateGroupCategoriesDestinationControlsState(filteredCompetitions);
+
+  if (!selectedStyleId) {
+    tableWrap.classList.add('d-none');
+    emptyState.classList.remove('d-none');
+    emptyState.textContent = t(
+      'group_categories_select_prompt',
+      'Select a style to view closed competitions.'
+    );
+    updateGroupCategoriesSummary();
+    updateGroupCategoriesApplyButtonState();
+    return;
+  }
+
+  if (!filteredCompetitions.length) {
+    tableWrap.classList.add('d-none');
+    emptyState.classList.remove('d-none');
+    emptyState.textContent = t(
+      'group_categories_no_competitions',
+      'There are no CLOSED competitions for this style.'
+    );
+    updateGroupCategoriesSummary();
+    updateGroupCategoriesApplyButtonState();
+    return;
+  }
+
+  filteredCompetitions.forEach((competition) => {
+    const competitionId = normalizeCompetitionSelectionId(competition?.id);
+    const isOriginSelected = groupCategoriesState.sourceCompetitionIds.has(competitionId);
+
+    const row = document.createElement('tr');
+    if (isOriginSelected) {
+      row.classList.add('table-info');
+    }
+
+    const selectCell = document.createElement('td');
+    selectCell.className = 'text-center';
+    const selectInput = document.createElement('input');
+    selectInput.type = 'checkbox';
+    selectInput.className = 'form-check-input group-categories-source-checkbox';
+    selectInput.dataset.competitionId = competitionId;
+    selectInput.checked = isOriginSelected;
+    selectInput.disabled = groupCategoriesState.isSubmitting;
+    selectCell.appendChild(selectInput);
+
+    const nameCell = document.createElement('td');
+    const title = document.createElement('div');
+    title.className = 'fw-semibold';
+    title.textContent = `${competition.category_name || '-'}`;
+    nameCell.appendChild(title);
+
+    const dancersCell = document.createElement('td');
+    dancersCell.className = 'text-center';
+    dancersCell.textContent = `${Number(competition?.num_dancers) || 0}`;
+
+    row.appendChild(selectCell);
+    row.appendChild(nameCell);
+    row.appendChild(dancersCell);
+    tableBody.appendChild(row);
+  });
+
+  tableWrap.classList.remove('d-none');
+  emptyState.classList.add('d-none');
+  updateGroupCategoriesSummary();
+  updateGroupCategoriesApplyButtonState();
+}
+
+function validateGroupCategoriesSelection() {
+  const selectedStyleId = normalizeCompetitionSelectionId(groupCategoriesState.styleId);
+  const allowedCompetitionIds = new Set(
+    getClosedCompetitionsForGrouping(selectedStyleId).map((competition) => normalizeCompetitionSelectionId(competition?.id))
+  );
+  const originCompetitionIds = Array.from(groupCategoriesState.sourceCompetitionIds)
+    .filter((competitionId) => allowedCompetitionIds.has(competitionId));
+  const destinationCompetitionId = normalizeCompetitionSelectionId(groupCategoriesState.destinationCompetitionId);
+  const destinationCategoryName = String(groupCategoriesState.destinationCategoryName || '').trim();
+  const hasExistingDestination = Boolean(destinationCompetitionId && allowedCompetitionIds.has(destinationCompetitionId));
+  const hasNewCategoryName = Boolean(destinationCategoryName);
+
+  if (!selectedStyleId) {
+    return {
+      valid: false,
+      message: t('group_categories_missing_style', 'Select a style.')
+    };
+  }
+
+  if (!originCompetitionIds.length) {
+    return {
+      valid: false,
+      message: t('group_categories_missing_origins', 'Select at least one origin competition.')
+    };
+  }
+
+  if (hasExistingDestination && hasNewCategoryName) {
+    return {
+      valid: false,
+      message: t(
+        'group_categories_multiple_destinations',
+        'Choose only one option: destination competition or new category name.'
+      )
+    };
+  }
+
+  if (!hasExistingDestination && !hasNewCategoryName) {
+    return {
+      valid: false,
+      message: t(
+        'group_categories_missing_destination',
+        'Select a destination competition or enter a new category name.'
+      )
+    };
+  }
+
+  if (hasExistingDestination && originCompetitionIds.includes(destinationCompetitionId)) {
+    return {
+      valid: false,
+      message: t(
+        'group_categories_same_origin_destination',
+        'The same competition cannot be selected as origin and destination.'
+      )
+    };
+  }
+
+  return {
+    valid: true,
+    styleId: selectedStyleId,
+    originCompetitionIds,
+    destinationValue: hasExistingDestination
+      ? parseCompetitionSelectionId(destinationCompetitionId)
+      : destinationCategoryName
+  };
+}
+
+async function submitGroupCategoriesRequest(payload) {
+  const endpoint = `${API_BASE_URL}/api/competitions/group-categories`;
+  const methods = ['PUT', 'POST'];
+  let lastErrorMessage = t('group_categories_request_error', 'Error grouping categories.');
+
+  for (let index = 0; index < methods.length; index += 1) {
+    const method = methods[index];
+    const response = await fetch(endpoint, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (response.ok) {
+      return {
+        ok: true,
+        message: data?.message || t('group_categories_success', 'Categories grouped successfully.')
+      };
+    }
+
+    lastErrorMessage = data?.error || data?.message || lastErrorMessage;
+    if (index === 0 && (response.status === 404 || response.status === 405)) {
+      continue;
+    }
+
+    return { ok: false, message: lastErrorMessage };
+  }
+
+  return { ok: false, message: lastErrorMessage };
+}
+
+async function handleGroupCategoriesSubmit(triggerButton = null, modalInstance = null) {
+  const errorTitle = t('error_title', 'Error');
+  const validation = validateGroupCategoriesSelection();
+  if (!validation.valid) {
+    showMessageModal(validation.message, errorTitle);
+    return;
+  }
+
+  const payload = {
+    event_id: parseCompetitionSelectionId(getEvent().id),
+    style_id: parseCompetitionSelectionId(validation.styleId),
+    ori_competitions: validation.originCompetitionIds.map(parseCompetitionSelectionId),
+    des_competition: validation.destinationValue
+  };
+
+  const originalText = triggerButton?.textContent || t('group_categories_apply_button', 'Group');
+  groupCategoriesState.isSubmitting = true;
+  updateGroupCategoriesApplyButtonState();
+  renderGroupCategoriesCompetitionsList();
+
+  if (triggerButton) {
+    triggerButton.disabled = true;
+    triggerButton.textContent = t('group_categories_status_grouping', 'Grouping...');
+  }
+
+  try {
+    const result = await submitGroupCategoriesRequest(payload);
+    if (!result.ok) {
+      showMessageModal(result.message, errorTitle);
+      return;
+    }
+
+    if (modalInstance) {
+      modalInstance.hide();
+    }
+    showToastNotice(
+      result.message || t('group_categories_success', 'Categories grouped successfully.'),
+      'success'
+    );
+    await fetchCompetitionsFromAPI();
+  } catch (error) {
+    showMessageModal(
+      error?.message || t('group_categories_request_error', 'Error grouping categories.'),
+      errorTitle
+    );
+  } finally {
+    groupCategoriesState.isSubmitting = false;
+    if (triggerButton) {
+      triggerButton.disabled = false;
+      triggerButton.textContent = originalText;
+    }
+    renderGroupCategoriesCompetitionsList();
+  }
 }
 
 function getBulkDeleteCompetitionElements() {
@@ -1085,6 +1531,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const maxTimesModal = maxTimesModalEl ? new bootstrap.Modal(maxTimesModalEl) : null;
     const createCompetitionsModalEl = document.getElementById('createCompetitionsModal');
     const createCompetitionsModal = createCompetitionsModalEl ? new bootstrap.Modal(createCompetitionsModalEl) : null;
+    const groupCategoriesModalEl = document.getElementById('groupCategoriesModal');
+    const groupCategoriesModal = groupCategoriesModalEl ? new bootstrap.Modal(groupCategoriesModalEl) : null;
     const editMaxTimeInput = document.getElementById('editMaxTime');
     const scheduleConfigWarningMessageEl = document.getElementById('scheduleConfigWarningMessage');
 
@@ -1615,6 +2063,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const createCompsSelectAllStyles = document.getElementById('createCompsSelectAllStyles');
     const createCompsOnlyWithDancers = document.getElementById('createCompsOnlyWithDancers');
     const createCompetitionsApplyBtn = document.getElementById('createCompetitionsApplyBtn');
+    const groupCategoriesBtn = document.getElementById('groupCategoriesBtn');
+    const groupCategoriesStyleSelect = document.getElementById('groupCategoriesStyleSelect');
+    const groupCategoriesDestinationSelect = document.getElementById('groupCategoriesDestinationSelect');
+    const groupCategoriesNewCategoryInput = document.getElementById('groupCategoriesNewCategoryInput');
+    const groupCategoriesApplyBtn = document.getElementById('groupCategoriesApplyBtn');
 
     if (createCompetitionsBtn && createCompetitionsModal) {
       createCompetitionsBtn.addEventListener('click', async () => {
@@ -1717,6 +2170,90 @@ document.addEventListener('DOMContentLoaded', async () => {
           createCompetitionsApplyBtn.disabled = false;
           createCompetitionsApplyBtn.textContent = originalText;
         }
+      });
+    }
+
+    if (groupCategoriesBtn && groupCategoriesModal) {
+      groupCategoriesBtn.addEventListener('click', async () => {
+        await ensureCreateCompsSourceOptionsLoaded();
+        if (!competitions.length) {
+          await fetchCompetitionsFromAPI();
+        }
+
+        resetGroupCategoriesState();
+        populateGroupCategoriesStyleSelect();
+        renderGroupCategoriesCompetitionsList();
+        groupCategoriesModal.show();
+      });
+    }
+
+    if (groupCategoriesStyleSelect) {
+      groupCategoriesStyleSelect.addEventListener('change', () => {
+        groupCategoriesState.styleId = normalizeCompetitionSelectionId(groupCategoriesStyleSelect.value);
+        groupCategoriesState.sourceCompetitionIds.clear();
+        groupCategoriesState.destinationCompetitionId = '';
+        groupCategoriesState.destinationCategoryName = '';
+        renderGroupCategoriesCompetitionsList();
+      });
+    }
+
+    if (groupCategoriesModalEl) {
+      groupCategoriesModalEl.addEventListener('change', (event) => {
+        const target = event.target;
+        if (target instanceof HTMLInputElement && target.classList.contains('group-categories-source-checkbox')) {
+          const competitionId = normalizeCompetitionSelectionId(target.dataset.competitionId);
+          if (!competitionId) return;
+
+          if (target.checked) {
+            groupCategoriesState.sourceCompetitionIds.add(competitionId);
+            if (groupCategoriesState.destinationCompetitionId === competitionId) {
+              groupCategoriesState.destinationCompetitionId = '';
+            }
+          } else {
+            groupCategoriesState.sourceCompetitionIds.delete(competitionId);
+          }
+          renderGroupCategoriesCompetitionsList();
+          return;
+        }
+
+        if (target instanceof HTMLSelectElement && target.id === 'groupCategoriesDestinationSelect') {
+          const competitionId = normalizeCompetitionSelectionId(target.value);
+          groupCategoriesState.destinationCompetitionId = competitionId;
+          if (competitionId) {
+            groupCategoriesState.destinationCategoryName = '';
+            if (groupCategoriesNewCategoryInput) {
+              groupCategoriesNewCategoryInput.value = '';
+            }
+            groupCategoriesState.sourceCompetitionIds.delete(competitionId);
+          }
+          renderGroupCategoriesCompetitionsList();
+        }
+      });
+
+      groupCategoriesModalEl.addEventListener('input', (event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLInputElement) || target.id !== 'groupCategoriesNewCategoryInput') return;
+
+        groupCategoriesState.destinationCategoryName = target.value;
+        if (String(target.value || '').trim()) {
+          groupCategoriesState.destinationCompetitionId = '';
+          if (groupCategoriesDestinationSelect) {
+            groupCategoriesDestinationSelect.value = '';
+          }
+        }
+        updateGroupCategoriesApplyButtonState();
+      });
+
+      groupCategoriesModalEl.addEventListener('hidden.bs.modal', () => {
+        resetGroupCategoriesState();
+        populateGroupCategoriesStyleSelect();
+        renderGroupCategoriesCompetitionsList();
+      });
+    }
+
+    if (groupCategoriesApplyBtn) {
+      groupCategoriesApplyBtn.addEventListener('click', async () => {
+        await handleGroupCategoriesSubmit(groupCategoriesApplyBtn, groupCategoriesModal);
       });
     }
 
