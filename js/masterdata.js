@@ -10,6 +10,7 @@ let penaltiesList = [];
 let criteriaConfigList = [];
 let filteredCriteriaConfigIds = [];
 let entryEditModal = null;
+let schoolModalInstance = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     validateRoles(allowedRoles);
@@ -342,19 +343,20 @@ function bindSchoolsEvents() {
     }
 
     const createBtn = document.getElementById('createNewSchoolBtn');
+    const resendStatsBtn = document.getElementById('resendSchoolStatsBtn');
     const saveBtn = document.getElementById('saveSchoolBtn');
     const tableBody = document.getElementById('clubsTable');
     const modalEl = document.getElementById('schoolModal');
     const form = document.getElementById('schoolForm');
 
-    if (!createBtn || !saveBtn || !tableBody || !modalEl || !form) {
+    if (!createBtn || !resendStatsBtn || !saveBtn || !tableBody || !modalEl || !form) {
         return;
     }
 
-    const schoolModal = new bootstrap.Modal(modalEl);
+    schoolModalInstance = new bootstrap.Modal(modalEl);
 
     createBtn.addEventListener('click', () => {
-        openSchoolModal({ modal: schoolModal, action: 'create' });
+        openSchoolModal({ modal: schoolModalInstance, action: 'create' });
     });
 
     tableBody.addEventListener('click', async (event) => {
@@ -363,7 +365,7 @@ function bindSchoolsEvents() {
             const id = editBtn.closest('tr')?.dataset?.id;
             const school = clubsList.find((item) => String(item.id) === String(id));
             if (!school) return;
-            openSchoolModal({ modal: schoolModal, action: 'edit', school });
+            openSchoolModal({ modal: schoolModalInstance, action: 'edit', school });
             return;
         }
 
@@ -383,7 +385,12 @@ function bindSchoolsEvents() {
     saveBtn.addEventListener('click', async () => {
         const action = form.dataset.action || 'create';
         const schoolId = form.dataset.id || null;
-        await saveSchool(action, schoolId, schoolModal, saveBtn);
+        await saveSchool(action, schoolId, schoolModalInstance, saveBtn);
+    });
+
+    resendStatsBtn.addEventListener('click', async () => {
+        const schoolId = form.dataset.id || null;
+        await resendSchoolStatsEmail(schoolId, schoolModalInstance, resendStatsBtn);
     });
 
     modalEl.addEventListener('shown.bs.modal', () => {
@@ -537,6 +544,22 @@ function setSchoolStatisticsInfo(school = {}) {
     const { badgeLabel, sendDate } = getSchoolStatisticsStatusInfo(school);
     statusField.value = badgeLabel;
     sendDateField.value = sendDate ? (formatEmailSendDate(sendDate) || sendDate) : t('not_sent', 'Not sent');
+}
+
+function shouldShowSchoolStatsResendButton(school = {}) {
+    const status = school?.email_status ?? school?.statistics_email_status ?? school?.status ?? null;
+    return String(status ?? '').trim().toUpperCase() === 'S';
+}
+
+function setSchoolStatsResendButtonVisibility(school = null) {
+    const wrapper = document.getElementById('schoolResendStatsWrapper');
+    const button = document.getElementById('resendSchoolStatsBtn');
+    if (!wrapper || !button) return;
+
+    const shouldShow = shouldShowSchoolStatsResendButton(school);
+    wrapper.classList.toggle('d-none', !shouldShow);
+    button.disabled = !shouldShow;
+    button.innerHTML = button.dataset.defaultLabel || 'Reenviar email de estadísticas';
 }
 
 function parseBooleanValue(value) {
@@ -791,6 +814,7 @@ function openSchoolModal({ modal, action, school = null }) {
         title.textContent = t('school_modal_edit', 'Edit school');
         setSchoolStatisticsInfo(school);
         statisticsInfo.classList.remove('d-none');
+        setSchoolStatsResendButtonVisibility(school);
     } else {
         delete form.dataset.id;
         nameInput.value = '';
@@ -800,6 +824,7 @@ function openSchoolModal({ modal, action, school = null }) {
         document.getElementById('schoolStatisticsStatus').value = '';
         document.getElementById('schoolStatisticsSendDate').value = '';
         statisticsInfo.classList.add('d-none');
+        setSchoolStatsResendButtonVisibility(null);
     }
 
     modal.show();
@@ -976,6 +1001,51 @@ async function saveSchool(action, schoolId, schoolModal, saveBtn) {
     } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = originalText || t('save', 'Save');
+    }
+}
+
+async function resendSchoolStatsEmail(schoolId, schoolModal, sendBtn) {
+    const resendErrorMessage = t('schools_resend_stats_error', 'Error al reenviar el email de estadísticas.');
+
+    if (!sendBtn || !schoolId) {
+        showMessageModal(resendErrorMessage, t('error'));
+        return;
+    }
+
+    const originalText = sendBtn.innerHTML;
+    sendBtn.disabled = true;
+
+    const spinner = document.createElement('span');
+    spinner.className = 'spinner-border spinner-border-sm ms-2';
+    spinner.setAttribute('role', 'status');
+    spinner.setAttribute('aria-hidden', 'true');
+    sendBtn.appendChild(spinner);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/clubs/send-stats`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event_id: getEvent().id,
+                club_id: schoolId
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            showMessageModal(err.error || resendErrorMessage, t('error'));
+            return;
+        }
+
+        schoolModal?.hide();
+        await loadSchoolsTable();
+    } catch (error) {
+        console.error('Error resending school statistics email:', error);
+        showMessageModal(resendErrorMessage, t('error'));
+    } finally {
+        spinner.remove();
+        sendBtn.innerHTML = originalText;
+        sendBtn.disabled = false;
     }
 }
 
