@@ -2474,6 +2474,47 @@ function getCountryName(code, countryMap) {
   return code;
 }
 
+function isRegistrationFlagEnabled(value) {
+  if (value === true) return true;
+  const normalized = `${value ?? ''}`.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true';
+}
+
+function getRegistrationMusicBadgeInfo(registration) {
+  const hasMusic = isRegistrationFlagEnabled(registration?.has_music);
+  if (!hasMusic) {
+    return {
+      label: t('registration_music_status_none', 'Sin música').toUpperCase(),
+      className: 'bg-danger-subtle text-danger-emphasis'
+    };
+  }
+
+  if (isRegistrationFlagEnabled(registration?.music_validated)) {
+    return {
+      label: t('registration_music_status_validated', 'Música validada').toUpperCase(),
+      className: 'bg-success-subtle text-success-emphasis'
+    };
+  }
+
+  return {
+    label: t('registration_music_status_pending_validation', 'Música sin validar').toUpperCase(),
+    className: 'bg-warning-subtle text-warning-emphasis'
+  };
+}
+
+function getRegistrationPaymentBadgeInfo(registration) {
+  const rawStatus = registration?.payment_status
+    ?? registration?.pay_status
+    ?? registration?.payment?.status
+    ?? registration?.payment_state
+    ?? '';
+  const label = `${rawStatus || '-'}`.trim() || '-';
+  return {
+    label: label.toUpperCase(),
+    className: 'bg-secondary-subtle text-secondary-emphasis'
+  };
+}
+
 function initSchoolsTab() {
   const filterForm = document.getElementById('schoolsFilters');
   const tableBody = document.getElementById('schoolsTable');
@@ -3692,6 +3733,7 @@ function initOrganizerRegistrationsTab() {
     list: '/api/registrations/choreographies',
     music: (id) => `/api/registrations/choreographies/${id}/music`,
     musicDownload: (id) => `/api/registrations/choreographies/${id}/music/download`,
+    musicValidate: (id) => `/api/registrations/choreographies/${id}/music/validate`,
     validate: (id) => `/api/registrations/choreographies/${id}/validate`,
     reject: (id) => `/api/registrations/choreographies/${id}/reject`
   };
@@ -3705,6 +3747,10 @@ function initOrganizerRegistrationsTab() {
     style: document.getElementById('registrationStyle'),
     statusWrapper: document.getElementById('registrationStatusWrapper'),
     statusBadge: document.getElementById('registrationStatusBadge'),
+    musicStatusWrapper: document.getElementById('registrationMusicStatusWrapper'),
+    musicStatusBadge: document.getElementById('registrationMusicStatusBadge'),
+    paymentStatusWrapper: document.getElementById('registrationPaymentStatusWrapper'),
+    paymentStatusBadge: document.getElementById('registrationPaymentStatusBadge'),
     rejectWrapper: document.getElementById('registrationRejectReasonWrapper'),
     rejectReason: document.getElementById('registrationRejectReason'),
     modalTitle: document.getElementById('registrationModalTitle'),
@@ -3725,7 +3771,14 @@ function initOrganizerRegistrationsTab() {
     error: document.getElementById('registrationAudioError'),
     removeBtn: document.getElementById('registrationAudioRemoveBtn'),
     saveBtn: document.getElementById('registrationAudioSaveBtn'),
-    downloadBtn: document.getElementById('registrationAudioDownloadBtn')
+    downloadBtn: document.getElementById('registrationAudioDownloadBtn'),
+    validateBtn: document.getElementById('registrationAudioValidateBtn')
+  };
+  const paymentElements = {
+    section: document.getElementById('registrationPaymentSection'),
+    status: document.getElementById('registrationPaymentStatus'),
+    name: document.getElementById('registrationPaymentName'),
+    size: document.getElementById('registrationPaymentSize')
   };
   const registrationModal = new bootstrap.Modal(modalEl);
   const membersModal = new bootstrap.Modal(membersModalEl);
@@ -3750,6 +3803,7 @@ function initOrganizerRegistrationsTab() {
   let styleById = new Map();
   let validationTarget = null;
   let rejectTarget = null;
+  let detailRegistration = null;
   let registrationsTooltipInstances = [];
 
   const populateSelect = (selectEl, items) => {
@@ -3882,6 +3936,11 @@ function initOrganizerRegistrationsTab() {
     audioElements.section.classList.toggle('d-none', !visible);
   };
 
+  const setPaymentSectionVisible = (visible) => {
+    if (!paymentElements.section) return;
+    paymentElements.section.classList.toggle('d-none', !visible);
+  };
+
   const setAudioViewMode = (isViewOnly) => {
     if (audioElements.uploadControls) {
       audioElements.uploadControls.classList.toggle('d-none', isViewOnly);
@@ -3891,6 +3950,12 @@ function initOrganizerRegistrationsTab() {
     }
     if (audioElements.saveBtn) {
       audioElements.saveBtn.classList.toggle('d-none', isViewOnly);
+    }
+    if (audioElements.validateBtn) {
+      audioElements.validateBtn.classList.toggle('d-none', !isViewOnly);
+      if (!isViewOnly) {
+        audioElements.validateBtn.disabled = true;
+      }
     }
     if (audioElements.error) {
       audioElements.error.classList.add('d-none');
@@ -3923,6 +3988,63 @@ function initOrganizerRegistrationsTab() {
     if (audioElements.duration) audioElements.duration.textContent = '-';
     if (audioElements.size) audioElements.size.textContent = '-';
     setAudioDownloadState(false);
+  };
+
+  const updateAudioMaxDuration = (categoryId = null) => {
+    const category = categoryId ? categoryById.get(`${categoryId}`) : null;
+    const maxDuration = normalizeNumber(category?.music_max_duration);
+    if (!audioElements.max) return;
+    audioElements.max.textContent = maxDuration == null
+      ? '-'
+      : `${formatDuration(maxDuration)} (+${getEvent().musicExtraTime || 0} sec extra)`;
+  };
+
+  const extractPaymentInfo = (data) => {
+    const status = data?.payment_status
+      || data?.pay_status
+      || data?.payment?.status
+      || data?.payment_state
+      || '';
+    const name = data?.payment_file_name
+      || data?.payment_original_name
+      || data?.payment_pdf_name
+      || data?.payment?.original_name
+      || data?.payment?.name
+      || '';
+    const size = normalizeNumber(
+      data?.payment_file_size
+      ?? data?.payment_size
+      ?? data?.payment?.size
+      ?? null
+    );
+
+    return { status, name, size };
+  };
+
+  const resetPaymentInfo = () => {
+    if (paymentElements.status) paymentElements.status.textContent = '-';
+    if (paymentElements.name) paymentElements.name.textContent = '-';
+    if (paymentElements.size) paymentElements.size.textContent = '-';
+  };
+
+  const setPaymentInfo = (data) => {
+    const paymentInfo = extractPaymentInfo(data);
+    if (paymentElements.status) {
+      paymentElements.status.textContent = paymentInfo.status || '-';
+    }
+    if (paymentElements.name) {
+      paymentElements.name.textContent = paymentInfo.name || '-';
+    }
+    if (paymentElements.size) {
+      paymentElements.size.textContent = paymentInfo.size != null ? formatBytes(paymentInfo.size) : '-';
+    }
+  };
+
+  const updateAudioValidateButtonState = (registration) => {
+    if (!audioElements.validateBtn) return;
+    const hasMusic = isRegistrationFlagEnabled(registration?.has_music);
+    const isValidated = isRegistrationFlagEnabled(registration?.music_validated);
+    audioElements.validateBtn.disabled = !registration?.id || !hasMusic || isValidated;
   };
 
   const downloadBlob = (blob, filename) => {
@@ -4133,11 +4255,13 @@ function initOrganizerRegistrationsTab() {
     || data?.reject_note
     || '';
 
-  const updateModalStatusInfo = (status, rejectReason) => {
+  const updateModalStatusInfo = (status, rejectReason, registration = null, { showExtended = false } = {}) => {
     if (!modalElements.statusWrapper || !modalElements.statusBadge) return;
-    if (!status) {
+    if (!status && !showExtended) {
       modalElements.statusWrapper.classList.add('d-none');
       if (modalElements.rejectWrapper) modalElements.rejectWrapper.classList.add('d-none');
+      if (modalElements.musicStatusWrapper) modalElements.musicStatusWrapper.classList.add('d-none');
+      if (modalElements.paymentStatusWrapper) modalElements.paymentStatusWrapper.classList.add('d-none');
       return;
     }
 
@@ -4145,6 +4269,24 @@ function initOrganizerRegistrationsTab() {
     modalElements.statusBadge.className = `badge bg-${statusInfo.color}`;
     modalElements.statusBadge.textContent = statusInfo.label;
     modalElements.statusWrapper.classList.remove('d-none');
+
+    if (modalElements.musicStatusWrapper && modalElements.musicStatusBadge) {
+      modalElements.musicStatusWrapper.classList.toggle('d-none', !showExtended);
+      if (showExtended) {
+        const musicInfo = getRegistrationMusicBadgeInfo(registration || {});
+        modalElements.musicStatusBadge.className = `badge ${musicInfo.className}`;
+        modalElements.musicStatusBadge.textContent = musicInfo.label;
+      }
+    }
+
+    if (modalElements.paymentStatusWrapper && modalElements.paymentStatusBadge) {
+      modalElements.paymentStatusWrapper.classList.toggle('d-none', !showExtended);
+      if (showExtended) {
+        const paymentInfo = getRegistrationPaymentBadgeInfo(registration || {});
+        modalElements.paymentStatusBadge.className = `badge ${paymentInfo.className}`;
+        modalElements.paymentStatusBadge.textContent = paymentInfo.label;
+      }
+    }
 
     if (modalElements.rejectWrapper && modalElements.rejectReason) {
       if (`${status}` === 'REJ') {
@@ -4358,6 +4500,72 @@ function initOrganizerRegistrationsTab() {
     setAudioViewMode(isViewOnly);
   };
 
+  const fillRegistrationDetailsModal = async (registration) => {
+    if (!registration || !form) return;
+
+    const details = registration.id ? await fetchRegistrationDetails(registration.id) : null;
+    const data = { ...(registration || {}), ...(details || {}) };
+    detailRegistration = data;
+
+    if (modalElements.modalTitle) {
+      modalElements.modalTitle.textContent = t('org_registrations_details_title', 'Detalle inscripcion');
+    }
+
+    if (modalElements.id) modalElements.id.value = data.id || '';
+    if (modalElements.choreographyName) modalElements.choreographyName.value = data.name || data.choreography || '';
+    if (modalElements.choreographer) modalElements.choreographer.value = data.choreographer || '';
+
+    const categoryId = data?.reg_category_id ?? data?.category_id ?? data?.reg_category?.id ?? '';
+    const styleId = data?.reg_style_id ?? data?.style_id ?? data?.reg_style?.id ?? '';
+    if (modalElements.category) modalElements.category.value = categoryId ? `${categoryId}` : '';
+    if (modalElements.style) modalElements.style.value = styleId ? `${styleId}` : '';
+    updateAudioMaxDuration(categoryId);
+
+    const statusValue = data.status || '';
+    const rejectReason = getRejectReasonValue(data);
+    updateModalStatusInfo(statusValue, rejectReason, data, { showExtended: true });
+
+    modalEl.dataset.viewOnly = 'true';
+    setModalViewMode(true);
+    setAudioSectionVisible(true);
+    setPaymentSectionVisible(true);
+    resetAudioInfo();
+    resetPaymentInfo();
+    updateAudioValidateButtonState(data);
+    await fetchRegistrationAudioInfo(data.id);
+    setPaymentInfo(data);
+  };
+
+  const validateMusicUpload = async () => {
+    const registrationId = detailRegistration?.id || modalElements.id?.value || '';
+    if (!registrationId || !audioElements.validateBtn) return;
+
+    const originalText = audioElements.validateBtn.textContent;
+    audioElements.validateBtn.disabled = true;
+    audioElements.validateBtn.textContent = t('saving', 'Guardando...');
+
+    try {
+      const url = buildActionUrl(registrationEndpoints.musicValidate(registrationId));
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) {
+        const data = await safeJson(res);
+        const message = data?.error || t('registration_audio_validate_error', 'Error validating music.');
+        throw new Error(message);
+      }
+
+      await loadRegistrations();
+      const refreshedRegistration = registrationState.organizerRegistrations.find(item => `${item.id}` === `${registrationId}`) || detailRegistration;
+      await fillRegistrationDetailsModal(refreshedRegistration);
+    } catch (err) {
+      showMessageModal(err.message || t('registration_audio_validate_error', 'Error validating music.'), t('error_title', 'Error'));
+    } finally {
+      if (audioElements.validateBtn) {
+        audioElements.validateBtn.textContent = originalText;
+        updateAudioValidateButtonState(detailRegistration);
+      }
+    }
+  };
+
   const openRegistrationDetails = async (registration) => {
     if (!registration || !form) return;
 
@@ -4368,35 +4576,7 @@ function initOrganizerRegistrationsTab() {
       return;
     }
 
-    if (modalElements.modalTitle) {
-      modalElements.modalTitle.textContent = t('org_registrations_details_title', 'Detalle inscripcion');
-    }
-
-    if (modalElements.id) modalElements.id.value = registration.id || '';
-    if (modalElements.choreographyName) modalElements.choreographyName.value = registration.name || registration.choreography || '';
-    if (modalElements.choreographer) modalElements.choreographer.value = registration.choreographer || '';
-
-    const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
-    const styleId = registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
-    if (modalElements.category) modalElements.category.value = categoryId ? `${categoryId}` : '';
-    if (modalElements.style) modalElements.style.value = styleId ? `${styleId}` : '';
-
-    let statusValue = registration.status || '';
-    let rejectReason = getRejectReasonValue(registration);
-    if ((!statusValue || (`${statusValue}` === 'REJ' && !rejectReason)) && registration.id) {
-      const details = await fetchRegistrationDetails(registration.id);
-      if (details) {
-        statusValue = details.status || statusValue;
-        rejectReason = rejectReason || getRejectReasonValue(details);
-      }
-    }
-    updateModalStatusInfo(statusValue, rejectReason);
-
-    modalEl.dataset.viewOnly = 'true';
-    setModalViewMode(true);
-    setAudioSectionVisible(true);
-    resetAudioInfo();
-    await fetchRegistrationAudioInfo(registration.id);
+    await fillRegistrationDetailsModal(registration);
     registrationModal.show();
   };
 
@@ -4445,6 +4625,11 @@ function initOrganizerRegistrationsTab() {
       styleCell.textContent = styleName;
       row.appendChild(styleCell);
 
+      const participantsCell = document.createElement('td');
+      participantsCell.className = 'text-center';
+      participantsCell.textContent = `${getParticipantsCount(registration)}`;
+      row.appendChild(participantsCell);
+
       const statusCell = document.createElement('td');
       const statusInfo = formatStatusInfo(registration.status);
       const statusBadge = document.createElement('span');
@@ -4453,16 +4638,13 @@ function initOrganizerRegistrationsTab() {
       statusCell.appendChild(statusBadge);
       row.appendChild(statusCell);
 
-      const participantsCell = document.createElement('td');
-      participantsCell.className = 'text-center';
-      participantsCell.textContent = `${getParticipantsCount(registration)}`;
-      row.appendChild(participantsCell);
-
       const musicCell = document.createElement('td');
       musicCell.className = 'text-center';
-      musicCell.textContent = Number(registration?.has_music) === 1
-        ? t('registration_competitions_music_yes', 'Sí')
-        : t('registration_competitions_music_no', 'No');
+      const musicInfo = getRegistrationMusicBadgeInfo(registration);
+      const musicBadge = document.createElement('span');
+      musicBadge.className = `badge ${musicInfo.className}`;
+      musicBadge.textContent = musicInfo.label;
+      musicCell.appendChild(musicBadge);
       row.appendChild(musicCell);
 
       const syncroCell = document.createElement('td');
@@ -4632,11 +4814,18 @@ function initOrganizerRegistrationsTab() {
       validationElements.rejectReason.classList.remove('is-invalid');
     });
   }
+  if (audioElements.validateBtn) {
+    audioElements.validateBtn.addEventListener('click', validateMusicUpload);
+  }
 
   modalEl.addEventListener('hidden.bs.modal', () => {
     if (modalEl.dataset.viewOnly !== 'true') return;
     setModalViewMode(false);
     updateModalStatusInfo('', '');
+    setPaymentSectionVisible(false);
+    resetPaymentInfo();
+    updateAudioValidateButtonState(null);
+    detailRegistration = null;
     delete modalEl.dataset.viewOnly;
   });
   membersModalEl.addEventListener('hidden.bs.modal', () => {

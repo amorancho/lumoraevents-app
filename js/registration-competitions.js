@@ -5,12 +5,14 @@
   const createBtn = document.getElementById('createRegistrationBtn');
   const copyTsvBtn = document.getElementById('competitionsCopyTsvBtn');
   const modalEl = document.getElementById('registrationModal');
+  const audioModalEl = document.getElementById('registrationAudioModal');
+  const paymentModalEl = document.getElementById('registrationPaymentModal');
   const deleteModalEl = document.getElementById('deleteRegistrationModal');
   const deleteAudioModalEl = document.getElementById('deleteAudioModal');
   const membersModalEl = document.getElementById('registrationMembersModal');
   const confirmModalEl = document.getElementById('confirmRegistrationModal');
 
-  if (!tableBody || !modalEl || !deleteModalEl || !membersModalEl || !confirmModalEl) {
+  if (!tableBody || !modalEl || !audioModalEl || !paymentModalEl || !deleteModalEl || !membersModalEl || !confirmModalEl) {
     return;
   }
 
@@ -53,24 +55,45 @@
     audioDeleteModal: deleteAudioModalEl,
     audioDeleteConfirmBtn: document.getElementById('confirmDeleteAudioBtn'),
     audioSection: document.getElementById('registrationAudioSection'),
-    audioUploadControls: document.getElementById('registrationAudioUploadControls'),
-    audioDropzone: document.getElementById('registrationAudioDropzone'),
-    audioInput: document.getElementById('registrationAudioInput'),
-    audioBrowseBtn: document.getElementById('registrationAudioBrowseBtn'),
-    audioName: document.getElementById('registrationAudioName'),
-    audioDuration: document.getElementById('registrationAudioDuration'),
-    audioSize: document.getElementById('registrationAudioSize'),
-    audioMax: document.getElementById('registrationAudioMax'),
-    audioError: document.getElementById('registrationAudioError'),
-    audioRemoveBtn: document.getElementById('registrationAudioRemoveBtn'),
-    audioSaveBtn: document.getElementById('registrationAudioSaveBtn')
+    paymentSection: document.getElementById('registrationPaymentSection')
   };
 
   const registrationModal = new bootstrap.Modal(modalEl);
+  const registrationAudioModal = new bootstrap.Modal(audioModalEl);
+  const registrationPaymentModal = new bootstrap.Modal(paymentModalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
   const audioDeleteModal = deleteAudioModalEl ? new bootstrap.Modal(deleteAudioModalEl) : null;
   const registrationMembersModal = new bootstrap.Modal(membersModalEl);
   const confirmModal = new bootstrap.Modal(confirmModalEl);
+  const audioElements = {
+    modal: audioModalEl,
+    choreo: document.getElementById('registrationAudioModalChoreo'),
+    category: document.getElementById('registrationAudioModalCategory'),
+    style: document.getElementById('registrationAudioModalStyle'),
+    uploadControls: document.getElementById('registrationAudioModalUploadControls'),
+    dropzone: document.getElementById('registrationAudioModalDropzone'),
+    input: document.getElementById('registrationAudioModalInput'),
+    browseBtn: document.getElementById('registrationAudioModalBrowseBtn'),
+    name: document.getElementById('registrationAudioModalName'),
+    duration: document.getElementById('registrationAudioModalDuration'),
+    size: document.getElementById('registrationAudioModalSize'),
+    max: document.getElementById('registrationAudioModalMax'),
+    error: document.getElementById('registrationAudioModalError'),
+    removeBtn: document.getElementById('registrationAudioModalRemoveBtn'),
+    saveBtn: document.getElementById('registrationAudioModalSaveBtn')
+  };
+  const paymentElements = {
+    modal: paymentModalEl,
+    choreo: document.getElementById('registrationPaymentModalChoreo'),
+    category: document.getElementById('registrationPaymentModalCategory'),
+    style: document.getElementById('registrationPaymentModalStyle'),
+    dropzone: document.getElementById('registrationPaymentModalDropzone'),
+    input: document.getElementById('registrationPaymentModalInput'),
+    browseBtn: document.getElementById('registrationPaymentModalBrowseBtn'),
+    name: document.getElementById('registrationPaymentModalName'),
+    size: document.getElementById('registrationPaymentModalSize'),
+    saveBtn: document.getElementById('registrationPaymentModalSaveBtn')
+  };
 
   const registrationEndpoints = {
     list: '/api/registrations/choreographies',
@@ -93,6 +116,8 @@
   let confirmAction = 'confirm';
   let membersRegistration = null;
   let membersCategoryId = null;
+  let audioRegistration = null;
+  let paymentRegistration = null;
   let audioState = {
     file: null,
     duration: null,
@@ -103,8 +128,12 @@
     hasRemote: false,
     isValid: true
   };
+  let paymentState = {
+    file: null
+  };
   const saveBtnLabel = elements.saveBtn ? elements.saveBtn.textContent : '';
   const membersSaveBtnLabel = elements.membersSaveBtn ? elements.membersSaveBtn.textContent : '';
+  const audioSaveBtnLabel = audioElements.saveBtn ? audioElements.saveBtn.textContent : '';
 
   const getEventIdValue = () => {
     const eventObj = getEvent();
@@ -130,6 +159,18 @@
     return categoryById.get(`${categoryId}`) || null;
   };
 
+  const getRegistrationCategoryId = (registration) => registration?.reg_category_id
+    ?? registration?.category_id
+    ?? registration?.reg_category?.id
+    ?? registration?.reg_category
+    ?? '';
+
+  const getRegistrationStyleId = (registration) => registration?.reg_style_id
+    ?? registration?.style_id
+    ?? registration?.reg_style?.id
+    ?? registration?.reg_style
+    ?? '';
+
   const getMembersCategory = () => {
     if (!membersCategoryId) return null;
     return categoryById.get(`${membersCategoryId}`) || null;
@@ -146,7 +187,6 @@
     const category = getSelectedCategory();
     if (!category) {
       elements.categoryInfo.textContent = '';
-      updateAudioMaxDuration();
       return;
     }
 
@@ -167,7 +207,6 @@
     }
 
     elements.categoryInfo.textContent = info;
-    updateAudioMaxDuration();
   };
 
   const formatDuration = (value) => {
@@ -193,24 +232,29 @@
     elements.audioSection.classList.toggle('d-none', !visible);
   };
 
+  const setPaymentSectionVisible = (visible) => {
+    if (!elements.paymentSection) return;
+    elements.paymentSection.classList.toggle('d-none', !visible);
+  };
+
   const setAudioUploadControlsVisible = (visible) => {
-    if (!elements.audioUploadControls) return;
-    elements.audioUploadControls.classList.toggle('d-none', !visible);
+    if (!audioElements.uploadControls) return;
+    audioElements.uploadControls.classList.toggle('d-none', !visible);
   };
 
   const setAudioRemoveVisible = (visible) => {
-    if (!elements.audioRemoveBtn) return;
-    elements.audioRemoveBtn.classList.toggle('d-none', !visible);
+    if (!audioElements.removeBtn) return;
+    audioElements.removeBtn.classList.toggle('d-none', !visible);
   };
 
   const setAudioError = (message) => {
-    if (!elements.audioError) return;
+    if (!audioElements.error) return;
     if (message) {
-      elements.audioError.textContent = message;
-      elements.audioError.classList.remove('d-none');
+      audioElements.error.textContent = message;
+      audioElements.error.classList.remove('d-none');
     } else {
-      elements.audioError.textContent = '';
-      elements.audioError.classList.add('d-none');
+      audioElements.error.textContent = '';
+      audioElements.error.classList.add('d-none');
     }
   };
 
@@ -218,39 +262,38 @@
     if (!audioState.file) {
       audioState.isValid = true;
       setAudioError('');
-      if (elements.audioSaveBtn) elements.audioSaveBtn.disabled = true;
+      if (audioElements.saveBtn) audioElements.saveBtn.disabled = true;
       return true;
     }
 
     if (audioState.duration == null) {
       audioState.isValid = false;
       setAudioError('No se pudo leer la duracion del audio.');
-      if (elements.audioSaveBtn) elements.audioSaveBtn.disabled = true;
+      if (audioElements.saveBtn) audioElements.saveBtn.disabled = true;
       return false;
     }
 
     const TIME_EXTRA = getEvent().musicExtraTime || 0;
-
-    const maxDuration = audioState.maxDuration + TIME_EXTRA;
+    const maxDuration = audioState.maxDuration != null ? audioState.maxDuration + TIME_EXTRA : null;
     if (maxDuration != null && audioState.duration > maxDuration) {
       audioState.isValid = false;
       setAudioError(`La duración supera el máximo permitido (${formatDuration(maxDuration)}).`);
-      if (elements.audioSaveBtn) elements.audioSaveBtn.disabled = true;
+      if (audioElements.saveBtn) audioElements.saveBtn.disabled = true;
       return false;
     }
 
     audioState.isValid = true;
     setAudioError('');
-    if (elements.audioSaveBtn) elements.audioSaveBtn.disabled = false;
+    if (audioElements.saveBtn) audioElements.saveBtn.disabled = false;
     return true;
   };
 
-  const updateAudioMaxDuration = () => {
-    const category = getSelectedCategory();
+  const updateAudioMaxDuration = (categoryId = null) => {
+    const category = categoryId ? categoryById.get(`${categoryId}`) : null;
     const maxDuration = normalizeNumber(category?.music_max_duration);
     audioState.maxDuration = maxDuration;
-    if (elements.audioMax) {
-      elements.audioMax.textContent = maxDuration == null ? '-' : `${formatDuration(maxDuration)} (+${getEvent().musicExtraTime || 0} sec extra)`;
+    if (audioElements.max) {
+      audioElements.max.textContent = maxDuration == null ? '-' : `${formatDuration(maxDuration)} (+${getEvent().musicExtraTime || 0} sec extra)`;
     }
     validateAudioDuration();
   };
@@ -262,22 +305,22 @@
     const name = audioState.file
       ? audioState.file.name
       : (audioState.existingName || '-');
-    if (elements.audioName) {
-      elements.audioName.textContent = name;
+    if (audioElements.name) {
+      audioElements.name.textContent = name;
     }
 
     const durationValue = audioState.file ? audioState.duration : audioState.existingDuration;
-    if (elements.audioDuration) {
-      elements.audioDuration.textContent = durationValue != null ? formatDuration(durationValue) : '-';
+    if (audioElements.duration) {
+      audioElements.duration.textContent = durationValue != null ? formatDuration(durationValue) : '-';
     }
 
     const sizeValue = audioState.file ? audioState.file.size : audioState.existingSize;
-    if (elements.audioSize) {
-      elements.audioSize.textContent = sizeValue != null ? formatBytes(sizeValue) : '-';
+    if (audioElements.size) {
+      audioElements.size.textContent = sizeValue != null ? formatBytes(sizeValue) : '-';
     }
 
-    if (elements.audioRemoveBtn) {
-      elements.audioRemoveBtn.disabled = !audioState.hasRemote && !audioState.file;
+    if (audioElements.removeBtn) {
+      audioElements.removeBtn.disabled = !audioState.hasRemote && !audioState.file;
     }
 
     validateAudioDuration();
@@ -287,14 +330,14 @@
     audioState = {
       file: null,
       duration: null,
-      maxDuration: audioState.maxDuration,
+      maxDuration: audioState.maxDuration ?? null,
       existingName: '',
       existingDuration: null,
       existingSize: null,
       hasRemote: false,
       isValid: true
     };
-    if (elements.audioInput) elements.audioInput.value = '';
+    if (audioElements.input) audioElements.input.value = '';
     setAudioError('');
     updateAudioUi();
   };
@@ -368,12 +411,43 @@
   const clearSelectedAudio = () => {
     audioState.file = null;
     audioState.duration = null;
-    if (elements.audioInput) elements.audioInput.value = '';
+    if (audioElements.input) audioElements.input.value = '';
     updateAudioUi();
   };
 
+  const updatePaymentUi = () => {
+    if (paymentElements.name) {
+      paymentElements.name.textContent = paymentState.file ? paymentState.file.name : '-';
+    }
+    if (paymentElements.size) {
+      paymentElements.size.textContent = paymentState.file ? formatBytes(paymentState.file.size) : '-';
+    }
+    if (paymentElements.saveBtn) {
+      paymentElements.saveBtn.disabled = true;
+    }
+  };
+
+  const resetPaymentState = () => {
+    paymentState = {
+      file: null
+    };
+    if (paymentElements.input) paymentElements.input.value = '';
+    updatePaymentUi();
+  };
+
+  const handlePaymentFile = (file) => {
+    if (!file) return;
+    const normalizedName = `${file.name || ''}`.toLowerCase();
+    if (file.type !== 'application/pdf' && !normalizedName.endsWith('.pdf')) {
+      showMessageModal(t('registration_payment_invalid_file', 'Selecciona un archivo PDF valido.'), t('error_title', 'Error'));
+      return;
+    }
+    paymentState.file = file;
+    updatePaymentUi();
+  };
+
   const saveRegistrationAudio = async () => {
-    const registrationId = elements.id ? elements.id.value : '';
+    const registrationId = audioRegistration?.id ? `${audioRegistration.id}` : '';
     if (!registrationId) return;
     if (!audioState.file) {
       showMessageModal('Selecciona un archivo de audio.', t('error_title', 'Error'));
@@ -383,9 +457,9 @@
       return;
     }
 
-    if (elements.audioSaveBtn) {
-      elements.audioSaveBtn.disabled = true;
-      elements.audioSaveBtn.textContent = t('saving', 'Guardando...');
+    if (audioElements.saveBtn) {
+      audioElements.saveBtn.disabled = true;
+      audioElements.saveBtn.textContent = t('saving', 'Guardando...');
     }
 
     try {
@@ -412,18 +486,19 @@
       audioState.existingSize = audioState.file.size;
       audioState.hasRemote = true;
       clearSelectedAudio();
+      await loadRegistrations();
     } catch (err) {
       showMessageModal(err.message || 'Error al guardar el audio.', t('error_title', 'Error'));
     } finally {
-      if (elements.audioSaveBtn) {
-        elements.audioSaveBtn.disabled = !(audioState.file && audioState.isValid);
-        elements.audioSaveBtn.textContent = 'Guardar audio';
+      if (audioElements.saveBtn) {
+        audioElements.saveBtn.disabled = !(audioState.file && audioState.isValid);
+        audioElements.saveBtn.textContent = audioSaveBtnLabel;
       }
     }
   };
 
   const deleteRegistrationAudio = async () => {
-    const registrationId = elements.id ? elements.id.value : '';
+    const registrationId = audioRegistration?.id ? `${audioRegistration.id}` : '';
     if (!registrationId || !audioState.existingName) return;
 
     const confirmDelete = await showAudioDeleteConfirm();
@@ -431,8 +506,8 @@
       return;
     }
 
-    if (elements.audioRemoveBtn) {
-      elements.audioRemoveBtn.disabled = true;
+    if (audioElements.removeBtn) {
+      audioElements.removeBtn.disabled = true;
     }
 
     try {
@@ -448,11 +523,12 @@
       audioState.existingSize = null;
       audioState.hasRemote = false;
       updateAudioUi();
+      await loadRegistrations();
     } catch (err) {
       showMessageModal(err.message || 'Error al eliminar el audio.', t('error_title', 'Error'));
     } finally {
-      if (elements.audioRemoveBtn) {
-        elements.audioRemoveBtn.disabled = !(audioState.file || audioState.existingName);
+      if (audioElements.removeBtn) {
+        audioElements.removeBtn.disabled = !(audioState.file || audioState.existingName);
       }
     }
   };
@@ -821,7 +897,7 @@
     if (mode === 'create') {
       resetChoreoForm();
       setAudioSectionVisible(false);
-      resetAudioState();
+      setPaymentSectionVisible(false);
       updateModalStatusInfo('', '');
       registrationModal.show();
       return;
@@ -830,7 +906,7 @@
     if (!registration) {
       resetChoreoForm();
       setAudioSectionVisible(false);
-      resetAudioState();
+      setPaymentSectionVisible(false);
       updateModalStatusInfo('', '');
       registrationModal.show();
       return;
@@ -843,8 +919,8 @@
     elements.style.value = registration.reg_style_id;
 
     updateCategoryInfo();
-    setAudioSectionVisible(true);
-    resetAudioState();
+    setAudioSectionVisible(false);
+    setPaymentSectionVisible(false);
     let statusValue = registration.status || '';
     let rejectReason = getRejectReasonValue(registration);
     if ((!statusValue || (`${statusValue}` === 'REJ' && !rejectReason)) && registration.id) {
@@ -855,8 +931,71 @@
       }
     }
     updateModalStatusInfo(statusValue, rejectReason);
-    await fetchRegistrationAudioInfo(registration.id);
     registrationModal.show();
+  };
+
+  const openAudioModal = async (registration) => {
+    if (!registration) return;
+
+    try {
+      await loadRegistrationConfig();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_audio_load_error', 'Error loading audio.'), t('error_title', 'Error'));
+      return;
+    }
+
+    audioRegistration = registration;
+
+    const categoryId = getRegistrationCategoryId(registration);
+    const category = categoryById.get(`${categoryId}`) || null;
+    const styleId = getRegistrationStyleId(registration);
+    const styleName = styleById.get(`${styleId}`)?.name || registration.style_name || '-';
+
+    if (audioElements.choreo) {
+      audioElements.choreo.textContent = registration.name || registration.choreography || '-';
+    }
+    if (audioElements.category) {
+      audioElements.category.textContent = category?.name || registration.category_name || '-';
+    }
+    if (audioElements.style) {
+      audioElements.style.textContent = styleName;
+    }
+
+    updateAudioMaxDuration(categoryId);
+    resetAudioState();
+    await fetchRegistrationAudioInfo(registration.id);
+    registrationAudioModal.show();
+  };
+
+  const openPaymentModal = async (registration) => {
+    if (!registration) return;
+
+    try {
+      await loadRegistrationConfig();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_competitions_load_error', 'Error loading registrations.'), t('error_title', 'Error'));
+      return;
+    }
+
+    paymentRegistration = registration;
+
+    const categoryId = getRegistrationCategoryId(registration);
+    const category = categoryById.get(`${categoryId}`) || null;
+    const styleId = getRegistrationStyleId(registration);
+    const styleName = styleById.get(`${styleId}`)?.name || registration.style_name || '-';
+
+    if (paymentElements.choreo) {
+      paymentElements.choreo.textContent = registration.name || registration.choreography || '-';
+    }
+    if (paymentElements.category) {
+      paymentElements.category.textContent = category?.name || registration.category_name || '-';
+    }
+    if (paymentElements.style) {
+      paymentElements.style.textContent = styleName;
+    }
+
+    resetPaymentState();
+    registrationPaymentModal.show();
   };
 
   const openMembersModal = async (registration) => {
@@ -1025,6 +1164,11 @@
       styleCell.textContent = registration.style_name || '-';
       row.appendChild(styleCell);
 
+      const participantsCell = document.createElement('td');
+      participantsCell.className = 'text-center';
+      participantsCell.textContent = registration.member_count;
+      row.appendChild(participantsCell);
+
       const statusCell = document.createElement('td');
       const statusInfo = formatStatusInfo(registration.status);
       const statusBadge = document.createElement('span');
@@ -1033,17 +1177,19 @@
       statusCell.appendChild(statusBadge);
       row.appendChild(statusCell);
 
-      const participantsCell = document.createElement('td');
-      participantsCell.className = 'text-center';
-      participantsCell.textContent = registration.member_count;
-      row.appendChild(participantsCell);
-
       const musicCell = document.createElement('td');
       musicCell.className = 'text-center';
-      musicCell.textContent = Number(registration.has_music) === 1
-        ? t('registration_competitions_music_yes', 'Sí')
-        : t('registration_competitions_music_no', 'No');
+      const musicInfo = getRegistrationMusicBadgeInfo(registration);
+      const musicBadge = document.createElement('span');
+      musicBadge.className = `badge ${musicInfo.className}`;
+      musicBadge.textContent = musicInfo.label;
+      musicCell.appendChild(musicBadge);
       row.appendChild(musicCell);
+
+      const paymentCell = document.createElement('td');
+      paymentCell.className = 'text-center';
+      paymentCell.textContent = '-';
+      row.appendChild(paymentCell);
 
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
@@ -1060,6 +1206,22 @@
       editBtn.setAttribute('aria-label', editTitle);
       editBtn.disabled = isPending || isValidated;
       editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
+
+      const audioBtn = document.createElement('button');
+      audioBtn.type = 'button';
+      audioBtn.className = 'btn btn-outline-info btn-sm btn-registration-audio';
+      audioBtn.dataset.id = registration.id;
+      audioBtn.title = t('registration_audio_manage', 'Gestionar música');
+      audioBtn.setAttribute('aria-label', audioBtn.title);
+      audioBtn.innerHTML = '<i class="bi bi-music-note-beamed"></i>';
+
+      const paymentBtn = document.createElement('button');
+      paymentBtn.type = 'button';
+      paymentBtn.className = 'btn btn-outline-dark btn-sm btn-registration-payment';
+      paymentBtn.dataset.id = registration.id;
+      paymentBtn.title = t('registration_payment_manage', 'Gestionar pago');
+      paymentBtn.setAttribute('aria-label', paymentBtn.title);
+      paymentBtn.innerHTML = '<i class="bi bi-cash-coin"></i>';
 
       const membersBtn = document.createElement('button');
       membersBtn.type = 'button';
@@ -1093,6 +1255,8 @@
       deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
 
       actionGroup.appendChild(editBtn);
+      actionGroup.appendChild(audioBtn);
+      actionGroup.appendChild(paymentBtn);
       actionGroup.appendChild(membersBtn);
       actionGroup.appendChild(confirmBtn);
       actionGroup.appendChild(deleteBtn);
@@ -1106,7 +1270,7 @@
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 8;
+    cell.colSpan = 9;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -1495,42 +1659,42 @@
     elements.membersSaveBtn.addEventListener('click', saveMembers);
   }
 
-  if (elements.audioBrowseBtn && elements.audioInput) {
-    elements.audioBrowseBtn.addEventListener('click', () => {
-      elements.audioInput.click();
+  if (audioElements.browseBtn && audioElements.input) {
+    audioElements.browseBtn.addEventListener('click', () => {
+      audioElements.input.click();
     });
   }
 
-  if (elements.audioInput) {
-    elements.audioInput.addEventListener('change', (event) => {
+  if (audioElements.input) {
+    audioElements.input.addEventListener('change', (event) => {
       const file = event.target.files && event.target.files[0];
       handleAudioFile(file);
     });
   }
 
-  if (elements.audioDropzone) {
+  if (audioElements.dropzone) {
     ['dragenter', 'dragover'].forEach(eventName => {
-      elements.audioDropzone.addEventListener(eventName, (event) => {
+      audioElements.dropzone.addEventListener(eventName, (event) => {
         event.preventDefault();
         event.stopPropagation();
-        elements.audioDropzone.classList.add('is-dragover');
+        audioElements.dropzone.classList.add('is-dragover');
       });
     });
     ['dragleave', 'drop'].forEach(eventName => {
-      elements.audioDropzone.addEventListener(eventName, (event) => {
+      audioElements.dropzone.addEventListener(eventName, (event) => {
         event.preventDefault();
         event.stopPropagation();
-        elements.audioDropzone.classList.remove('is-dragover');
+        audioElements.dropzone.classList.remove('is-dragover');
       });
     });
-    elements.audioDropzone.addEventListener('drop', (event) => {
+    audioElements.dropzone.addEventListener('drop', (event) => {
       const file = event.dataTransfer?.files && event.dataTransfer.files[0];
       handleAudioFile(file);
     });
   }
 
-  if (elements.audioRemoveBtn) {
-    elements.audioRemoveBtn.addEventListener('click', () => {
+  if (audioElements.removeBtn) {
+    audioElements.removeBtn.addEventListener('click', () => {
       if (audioState.file) {
         clearSelectedAudio();
         return;
@@ -1539,8 +1703,42 @@
     });
   }
 
-  if (elements.audioSaveBtn) {
-    elements.audioSaveBtn.addEventListener('click', saveRegistrationAudio);
+  if (audioElements.saveBtn) {
+    audioElements.saveBtn.addEventListener('click', saveRegistrationAudio);
+  }
+
+  if (paymentElements.browseBtn && paymentElements.input) {
+    paymentElements.browseBtn.addEventListener('click', () => {
+      paymentElements.input.click();
+    });
+  }
+
+  if (paymentElements.input) {
+    paymentElements.input.addEventListener('change', (event) => {
+      const file = event.target.files && event.target.files[0];
+      handlePaymentFile(file);
+    });
+  }
+
+  if (paymentElements.dropzone) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      paymentElements.dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        paymentElements.dropzone.classList.add('is-dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      paymentElements.dropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        paymentElements.dropzone.classList.remove('is-dragover');
+      });
+    });
+    paymentElements.dropzone.addEventListener('drop', (event) => {
+      const file = event.dataTransfer?.files && event.dataTransfer.files[0];
+      handlePaymentFile(file);
+    });
   }
 
   if (createBtn) {
@@ -1553,6 +1751,8 @@
 
   tableBody.addEventListener('click', (event) => {
     const editBtn = event.target.closest('.btn-edit-registration');
+    const audioBtn = event.target.closest('.btn-registration-audio');
+    const paymentBtn = event.target.closest('.btn-registration-payment');
     const membersBtn = event.target.closest('.btn-members-registration');
     const confirmBtn = event.target.closest('.btn-confirm-registration');
     const deleteBtn = event.target.closest('.btn-delete-registration');
@@ -1561,6 +1761,20 @@
       const id = editBtn.dataset.id;
       const registration = registrationState.registrations.find(item => `${item.id}` === `${id}`);
       openRegistrationModal('edit', registration || null);
+      return;
+    }
+
+    if (audioBtn) {
+      const id = audioBtn.dataset.id;
+      const registration = registrationState.registrations.find(item => `${item.id}` === `${id}`);
+      openAudioModal(registration || null);
+      return;
+    }
+
+    if (paymentBtn) {
+      const id = paymentBtn.dataset.id;
+      const registration = registrationState.registrations.find(item => `${item.id}` === `${id}`);
+      openPaymentModal(registration || null);
       return;
     }
 
@@ -1635,9 +1849,19 @@
   }
 
   modalEl.addEventListener('hidden.bs.modal', () => {
-    resetAudioState();
     setAudioSectionVisible(false);
+    setPaymentSectionVisible(false);
     loadRegistrations();
+  });
+
+  audioModalEl.addEventListener('hidden.bs.modal', () => {
+    audioRegistration = null;
+    resetAudioState();
+  });
+
+  paymentModalEl.addEventListener('hidden.bs.modal', () => {
+    paymentRegistration = null;
+    resetPaymentState();
   });
 
   membersModalEl.addEventListener('hidden.bs.modal', () => {

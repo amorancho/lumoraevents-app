@@ -1,3 +1,5 @@
 {
-  "home_title": "Administration LumoraEvents"
+  "home_title": "Administration LumoraEvents",
+  "registration_not_new_school_label": "Notifier Nouvelle École",
+  "registration_not_new_group_label": "Notifier Nouveau Groupe"
 }

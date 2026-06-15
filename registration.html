@@ -704,8 +704,8 @@
                           <th data-i18n="org_registrations_table_choreo">Choreo</th>
                           <th data-i18n="org_registrations_table_category">Categoria</th>
                           <th data-i18n="org_registrations_table_style">Disciplina/Estilo</th>
-                          <th data-i18n="org_registrations_table_status">Estado</th>
                           <th class="text-center" data-i18n="org_registrations_table_participants"># Participantes</th>
+                          <th data-i18n="org_registrations_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
                           <th class="text-center" data-i18n="registration_categories_syncro">Syncro</th>
                           <th class="text-center" data-i18n="org_registrations_table_actions" data-tsv-ignore="true">Acciones</th>
@@ -804,9 +804,10 @@
                           <th data-i18n="registration_competitions_table_choreographer">Coreografo</th>
                           <th data-i18n="registration_competitions_table_category">Categoria</th>
                           <th data-i18n="registration_competitions_table_style">Disciplina/Estilo</th>
-                          <th data-i18n="registration_competitions_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_participants">Participantes</th>
+                          <th data-i18n="registration_competitions_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_payment">Pago</th>
                           <th class="text-center" data-i18n="registration_competitions_table_actions" data-tsv-ignore="true">Acciones</th>
                         </tr>
                       </thead>
@@ -1120,16 +1121,6 @@
                   <option value=""></option>
                 </select>
                 <div class="form-text" id="categoryRuleInfo"></div>
-                <div id="registrationStatusWrapper" class="mt-3 d-none">
-                  <label class="form-label mb-1" data-i18n="registration_competitions_status_label">Estado</label>
-                  <div>
-                    <span id="registrationStatusBadge" class="badge bg-secondary fs-6">-</span>
-                  </div>
-                </div>
-                <div id="registrationRejectReasonWrapper" class="mt-3 d-none">
-                  <label class="form-label mb-1" data-i18n="registration_competitions_reject_reason_label">Motivo rechazo</label>
-                  <div id="registrationRejectReason" class="text-danger fw-semibold fs-6">-</div>
-                </div>
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationStyle" data-i18n="registration_competitions_style">Disciplina/Estilo</label>
@@ -1137,6 +1128,33 @@
                   <option value=""></option>
                 </select>
               </div>
+            </div>
+
+            <div id="registrationStatusWrapper" class="mt-4 d-none">
+              <div class="row g-3">
+                <div class="col-12 col-lg-4">
+                  <label class="form-label mb-1" data-i18n="registration_competitions_status_label">Estado</label>
+                  <div>
+                    <span id="registrationStatusBadge" class="badge bg-secondary">-</span>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4 d-none" id="registrationMusicStatusWrapper">
+                  <label class="form-label mb-1" data-i18n="registration_music_status_label">Estado música</label>
+                  <div>
+                    <span id="registrationMusicStatusBadge" class="badge bg-secondary-subtle text-secondary-emphasis">-</span>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4 d-none" id="registrationPaymentStatusWrapper">
+                  <label class="form-label mb-1" data-i18n="registration_payment_status_label">Estado pago</label>
+                  <div>
+                    <span id="registrationPaymentStatusBadge" class="badge bg-secondary-subtle text-secondary-emphasis">-</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div id="registrationRejectReasonWrapper" class="mt-3 d-none">
+              <label class="form-label mb-1" data-i18n="registration_competitions_reject_reason_label">Motivo rechazo</label>
+              <div id="registrationRejectReason" class="text-danger fw-semibold fs-6">-</div>
             </div>
 
             <hr class="my-4">
@@ -1177,6 +1195,30 @@
                 <button type="button" class="btn btn-outline-danger" id="registrationAudioRemoveBtn" disabled data-i18n="registration_audio_remove">Eliminar musica</button>
                 <button type="button" class="btn btn-outline-primary" id="registrationAudioSaveBtn" disabled data-i18n="registration_audio_save">Guardar audio</button>
                 <a class="btn btn-outline-primary d-none" id="registrationAudioDownloadBtn" href="#" download data-i18n="registration_audio_download">Descargar audio</a>
+                <button type="button" class="btn btn-outline-success d-none" id="registrationAudioValidateBtn" data-i18n="registration_audio_validate">Validar música</button>
+              </div>
+            </div>
+
+            <div id="registrationPaymentSection" class="d-none">
+              <hr class="my-4">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="registration_competitions_table_payment">Pago</h6>
+              <div class="row g-2">
+                <div class="col-12 col-md-4">
+                  <div class="text-muted small" data-i18n="registration_payment_status">Estado de pago</div>
+                  <div id="registrationPaymentStatus" class="fw-semibold">-</div>
+                </div>
+                <div class="col-12 col-md-5">
+                  <div class="text-muted small" data-i18n="registration_payment_file">Archivo</div>
+                  <div id="registrationPaymentName" class="fw-semibold">-</div>
+                </div>
+                <div class="col-12 col-md-3">
+                  <div class="text-muted small" data-i18n="registration_payment_size">Tamano</div>
+                  <div id="registrationPaymentSize" class="fw-semibold">-</div>
+                </div>
+              </div>
+              <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+                <button type="button" class="btn btn-outline-primary" id="registrationPaymentViewBtn" data-i18n="registration_payment_view_receipt">Ver justificante</button>
+                <button type="button" class="btn btn-outline-success" id="registrationPaymentValidateBtn" data-i18n="registration_payment_validate">Validar pago</button>
               </div>
             </div>
           </form>
@@ -1184,6 +1226,133 @@
         <div class="modal-footer flex-column flex-md-row gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
           <button type="button" class="btn btn-primary" id="registrationSaveBtn" data-i18n="save_choreo">Guardar coreografia</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="registrationAudioModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fw-bold text-primary" data-i18n="registration_audio_modal_title">Gestionar música</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 mb-3">
+            <div class="col-12 col-md-4">
+              <div class="text-muted small" data-i18n="registration_competitions_member_choreo_label">Coreografia</div>
+              <div class="fw-semibold" id="registrationAudioModalChoreo">-</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="text-muted small" data-i18n="registration_competitions_member_category_label">Categoria</div>
+              <div class="fw-semibold" id="registrationAudioModalCategory">-</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="text-muted small" data-i18n="registration_competitions_member_style_label">Disciplina/Estilo</div>
+              <div class="fw-semibold" id="registrationAudioModalStyle">-</div>
+            </div>
+          </div>
+
+          <div id="registrationAudioModalUploadControls">
+            <div class="audio-dropzone border border-2 border-secondary-subtle rounded p-3 text-center bg-light" id="registrationAudioModalDropzone">
+              <input type="file" id="registrationAudioModalInput" accept="audio/*" class="d-none">
+              <div class="mb-2">
+                <i class="bi bi-music-note-beamed me-2"></i>
+                <span data-i18n="registration_audio_drag_drop">Arrastra aqui tu audio o</span>
+                <button type="button" class="btn btn-link p-0 align-baseline" id="registrationAudioModalBrowseBtn" data-i18n="registration_audio_browse">selecciona un archivo</button>
+              </div>
+              <div class="small text-muted" data-i18n="registration_audio_formats">Formatos de audio</div>
+            </div>
+          </div>
+
+          <div class="row g-2 mt-2">
+            <div class="col-12 col-md-5">
+              <div class="text-muted small" data-i18n="registration_audio_file">Archivo</div>
+              <div id="registrationAudioModalName" class="fw-semibold">-</div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="text-muted small" data-i18n="registration_audio_duration">Duracion</div>
+              <div id="registrationAudioModalDuration" class="fw-semibold">-</div>
+            </div>
+            <div class="col-6 col-md-2">
+              <div class="text-muted small" data-i18n="registration_audio_size">Tamano</div>
+              <div id="registrationAudioModalSize" class="fw-semibold">-</div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="text-muted small" data-i18n="registration_audio_max">Maximo</div>
+              <div id="registrationAudioModalMax" class="fw-semibold">-</div>
+            </div>
+          </div>
+
+          <div id="registrationAudioModalError" class="text-danger small mt-2 d-none"></div>
+
+          <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+            <button type="button" class="btn btn-outline-danger" id="registrationAudioModalRemoveBtn" disabled data-i18n="registration_audio_remove">Eliminar musica</button>
+            <button type="button" class="btn btn-outline-primary" id="registrationAudioModalSaveBtn" disabled data-i18n="registration_audio_save">Guardar audio</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="registrationPaymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fw-bold text-primary" data-i18n="registration_payment_modal_title">Gestionar pago</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 mb-3">
+            <div class="col-12 col-md-4">
+              <div class="text-muted small" data-i18n="registration_competitions_member_choreo_label">Coreografia</div>
+              <div class="fw-semibold" id="registrationPaymentModalChoreo">-</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="text-muted small" data-i18n="registration_competitions_member_category_label">Categoria</div>
+              <div class="fw-semibold" id="registrationPaymentModalCategory">-</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="text-muted small" data-i18n="registration_competitions_member_style_label">Disciplina/Estilo</div>
+              <div class="fw-semibold" id="registrationPaymentModalStyle">-</div>
+            </div>
+          </div>
+
+          <div class="audio-dropzone border border-2 border-secondary-subtle rounded p-3 text-center bg-light" id="registrationPaymentModalDropzone">
+            <input type="file" id="registrationPaymentModalInput" accept="application/pdf,.pdf" class="d-none">
+            <div class="mb-2">
+              <i class="bi bi-cash-coin me-2"></i>
+              <span data-i18n="registration_payment_drag_drop">Arrastra aqui tu PDF o</span>
+              <button type="button" class="btn btn-link p-0 align-baseline" id="registrationPaymentModalBrowseBtn" data-i18n="registration_payment_browse">selecciona un archivo</button>
+            </div>
+            <div class="small text-muted" data-i18n="registration_payment_formats">Formato permitido: PDF</div>
+          </div>
+
+          <div class="row g-2 mt-2">
+            <div class="col-12 col-md-8">
+              <div class="text-muted small" data-i18n="registration_payment_file">Archivo</div>
+              <div id="registrationPaymentModalName" class="fw-semibold">-</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="text-muted small" data-i18n="registration_payment_size">Tamano</div>
+              <div id="registrationPaymentModalSize" class="fw-semibold">-</div>
+            </div>
+          </div>
+
+          <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+            <button type="button" class="btn btn-outline-primary" id="registrationPaymentModalSaveBtn" disabled data-i18n="registration_payment_save">Guardar PDF</button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
         </div>
       </div>
     </div>
