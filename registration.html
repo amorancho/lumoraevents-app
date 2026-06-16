@@ -707,6 +707,7 @@
                           <th class="text-center" data-i18n="org_registrations_table_participants"># Participantes</th>
                           <th data-i18n="org_registrations_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_payment">Pago</th>
                           <th class="text-center" data-i18n="registration_categories_syncro">Syncro</th>
                           <th class="text-center" data-i18n="org_registrations_table_actions" data-tsv-ignore="true">Acciones</th>
                         </tr>
@@ -1203,22 +1204,19 @@
               <hr class="my-4">
               <h6 class="text-uppercase text-muted small mb-2" data-i18n="registration_competitions_table_payment">Pago</h6>
               <div class="row g-2">
-                <div class="col-12 col-md-4">
-                  <div class="text-muted small" data-i18n="registration_payment_status">Estado de pago</div>
-                  <div id="registrationPaymentStatus" class="fw-semibold">-</div>
-                </div>
-                <div class="col-12 col-md-5">
+                <div class="col-12 col-md-8">
                   <div class="text-muted small" data-i18n="registration_payment_file">Archivo</div>
                   <div id="registrationPaymentName" class="fw-semibold">-</div>
                 </div>
-                <div class="col-12 col-md-3">
+                <div class="col-12 col-md-4">
                   <div class="text-muted small" data-i18n="registration_payment_size">Tamano</div>
                   <div id="registrationPaymentSize" class="fw-semibold">-</div>
                 </div>
               </div>
               <div class="d-flex flex-column flex-md-row gap-2 mt-3">
-                <button type="button" class="btn btn-outline-primary" id="registrationPaymentViewBtn" data-i18n="registration_payment_view_receipt">Ver justificante</button>
-                <button type="button" class="btn btn-outline-success" id="registrationPaymentValidateBtn" data-i18n="registration_payment_validate">Validar pago</button>
+                <button type="button" class="btn btn-outline-primary" id="registrationPaymentViewBtn" disabled data-i18n="registration_payment_view_receipt">Ver justificante</button>
+                <button type="button" class="btn btn-outline-dark" id="registrationPaymentDownloadBtn" disabled data-i18n="registration_payment_download">Descargar justificante</button>
+                <button type="button" class="btn btn-outline-success" id="registrationPaymentValidateBtn" disabled data-i18n="registration_payment_validate">Validar pago</button>
               </div>
             </div>
           </form>
@@ -1235,8 +1233,9 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
+          <h5 class="modal-title d-flex align-items-center gap-2">
             <span class="fw-bold text-primary" data-i18n="registration_audio_modal_title">Gestionar música</span>
+            <span id="registrationAudioModalStatusBadge" class="badge bg-secondary-subtle text-secondary-emphasis">-</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -1305,8 +1304,9 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
+          <h5 class="modal-title d-flex align-items-center gap-2">
             <span class="fw-bold text-primary" data-i18n="registration_payment_modal_title">Gestionar pago</span>
+            <span id="registrationPaymentModalStatusBadge" class="badge bg-secondary-subtle text-secondary-emphasis">-</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
@@ -1348,6 +1348,9 @@
           </div>
 
           <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+            <button type="button" class="btn btn-outline-secondary" id="registrationPaymentModalViewBtn" disabled data-i18n="registration_payment_view_receipt">Ver justificante</button>
+            <button type="button" class="btn btn-outline-dark" id="registrationPaymentModalDownloadBtn" disabled data-i18n="registration_payment_download">Descargar justificante</button>
+            <button type="button" class="btn btn-outline-danger" id="registrationPaymentModalRemoveBtn" disabled data-i18n="registration_payment_remove">Eliminar justificante</button>
             <button type="button" class="btn btn-outline-primary" id="registrationPaymentModalSaveBtn" disabled data-i18n="registration_payment_save">Guardar PDF</button>
           </div>
         </div>

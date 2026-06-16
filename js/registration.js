@@ -2503,15 +2503,24 @@ function getRegistrationMusicBadgeInfo(registration) {
 }
 
 function getRegistrationPaymentBadgeInfo(registration) {
-  const rawStatus = registration?.payment_status
-    ?? registration?.pay_status
-    ?? registration?.payment?.status
-    ?? registration?.payment_state
-    ?? '';
-  const label = `${rawStatus || '-'}`.trim() || '-';
+  const hasPayment = isRegistrationFlagEnabled(registration?.has_payment);
+  if (!hasPayment) {
+    return {
+      label: t('registration_payment_status_none', 'Sin pago').toUpperCase(),
+      className: 'bg-danger-subtle text-danger-emphasis'
+    };
+  }
+
+  if (isRegistrationFlagEnabled(registration?.payment_validated)) {
+    return {
+      label: t('registration_payment_status_validated', 'Pago validado').toUpperCase(),
+      className: 'bg-success-subtle text-success-emphasis'
+    };
+  }
+
   return {
-    label: label.toUpperCase(),
-    className: 'bg-secondary-subtle text-secondary-emphasis'
+    label: t('registration_payment_status_pending_validation', 'Pago sin validar').toUpperCase(),
+    className: 'bg-warning-subtle text-warning-emphasis'
   };
 }
 
@@ -3734,6 +3743,10 @@ function initOrganizerRegistrationsTab() {
     music: (id) => `/api/registrations/choreographies/${id}/music`,
     musicDownload: (id) => `/api/registrations/choreographies/${id}/music/download`,
     musicValidate: (id) => `/api/registrations/choreographies/${id}/music/validate`,
+    payment: (id) => `/api/registrations/choreographies/${id}/payment`,
+    paymentView: (id) => `/api/registrations/choreographies/${id}/payment/view`,
+    paymentDownload: (id) => `/api/registrations/choreographies/${id}/payment/download`,
+    paymentValidate: (id) => `/api/registrations/choreographies/${id}/payment/validate`,
     validate: (id) => `/api/registrations/choreographies/${id}/validate`,
     reject: (id) => `/api/registrations/choreographies/${id}/reject`
   };
@@ -3776,9 +3789,11 @@ function initOrganizerRegistrationsTab() {
   };
   const paymentElements = {
     section: document.getElementById('registrationPaymentSection'),
-    status: document.getElementById('registrationPaymentStatus'),
     name: document.getElementById('registrationPaymentName'),
-    size: document.getElementById('registrationPaymentSize')
+    size: document.getElementById('registrationPaymentSize'),
+    viewBtn: document.getElementById('registrationPaymentViewBtn'),
+    downloadBtn: document.getElementById('registrationPaymentDownloadBtn'),
+    validateBtn: document.getElementById('registrationPaymentValidateBtn')
   };
   const registrationModal = new bootstrap.Modal(modalEl);
   const membersModal = new bootstrap.Modal(membersModalEl);
@@ -3805,6 +3820,7 @@ function initOrganizerRegistrationsTab() {
   let rejectTarget = null;
   let detailRegistration = null;
   let registrationsTooltipInstances = [];
+  const paymentValidateBtnLabel = paymentElements.validateBtn ? paymentElements.validateBtn.textContent : '';
 
   const populateSelect = (selectEl, items) => {
     if (!selectEl) return;
@@ -3924,6 +3940,18 @@ function initOrganizerRegistrationsTab() {
       : `${API_BASE_URL}${registrationEndpoints.musicDownload(registrationId)}`;
   };
 
+  const getPaymentUrl = (registrationId) => {
+    return buildActionUrl(registrationEndpoints.payment(registrationId));
+  };
+
+  const getPaymentViewUrl = (registrationId) => {
+    return buildActionUrl(registrationEndpoints.paymentView(registrationId));
+  };
+
+  const getPaymentDownloadUrl = (registrationId) => {
+    return buildActionUrl(registrationEndpoints.paymentDownload(registrationId));
+  };
+
   const buildActionUrl = (endpoint) => {
     const eventIdValue = getEventIdValue();
     return eventIdValue
@@ -4000,44 +4028,86 @@ function initOrganizerRegistrationsTab() {
   };
 
   const extractPaymentInfo = (data) => {
+    const nestedPayment = data?.payment && typeof data.payment === 'object'
+      ? data.payment
+      : null;
+    const hasDirectPaymentRecord = Boolean(
+      data?.original_name || data?.file_url || data?.download_url || data?.mime_type
+    );
+    const fallbackStatus = typeof getRegistrationPaymentBadgeInfo === 'function'
+      ? getRegistrationPaymentBadgeInfo(data || {}).label
+      : '';
     const status = data?.payment_status
       || data?.pay_status
-      || data?.payment?.status
+      || nestedPayment?.status
       || data?.payment_state
-      || '';
+      || fallbackStatus;
     const name = data?.payment_file_name
       || data?.payment_original_name
       || data?.payment_pdf_name
-      || data?.payment?.original_name
-      || data?.payment?.name
+      || nestedPayment?.original_name
+      || nestedPayment?.name
+      || (hasDirectPaymentRecord ? (data?.original_name || '') : '')
       || '';
     const size = normalizeNumber(
       data?.payment_file_size
       ?? data?.payment_size
-      ?? data?.payment?.size
+      ?? nestedPayment?.size
+      ?? (hasDirectPaymentRecord ? (data?.size ?? null) : null)
       ?? null
     );
+    const hasFile = Boolean(
+      name
+      || nestedPayment?.file_url
+      || nestedPayment?.download_url
+      || (hasDirectPaymentRecord ? (data?.file_url || data?.download_url || data?.url) : '')
+    );
 
-    return { status, name, size };
+    return { status, name, size, hasFile };
   };
 
   const resetPaymentInfo = () => {
-    if (paymentElements.status) paymentElements.status.textContent = '-';
     if (paymentElements.name) paymentElements.name.textContent = '-';
     if (paymentElements.size) paymentElements.size.textContent = '-';
+    if (paymentElements.viewBtn) {
+      paymentElements.viewBtn.disabled = true;
+      paymentElements.viewBtn.onclick = null;
+    }
+    if (paymentElements.downloadBtn) {
+      paymentElements.downloadBtn.disabled = true;
+      paymentElements.downloadBtn.onclick = null;
+    }
+    if (paymentElements.validateBtn) {
+      paymentElements.validateBtn.disabled = true;
+      paymentElements.validateBtn.textContent = paymentValidateBtnLabel;
+    }
   };
 
-  const setPaymentInfo = (data) => {
-    const paymentInfo = extractPaymentInfo(data);
-    if (paymentElements.status) {
-      paymentElements.status.textContent = paymentInfo.status || '-';
+  const updatePaymentActionButtonState = (registration, paymentInfo = null) => {
+    const hasPayment = isRegistrationFlagEnabled(registration?.has_payment) || Boolean(paymentInfo?.hasFile);
+    const isValidated = isRegistrationFlagEnabled(registration?.payment_validated);
+    const hasFile = Boolean(paymentInfo?.hasFile);
+
+    if (paymentElements.viewBtn) {
+      paymentElements.viewBtn.disabled = !registration?.id || !hasFile;
     }
+    if (paymentElements.downloadBtn) {
+      paymentElements.downloadBtn.disabled = !registration?.id || !hasFile;
+    }
+    if (paymentElements.validateBtn) {
+      paymentElements.validateBtn.disabled = !registration?.id || !hasPayment || isValidated;
+    }
+  };
+
+  const setPaymentInfo = (data, registration = null) => {
+    const paymentInfo = extractPaymentInfo(data);
     if (paymentElements.name) {
       paymentElements.name.textContent = paymentInfo.name || '-';
     }
     if (paymentElements.size) {
       paymentElements.size.textContent = paymentInfo.size != null ? formatBytes(paymentInfo.size) : '-';
     }
+    updatePaymentActionButtonState(registration || data, paymentInfo);
   };
 
   const updateAudioValidateButtonState = (registration) => {
@@ -4069,6 +4139,23 @@ function initOrganizerRegistrationsTab() {
     }
   };
 
+  const openActionUrl = (url, options = {}) => {
+    if (!url) return;
+    const { newTab = false, download = false, filename = '' } = options;
+    const link = document.createElement('a');
+    link.href = url;
+    if (newTab) {
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+    }
+    if (download && filename) {
+      link.setAttribute('download', filename);
+    }
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   const handleAudioDownloadClick = async (event, registrationId) => {
     event.preventDefault();
     if (!registrationId) return;
@@ -4086,6 +4173,26 @@ function initOrganizerRegistrationsTab() {
       downloadBlob(blob, headerFilename || fallbackName || 'audio');
     } catch (err) {
       showMessageModal(err.message || t('registration_audio_download_error', 'Error downloading audio.'), t('error_title', 'Error'));
+    }
+  };
+
+  const handlePaymentDownloadClick = async (event, registrationId) => {
+    event.preventDefault();
+    if (!registrationId) return;
+    const url = getPaymentDownloadUrl(registrationId);
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const data = await safeJson(res);
+        const message = data?.error || t('registration_payment_download_error', 'Error al descargar el justificante.');
+        throw new Error(message);
+      }
+      const blob = await res.blob();
+      const headerFilename = getFilenameFromHeader(res.headers.get('content-disposition'));
+      const fallbackName = paymentElements.name?.textContent || '';
+      downloadBlob(blob, headerFilename || fallbackName || 'payment.pdf');
+    } catch (err) {
+      showMessageModal(err.message || t('registration_payment_download_error', 'Error al descargar el justificante.'), t('error_title', 'Error'));
     }
   };
 
@@ -4127,6 +4234,85 @@ function initOrganizerRegistrationsTab() {
       setAudioInfo(data, registrationId);
     } catch (err) {
       showMessageModal(err.message || t('registration_audio_load_error', 'Error loading audio.'), t('error_title', 'Error'));
+    }
+  };
+
+  const setPaymentActions = (registrationId, paymentInfo) => {
+    if (paymentElements.viewBtn) {
+      paymentElements.viewBtn.onclick = (event) => {
+        event.preventDefault();
+        if (paymentElements.viewBtn.disabled) return;
+        openActionUrl(getPaymentViewUrl(registrationId), { newTab: true });
+      };
+    }
+    if (paymentElements.downloadBtn) {
+      paymentElements.downloadBtn.onclick = (event) => {
+        if (paymentElements.downloadBtn.disabled) {
+          event.preventDefault();
+          return;
+        }
+        handlePaymentDownloadClick(event, registrationId);
+      };
+    }
+    updatePaymentActionButtonState(detailRegistration || { id: registrationId }, paymentInfo);
+  };
+
+  const fetchRegistrationPaymentInfo = async (registrationId) => {
+    if (!registrationId) return;
+    try {
+      const url = getPaymentUrl(registrationId);
+      const res = await fetch(url);
+      if (!res.ok) {
+        if (res.status === 404) {
+          updatePaymentActionButtonState(detailRegistration, extractPaymentInfo(detailRegistration || {}));
+          return;
+        }
+        const data = await safeJson(res);
+        const message = data?.error || t('registration_payment_load_error', 'Error al cargar el pago.');
+        throw new Error(message);
+      }
+      const data = await safeJson(res);
+      if (!data) {
+        updatePaymentActionButtonState(detailRegistration, extractPaymentInfo(detailRegistration || {}));
+        return;
+      }
+      const registrationSnapshot = detailRegistration || {};
+      const paymentViewData = {
+        ...registrationSnapshot,
+        payment: {
+          ...(registrationSnapshot.payment && typeof registrationSnapshot.payment === 'object'
+            ? registrationSnapshot.payment
+            : {}),
+          ...data
+        },
+        payment_file_name: data?.original_name
+          || data?.payment_file_name
+          || registrationSnapshot.payment_file_name
+          || '',
+        payment_original_name: data?.original_name
+          || data?.payment_original_name
+          || registrationSnapshot.payment_original_name
+          || '',
+        payment_file_size: data?.size
+          ?? data?.payment_file_size
+          ?? registrationSnapshot.payment_file_size
+          ?? null,
+        payment_size: data?.size
+          ?? data?.payment_size
+          ?? registrationSnapshot.payment_size
+          ?? null,
+        payment_status: data?.payment_status
+          || data?.pay_status
+          || registrationSnapshot.payment_status
+          || '',
+        file_url: data?.file_url || registrationSnapshot.file_url || '',
+        download_url: data?.download_url || registrationSnapshot.download_url || ''
+      };
+      const paymentInfo = extractPaymentInfo(paymentViewData);
+      setPaymentInfo(paymentViewData, registrationSnapshot);
+      setPaymentActions(registrationId, paymentInfo);
+    } catch (err) {
+      showMessageModal(err.message || t('registration_payment_load_error', 'Error al cargar el pago.'), t('error_title', 'Error'));
     }
   };
 
@@ -4532,8 +4718,10 @@ function initOrganizerRegistrationsTab() {
     resetAudioInfo();
     resetPaymentInfo();
     updateAudioValidateButtonState(data);
+    setPaymentInfo(data, data);
+    setPaymentActions(data.id, extractPaymentInfo(data));
     await fetchRegistrationAudioInfo(data.id);
-    setPaymentInfo(data);
+    await fetchRegistrationPaymentInfo(data.id);
   };
 
   const validateMusicUpload = async () => {
@@ -4562,6 +4750,36 @@ function initOrganizerRegistrationsTab() {
       if (audioElements.validateBtn) {
         audioElements.validateBtn.textContent = originalText;
         updateAudioValidateButtonState(detailRegistration);
+      }
+    }
+  };
+
+  const validatePaymentUpload = async () => {
+    const registrationId = detailRegistration?.id || modalElements.id?.value || '';
+    if (!registrationId || !paymentElements.validateBtn) return;
+
+    const originalText = paymentElements.validateBtn.textContent;
+    paymentElements.validateBtn.disabled = true;
+    paymentElements.validateBtn.textContent = t('saving', 'Guardando...');
+
+    try {
+      const url = buildActionUrl(registrationEndpoints.paymentValidate(registrationId));
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) {
+        const data = await safeJson(res);
+        const message = data?.error || t('registration_payment_validate_error', 'Error al validar el pago.');
+        throw new Error(message);
+      }
+
+      await loadRegistrations();
+      const refreshedRegistration = registrationState.organizerRegistrations.find(item => `${item.id}` === `${registrationId}`) || detailRegistration;
+      await fillRegistrationDetailsModal(refreshedRegistration);
+    } catch (err) {
+      showMessageModal(err.message || t('registration_payment_validate_error', 'Error al validar el pago.'), t('error_title', 'Error'));
+    } finally {
+      if (paymentElements.validateBtn) {
+        paymentElements.validateBtn.textContent = originalText;
+        updatePaymentActionButtonState(detailRegistration, extractPaymentInfo(detailRegistration || {}));
       }
     }
   };
@@ -4647,6 +4865,15 @@ function initOrganizerRegistrationsTab() {
       musicCell.appendChild(musicBadge);
       row.appendChild(musicCell);
 
+      const paymentCell = document.createElement('td');
+      paymentCell.className = 'text-center';
+      const paymentInfo = getRegistrationPaymentBadgeInfo(registration);
+      const paymentBadge = document.createElement('span');
+      paymentBadge.className = `badge ${paymentInfo.className}`;
+      paymentBadge.textContent = paymentInfo.label;
+      paymentCell.appendChild(paymentBadge);
+      row.appendChild(paymentCell);
+
       const syncroCell = document.createElement('td');
       syncroCell.className = 'text-center';
       const syncroBadge = document.createElement('span');
@@ -4722,7 +4949,7 @@ function initOrganizerRegistrationsTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 8;
+    cell.colSpan = 10;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -4816,6 +5043,9 @@ function initOrganizerRegistrationsTab() {
   }
   if (audioElements.validateBtn) {
     audioElements.validateBtn.addEventListener('click', validateMusicUpload);
+  }
+  if (paymentElements.validateBtn) {
+    paymentElements.validateBtn.addEventListener('click', validatePaymentUpload);
   }
 
   modalEl.addEventListener('hidden.bs.modal', () => {

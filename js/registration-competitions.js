@@ -70,6 +70,7 @@
     choreo: document.getElementById('registrationAudioModalChoreo'),
     category: document.getElementById('registrationAudioModalCategory'),
     style: document.getElementById('registrationAudioModalStyle'),
+    statusBadge: document.getElementById('registrationAudioModalStatusBadge'),
     uploadControls: document.getElementById('registrationAudioModalUploadControls'),
     dropzone: document.getElementById('registrationAudioModalDropzone'),
     input: document.getElementById('registrationAudioModalInput'),
@@ -90,8 +91,12 @@
     dropzone: document.getElementById('registrationPaymentModalDropzone'),
     input: document.getElementById('registrationPaymentModalInput'),
     browseBtn: document.getElementById('registrationPaymentModalBrowseBtn'),
+    statusBadge: document.getElementById('registrationPaymentModalStatusBadge'),
     name: document.getElementById('registrationPaymentModalName'),
     size: document.getElementById('registrationPaymentModalSize'),
+    viewBtn: document.getElementById('registrationPaymentModalViewBtn'),
+    downloadBtn: document.getElementById('registrationPaymentModalDownloadBtn'),
+    removeBtn: document.getElementById('registrationPaymentModalRemoveBtn'),
     saveBtn: document.getElementById('registrationPaymentModalSaveBtn')
   };
 
@@ -103,7 +108,10 @@
     detail: (id) => `/api/registrations/${id}`,
     confirm: (id) => `/api/registrations/choreographies/${id}/confirm`,
     desconfirm: (id) => `/api/registrations/choreographies/${id}/desconfirm`,
-    music: (id) => `/api/registrations/choreographies/${id}/music`
+    music: (id) => `/api/registrations/choreographies/${id}/music`,
+    payment: (id) => `/api/registrations/choreographies/${id}/payment`,
+    paymentView: (id) => `/api/registrations/choreographies/${id}/payment/view`,
+    paymentDownload: (id) => `/api/registrations/choreographies/${id}/payment/download`
   };
 
   let participantSelect = null;
@@ -129,11 +137,16 @@
     isValid: true
   };
   let paymentState = {
-    file: null
+    file: null,
+    existingName: '',
+    existingSize: null,
+    existingStatus: '',
+    hasRemote: false
   };
   const saveBtnLabel = elements.saveBtn ? elements.saveBtn.textContent : '';
   const membersSaveBtnLabel = elements.membersSaveBtn ? elements.membersSaveBtn.textContent : '';
   const audioSaveBtnLabel = audioElements.saveBtn ? audioElements.saveBtn.textContent : '';
+  const paymentSaveBtnLabel = paymentElements.saveBtn ? paymentElements.saveBtn.textContent : '';
 
   const getEventIdValue = () => {
     const eventObj = getEvent();
@@ -227,6 +240,39 @@
     return `${mb.toFixed(1)} MB`;
   };
 
+  const extractPaymentInfo = (data) => {
+    const nestedPayment = data?.payment && typeof data.payment === 'object'
+      ? data.payment
+      : null;
+    const hasDirectPaymentRecord = Boolean(
+      data?.original_name || data?.file_url || data?.download_url || data?.mime_type
+    );
+    const fallbackStatus = typeof getRegistrationPaymentBadgeInfo === 'function'
+      ? getRegistrationPaymentBadgeInfo(data || {}).label
+      : '';
+    const status = data?.payment_status
+      || data?.pay_status
+      || nestedPayment?.status
+      || data?.payment_state
+      || fallbackStatus;
+    const name = data?.payment_file_name
+      || data?.payment_original_name
+      || data?.payment_pdf_name
+      || nestedPayment?.original_name
+      || nestedPayment?.name
+      || (hasDirectPaymentRecord ? (data?.original_name || '') : '')
+      || '';
+    const size = normalizeNumber(
+      data?.payment_file_size
+      ?? data?.payment_size
+      ?? nestedPayment?.size
+      ?? (hasDirectPaymentRecord ? (data?.size ?? null) : null)
+      ?? null
+    );
+
+    return { status, name, size };
+  };
+
   const setAudioSectionVisible = (visible) => {
     if (!elements.audioSection) return;
     elements.audioSection.classList.toggle('d-none', !visible);
@@ -298,9 +344,22 @@
     validateAudioDuration();
   };
 
+  const updateAudioStatusBadge = (registration = audioRegistration) => {
+    if (!audioElements.statusBadge) return;
+    if (!registration || typeof getRegistrationMusicBadgeInfo !== 'function') {
+      audioElements.statusBadge.className = 'badge bg-secondary-subtle text-secondary-emphasis';
+      audioElements.statusBadge.textContent = '-';
+      return;
+    }
+    const badgeInfo = getRegistrationMusicBadgeInfo(registration);
+    audioElements.statusBadge.className = `badge ${badgeInfo.className}`;
+    audioElements.statusBadge.textContent = badgeInfo.label;
+  };
+
   const updateAudioUi = () => {
     setAudioUploadControlsVisible(!audioState.hasRemote);
     setAudioRemoveVisible(audioState.hasRemote);
+    updateAudioStatusBadge();
 
     const name = audioState.file
       ? audioState.file.name
@@ -350,11 +409,27 @@
     updateAudioUi();
   };
 
-  const getMusicUrl = (registrationId) => {
+  const buildActionUrl = (endpoint) => {
     const eventIdValue = getEventIdValue();
     return eventIdValue
-      ? `${API_BASE_URL}${registrationEndpoints.music(registrationId)}?event_id=${encodeURIComponent(eventIdValue)}`
-      : `${API_BASE_URL}${registrationEndpoints.music(registrationId)}`;
+      ? `${API_BASE_URL}${endpoint}?event_id=${encodeURIComponent(eventIdValue)}`
+      : `${API_BASE_URL}${endpoint}`;
+  };
+
+  const getMusicUrl = (registrationId) => {
+    return buildActionUrl(registrationEndpoints.music(registrationId));
+  };
+
+  const getPaymentUrl = (registrationId) => {
+    return buildActionUrl(registrationEndpoints.payment(registrationId));
+  };
+
+  const getPaymentViewUrl = (registrationId) => {
+    return buildActionUrl(registrationEndpoints.paymentView(registrationId));
+  };
+
+  const getPaymentDownloadUrl = (registrationId) => {
+    return buildActionUrl(registrationEndpoints.paymentDownload(registrationId));
   };
 
   const fetchRegistrationAudioInfo = async (registrationId) => {
@@ -416,22 +491,60 @@
   };
 
   const updatePaymentUi = () => {
+    const activeName = paymentState.file ? paymentState.file.name : (paymentState.existingName || '-');
+    const activeSize = paymentState.file ? paymentState.file.size : paymentState.existingSize;
+
+    updatePaymentStatusBadge();
     if (paymentElements.name) {
-      paymentElements.name.textContent = paymentState.file ? paymentState.file.name : '-';
+      paymentElements.name.textContent = activeName;
     }
     if (paymentElements.size) {
-      paymentElements.size.textContent = paymentState.file ? formatBytes(paymentState.file.size) : '-';
+      paymentElements.size.textContent = activeSize != null ? formatBytes(activeSize) : '-';
     }
     if (paymentElements.saveBtn) {
-      paymentElements.saveBtn.disabled = true;
+      paymentElements.saveBtn.disabled = !paymentState.file;
     }
+    if (paymentElements.viewBtn) {
+      paymentElements.viewBtn.disabled = !paymentState.hasRemote;
+    }
+    if (paymentElements.downloadBtn) {
+      paymentElements.downloadBtn.disabled = !paymentState.hasRemote;
+    }
+    if (paymentElements.removeBtn) {
+      paymentElements.removeBtn.disabled = !paymentState.hasRemote;
+    }
+  };
+
+  const updatePaymentStatusBadge = (registration = paymentRegistration) => {
+    if (!paymentElements.statusBadge) return;
+    if (!registration || typeof getRegistrationPaymentBadgeInfo !== 'function') {
+      paymentElements.statusBadge.className = 'badge bg-secondary-subtle text-secondary-emphasis';
+      paymentElements.statusBadge.textContent = '-';
+      return;
+    }
+    const badgeInfo = getRegistrationPaymentBadgeInfo(registration);
+    paymentElements.statusBadge.className = `badge ${badgeInfo.className}`;
+    paymentElements.statusBadge.textContent = badgeInfo.label;
   };
 
   const resetPaymentState = () => {
     paymentState = {
-      file: null
+      file: null,
+      existingName: '',
+      existingSize: null,
+      existingStatus: '',
+      hasRemote: false
     };
     if (paymentElements.input) paymentElements.input.value = '';
+    updatePaymentUi();
+  };
+
+  const setRemotePaymentInfo = (info = null) => {
+    const paymentInfo = extractPaymentInfo(info);
+    paymentState.existingName = paymentInfo.name || '';
+    paymentState.existingSize = paymentInfo.size;
+    paymentState.existingStatus = paymentInfo.status || '';
+    paymentState.hasRemote = Boolean(paymentState.existingName || info?.file_url);
     updatePaymentUi();
   };
 
@@ -444,6 +557,50 @@
     }
     paymentState.file = file;
     updatePaymentUi();
+  };
+
+  const fetchRegistrationPaymentInfo = async (registrationId) => {
+    if (!registrationId) return;
+    try {
+      const url = getPaymentUrl(registrationId);
+      const res = await fetch(url);
+      if (!res.ok) {
+        if (res.status === 404) {
+          return;
+        }
+        const data = await safeJson(res);
+        const message = data?.error || t('registration_payment_load_error', 'Error al cargar el pago.');
+        throw new Error(message);
+      }
+      const data = await safeJson(res);
+      if (!data) {
+        return;
+      }
+      const mergedPaymentInfo = {
+        ...(paymentRegistration || {}),
+        ...data
+      };
+      setRemotePaymentInfo(mergedPaymentInfo);
+    } catch (err) {
+      showMessageModal(err.message || t('registration_payment_load_error', 'Error al cargar el pago.'), t('error_title', 'Error'));
+    }
+  };
+
+  const openActionUrl = (url, options = {}) => {
+    if (!url) return;
+    const { newTab = false, download = false, filename = '' } = options;
+    const link = document.createElement('a');
+    link.href = url;
+    if (newTab) {
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+    }
+    if (download && filename) {
+      link.setAttribute('download', filename);
+    }
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   const saveRegistrationAudio = async () => {
@@ -485,6 +642,10 @@
       audioState.existingDuration = audioState.duration;
       audioState.existingSize = audioState.file.size;
       audioState.hasRemote = true;
+      if (audioRegistration) {
+        audioRegistration.has_music = true;
+        audioRegistration.music_validated = false;
+      }
       clearSelectedAudio();
       await loadRegistrations();
     } catch (err) {
@@ -522,6 +683,10 @@
       audioState.existingDuration = null;
       audioState.existingSize = null;
       audioState.hasRemote = false;
+      if (audioRegistration) {
+        audioRegistration.has_music = false;
+        audioRegistration.music_validated = false;
+      }
       updateAudioUi();
       await loadRegistrations();
     } catch (err) {
@@ -530,6 +695,109 @@
       if (audioElements.removeBtn) {
         audioElements.removeBtn.disabled = !(audioState.file || audioState.existingName);
       }
+    }
+  };
+
+  const saveRegistrationPayment = async () => {
+    const registrationId = paymentRegistration?.id ? `${paymentRegistration.id}` : '';
+    if (!registrationId) return;
+    if (!paymentState.file) {
+      showMessageModal(t('registration_payment_invalid_file', 'Selecciona un archivo PDF valido.'), t('error_title', 'Error'));
+      return;
+    }
+
+    if (paymentElements.saveBtn) {
+      paymentElements.saveBtn.disabled = true;
+      paymentElements.saveBtn.textContent = t('saving', 'Guardando...');
+    }
+
+    try {
+      const url = getPaymentUrl(registrationId);
+      const formData = new FormData();
+      const selectedFile = paymentState.file;
+      formData.append('payment', selectedFile);
+
+      const res = await fetch(url, {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await safeJson(res);
+      if (!res.ok) {
+        const message = data?.error || t('registration_payment_save_error', 'Error al guardar el pago.');
+        throw new Error(message);
+      }
+
+      paymentState.file = null;
+      if (paymentElements.input) paymentElements.input.value = '';
+      if (paymentRegistration) {
+        paymentRegistration.has_payment = true;
+        paymentRegistration.payment_validated = false;
+      }
+      setRemotePaymentInfo(data || {
+        original_name: selectedFile.name,
+        size: selectedFile.size
+      });
+      await fetchRegistrationPaymentInfo(registrationId);
+      await loadRegistrations();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_payment_save_error', 'Error al guardar el pago.'), t('error_title', 'Error'));
+    } finally {
+      if (paymentElements.saveBtn) {
+        paymentElements.saveBtn.disabled = !paymentState.file;
+        paymentElements.saveBtn.textContent = paymentSaveBtnLabel;
+      }
+    }
+  };
+
+  const viewRegistrationPayment = () => {
+    const registrationId = paymentRegistration?.id ? `${paymentRegistration.id}` : '';
+    if (!registrationId || !paymentState.hasRemote) return;
+    openActionUrl(getPaymentViewUrl(registrationId), { newTab: true });
+  };
+
+  const downloadRegistrationPayment = () => {
+    const registrationId = paymentRegistration?.id ? `${paymentRegistration.id}` : '';
+    if (!registrationId || !paymentState.hasRemote) return;
+    openActionUrl(getPaymentDownloadUrl(registrationId), {
+      download: true,
+      filename: paymentState.existingName || 'payment.pdf'
+    });
+  };
+
+  const deleteRegistrationPayment = async () => {
+    const registrationId = paymentRegistration?.id ? `${paymentRegistration.id}` : '';
+    if (!registrationId || !paymentState.hasRemote) return;
+
+    const confirmDelete = window.confirm(
+      t('registration_payment_remove_confirm', 'Seguro que deseas eliminar el justificante de pago?')
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
+    if (paymentElements.removeBtn) {
+      paymentElements.removeBtn.disabled = true;
+    }
+
+    try {
+      const url = getPaymentUrl(registrationId);
+      const res = await fetch(url, { method: 'DELETE' });
+      const data = await safeJson(res);
+      if (!res.ok) {
+        const message = data?.error || t('registration_payment_remove_error', 'Error al eliminar el pago.');
+        throw new Error(message);
+      }
+      if (paymentRegistration) {
+        paymentRegistration.has_payment = false;
+        paymentRegistration.payment_validated = false;
+      }
+      setRemotePaymentInfo(null);
+      await loadRegistrations();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_payment_remove_error', 'Error al eliminar el pago.'), t('error_title', 'Error'));
+    } finally {
+      updatePaymentUi();
     }
   };
 
@@ -995,7 +1263,9 @@
     }
 
     resetPaymentState();
+    setRemotePaymentInfo(registration);
     registrationPaymentModal.show();
+    await fetchRegistrationPaymentInfo(registration.id);
   };
 
   const openMembersModal = async (registration) => {
@@ -1188,7 +1458,16 @@
 
       const paymentCell = document.createElement('td');
       paymentCell.className = 'text-center';
-      paymentCell.textContent = '-';
+      const paymentInfo = typeof getRegistrationPaymentBadgeInfo === 'function'
+        ? getRegistrationPaymentBadgeInfo(registration)
+        : {
+          label: `${registration?.payment_status ?? registration?.pay_status ?? '-'}`.trim() || '-',
+          className: 'bg-secondary-subtle text-secondary-emphasis'
+        };
+      const paymentBadge = document.createElement('span');
+      paymentBadge.className = `badge ${paymentInfo.className}`;
+      paymentBadge.textContent = paymentInfo.label;
+      paymentCell.appendChild(paymentBadge);
       row.appendChild(paymentCell);
 
       const actionsCell = document.createElement('td');
@@ -1739,6 +2018,22 @@
       const file = event.dataTransfer?.files && event.dataTransfer.files[0];
       handlePaymentFile(file);
     });
+  }
+
+  if (paymentElements.viewBtn) {
+    paymentElements.viewBtn.addEventListener('click', viewRegistrationPayment);
+  }
+
+  if (paymentElements.downloadBtn) {
+    paymentElements.downloadBtn.addEventListener('click', downloadRegistrationPayment);
+  }
+
+  if (paymentElements.removeBtn) {
+    paymentElements.removeBtn.addEventListener('click', deleteRegistrationPayment);
+  }
+
+  if (paymentElements.saveBtn) {
+    paymentElements.saveBtn.addEventListener('click', saveRegistrationPayment);
   }
 
   if (createBtn) {

@@ -31,7 +31,8 @@ window.fetch = function (url, options = {}) {
   options.headers = {
     ...options.headers,
     'Accept-Language': lang,
-    'X-User-Role': role
+    'X-User-Role': role,
+    'X-User-Id': user ? user.id : ''
   };
   return originalFetch(url, options);
 };
@@ -374,15 +375,15 @@ function updateFlag(lang) {
   if (flag) {
     flag.src = flagMap[lang] || flagMap.es;
     if (lang === 'es') {
-      flag.alt = 'Espa�ol';
+      flag.alt = 'Español';
     } else if (lang === 'en') {
       flag.alt = 'English';
     } else if (lang === 'it') {
       flag.alt = 'Italiano';
     } else if (lang === 'pt') {
-      flag.alt = 'Portugu�s';
+      flag.alt = 'Português';
     } else if (lang === 'fr') {
-      flag.alt = 'Fran�ais';
+      flag.alt = 'Français';
     } else {
       flag.alt = lang;
     }
