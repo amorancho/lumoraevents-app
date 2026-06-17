@@ -298,5 +298,15 @@
   "registration_competitions_member_choreo_label": "Coreografia",
   "registration_competitions_member_gender": "Genero",
   "registration_competitions_members_save": "Guardar",
-  "save_choreo": "Guardar coreografia"
+  "save_choreo": "Guardar coreografia",
+  "registration_categories_price": "Preco",
+  "registration_categories_fee_cost": "Taxa inscricao",
+  "registration_categories_field_price": "Preco",
+  "registration_categories_field_music_max_duration_invalid": "Use o formato mm:ss.",
+  "registration_competitions_total_amount": "Valor total",
+  "registration_competitions_total_paid": "Total pago",
+  "registration_competitions_total_pending": "Total pendente",
+  "registration_competitions_table_total_amount": "Valor total",
+  "registration_competitions_rule_price_per_person": "Preco/pessoa",
+  "registration_payment_total_to_pay": "Total a pagar"
 }

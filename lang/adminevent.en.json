@@ -51,6 +51,7 @@
   "registration_start_label": "Registration start",
   "registration_end_label": "Registration end",
   "music_extra_time_label": "Extra music time (sec.)",
+  "registration_fee_cost_label": "Registration fee",
   "hide_school_info": "Hide club info",
   "event_status_finish_btn": "Mark event as finished",
   "event_status_open_btn": "Open Event",

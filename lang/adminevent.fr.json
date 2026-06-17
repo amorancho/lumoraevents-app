@@ -52,6 +52,7 @@
   "registration_start_label": "Debut des inscriptions",
   "registration_end_label": "Fin des inscriptions",
   "music_extra_time_label": "Temps extra musique (sec.)",
+  "registration_fee_cost_label": "Frais inscription",
   "hide_school_info": "Masquer infos clubs",
   "event_status_finish_btn": "Marquer l'evenement comme termine",
   "event_status_open_btn": "Ouvrir l'evenement",

@@ -3117,6 +3117,7 @@ function initRegistrationCategoriesTab() {
   const tableBody = document.getElementById('registrationCategoriesTable');
   const emptyEl = document.getElementById('registrationCategoriesEmpty');
   const countEl = document.getElementById('registrationCategoriesCount');
+  const feeCostEl = document.getElementById('registrationCategoriesFeeCost');
   const addBtn = document.getElementById('registrationCategoryAddBtn');
   const modalEl = document.getElementById('registrationCategoryModal');
   const deleteModalEl = document.getElementById('registrationCategoryDeleteModal');
@@ -3134,6 +3135,7 @@ function initRegistrationCategoriesTab() {
     minYears: document.getElementById('registrationCategoryMinYears'),
     maxYears: document.getElementById('registrationCategoryMaxYears'),
     musicMaxDuration: document.getElementById('registrationCategoryMusicMaxDuration'),
+    price: document.getElementById('registrationCategoryPrice'),
     modalTitle: document.getElementById('registrationCategoryModalTitle'),
     saveBtn: document.getElementById('registrationCategorySaveBtn'),
     deleteMessage: document.getElementById('registrationCategoryDeleteMessage'),
@@ -3151,6 +3153,80 @@ function initRegistrationCategoriesTab() {
     return Number.isFinite(parsed) ? parsed : null;
   };
 
+  const getLanguage = () => getCurrentAppLanguage?.() || document.documentElement.getAttribute('lang') || 'es';
+
+  const formatDurationValue = (value) => {
+    const totalSeconds = Math.round(Number(value));
+    if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '';
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  const parseDurationValue = (value) => {
+    const raw = `${value ?? ''}`.trim();
+    if (!raw) return null;
+
+    if (/^\d+$/.test(raw)) {
+      const totalSeconds = Number(raw);
+      return Number.isFinite(totalSeconds) ? totalSeconds : null;
+    }
+
+    const match = raw.match(/^(\d+):(\d{1,2})$/);
+    if (!match) return null;
+
+    const minutes = Number(match[1]);
+    const seconds = Number(match[2]);
+    if (!Number.isFinite(minutes) || !Number.isFinite(seconds) || seconds > 59) {
+      return null;
+    }
+
+    return (minutes * 60) + seconds;
+  };
+
+  const syncDurationFieldValidity = () => {
+    if (!elements.musicMaxDuration) return true;
+    const raw = `${elements.musicMaxDuration.value ?? ''}`.trim();
+    const isValid = !raw || parseDurationValue(raw) !== null;
+    elements.musicMaxDuration.setCustomValidity(
+      isValid ? '' : t('registration_categories_field_music_max_duration_invalid', 'Use mm:ss format.')
+    );
+    return isValid;
+  };
+
+  const normalizeDurationFieldDisplay = () => {
+    if (!elements.musicMaxDuration) return;
+    const totalSeconds = parseDurationValue(elements.musicMaxDuration.value);
+    if (totalSeconds === null) return;
+    elements.musicMaxDuration.value = formatDurationValue(totalSeconds);
+  };
+
+  const formatCentsToCurrencyValue = (value) => {
+    if (value === null || value === undefined || value === '') return '';
+    const cents = Number(value);
+    if (!Number.isFinite(cents)) return '';
+    return (cents / 100).toFixed(2);
+  };
+
+  const parseCurrencyValueToCents = (value) => {
+    const normalized = String(value ?? '').replace(',', '.').trim();
+    if (!normalized) return null;
+    const amount = Number(normalized);
+    if (!Number.isFinite(amount)) return null;
+    return Math.round(amount * 100);
+  };
+
+  const formatCurrencyDisplay = (value) => {
+    const cents = Number(value);
+    if (!Number.isFinite(cents)) return '-';
+    return new Intl.NumberFormat(getLanguage(), {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(cents / 100);
+  };
+
   const setFormValues = (category = {}) => {
     if (elements.id) elements.id.value = category?.id ?? '';
     if (elements.name) elements.name.value = category?.name ?? '';
@@ -3158,7 +3234,9 @@ function initRegistrationCategoriesTab() {
     if (elements.maxPar) elements.maxPar.value = category?.max_par ?? '';
     if (elements.minYears) elements.minYears.value = category?.min_years ?? '';
     if (elements.maxYears) elements.maxYears.value = category?.max_years ?? '';
-    if (elements.musicMaxDuration) elements.musicMaxDuration.value = category?.music_max_duration ?? '';
+    if (elements.musicMaxDuration) elements.musicMaxDuration.value = formatDurationValue(category?.music_max_duration);
+    if (elements.price) elements.price.value = formatCentsToCurrencyValue(category?.registration_price);
+    syncDurationFieldValidity();
   };
 
   const openCategoryModal = (mode, category = null) => {
@@ -3189,6 +3267,9 @@ function initRegistrationCategoriesTab() {
 
     if (countEl) {
       countEl.textContent = `${categories.length}`;
+    }
+    if (feeCostEl) {
+      feeCostEl.textContent = formatCurrencyDisplay(getEvent()?.registrationFeeCost ?? 0);
     }
 
     if (!categories.length) {
@@ -3231,8 +3312,15 @@ function initRegistrationCategoriesTab() {
 
       const musicMaxCell = document.createElement('td');
       musicMaxCell.className = 'text-center';
-      musicMaxCell.textContent = category.music_max_duration ?? '-';
+      musicMaxCell.textContent = formatDurationValue(category.music_max_duration) || '-';
       row.appendChild(musicMaxCell);
+
+      const priceCell = document.createElement('td');
+      priceCell.className = 'text-center';
+      priceCell.textContent = category.registration_price != null
+        ? formatCurrencyDisplay(category.registration_price)
+        : '-';
+      row.appendChild(priceCell);
 
       const choreoStatusCell = document.createElement('td');
       choreoStatusCell.className = 'text-start';
@@ -3285,7 +3373,7 @@ function initRegistrationCategoriesTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 9;
+    cell.colSpan = 10;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -3306,6 +3394,9 @@ function initRegistrationCategoriesTab() {
 
   const saveCategory = async () => {
     if (!form) return;
+    if (syncDurationFieldValidity()) {
+      normalizeDurationFieldDisplay();
+    }
     if (!form.checkValidity()) {
       form.classList.add('was-validated');
       return;
@@ -3327,7 +3418,8 @@ function initRegistrationCategoriesTab() {
       max_par: normalizeNumber(elements.maxPar?.value),
       min_years: normalizeNumber(elements.minYears?.value),
       max_years: normalizeNumber(elements.maxYears?.value),
-      music_max_duration: normalizeNumber(elements.musicMaxDuration?.value)
+      music_max_duration: parseDurationValue(elements.musicMaxDuration?.value),
+      registration_price: parseCurrencyValueToCents(elements.price?.value)
     };
 
     if (!payload.event_id) delete payload.event_id;
@@ -3463,6 +3555,13 @@ function initRegistrationCategoriesTab() {
     if (!form) return;
     form.classList.remove('was-validated');
     form.dataset.mode = 'create';
+  });
+
+  elements.musicMaxDuration?.addEventListener('input', syncDurationFieldValidity);
+  elements.musicMaxDuration?.addEventListener('blur', () => {
+    if (syncDurationFieldValidity()) {
+      normalizeDurationFieldDisplay();
+    }
   });
 
   loadCategories();
@@ -3722,6 +3821,9 @@ function initOrganizerRegistrationsTab() {
   const tableBody = document.getElementById('orgRegistrationsTable');
   const emptyEl = document.getElementById('orgRegistrationsEmpty');
   const countEl = document.getElementById('orgRegistrationsCount');
+  const totalAmountEl = document.getElementById('orgRegistrationsTotalAmount');
+  const paidAmountEl = document.getElementById('orgRegistrationsPaidAmount');
+  const pendingAmountEl = document.getElementById('orgRegistrationsPendingAmount');
   const filterForm = document.getElementById('orgRegistrationsFilters');
   const filterSchool = document.getElementById('orgRegistrationsFilterSchool');
   const filterStatus = document.getElementById('orgRegistrationsFilterStatus');
@@ -3764,6 +3866,8 @@ function initOrganizerRegistrationsTab() {
     musicStatusBadge: document.getElementById('registrationMusicStatusBadge'),
     paymentStatusWrapper: document.getElementById('registrationPaymentStatusWrapper'),
     paymentStatusBadge: document.getElementById('registrationPaymentStatusBadge'),
+    totalAmountWrapper: document.getElementById('registrationTotalAmountWrapper'),
+    totalAmountValue: document.getElementById('registrationTotalAmountValue'),
     rejectWrapper: document.getElementById('registrationRejectReasonWrapper'),
     rejectReason: document.getElementById('registrationRejectReason'),
     modalTitle: document.getElementById('registrationModalTitle'),
@@ -3799,6 +3903,10 @@ function initOrganizerRegistrationsTab() {
   const membersModal = new bootstrap.Modal(membersModalEl);
   const validateModal = new bootstrap.Modal(validateModalEl);
   const rejectModal = new bootstrap.Modal(rejectModalEl);
+
+  if (modalElements.totalAmountWrapper && modalElements.paymentStatusWrapper) {
+    modalElements.paymentStatusWrapper.insertAdjacentElement('afterend', modalElements.totalAmountWrapper);
+  }
 
   const membersElements = {
     table: document.getElementById('registrationMembersTable'),
@@ -3884,6 +3992,39 @@ function initOrganizerRegistrationsTab() {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
   };
+
+  const getLanguage = () => getCurrentAppLanguage?.() || document.documentElement.getAttribute('lang') || 'es';
+
+  const formatCurrencyDisplay = (value) => {
+    const cents = normalizeNumber(value);
+    const amount = (cents ?? 0) / 100;
+    return new Intl.NumberFormat(getLanguage(), {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const getRegistrationTotalAmount = (registration) => {
+    const directAmount = normalizeNumber(
+      registration?.total_amount
+      ?? registration?.totalAmount
+      ?? registration?.amount_total
+    );
+
+    if (directAmount !== null) {
+      return directAmount;
+    }
+
+    const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+    const category = categoryById.get(`${categoryId}`) || null;
+    const categoryPrice = normalizeNumber(category?.registration_price) ?? 0;
+    const feeCost = normalizeNumber(getEvent()?.registrationFeeCost) ?? 0;
+    return (feeCost + categoryPrice) * getParticipantsCount(registration);
+  };
+
+  const isPaymentValidated = (registration) => isRegistrationFlagEnabled(registration?.payment_validated);
 
   const safeJson = async (res) => {
     try {
@@ -4448,6 +4589,7 @@ function initOrganizerRegistrationsTab() {
       if (modalElements.rejectWrapper) modalElements.rejectWrapper.classList.add('d-none');
       if (modalElements.musicStatusWrapper) modalElements.musicStatusWrapper.classList.add('d-none');
       if (modalElements.paymentStatusWrapper) modalElements.paymentStatusWrapper.classList.add('d-none');
+      if (modalElements.totalAmountWrapper) modalElements.totalAmountWrapper.classList.add('d-none');
       return;
     }
 
@@ -4471,6 +4613,13 @@ function initOrganizerRegistrationsTab() {
         const paymentInfo = getRegistrationPaymentBadgeInfo(registration || {});
         modalElements.paymentStatusBadge.className = `badge ${paymentInfo.className}`;
         modalElements.paymentStatusBadge.textContent = paymentInfo.label;
+      }
+    }
+
+    if (modalElements.totalAmountWrapper && modalElements.totalAmountValue) {
+      modalElements.totalAmountWrapper.classList.toggle('d-none', !showExtended);
+      if (showExtended) {
+        modalElements.totalAmountValue.textContent = formatCurrencyDisplay(getRegistrationTotalAmount(registration || {}));
       }
     }
 
@@ -4802,9 +4951,25 @@ function initOrganizerRegistrationsTab() {
     disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
     const registrations = applyFilters();
+    const totalAmount = registrations.reduce((sum, registration) => sum + getRegistrationTotalAmount(registration), 0);
+    const paidAmount = registrations.reduce((sum, registration) => (
+      isPaymentValidated(registration) ? sum + getRegistrationTotalAmount(registration) : sum
+    ), 0);
+    const pendingAmount = registrations.reduce((sum, registration) => (
+      isPaymentValidated(registration) ? sum : sum + getRegistrationTotalAmount(registration)
+    ), 0);
 
     if (countEl) {
       countEl.textContent = `${registrations.length}`;
+    }
+    if (totalAmountEl) {
+      totalAmountEl.textContent = formatCurrencyDisplay(totalAmount);
+    }
+    if (paidAmountEl) {
+      paidAmountEl.textContent = formatCurrencyDisplay(paidAmount);
+    }
+    if (pendingAmountEl) {
+      pendingAmountEl.textContent = formatCurrencyDisplay(pendingAmount);
     }
 
     if (!registrations.length) {
@@ -4847,6 +5012,11 @@ function initOrganizerRegistrationsTab() {
       participantsCell.className = 'text-center';
       participantsCell.textContent = `${getParticipantsCount(registration)}`;
       row.appendChild(participantsCell);
+
+      const totalAmountCell = document.createElement('td');
+      totalAmountCell.className = 'text-center';
+      totalAmountCell.textContent = formatCurrencyDisplay(getRegistrationTotalAmount(registration));
+      row.appendChild(totalAmountCell);
 
       const statusCell = document.createElement('td');
       const statusInfo = formatStatusInfo(registration.status);
@@ -4949,7 +5119,7 @@ function initOrganizerRegistrationsTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 10;
+    cell.colSpan = 11;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -4958,6 +5128,9 @@ function initOrganizerRegistrationsTab() {
     if (countEl) {
       countEl.textContent = '0';
     }
+    if (totalAmountEl) totalAmountEl.textContent = formatCurrencyDisplay(0);
+    if (paidAmountEl) paidAmountEl.textContent = formatCurrencyDisplay(0);
+    if (pendingAmountEl) pendingAmountEl.textContent = formatCurrencyDisplay(0);
   };
 
   const loadRegistrations = async () => {

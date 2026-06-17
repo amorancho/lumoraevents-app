@@ -1,6 +1,10 @@
 ﻿function initCompetitionsTab() {
   const tableBody = document.getElementById('registrationsTable');
   const countEl = document.getElementById('registrationsCount');
+  const feeCostEl = document.getElementById('registrationsFeeCost');
+  const totalAmountEl = document.getElementById('registrationsTotalAmount');
+  const paidAmountEl = document.getElementById('registrationsPaidAmount');
+  const pendingAmountEl = document.getElementById('registrationsPendingAmount');
   const emptyEl = document.getElementById('registrationsEmpty');
   const createBtn = document.getElementById('createRegistrationBtn');
   const copyTsvBtn = document.getElementById('competitionsCopyTsvBtn');
@@ -32,6 +36,8 @@
     categoryInfo: document.getElementById('categoryRuleInfo'),
     statusWrapper: document.getElementById('registrationStatusWrapper'),
     statusBadge: document.getElementById('registrationStatusBadge'),
+    totalAmountWrapper: document.getElementById('registrationTotalAmountWrapper'),
+    totalAmountValue: document.getElementById('registrationTotalAmountValue'),
     rejectWrapper: document.getElementById('registrationRejectReasonWrapper'),
     rejectReason: document.getElementById('registrationRejectReason'),
     participantSelect: document.getElementById('registrationParticipantSelect'),
@@ -92,6 +98,7 @@
     input: document.getElementById('registrationPaymentModalInput'),
     browseBtn: document.getElementById('registrationPaymentModalBrowseBtn'),
     statusBadge: document.getElementById('registrationPaymentModalStatusBadge'),
+    totalAmount: document.getElementById('registrationPaymentModalTotalAmount'),
     name: document.getElementById('registrationPaymentModalName'),
     size: document.getElementById('registrationPaymentModalSize'),
     viewBtn: document.getElementById('registrationPaymentModalViewBtn'),
@@ -166,6 +173,25 @@
     return Number.isFinite(parsed) ? parsed : null;
   };
 
+  const getLanguage = () => getCurrentAppLanguage?.() || document.documentElement.getAttribute('lang') || 'es';
+
+  const formatCurrencyDisplay = (value) => {
+    const cents = normalizeNumber(value);
+    const amount = (cents ?? 0) / 100;
+    return new Intl.NumberFormat(getLanguage(), {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const getEventFeeCost = () => normalizeNumber(getEvent()?.registrationFeeCost) ?? 0;
+
+  const getCategoryRegistrationPrice = (category) => normalizeNumber(category?.registration_price) ?? 0;
+
+  const getCategoryPricePerPerson = (category) => getEventFeeCost() + getCategoryRegistrationPrice(category);
+
   const getSelectedCategory = () => {
     const categoryId = elements.category ? elements.category.value : '';
     if (!categoryId) return null;
@@ -187,6 +213,41 @@
   const getMembersCategory = () => {
     if (!membersCategoryId) return null;
     return categoryById.get(`${membersCategoryId}`) || null;
+  };
+
+  const getRegistrationParticipantsCount = (registration) => {
+    if (!registration) return 0;
+    const directCount = registration.member_count
+      ?? registration.members_count
+      ?? registration.participants_count
+      ?? registration.num_participants;
+    if (directCount !== undefined && directCount !== null) {
+      return Number(directCount) || 0;
+    }
+    if (Array.isArray(registration.members)) return registration.members.length;
+    if (Array.isArray(registration.participants)) return registration.participants.length;
+    return 0;
+  };
+
+  const getRegistrationTotalAmount = (registration) => {
+    const directAmount = normalizeNumber(
+      registration?.total_amount
+      ?? registration?.totalAmount
+      ?? registration?.amount_total
+    );
+    if (directAmount !== null) {
+      return directAmount;
+    }
+
+    const category = categoryById.get(`${getRegistrationCategoryId(registration)}`) || null;
+    return getCategoryPricePerPerson(category) * getRegistrationParticipantsCount(registration);
+  };
+
+  const isPaymentValidated = (registration) => {
+    if (typeof isRegistrationFlagEnabled === 'function') {
+      return isRegistrationFlagEnabled(registration?.payment_validated);
+    }
+    return registration?.payment_validated === true || Number(registration?.payment_validated) === 1;
   };
 
   const isIndividualCategory = (category) => {
@@ -218,6 +279,14 @@
         info += ` | ${ageLabel}: ${minYears ?? '-'}-${maxYears ?? '-'}`;
       }
     }
+
+    const feeCost = getEventFeeCost();
+    const categoryPrice = getCategoryRegistrationPrice(category);
+    const pricePerPerson = getCategoryPricePerPerson(category);
+    const perPersonLabel = t('registration_competitions_rule_price_per_person', 'Precio/persona');
+    const feeLabel = t('registration_categories_fee_cost', 'Cuota inscripcion');
+    const categoryPriceLabel = t('registration_categories_price', 'Precio');
+    info += ` | ${perPersonLabel}: ${formatCurrencyDisplay(pricePerPerson)} (${feeLabel}: ${formatCurrencyDisplay(feeCost)} + ${categoryPriceLabel}: ${formatCurrencyDisplay(categoryPrice)})`;
 
     elements.categoryInfo.textContent = info;
   };
@@ -1167,6 +1236,7 @@
       setAudioSectionVisible(false);
       setPaymentSectionVisible(false);
       updateModalStatusInfo('', '');
+      updateRegistrationTotalAmountInfo(null);
       registrationModal.show();
       return;
     }
@@ -1176,6 +1246,7 @@
       setAudioSectionVisible(false);
       setPaymentSectionVisible(false);
       updateModalStatusInfo('', '');
+      updateRegistrationTotalAmountInfo(null);
       registrationModal.show();
       return;
     }
@@ -1189,6 +1260,7 @@
     updateCategoryInfo();
     setAudioSectionVisible(false);
     setPaymentSectionVisible(false);
+    updateRegistrationTotalAmountInfo(registration);
     let statusValue = registration.status || '';
     let rejectReason = getRejectReasonValue(registration);
     if ((!statusValue || (`${statusValue}` === 'REJ' && !rejectReason)) && registration.id) {
@@ -1260,6 +1332,9 @@
     }
     if (paymentElements.style) {
       paymentElements.style.textContent = styleName;
+    }
+    if (paymentElements.totalAmount) {
+      paymentElements.totalAmount.textContent = formatCurrencyDisplay(getRegistrationTotalAmount(registration));
     }
 
     resetPaymentState();
@@ -1368,6 +1443,7 @@
     if (!elements.statusWrapper || !elements.statusBadge) return;
     if (!status) {
       elements.statusWrapper.classList.add('d-none');
+      if (elements.totalAmountWrapper) elements.totalAmountWrapper.classList.add('d-none');
       if (elements.rejectWrapper) elements.rejectWrapper.classList.add('d-none');
       return;
     }
@@ -1387,14 +1463,45 @@
     }
   };
 
+  const updateRegistrationTotalAmountInfo = (registration = null) => {
+    if (!elements.totalAmountWrapper || !elements.totalAmountValue) return;
+    if (!registration) {
+      elements.totalAmountWrapper.classList.add('d-none');
+      elements.totalAmountValue.textContent = '-';
+      return;
+    }
+
+    elements.totalAmountValue.textContent = formatCurrencyDisplay(getRegistrationTotalAmount(registration));
+    elements.totalAmountWrapper.classList.remove('d-none');
+  };
+
   const renderRegistrations = () => {
     tableBody.innerHTML = '';
     const registrations = Array.isArray(registrationState.registrations)
       ? registrationState.registrations
       : [];
+    const totalAmount = registrations.reduce((sum, registration) => sum + getRegistrationTotalAmount(registration), 0);
+    const paidAmount = registrations.reduce((sum, registration) => (
+      isPaymentValidated(registration) ? sum + getRegistrationTotalAmount(registration) : sum
+    ), 0);
+    const pendingAmount = registrations.reduce((sum, registration) => (
+      isPaymentValidated(registration) ? sum : sum + getRegistrationTotalAmount(registration)
+    ), 0);
 
     if (countEl) {
       countEl.textContent = `${registrations.length}`;
+    }
+    if (feeCostEl) {
+      feeCostEl.textContent = formatCurrencyDisplay(getEventFeeCost());
+    }
+    if (totalAmountEl) {
+      totalAmountEl.textContent = formatCurrencyDisplay(totalAmount);
+    }
+    if (paidAmountEl) {
+      paidAmountEl.textContent = formatCurrencyDisplay(paidAmount);
+    }
+    if (pendingAmountEl) {
+      pendingAmountEl.textContent = formatCurrencyDisplay(pendingAmount);
     }
 
     if (!registrations.length) {
@@ -1436,8 +1543,13 @@
 
       const participantsCell = document.createElement('td');
       participantsCell.className = 'text-center';
-      participantsCell.textContent = registration.member_count;
+      participantsCell.textContent = `${getRegistrationParticipantsCount(registration)}`;
       row.appendChild(participantsCell);
+
+      const totalAmountCell = document.createElement('td');
+      totalAmountCell.className = 'text-center';
+      totalAmountCell.textContent = formatCurrencyDisplay(getRegistrationTotalAmount(registration));
+      row.appendChild(totalAmountCell);
 
       const statusCell = document.createElement('td');
       const statusInfo = formatStatusInfo(registration.status);
@@ -1549,12 +1661,16 @@
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 9;
+    cell.colSpan = 10;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
     tableBody.appendChild(row);
     if (countEl) countEl.textContent = '0';
+    if (feeCostEl) feeCostEl.textContent = formatCurrencyDisplay(getEventFeeCost());
+    if (totalAmountEl) totalAmountEl.textContent = formatCurrencyDisplay(0);
+    if (paidAmountEl) paidAmountEl.textContent = formatCurrencyDisplay(0);
+    if (pendingAmountEl) pendingAmountEl.textContent = formatCurrencyDisplay(0);
     if (emptyEl) emptyEl.classList.add('d-none');
   };
 
@@ -2146,6 +2262,7 @@
   modalEl.addEventListener('hidden.bs.modal', () => {
     setAudioSectionVisible(false);
     setPaymentSectionVisible(false);
+    updateRegistrationTotalAmountInfo(null);
     loadRegistrations();
   });
 

@@ -24,6 +24,21 @@ function setLoadingButtonState(button,isLoading,loadingText='Guardando...'){
   delete button.dataset.originalHtml;
 }
 
+function formatCentsToCurrencyValue(value){
+  if(value===null||value===undefined||value==='') return '';
+  const cents=Number(value);
+  if(!Number.isFinite(cents)) return '';
+  return (cents/100).toFixed(2);
+}
+
+function parseCurrencyValueToCents(value){
+  const normalized=String(value??'').replace(',','.').trim();
+  if(!normalized) return 0;
+  const amount=Number(normalized);
+  if(!Number.isFinite(amount)) return 0;
+  return Math.round(amount*100);
+}
+
 document.addEventListener('DOMContentLoaded',async()=>{
   validateRoles(allowedRoles);
   await ensureTranslationsReady();
@@ -198,7 +213,7 @@ function buildEventFormTabs(){
       appendNodeToTabContent(welcomeContent,node);
       return;
     }
-    if(nodeContainsIds(node,['visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','show_flags','send_stats_code','hide_judges','has_penalties','has_clubs','hide_school_info','criteria_per_judge','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters','has_registrations','registration_start','registration_end','music_extra_time','registration_not_new_school','registration_not_new_group','min_styles','category_class_type','score_type','criteria_config','total_system','can_decide_positions','restrict_voting','results_filter','tied_positions'])){
+    if(nodeContainsIds(node,['visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','show_flags','send_stats_code','hide_judges','has_penalties','has_clubs','hide_school_info','criteria_per_judge','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters','has_registrations','registration_start','registration_end','music_extra_time','registration_fee_cost','registration_not_new_school','registration_not_new_group','min_styles','category_class_type','score_type','criteria_config','total_system','can_decide_positions','restrict_voting','results_filter','tied_positions'])){
       appendNodeToTabContent(configContent,node);
       return;
     }
@@ -241,7 +256,7 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
   const fieldIds=[
     'visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics',
     'show_flags','send_stats_code','hide_judges','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters',
-    'has_penalties','has_clubs','hide_school_info','has_registrations','registration_start','registration_end','music_extra_time',
+    'has_penalties','has_clubs','hide_school_info','has_registrations','registration_start','registration_end','music_extra_time','registration_fee_cost',
     'registration_not_new_school','registration_not_new_group',
     'category_class_type','score_type','criteria_config','total_system','criteria_per_judge',
     'min_styles','can_decide_positions','restrict_voting','results_filter',
@@ -270,8 +285,8 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
     fields.tied_positions,fields.send_stats_code,fields.judge_feedback
   ],'col-12 col-md-6 col-lg-4');
   appendConfigRow(registrationsContent,[
-    fields.registration_start,fields.registration_end,fields.music_extra_time
-  ],'col-12 col-md-6 col-lg-4');
+    fields.registration_start,fields.registration_end,fields.music_extra_time,fields.registration_fee_cost
+  ],'col-12 col-md-6 col-lg-3');
   appendConfigRow(registrationsContent,[
     fields.registration_not_new_school,fields.registration_not_new_group
   ],'col-12 col-md-6');
@@ -651,6 +666,7 @@ function populateEventForm(eventObj){
   document.getElementById('registration_start').value=eventObj.registration_start?String(eventObj.registration_start).slice(0,10):'';
   document.getElementById('registration_end').value=eventObj.registration_end?String(eventObj.registration_end).slice(0,10):'';
   document.getElementById('music_extra_time').value=eventObj.music_extra_time??0;
+  document.getElementById('registration_fee_cost').value=formatCentsToCurrencyValue(eventObj.registration_fee_cost);
   document.getElementById('notice_text').value=eventObj.notice_text||'';
   document.getElementById('notice_type').value=eventObj.notice_type||'INF';
   populateClientSelect();
@@ -807,6 +823,7 @@ function collectEventFormData(){
     registration_start:document.getElementById('registration_start').value||null,
     registration_end:document.getElementById('registration_end').value||null,
     music_extra_time:parseInt(document.getElementById('music_extra_time').value,10)||0,
+    registration_fee_cost:parseCurrencyValueToCents(document.getElementById('registration_fee_cost').value),
     registration_not_new_school:document.getElementById('registration_not_new_school').checked?1:0,
     registration_not_new_group:document.getElementById('registration_not_new_group').checked?1:0,
     notice_text:document.getElementById('notice_text').value.trim(),

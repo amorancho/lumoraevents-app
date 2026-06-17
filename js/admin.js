@@ -35,6 +35,25 @@ function setLoadingButtonState(button, isLoading, loadingText = 'Guardando...') 
   delete button.dataset.originalHtml;
 }
 
+function formatCentsToCurrencyValue(value) {
+  if (value === null || value === undefined || value === '') return '';
+
+  const cents = Number(value);
+  if (!Number.isFinite(cents)) return '';
+
+  return (cents / 100).toFixed(2);
+}
+
+function parseCurrencyValueToCents(value) {
+  const normalized = String(value ?? '').replace(',', '.').trim();
+  if (!normalized) return 0;
+
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount)) return 0;
+
+  return Math.round(amount * 100);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
@@ -487,6 +506,7 @@ function openEditEventModal(eventObj) {
     ? eventObj.registration_end.slice(0, 10)
     : '';
   document.getElementById('music_extra_time').value = eventObj.music_extra_time ?? 0;
+  document.getElementById('registration_fee_cost').value = formatCentsToCurrencyValue(eventObj.registration_fee_cost);
   document.getElementById('notice_text').value = eventObj.notice_text;
   document.getElementById('notice_active').checked = (Number(eventObj.notice_active) === 1);
   document.getElementById('notice_type').value = eventObj.notice_type;
@@ -546,6 +566,7 @@ async function saveEvent() {
     registration_start: document.getElementById('registration_start').value || null,
     registration_end: document.getElementById('registration_end').value || null,
     music_extra_time: parseInt(document.getElementById('music_extra_time').value, 10) || 0,
+    registration_fee_cost: parseCurrencyValueToCents(document.getElementById('registration_fee_cost').value),
     notice_text: document.getElementById('notice_text').value.trim(),
     notice_active: document.getElementById('notice_active').checked ? 1 : 0,
     notice_type: document.getElementById('notice_type').value,

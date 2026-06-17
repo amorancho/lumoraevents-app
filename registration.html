@@ -696,6 +696,21 @@
                     </div>
                   </div>
 
+                  <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="text-muted" data-i18n="registration_competitions_total_amount">Total importe</span>
+                      <span class="badge bg-info-subtle text-info-emphasis" id="orgRegistrationsTotalAmount">0.00 EUR</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="text-muted" data-i18n="registration_competitions_total_paid">Total pagado</span>
+                      <span class="badge bg-success-subtle text-success-emphasis" id="orgRegistrationsPaidAmount">0.00 EUR</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <span class="text-muted" data-i18n="registration_competitions_total_pending">Total pendiente</span>
+                      <span class="badge bg-warning-subtle text-warning-emphasis" id="orgRegistrationsPendingAmount">0.00 EUR</span>
+                    </div>
+                  </div>
+
                   <div class="table-responsive">
                     <table class="table table-hover align-middle">
                       <thead class="table-light">
@@ -705,6 +720,7 @@
                           <th data-i18n="org_registrations_table_category">Categoria</th>
                           <th data-i18n="org_registrations_table_style">Disciplina/Estilo</th>
                           <th class="text-center" data-i18n="org_registrations_table_participants"># Participantes</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_total_amount">Importe total</th>
                           <th data-i18n="org_registrations_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
                           <th class="text-center" data-i18n="registration_competitions_table_payment">Pago</th>
@@ -730,9 +746,15 @@
                       <i class="bi bi-plus-circle me-2"></i>
                       <span data-i18n="registration_categories_add">Nueva categoria</span>
                     </button>
-                    <div class="d-flex align-items-center gap-2 ms-sm-auto">
-                      <span class="text-muted" data-i18n="registration_categories_total">Total categorias</span>
-                      <span class="badge bg-secondary" id="registrationCategoriesCount">0</span>
+                    <div class="d-flex align-items-center gap-3 ms-sm-auto flex-wrap">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted" data-i18n="registration_categories_fee_cost">Cuota inscripcion</span>
+                        <span class="badge bg-info-subtle text-info-emphasis" id="registrationCategoriesFeeCost">0.00 EUR</span>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted" data-i18n="registration_categories_total">Total categorias</span>
+                        <span class="badge bg-secondary" id="registrationCategoriesCount">0</span>
+                      </div>
                     </div>
                   </div>
 
@@ -746,6 +768,7 @@
                           <th class="text-center" data-i18n="registration_categories_min_years">Min. anos</th>
                           <th class="text-center" data-i18n="registration_categories_max_years">Max. anos</th>
                           <th class="text-center" data-i18n="registration_categories_music_max_duration">Duracion musica</th>
+                          <th class="text-center" data-i18n="registration_categories_price">Precio</th>
                           <th class="text-start" data-i18n="schools_table_choreos_status">Estado coreos</th>
                           <th class="text-center" data-i18n="registration_categories_syncro">Syncro</th>
                           <th class="text-center" data-i18n="registration_categories_actions">Acciones</th>
@@ -791,9 +814,27 @@
                         <i class="bi bi-file-earmark-excel me-2"></i>Export
                       </button>
                     </div>
-                    <div class="d-flex align-items-center gap-2 ms-sm-auto">
-                      <span class="text-muted" data-i18n="registration_competitions_total">Total inscripciones</span>
-                      <span class="badge bg-secondary" id="registrationsCount">0</span>
+                    <div class="d-flex align-items-center gap-3 ms-sm-auto flex-wrap">
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted" data-i18n="registration_categories_fee_cost">Cuota inscripcion</span>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis" id="registrationsFeeCost">0.00 EUR</span>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted" data-i18n="registration_competitions_total_amount">Total importe</span>
+                        <span class="badge bg-info-subtle text-info-emphasis" id="registrationsTotalAmount">0.00 EUR</span>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted" data-i18n="registration_competitions_total_paid">Total pagado</span>
+                        <span class="badge bg-success-subtle text-success-emphasis" id="registrationsPaidAmount">0.00 EUR</span>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted" data-i18n="registration_competitions_total_pending">Total pendiente</span>
+                        <span class="badge bg-warning-subtle text-warning-emphasis" id="registrationsPendingAmount">0.00 EUR</span>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted" data-i18n="registration_competitions_total">Total inscripciones</span>
+                        <span class="badge bg-secondary" id="registrationsCount">0</span>
+                      </div>
                     </div>
                   </div>
 
@@ -806,6 +847,7 @@
                           <th data-i18n="registration_competitions_table_category">Categoria</th>
                           <th data-i18n="registration_competitions_table_style">Disciplina/Estilo</th>
                           <th class="text-center" data-i18n="registration_competitions_table_participants">Participantes</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_total_amount">Importe total</th>
                           <th data-i18n="registration_competitions_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
                           <th class="text-center" data-i18n="registration_competitions_table_payment">Pago</th>
@@ -1025,20 +1067,13 @@
                 <label class="form-label" for="registrationCategoryName" data-i18n="registration_categories_field_name">Nombre</label>
                 <input type="text" class="form-control" id="registrationCategoryName" required>
               </div>
-              <div class="col-12 col-md-4">
+              <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationCategoryMinPar" data-i18n="registration_categories_field_min_par">Min. participantes</label>
                 <input type="number" class="form-control" id="registrationCategoryMinPar" min="0" step="1">
               </div>
-              <div class="col-12 col-md-4">
+              <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationCategoryMaxPar" data-i18n="registration_categories_field_max_par">Max. participantes</label>
                 <input type="number" class="form-control" id="registrationCategoryMaxPar" min="0" step="1">
-              </div>
-              <div class="col-12 col-md-4">
-                <label class="form-label" for="registrationCategoryMusicMaxDuration" data-i18n="registration_categories_field_music_max_duration">Duracion musica</label>
-                <div class="input-group">
-                  <input type="number" class="form-control" id="registrationCategoryMusicMaxDuration" min="0" step="1">
-                  <span class="input-group-text">Secs</span>
-                </div>
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationCategoryMinYears" data-i18n="registration_categories_field_min_years">Min. anos</label>
@@ -1047,6 +1082,21 @@
               <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationCategoryMaxYears" data-i18n="registration_categories_field_max_years">Max. anos</label>
                 <input type="number" class="form-control" id="registrationCategoryMaxYears" min="0" step="1">
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="registrationCategoryMusicMaxDuration" data-i18n="registration_categories_field_music_max_duration">Duracion musica</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="registrationCategoryMusicMaxDuration" inputmode="numeric" placeholder="03:30" pattern="^[0-9]+:[0-9]{2}$">
+                  <span class="input-group-text">mm:ss</span>
+                </div>
+                <div class="invalid-feedback" data-i18n="registration_categories_field_music_max_duration_invalid">Usa el formato mm:ss.</div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="registrationCategoryPrice" data-i18n="registration_categories_field_price">Precio</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="registrationCategoryPrice" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+                  <span class="input-group-text">EUR</span>
+                </div>
               </div>
             </div>
           </form>
@@ -1138,6 +1188,10 @@
                   <div>
                     <span id="registrationStatusBadge" class="badge bg-secondary">-</span>
                   </div>
+                </div>
+                <div class="col-12 col-lg-4 d-none" id="registrationTotalAmountWrapper">
+                  <label class="form-label mb-1" data-i18n="registration_competitions_table_total_amount">Importe total</label>
+                  <div id="registrationTotalAmountValue" class="fw-semibold">-</div>
                 </div>
                 <div class="col-12 col-lg-4 d-none" id="registrationMusicStatusWrapper">
                   <label class="form-label mb-1" data-i18n="registration_music_status_label">Estado música</label>
@@ -1312,17 +1366,21 @@
         </div>
         <div class="modal-body">
           <div class="row g-2 mb-3">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <div class="text-muted small" data-i18n="registration_competitions_member_choreo_label">Coreografia</div>
               <div class="fw-semibold" id="registrationPaymentModalChoreo">-</div>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <div class="text-muted small" data-i18n="registration_competitions_member_category_label">Categoria</div>
               <div class="fw-semibold" id="registrationPaymentModalCategory">-</div>
             </div>
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <div class="text-muted small" data-i18n="registration_competitions_member_style_label">Disciplina/Estilo</div>
               <div class="fw-semibold" id="registrationPaymentModalStyle">-</div>
+            </div>
+            <div class="col-12 col-md-3">
+              <div class="text-muted small" data-i18n="registration_payment_total_to_pay">Total a pagar</div>
+              <div class="fw-semibold" id="registrationPaymentModalTotalAmount">-</div>
             </div>
           </div>
 

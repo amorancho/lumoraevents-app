@@ -1197,6 +1197,25 @@ function downloadDataUrl(dataUrl, filename) {
   a.remove();
 }
 
+function formatCentsToCurrencyValue(value) {
+  if (value === null || value === undefined || value === '') return '';
+
+  const cents = Number(value);
+  if (!Number.isFinite(cents)) return '';
+
+  return (cents / 100).toFixed(2);
+}
+
+function parseCurrencyValueToCents(value) {
+  const normalized = String(value ?? '').replace(',', '.').trim();
+  if (!normalized) return 0;
+
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount)) return 0;
+
+  return Math.round(amount * 100);
+}
+
 async function loadEventData(eventId) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/events/${getEvent().id}`);
@@ -1218,6 +1237,10 @@ async function loadEventData(eventId) {
         // Todo lo demas -> asignar tal cual o vacio
         input.value = data[key] ?? '';
       }
+    }
+
+    if (f('registration_fee_cost')) {
+      f('registration_fee_cost').value = formatCentsToCurrencyValue(data.registration_fee_cost);
     }
 
     if (f('visible')) f('visible').checked = data.visible == 1;
@@ -1268,7 +1291,8 @@ async function saveEventData(eventId) {
     restrict_voting: Number(f('restrict_voting').value || 0),
     registration_start: f('registration_start').value || null,
     registration_end: f('registration_end').value || null,
-    music_extra_time: Number(f('music_extra_time').value || 0)
+    music_extra_time: Number(f('music_extra_time').value || 0),
+    registration_fee_cost: parseCurrencyValueToCents(f('registration_fee_cost').value)
   };
 
   try {
