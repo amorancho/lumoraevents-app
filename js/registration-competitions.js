@@ -30,9 +30,11 @@
   const elements = {
     id: document.getElementById('registrationId'),
     choreographyName: document.getElementById('choreographyName'),
+    participantsCountAddon: document.getElementById('registrationParticipantsCountAddon'),
     choreographer: document.getElementById('choreographerName'),
     category: document.getElementById('registrationCategory'),
     style: document.getElementById('registrationStyle'),
+    observations: document.getElementById('registrationObservations'),
     categoryInfo: document.getElementById('categoryRuleInfo'),
     statusWrapper: document.getElementById('registrationStatusWrapper'),
     statusBadge: document.getElementById('registrationStatusBadge'),
@@ -1149,6 +1151,19 @@
     return safeJson(res);
   };
 
+  const getRegistrationObservationsValue = (data) => data?.notes
+    ?? data?.observations
+    ?? data?.observation
+    ?? data?.observaciones
+    ?? data?.remarks
+    ?? '';
+
+  const setObservationsEditable = (editable) => {
+    if (!elements.observations) return;
+    elements.observations.readOnly = !editable;
+    elements.observations.classList.toggle('bg-light', !editable);
+  };
+
   const showAudioDeleteConfirm = () => new Promise((resolve) => {
     if (!audioDeleteModal || !elements.audioDeleteConfirmBtn || !elements.audioDeleteModal) {
       resolve(window.confirm('Seguro que deseas eliminar la musica?'));
@@ -1186,9 +1201,15 @@
     if (form) form.classList.remove('was-validated');
     if (elements.id) elements.id.value = '';
     if (elements.choreographyName) elements.choreographyName.value = '';
+    if (elements.participantsCountAddon) {
+      elements.participantsCountAddon.classList.add('d-none');
+      elements.participantsCountAddon.textContent = '0 miembros';
+    }
     if (elements.choreographer) elements.choreographer.value = '';
     if (elements.category) elements.category.value = '';
     if (elements.style) elements.style.value = '';
+    if (elements.observations) elements.observations.value = '';
+    setObservationsEditable(true);
     updateCategoryInfo();
   };
 
@@ -1251,25 +1272,28 @@
       return;
     }
 
-    elements.id.value = registration.id || '';
-    elements.choreographyName.value = registration.name || '';
-    elements.choreographer.value = registration.choreographer || '';
-    elements.category.value = registration.reg_category_id;
-    elements.style.value = registration.reg_style_id;
+    let registrationData = registration;
+    const details = registration.id ? await fetchRegistrationDetails(registration.id) : null;
+    if (details && typeof details === 'object') {
+      registrationData = { ...registration, ...details };
+    }
+
+    elements.id.value = registrationData.id || '';
+    elements.choreographyName.value = registrationData.name || '';
+    elements.choreographer.value = registrationData.choreographer || '';
+    elements.category.value = registrationData.reg_category_id ?? registrationData.category_id ?? registration.reg_category_id ?? '';
+    elements.style.value = registrationData.reg_style_id ?? registrationData.style_id ?? registration.reg_style_id ?? '';
+    if (elements.observations) {
+      elements.observations.value = getRegistrationObservationsValue(registrationData);
+    }
 
     updateCategoryInfo();
     setAudioSectionVisible(false);
     setPaymentSectionVisible(false);
-    updateRegistrationTotalAmountInfo(registration);
-    let statusValue = registration.status || '';
-    let rejectReason = getRejectReasonValue(registration);
-    if ((!statusValue || (`${statusValue}` === 'REJ' && !rejectReason)) && registration.id) {
-      const details = await fetchRegistrationDetails(registration.id);
-      if (details) {
-        statusValue = details.status || statusValue;
-        rejectReason = rejectReason || getRejectReasonValue(details);
-      }
-    }
+    updateRegistrationTotalAmountInfo(registrationData);
+    const statusValue = registrationData.status || registration.status || '';
+    const rejectReason = getRejectReasonValue(registrationData) || getRejectReasonValue(registration);
+    setObservationsEditable(!statusValue || ['CRE', 'REJ'].includes(`${statusValue}`));
     updateModalStatusInfo(statusValue, rejectReason);
     registrationModal.show();
   };
@@ -1529,10 +1553,6 @@
       nameCell.appendChild(nameWrapper);
       row.appendChild(nameCell);
 
-      const choreographerCell = document.createElement('td');
-      choreographerCell.textContent = registration.choreographer || '-';
-      row.appendChild(choreographerCell);
-
       const categoryCell = document.createElement('td');
       categoryCell.textContent = registration.category_name || '-';
       row.appendChild(categoryCell);
@@ -1559,15 +1579,6 @@
       statusCell.appendChild(statusBadge);
       row.appendChild(statusCell);
 
-      const musicCell = document.createElement('td');
-      musicCell.className = 'text-center';
-      const musicInfo = getRegistrationMusicBadgeInfo(registration);
-      const musicBadge = document.createElement('span');
-      musicBadge.className = `badge ${musicInfo.className}`;
-      musicBadge.textContent = musicInfo.label;
-      musicCell.appendChild(musicBadge);
-      row.appendChild(musicCell);
-
       const paymentCell = document.createElement('td');
       paymentCell.className = 'text-center';
       const paymentInfo = typeof getRegistrationPaymentBadgeInfo === 'function'
@@ -1581,6 +1592,15 @@
       paymentBadge.textContent = paymentInfo.label;
       paymentCell.appendChild(paymentBadge);
       row.appendChild(paymentCell);
+
+      const musicCell = document.createElement('td');
+      musicCell.className = 'text-center';
+      const musicInfo = getRegistrationMusicBadgeInfo(registration);
+      const musicBadge = document.createElement('span');
+      musicBadge.className = `badge ${musicInfo.className}`;
+      musicBadge.textContent = musicInfo.label;
+      musicCell.appendChild(musicBadge);
+      row.appendChild(musicCell);
 
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
@@ -1646,8 +1666,8 @@
       deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
 
       actionGroup.appendChild(editBtn);
-      actionGroup.appendChild(audioBtn);
       actionGroup.appendChild(paymentBtn);
+      actionGroup.appendChild(audioBtn);
       actionGroup.appendChild(membersBtn);
       actionGroup.appendChild(confirmBtn);
       actionGroup.appendChild(deleteBtn);
@@ -1661,7 +1681,7 @@
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 10;
+    cell.colSpan = 9;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -1911,6 +1931,7 @@
       id: registrationId || undefined,
       name: elements.choreographyName ? elements.choreographyName.value.trim() : '',
       choreographer: elements.choreographer ? elements.choreographer.value.trim() : '',
+      notes: elements.observations ? elements.observations.value.trim() : '',
       reg_category_id: elements.category ? elements.category.value : '',
       reg_style_id: elements.style ? elements.style.value : '',
       school_id: user.id,
@@ -2263,6 +2284,10 @@
     setAudioSectionVisible(false);
     setPaymentSectionVisible(false);
     updateRegistrationTotalAmountInfo(null);
+    if (elements.participantsCountAddon) {
+      elements.participantsCountAddon.classList.add('d-none');
+      elements.participantsCountAddon.textContent = '0 miembros';
+    }
     loadRegistrations();
   });
 

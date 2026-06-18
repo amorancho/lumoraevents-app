@@ -48,6 +48,11 @@
       gap: 1rem;
       grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
     }
+    .registration-dashboard-finance-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
     .registration-dashboard-panels {
       display: grid;
       gap: 1rem;
@@ -75,6 +80,14 @@
       justify-content: flex-start !important;
       gap: 0.65rem !important;
       margin-bottom: 0 !important;
+    }
+    .registration-dashboard-kpi-copy {
+      display: flex;
+      flex: 1 1 auto;
+      min-width: 0;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.2rem;
     }
     .registration-dashboard-panel-card .card-header {
       background: transparent;
@@ -108,6 +121,16 @@
       gap: 0.5rem;
       margin-left: auto;
       flex-shrink: 0;
+    }
+    .registration-dashboard-kpi-meta {
+      font-size: 0.68rem;
+      font-weight: 600;
+      line-height: 1.1;
+      color: var(--bs-secondary-color);
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .registration-dashboard-kpi-alert-btn {
       width: 2rem;
@@ -220,6 +243,58 @@
       background: rgba(220, 53, 69, 0.14);
       color: #dc3545;
     }
+    .registration-dashboard-finance-card {
+      position: relative;
+      overflow: hidden;
+    }
+    .registration-dashboard-finance-card::before {
+      content: "";
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0.35rem;
+      border-radius: 0.35rem;
+      opacity: 0.95;
+    }
+    .registration-dashboard-finance-card[data-finance="total"] {
+      background: linear-gradient(135deg, rgba(13, 110, 253, 0.08), rgba(255, 255, 255, 1));
+    }
+    .registration-dashboard-finance-card[data-finance="total"]::before {
+      background: #0d6efd;
+    }
+    .registration-dashboard-finance-card[data-finance="total"] .registration-dashboard-kpi-icon {
+      background: rgba(13, 110, 253, 0.14);
+      color: #0d6efd;
+    }
+    .registration-dashboard-finance-card[data-finance="paid"] {
+      background: linear-gradient(135deg, rgba(25, 135, 84, 0.1), rgba(255, 255, 255, 1));
+    }
+    .registration-dashboard-finance-card[data-finance="paid"]::before {
+      background: #198754;
+    }
+    .registration-dashboard-finance-card[data-finance="paid"] .registration-dashboard-kpi-icon {
+      background: rgba(25, 135, 84, 0.14);
+      color: #198754;
+    }
+    .registration-dashboard-finance-card[data-finance="pending"] {
+      background: linear-gradient(135deg, rgba(255, 193, 7, 0.12), rgba(255, 255, 255, 1));
+    }
+    .registration-dashboard-finance-card[data-finance="pending"]::before {
+      background: #ffc107;
+    }
+    .registration-dashboard-finance-card[data-finance="pending"] .registration-dashboard-kpi-icon {
+      background: rgba(255, 193, 7, 0.18);
+      color: #8a5a00;
+    }
+    .registration-dashboard-finance-card[data-finance="validation"] {
+      background: linear-gradient(135deg, rgba(253, 126, 20, 0.12), rgba(255, 255, 255, 1));
+    }
+    .registration-dashboard-finance-card[data-finance="validation"]::before {
+      background: #fd7e14;
+    }
+    .registration-dashboard-finance-card[data-finance="validation"] .registration-dashboard-kpi-icon {
+      background: rgba(253, 126, 20, 0.18);
+      color: #c55a11;
+    }
     .registration-dashboard-chart {
       min-height: 320px;
     }
@@ -289,19 +364,19 @@
                     <div class="card registration-dashboard-stat-card">
                       <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_participants">Participantes</div>
-                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-people"></i></span>
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_registrations">Inscripciones</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-journal-check"></i></span>
                         </div>
-                        <div class="registration-dashboard-kpi-value" id="organizerDashboardParticipantsValue">0</div>
+                        <div class="registration-dashboard-kpi-value" id="organizerDashboardRegistrationsValue">0</div>
                       </div>
                     </div>
                     <div class="card registration-dashboard-stat-card">
                       <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_registrations">Inscripciones</div>
-                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-journal-check"></i></span>
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_participants">Participantes</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-people"></i></span>
                         </div>
-                        <div class="registration-dashboard-kpi-value" id="organizerDashboardRegistrationsValue">0</div>
+                        <div class="registration-dashboard-kpi-value" id="organizerDashboardParticipantsValue">0</div>
                       </div>
                     </div>
                     <div class="card registration-dashboard-stat-card">
@@ -373,6 +448,54 @@
                     </div>
                   </div>
 
+                  <div class="registration-dashboard-finance-grid mt-4">
+                    <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="total">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-copy">
+                            <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_total_and_paid">Total</div>
+                            <div class="registration-dashboard-kpi-meta" id="organizerDashboardTotalAmountMeta">0 Inscripciones</div>
+                          </div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-cash-stack"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="organizerDashboardTotalAmountValue">EUR 0.00</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="paid">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-copy">
+                            <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_paid_label">Pagado</div>
+                            <div class="registration-dashboard-kpi-meta" id="organizerDashboardPaidAmountMeta">0 Inscripciones</div>
+                          </div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-check2-circle"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="organizerDashboardPaidAmountValue">EUR 0.00</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="pending">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-copy">
+                            <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_pending_payment">Pdte. de pago</div>
+                            <div class="registration-dashboard-kpi-meta" id="organizerDashboardPendingAmountMeta">0 Inscripciones</div>
+                          </div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-wallet2"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="organizerDashboardPendingAmountValue">EUR 0.00</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="validation">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_payments_pending_validation">Pagos pdte. validar</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-receipt-cutoff"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="organizerDashboardPendingValidationPaymentsValue">0</div>
+                      </div>
+                    </div>
+                  </div>
+
                   <div class="registration-dashboard-panels mt-4">
                     <div class="card registration-dashboard-panel-card registration-dashboard-panel-wide d-none">
                       <div class="card-header">
@@ -438,19 +561,19 @@
                     <div class="card registration-dashboard-stat-card">
                       <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_participants">Participantes</div>
-                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-people"></i></span>
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_registrations">Inscripciones</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-journal-check"></i></span>
                         </div>
-                        <div class="registration-dashboard-kpi-value" id="schoolDashboardParticipantsValue">0</div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardRegistrationsValue">0</div>
                       </div>
                     </div>
                     <div class="card registration-dashboard-stat-card">
                       <div class="card-body">
                         <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_registrations">Inscripciones</div>
-                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-journal-check"></i></span>
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_participants">Participantes</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-people"></i></span>
                         </div>
-                        <div class="registration-dashboard-kpi-value" id="schoolDashboardRegistrationsValue">0</div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardParticipantsValue">0</div>
                       </div>
                     </div>
                     <div class="card registration-dashboard-stat-card registration-dashboard-alert-card">
@@ -499,6 +622,54 @@
                           <span class="registration-dashboard-kpi-icon"><i class="bi bi-x-circle"></i></span>
                         </div>
                         <div class="registration-dashboard-kpi-value" id="schoolDashboardStatusRejValue">0</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="registration-dashboard-finance-grid mt-4">
+                    <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="total">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-copy">
+                            <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_total_and_paid">Total</div>
+                            <div class="registration-dashboard-kpi-meta" id="schoolDashboardTotalAmountMeta">0 Inscripciones</div>
+                          </div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-cash-stack"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardTotalAmountValue">EUR 0.00</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="paid">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-copy">
+                            <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_paid_label">Pagado</div>
+                            <div class="registration-dashboard-kpi-meta" id="schoolDashboardPaidAmountMeta">0 Inscripciones</div>
+                          </div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-check2-circle"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardPaidAmountValue">EUR 0.00</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="pending">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-copy">
+                            <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_pending_payment">Pdte. de pago</div>
+                            <div class="registration-dashboard-kpi-meta" id="schoolDashboardPendingAmountMeta">0 Inscripciones</div>
+                          </div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-wallet2"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardPendingAmountValue">EUR 0.00</div>
+                      </div>
+                    </div>
+                    <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="validation">
+                      <div class="card-body">
+                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_payments_pending_validation">Pagos pdte. validar</div>
+                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-receipt-cutoff"></i></span>
+                        </div>
+                        <div class="registration-dashboard-kpi-value" id="schoolDashboardPendingValidationPaymentsValue">0</div>
                       </div>
                     </div>
                   </div>
@@ -720,10 +891,11 @@
                           <th data-i18n="org_registrations_table_category">Categoria</th>
                           <th data-i18n="org_registrations_table_style">Disciplina/Estilo</th>
                           <th class="text-center" data-i18n="org_registrations_table_participants"># Participantes</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_observations_short" data-tsv-ignore="true">Obs.</th>
                           <th class="text-center" data-i18n="registration_competitions_table_total_amount">Importe total</th>
                           <th data-i18n="org_registrations_table_status">Estado</th>
-                          <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
                           <th class="text-center" data-i18n="registration_competitions_table_payment">Pago</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
                           <th class="text-center" data-i18n="registration_categories_syncro">Syncro</th>
                           <th class="text-center" data-i18n="org_registrations_table_actions" data-tsv-ignore="true">Acciones</th>
                         </tr>
@@ -843,14 +1015,13 @@
                       <thead class="table-light">
                         <tr>
                           <th data-i18n="registration_competitions_table_choreography">Coreografia</th>
-                          <th data-i18n="registration_competitions_table_choreographer">Coreografo</th>
                           <th data-i18n="registration_competitions_table_category">Categoria</th>
                           <th data-i18n="registration_competitions_table_style">Disciplina/Estilo</th>
                           <th class="text-center" data-i18n="registration_competitions_table_participants">Participantes</th>
                           <th class="text-center" data-i18n="registration_competitions_table_total_amount">Importe total</th>
                           <th data-i18n="registration_competitions_table_status">Estado</th>
-                          <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
                           <th class="text-center" data-i18n="registration_competitions_table_payment">Pago</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_music">Música</th>
                           <th class="text-center" data-i18n="registration_competitions_table_actions" data-tsv-ignore="true">Acciones</th>
                         </tr>
                       </thead>
@@ -1158,13 +1329,16 @@
           <form id="registrationForm" data-mode="create" novalidate>
             <input type="hidden" id="registrationId">
             <div class="row g-3">
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-8">
                 <label class="form-label" for="choreographyName" data-i18n="registration_competitions_choreography_name">Nombre coreografia</label>
-                <input type="text" class="form-control" id="choreographyName" required>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="choreographyName" required>
+                  <span class="input-group-text d-none" id="registrationParticipantsCountAddon">0 miembros</span>
+                </div>
               </div>
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-4">
                 <label class="form-label" for="choreographerName" data-i18n="registration_competitions_choreographer">Coreografo</label>
-                <input type="text" class="form-control" id="choreographerName" required>
+                <input type="text" class="form-control" id="choreographerName">
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationCategory" data-i18n="registration_competitions_category">Categoria</label>
@@ -1179,30 +1353,40 @@
                   <option value=""></option>
                 </select>
               </div>
+              <div class="col-12">
+                <label class="form-label" for="registrationObservations" data-i18n="registration_competitions_observations">Observaciones</label>
+                <textarea
+                  class="form-control"
+                  id="registrationObservations"
+                  rows="3"
+                  data-i18n-placeholder="registration_competitions_observations_placeholder"
+                  placeholder="Observaciones de la inscripción"
+                ></textarea>
+              </div>
             </div>
 
             <div id="registrationStatusWrapper" class="mt-4 d-none">
               <div class="row g-3">
-                <div class="col-12 col-lg-4">
+                <div class="col-12 col-lg-3">
                   <label class="form-label mb-1" data-i18n="registration_competitions_status_label">Estado</label>
                   <div>
                     <span id="registrationStatusBadge" class="badge bg-secondary">-</span>
                   </div>
                 </div>
-                <div class="col-12 col-lg-4 d-none" id="registrationTotalAmountWrapper">
-                  <label class="form-label mb-1" data-i18n="registration_competitions_table_total_amount">Importe total</label>
-                  <div id="registrationTotalAmountValue" class="fw-semibold">-</div>
-                </div>
-                <div class="col-12 col-lg-4 d-none" id="registrationMusicStatusWrapper">
-                  <label class="form-label mb-1" data-i18n="registration_music_status_label">Estado música</label>
-                  <div>
-                    <span id="registrationMusicStatusBadge" class="badge bg-secondary-subtle text-secondary-emphasis">-</span>
-                  </div>
-                </div>
-                <div class="col-12 col-lg-4 d-none" id="registrationPaymentStatusWrapper">
+                <div class="col-12 col-lg-3 d-none" id="registrationPaymentStatusWrapper">
                   <label class="form-label mb-1" data-i18n="registration_payment_status_label">Estado pago</label>
                   <div>
                     <span id="registrationPaymentStatusBadge" class="badge bg-secondary-subtle text-secondary-emphasis">-</span>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-3 d-none" id="registrationTotalAmountWrapper">
+                  <label class="form-label mb-1" data-i18n="registration_competitions_table_total_amount">Importe total</label>
+                  <div id="registrationTotalAmountValue" class="fw-semibold">-</div>
+                </div>
+                <div class="col-12 col-lg-3 d-none" id="registrationMusicStatusWrapper">
+                  <label class="form-label mb-1" data-i18n="registration_music_status_label">Estado música</label>
+                  <div>
+                    <span id="registrationMusicStatusBadge" class="badge bg-secondary-subtle text-secondary-emphasis">-</span>
                   </div>
                 </div>
               </div>
@@ -1214,7 +1398,27 @@
 
             <hr class="my-4">
 
+            <div id="registrationPaymentSection" class="d-none">
+              <h6 class="text-uppercase text-muted small mb-2" data-i18n="registration_competitions_table_payment">Pago</h6>
+              <div class="row g-2">
+                <div class="col-12 col-md-8">
+                  <div class="text-muted small" data-i18n="registration_payment_file">Archivo</div>
+                  <div id="registrationPaymentName" class="fw-semibold">-</div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="text-muted small" data-i18n="registration_payment_size">Tamano</div>
+                  <div id="registrationPaymentSize" class="fw-semibold">-</div>
+                </div>
+              </div>
+              <div class="d-flex flex-column flex-md-row gap-2 mt-3">
+                <button type="button" class="btn btn-outline-primary" id="registrationPaymentViewBtn" disabled data-i18n="registration_payment_view_receipt">Ver justificante</button>
+                <button type="button" class="btn btn-outline-dark" id="registrationPaymentDownloadBtn" disabled data-i18n="registration_payment_download">Descargar justificante</button>
+                <button type="button" class="btn btn-outline-success" id="registrationPaymentValidateBtn" disabled data-i18n="registration_payment_validate">Validar pago</button>
+              </div>
+            </div>
+
             <div id="registrationAudioSection" class="d-none">
+              <hr class="my-4">
               <h6 class="text-uppercase text-muted small mb-2" data-i18n="registration_competitions_audio">Musica</h6>
               <div id="registrationAudioUploadControls">
                 <div class="audio-dropzone border border-2 border-secondary-subtle rounded p-3 text-center bg-light" id="registrationAudioDropzone">
@@ -1251,26 +1455,6 @@
                 <button type="button" class="btn btn-outline-primary" id="registrationAudioSaveBtn" disabled data-i18n="registration_audio_save">Guardar audio</button>
                 <a class="btn btn-outline-primary d-none" id="registrationAudioDownloadBtn" href="#" download data-i18n="registration_audio_download">Descargar audio</a>
                 <button type="button" class="btn btn-outline-success d-none" id="registrationAudioValidateBtn" data-i18n="registration_audio_validate">Validar música</button>
-              </div>
-            </div>
-
-            <div id="registrationPaymentSection" class="d-none">
-              <hr class="my-4">
-              <h6 class="text-uppercase text-muted small mb-2" data-i18n="registration_competitions_table_payment">Pago</h6>
-              <div class="row g-2">
-                <div class="col-12 col-md-8">
-                  <div class="text-muted small" data-i18n="registration_payment_file">Archivo</div>
-                  <div id="registrationPaymentName" class="fw-semibold">-</div>
-                </div>
-                <div class="col-12 col-md-4">
-                  <div class="text-muted small" data-i18n="registration_payment_size">Tamano</div>
-                  <div id="registrationPaymentSize" class="fw-semibold">-</div>
-                </div>
-              </div>
-              <div class="d-flex flex-column flex-md-row gap-2 mt-3">
-                <button type="button" class="btn btn-outline-primary" id="registrationPaymentViewBtn" disabled data-i18n="registration_payment_view_receipt">Ver justificante</button>
-                <button type="button" class="btn btn-outline-dark" id="registrationPaymentDownloadBtn" disabled data-i18n="registration_payment_download">Descargar justificante</button>
-                <button type="button" class="btn btn-outline-success" id="registrationPaymentValidateBtn" disabled data-i18n="registration_payment_validate">Validar pago</button>
               </div>
             </div>
           </form>
