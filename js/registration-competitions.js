@@ -46,6 +46,7 @@
     addMemberBtn: document.getElementById('addRegistrationMemberBtn'),
     membersTable: document.getElementById('registrationMembersTable'),
     membersCount: document.getElementById('registrationMembersCount'),
+    membersOutOfRangeInfo: document.getElementById('registrationMembersOutOfRangeInfo'),
     membersEmpty: document.getElementById('registrationMembersEmpty'),
     membersSaveBtn: document.getElementById('registrationMembersSaveBtn'),
     membersRuleInfo: document.getElementById('registrationMembersRuleInfo'),
@@ -258,6 +259,36 @@
     const maxPar = normalizeNumber(category.max_par);
     return minPar === 1 && maxPar === 1;
   };
+
+  const categoryHasAgeRange = (category) => {
+    if (!category) return false;
+    const minYears = normalizeNumber(category.min_years);
+    const maxYears = normalizeNumber(category.max_years);
+    return minYears !== null || maxYears !== null;
+  };
+
+  const getCategoryMaxOutOfRange = (category) => normalizeNumber(category?.max_outofrange) ?? 0;
+
+  const getMemberAgeValue = (member) => calculateAge(getDateOnlyValue(member?.date_of_birth));
+
+  const isMemberOutOfAgeRange = (member, category = getMembersCategory()) => {
+    if (!member || !categoryHasAgeRange(category)) return false;
+
+    const age = getMemberAgeValue(member);
+    const minYears = normalizeNumber(category?.min_years);
+    const maxYears = normalizeNumber(category?.max_years);
+    if (age === '-') {
+      return true;
+    }
+
+    return (minYears !== null && age < minYears) || (maxYears !== null && age > maxYears);
+  };
+
+  const getOutOfAgeRangeMembersCount = (members = selectedMembers, category = getMembersCategory()) => {
+    if (!Array.isArray(members) || !categoryHasAgeRange(category)) return 0;
+    return members.reduce((count, member) => count + (isMemberOutOfAgeRange(member, category) ? 1 : 0), 0);
+  };
+
   const updateCategoryInfo = () => {
     if (!elements.categoryInfo) return;
     const category = getSelectedCategory();
@@ -890,11 +921,41 @@
     }
   };
 
+  const updateMembersOutOfRangeInfo = () => {
+    if (!elements.membersOutOfRangeInfo) return;
+
+    const category = getMembersCategory();
+    if (!categoryHasAgeRange(category)) {
+      elements.membersOutOfRangeInfo.textContent = '';
+      elements.membersOutOfRangeInfo.classList.add('d-none');
+      elements.membersOutOfRangeInfo.classList.remove('text-danger', 'fw-semibold', 'text-warning-emphasis');
+      elements.membersOutOfRangeInfo.classList.add('text-muted');
+      return;
+    }
+
+    const outOfRangeCount = getOutOfAgeRangeMembersCount(selectedMembers, category);
+    const allowedOutOfRange = getCategoryMaxOutOfRange(category);
+    elements.membersOutOfRangeInfo.textContent = formatTemplate(
+      t('registration_competitions_members_outofrange_count', 'Fuera de rango: {count}'),
+      { count: outOfRangeCount }
+    );
+    elements.membersOutOfRangeInfo.classList.remove('d-none', 'text-muted', 'text-warning-emphasis', 'text-danger', 'fw-semibold');
+
+    if (outOfRangeCount > allowedOutOfRange) {
+      elements.membersOutOfRangeInfo.classList.add('text-danger', 'fw-semibold');
+    } else if (outOfRangeCount > 0) {
+      elements.membersOutOfRangeInfo.classList.add('text-warning-emphasis');
+    } else {
+      elements.membersOutOfRangeInfo.classList.add('text-muted');
+    }
+  };
+
   const renderMembersTable = () => {
     if (!elements.membersTable) return;
     elements.membersTable.innerHTML = '';
 
     updateMemberCount();
+    updateMembersOutOfRangeInfo();
 
     if (!selectedMembers.length) {
       if (elements.membersEmpty) elements.membersEmpty.classList.remove('d-none');
@@ -905,11 +966,17 @@
     if (elements.membersEmpty) elements.membersEmpty.classList.add('d-none');
 
     const deleteTitle = t('delete', 'Delete');
+    const category = getMembersCategory();
 
     selectedMembers.forEach(member => {
 
       const row = document.createElement('tr');
       row.dataset.id = member.id;
+      const memberAge = getMemberAgeValue(member);
+      const outOfRange = isMemberOutOfAgeRange(member, category);
+      if (outOfRange) {
+        row.classList.add('table-warning');
+      }
 
       const nameCell = document.createElement('td');
       nameCell.textContent = member.name || '';
@@ -925,7 +992,10 @@
       row.appendChild(dobCell);
 
       const ageCell = document.createElement('td');
-      ageCell.textContent = `${calculateAge(dobValue)}`;
+      ageCell.textContent = `${memberAge}`;
+      if (outOfRange) {
+        ageCell.classList.add('fw-semibold', 'text-warning-emphasis');
+      }
       row.appendChild(ageCell);
 
       const actionsCell = document.createElement('td');
@@ -1429,9 +1499,11 @@
 
     const minYears = normalizeNumber(category.min_years);
     const maxYears = normalizeNumber(category.max_years);
-    if (minYears !== null || maxYears !== null) {
+    if (categoryHasAgeRange(category)) {
       const ageLabel = t('registration_competitions_rule_age', 'Edad');
       info += ` | ${ageLabel}: ${minYears ?? '-'}-${maxYears ?? '-'}`;
+      const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera de rango');
+      info += ` | ${maxOutOfRangeLabel}: ${getCategoryMaxOutOfRange(category)}`;
     }
 
     elements.membersRuleInfo.textContent = info;
@@ -1768,20 +1840,6 @@
       return;
     }
 
-    if (isIndividualCategory(category)) {
-      const age = calculateAge(getDateOnlyValue(participant.date_of_birth));
-      const minYears = normalizeNumber(category.min_years);
-      const maxYears = normalizeNumber(category.max_years);
-      if (age === '-' || (minYears !== null && age < minYears) || (maxYears !== null && age > maxYears)) {
-        const message = formatTemplate(
-          t('registration_competitions_member_age_error', 'La edad debe estar entre {min} y {max} anos.'),
-          { min: category.min_years ?? '-', max: category.max_years ?? '-' }
-        );
-        showMessageModal(message, t('error_title', 'Error'));
-        return;
-      }
-    }
-
     selectedMembers.push(participant);
     renderMembersTable();
     refreshParticipantSelect();
@@ -1832,15 +1890,13 @@
       return false;
     }
 
-    if (isIndividualCategory(category) && selectedMembers.length === 1) {
-      const participant = selectedMembers[0];
-      const age = calculateAge(getDateOnlyValue(participant.date_of_birth));
-      const minYears = normalizeNumber(category.min_years);
-      const maxYears = normalizeNumber(category.max_years);
-      if (age === '-' || (minYears !== null && age < minYears) || (maxYears !== null && age > maxYears)) {
+    if (categoryHasAgeRange(category)) {
+      const outOfRangeCount = getOutOfAgeRangeMembersCount(selectedMembers, category);
+      const allowedOutOfRange = getCategoryMaxOutOfRange(category);
+      if (outOfRangeCount > allowedOutOfRange) {
         const message = formatTemplate(
-          t('registration_competitions_member_age_error', 'La edad debe estar entre {min} y {max} anos.'),
-          { min: category.min_years ?? '-', max: category.max_years ?? '-' }
+          t('registration_competitions_members_outofrange_exceeded_error', 'Se ha superado el numero de personas permitidas fuera del rango de edad. Maximo: {allowed}. Actual: {count}.'),
+          { allowed: allowedOutOfRange, count: outOfRangeCount }
         );
         showMessageModal(message, t('error_title', 'Error'));
         return false;

@@ -1937,9 +1937,18 @@ function initParticipantsTab(role) {
 
   const allowEdit = role === 'school';
   const showSchoolColumn = role === 'organizer';
+  const ageHeaderInfoBtn = document.getElementById('participantsAgeInfoBtn');
+  const getParticipantsAgeReferenceDate = () => getEvent()?.start || null;
+  const registrationsHeader = document.querySelector('th[data-i18n="registration_participants_registrations"]');
   if (!allowEdit) {
     if (addBtn) addBtn.classList.add('d-none');
     if (actionsHeader) actionsHeader.classList.add('d-none');
+  }
+  if (allowEdit && !showSchoolColumn && actionsHeader && registrationsHeader) {
+    const headRow = actionsHeader.parentElement;
+    if (headRow) {
+      headRow.appendChild(actionsHeader);
+    }
   }
   if (!showSchoolColumn) {
     if (filterSchool) {
@@ -1996,9 +2005,64 @@ function initParticipantsTab(role) {
   const participantModal = new bootstrap.Modal(modalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
   const duplicateModal = duplicateModalEl ? new bootstrap.Modal(duplicateModalEl) : null;
+  const ageHeaderTooltip = ageHeaderInfoBtn
+    ? bootstrap.Tooltip.getOrCreateInstance(ageHeaderInfoBtn)
+    : null;
   let participantToDelete = null;
   const duplicateMessageEl = document.getElementById('duplicateParticipantMessage');
   const confirmDuplicateBtn = document.getElementById('confirmDuplicateParticipantBtn');
+
+  const formatParticipantsAgeReferenceDate = (dateValue) => {
+    const normalizedDate = getDateOnlyValue(dateValue);
+    if (!normalizedDate) {
+      return '-';
+    }
+
+    const [year, month, day] = normalizedDate.split('-').map(Number);
+    if (!year || !month || !day) {
+      return normalizedDate;
+    }
+
+    const date = new Date(year, month - 1, day);
+    if (Number.isNaN(date.getTime())) {
+      return normalizedDate;
+    }
+
+    return new Intl.DateTimeFormat(getRegistrationLanguage(), {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date);
+  };
+
+  const updateParticipantsAgeHeaderTooltip = () => {
+    if (!ageHeaderInfoBtn) {
+      return;
+    }
+
+    const referenceDateLabel = formatParticipantsAgeReferenceDate(getParticipantsAgeReferenceDate());
+    const tooltipText = t(
+      'registration_participants_age_tooltip',
+      'Age is calculated using the event start date ({date}).'
+    ).replace('{date}', referenceDateLabel);
+
+    ageHeaderInfoBtn.setAttribute('aria-label', tooltipText);
+    ageHeaderInfoBtn.setAttribute('data-bs-original-title', tooltipText);
+    ageHeaderInfoBtn.removeAttribute('title');
+    ageHeaderTooltip?.setContent({ '.tooltip-inner': tooltipText });
+    ageHeaderTooltip?.update();
+  };
+
+  const getParticipantRegistrations = (participant) => {
+    const rawValue = `${participant?.reg_cat_sty ?? ''}`.trim();
+    if (!rawValue || rawValue.toUpperCase() === 'NULL') {
+      return [];
+    }
+    return rawValue
+      .split('|')
+      .map((value) => value.trim())
+      .filter(Boolean);
+  };
 
   const setCountryValue = (value) => {
     if (participantCountrySelect) {
@@ -2070,6 +2134,7 @@ function initParticipantsTab(role) {
 
   const renderParticipants = () => {
     tableBody.innerHTML = '';
+    const participantsAgeReferenceDate = getParticipantsAgeReferenceDate();
 
     const participants = Array.isArray(registrationState.participants)
       ? registrationState.participants
@@ -2112,7 +2177,7 @@ function initParticipantsTab(role) {
       row.appendChild(dobCell);
 
       const ageCell = document.createElement('td');
-      ageCell.textContent = `${calculateAge(dobValue)}`;
+      ageCell.textContent = `${calculateAge(dobValue, participantsAgeReferenceDate)}`;
       row.appendChild(ageCell);
 
       const countryCell = document.createElement('td');
@@ -2124,6 +2189,28 @@ function initParticipantsTab(role) {
         schoolCell.textContent = participant.school_name || participant.school || '-';
         row.appendChild(schoolCell);
       }
+
+      const registrationsCell = document.createElement('td');
+      const registrations = getParticipantRegistrations(participant);
+      const registrationsWrap = document.createElement('div');
+      registrationsWrap.className = 'd-flex flex-wrap gap-1';
+
+      if (registrations.length) {
+        registrations.forEach((registrationLabel) => {
+          const badge = document.createElement('span');
+          badge.className = 'badge bg-primary-subtle text-primary-emphasis';
+          badge.textContent = registrationLabel;
+          registrationsWrap.appendChild(badge);
+        });
+      } else {
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-secondary-subtle text-secondary-emphasis';
+        badge.textContent = t('registration_participants_no_registration', 'NO INSCRIPCIÓN');
+        registrationsWrap.appendChild(badge);
+      }
+
+      registrationsCell.appendChild(registrationsWrap);
+      row.appendChild(registrationsCell);
 
       if (allowEdit) {
         const actionsCell = document.createElement('td');
@@ -2163,7 +2250,7 @@ function initParticipantsTab(role) {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = (allowEdit ? 6 : 5) + (showSchoolColumn ? 1 : 0);
+    cell.colSpan = ((allowEdit ? 6 : 5) + (showSchoolColumn ? 1 : 0)) + 1;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -2490,6 +2577,32 @@ function initParticipantsTab(role) {
     });
   }
 
+  const refreshParticipantsTranslations = async () => {
+    try {
+      await window.translationsReady;
+    } catch (error) {
+      // Ignore translation loading failures and keep current labels.
+    }
+    updateParticipantsAgeHeaderTooltip();
+    renderParticipants();
+  };
+
+  if (ageHeaderInfoBtn) {
+    const ageHeaderLanguageObserver = new MutationObserver(() => {
+      refreshParticipantsTranslations();
+    });
+    ageHeaderLanguageObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['lang']
+    });
+  }
+
+  window.addEventListener('registration:config-updated', () => {
+    updateParticipantsAgeHeaderTooltip();
+    renderParticipants();
+  });
+
+  updateParticipantsAgeHeaderTooltip();
   loadParticipantSchools();
   loadParticipants();
 }
@@ -2505,17 +2618,33 @@ function getDateOnlyValue(dateValue) {
   return '';
 }
 
-function calculateAge(dateValue) {
+function calculateAge(dateValue, referenceDateValue = null) {
   if (!dateValue) return '-';
   const parts = dateValue.split('-').map(Number);
   if (parts.length < 3 || !parts[0] || !parts[1] || !parts[2]) {
     return '-';
   }
   const [year, month, day] = parts;
-  const today = new Date();
-  let age = today.getFullYear() - year;
-  const monthDiff = today.getMonth() + 1 - month;
-  const dayDiff = today.getDate() - day;
+  const referenceDateOnly = getDateOnlyValue(referenceDateValue);
+  const referenceParts = referenceDateOnly
+    ? referenceDateOnly.split('-').map(Number)
+    : [];
+  const hasValidReference = referenceParts.length >= 3
+    && referenceParts[0]
+    && referenceParts[1]
+    && referenceParts[2];
+  const [referenceYear, referenceMonth, referenceDay] = hasValidReference
+    ? referenceParts
+    : [null, null, null];
+
+  const today = hasValidReference ? null : new Date();
+  const baseYear = hasValidReference ? referenceYear : today.getFullYear();
+  const baseMonth = hasValidReference ? referenceMonth : (today.getMonth() + 1);
+  const baseDay = hasValidReference ? referenceDay : today.getDate();
+
+  let age = baseYear - year;
+  const monthDiff = baseMonth - month;
+  const dayDiff = baseDay - day;
   if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
     age -= 1;
   }
@@ -3298,6 +3427,8 @@ function initRegistrationCategoriesTab() {
     maxPar: document.getElementById('registrationCategoryMaxPar'),
     minYears: document.getElementById('registrationCategoryMinYears'),
     maxYears: document.getElementById('registrationCategoryMaxYears'),
+    maxOutOfRange: document.getElementById('registrationCategoryMaxOutOfRange'),
+    maxOutOfRangeInfo: modalEl.querySelector('[data-bs-toggle="tooltip"]'),
     musicMaxDuration: document.getElementById('registrationCategoryMusicMaxDuration'),
     price: document.getElementById('registrationCategoryPrice'),
     modalTitle: document.getElementById('registrationCategoryModalTitle'),
@@ -3308,6 +3439,9 @@ function initRegistrationCategoriesTab() {
 
   const categoryModal = new bootstrap.Modal(modalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
+  const maxOutOfRangeTooltip = elements.maxOutOfRangeInfo
+    ? bootstrap.Tooltip.getOrCreateInstance(elements.maxOutOfRangeInfo)
+    : null;
   let categoryToDelete = null;
 
   const normalizeNumber = (value) => {
@@ -3398,6 +3532,7 @@ function initRegistrationCategoriesTab() {
     if (elements.maxPar) elements.maxPar.value = category?.max_par ?? '';
     if (elements.minYears) elements.minYears.value = category?.min_years ?? '';
     if (elements.maxYears) elements.maxYears.value = category?.max_years ?? '';
+    if (elements.maxOutOfRange) elements.maxOutOfRange.value = category?.max_outofrange ?? '';
     if (elements.musicMaxDuration) elements.musicMaxDuration.value = formatDurationValue(category?.music_max_duration);
     if (elements.price) elements.price.value = formatCentsToCurrencyValue(category?.registration_price);
     syncDurationFieldValidity();
@@ -3474,6 +3609,11 @@ function initRegistrationCategoriesTab() {
       maxYearsCell.textContent = category.max_years ?? '-';
       row.appendChild(maxYearsCell);
 
+      const maxOutOfRangeCell = document.createElement('td');
+      maxOutOfRangeCell.className = 'text-center';
+      maxOutOfRangeCell.textContent = category.max_outofrange ?? '-';
+      row.appendChild(maxOutOfRangeCell);
+
       const musicMaxCell = document.createElement('td');
       musicMaxCell.className = 'text-center';
       musicMaxCell.textContent = formatDurationValue(category.music_max_duration) || '-';
@@ -3537,7 +3677,7 @@ function initRegistrationCategoriesTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 10;
+    cell.colSpan = 11;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -3582,6 +3722,7 @@ function initRegistrationCategoriesTab() {
       max_par: normalizeNumber(elements.maxPar?.value),
       min_years: normalizeNumber(elements.minYears?.value),
       max_years: normalizeNumber(elements.maxYears?.value),
+      max_outofrange: normalizeNumber(elements.maxOutOfRange?.value),
       music_max_duration: parseDurationValue(elements.musicMaxDuration?.value),
       registration_price: parseCurrencyValueToCents(elements.price?.value)
     };
@@ -3716,6 +3857,7 @@ function initRegistrationCategoriesTab() {
   });
 
   modalEl.addEventListener('hidden.bs.modal', () => {
+    maxOutOfRangeTooltip?.hide();
     if (!form) return;
     form.classList.remove('was-validated');
     form.dataset.mode = 'create';

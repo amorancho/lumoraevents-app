@@ -14,6 +14,9 @@
     .members-modal .modal-dialog {
       height: calc(100vh - 2rem);
     }
+    .registration-category-modal {
+      --bs-modal-width: 640px;
+    }
     .members-modal .modal-content {
       height: 100%;
     }
@@ -792,9 +795,22 @@
                           <th data-i18n="registration_participants_name">Nombre</th>
                           <th data-i18n="registration_participants_gender">Genero</th>
                           <th data-i18n="registration_participants_birth">Fecha nacimiento</th>
-                          <th data-i18n="registration_participants_age">Edad</th>
+                          <th>
+                            <span data-i18n="registration_participants_age">Edad</span>
+                            <button
+                              type="button"
+                              id="participantsAgeInfoBtn"
+                              class="btn btn-link text-body-secondary p-0 border-0 lh-1 text-decoration-none align-baseline ms-1"
+                              data-bs-toggle="tooltip"
+                              data-bs-placement="top"
+                              aria-label="La edad está calculada respecto a la fecha de inicio del evento."
+                              title="La edad está calculada respecto a la fecha de inicio del evento.">
+                              <i class="bi bi-info-circle"></i>
+                            </button>
+                          </th>
                           <th data-i18n="registration_participants_country">Pais</th>
                           <th class="text-center" data-i18n="registration_participants_actions" data-tsv-ignore="true">Acciones</th>
+                          <th data-i18n="registration_participants_registrations">Inscripciones</th>
                         </tr>
                       </thead>
                       <tbody id="participantsTable"></tbody>
@@ -926,6 +942,7 @@
                           <th class="text-center" data-i18n="registration_categories_max_par">Max. participantes</th>
                           <th class="text-center" data-i18n="registration_categories_min_years">Min. anos</th>
                           <th class="text-center" data-i18n="registration_categories_max_years">Max. anos</th>
+                          <th class="text-center" data-i18n="registration_categories_max_outofrange">Max. fuera de rango</th>
                           <th class="text-center" data-i18n="registration_categories_music_max_duration">Duracion musica</th>
                           <th class="text-center" data-i18n="registration_categories_price">Precio</th>
                           <th class="text-start" data-i18n="schools_table_choreos_status">Estado coreos</th>
@@ -1210,7 +1227,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="registrationCategoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade registration-category-modal" id="registrationCategoryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -1233,13 +1250,31 @@
                 <label class="form-label" for="registrationCategoryMaxPar" data-i18n="registration_categories_field_max_par">Max. participantes</label>
                 <input type="number" class="form-control" id="registrationCategoryMaxPar" min="0" step="1">
               </div>
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-4">
                 <label class="form-label" for="registrationCategoryMinYears" data-i18n="registration_categories_field_min_years">Min. anos</label>
                 <input type="number" class="form-control" id="registrationCategoryMinYears" min="0" step="1">
               </div>
-              <div class="col-12 col-md-6">
+              <div class="col-12 col-md-4">
                 <label class="form-label" for="registrationCategoryMaxYears" data-i18n="registration_categories_field_max_years">Max. anos</label>
                 <input type="number" class="form-control" id="registrationCategoryMaxYears" min="0" step="1">
+              </div>
+              <div class="col-12 col-md-4">
+                <div class="d-flex align-items-center gap-1 mb-2">
+                  <label class="form-label mb-0" for="registrationCategoryMaxOutOfRange">
+                    <span data-i18n="registration_categories_field_max_outofrange">Max. Fuera de rango</span>
+                  </label>
+                  <button
+                    type="button"
+                    class="btn btn-link text-body-secondary p-0 border-0 lh-1 text-decoration-none"
+                    title="Indica el numero maximo de personas que pueden quedar fuera del rango de edades permitidas."
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    data-i18n-title="registration_categories_field_max_outofrange_info">
+                    <i class="bi bi-info-circle"></i>
+                    <span class="visually-hidden" data-i18n="registration_categories_field_max_outofrange_info">Indica el numero maximo de personas que pueden quedar fuera del rango de edades permitidas.</span>
+                  </button>
+                </div>
+                <input type="number" class="form-control" id="registrationCategoryMaxOutOfRange" min="0" step="1">
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationCategoryMusicMaxDuration" data-i18n="registration_categories_field_music_max_duration">Duracion musica</label>
@@ -1250,7 +1285,7 @@
                 <div class="invalid-feedback" data-i18n="registration_categories_field_music_max_duration_invalid">Usa el formato mm:ss.</div>
               </div>
               <div class="col-12 col-md-6">
-                <label class="form-label" for="registrationCategoryPrice" data-i18n="registration_categories_field_price">Precio</label>
+                <label class="form-label" for="registrationCategoryPrice" data-i18n="registration_categories_field_price">Precio por pax</label>
                 <div class="input-group">
                   <input type="number" class="form-control" id="registrationCategoryPrice" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
                   <span class="input-group-text">EUR</span>
@@ -1634,6 +1669,7 @@
               <span class="text-muted" data-i18n="registration_competitions_members_total">Total miembros</span>
               <span class="badge bg-secondary" id="registrationMembersCount">0</span>
             </div>
+            <div id="registrationMembersOutOfRangeInfo" class="small text-end text-muted mt-1 d-none"></div>
 
             <div class="table-responsive mt-2">
               <table class="table table-sm align-middle">
