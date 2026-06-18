@@ -58,6 +58,9 @@
       gap: 1rem;
       grid-template-columns: 1fr;
     }
+    .registration-dashboard-panels > :only-child {
+      grid-column: 1 / -1;
+    }
     .registration-dashboard-panel-wide {
       grid-column: span 2;
     }
@@ -505,20 +508,12 @@
                         <div id="organizerDashboardStatusChart" class="registration-dashboard-chart registration-dashboard-chart-small"></div>
                       </div>
                     </div>
-                    <div class="card registration-dashboard-panel-card">
+                    <div class="card registration-dashboard-panel-card registration-dashboard-panel-wide">
                       <div class="card-header">
-                        <div class="fw-semibold" data-i18n="registration_dashboard_chart_categories">Inscripciones por categoría</div>
+                        <div class="fw-semibold" data-i18n="registration_dashboard_chart_categories">Inscripciones por categoría / estilo</div>
                       </div>
                       <div class="card-body">
                         <div id="organizerDashboardCategoryChart" class="registration-dashboard-chart"></div>
-                      </div>
-                    </div>
-                    <div class="card registration-dashboard-panel-card">
-                      <div class="card-header">
-                        <div class="fw-semibold" data-i18n="registration_dashboard_chart_styles">Inscripciones por estilo</div>
-                      </div>
-                      <div class="card-body">
-                        <div id="organizerDashboardStyleChart" class="registration-dashboard-chart"></div>
                       </div>
                     </div>
                     <div class="card registration-dashboard-panel-card registration-dashboard-panel-wide">
@@ -675,20 +670,12 @@
                   </div>
 
                   <div class="registration-dashboard-panels mt-4">
-                    <div class="card registration-dashboard-panel-card">
+                    <div class="card registration-dashboard-panel-card registration-dashboard-panel-wide">
                       <div class="card-header">
-                        <div class="fw-semibold" data-i18n="registration_dashboard_chart_categories">Inscripciones por categoría</div>
+                        <div class="fw-semibold" data-i18n="registration_dashboard_chart_categories">Inscripciones por categoría / estilo</div>
                       </div>
                       <div class="card-body">
                         <div id="schoolDashboardCategoryChart" class="registration-dashboard-chart"></div>
-                      </div>
-                    </div>
-                    <div class="card registration-dashboard-panel-card">
-                      <div class="card-header">
-                        <div class="fw-semibold" data-i18n="registration_dashboard_chart_styles">Inscripciones por estilo</div>
-                      </div>
-                      <div class="card-body">
-                        <div id="schoolDashboardStyleChart" class="registration-dashboard-chart"></div>
                       </div>
                     </div>
                   </div>

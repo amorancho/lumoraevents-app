@@ -19,7 +19,7 @@
   "registration_dashboard_kpi_categories_without_registrations": "Categories without registrations",
   "registration_dashboard_kpi_styles_without_registrations": "Styles without registrations",
   "registration_dashboard_chart_status": "Registrations by status",
-  "registration_dashboard_chart_categories": "Registrations by category",
+  "registration_dashboard_chart_categories": "Registrations by category / style",
   "registration_dashboard_chart_styles": "Registrations by style",
   "registration_dashboard_chart_registrations_per_day": "Registrations per day",
   "registration_dashboard_chart_schools_per_day": "School signups per day",

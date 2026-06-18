@@ -24,7 +24,7 @@
   "registration_dashboard_kpi_categories_without_registrations": "Categorias sem inscrições",
   "registration_dashboard_kpi_styles_without_registrations": "Estilos sem inscrições",
   "registration_dashboard_chart_status": "Número de inscrições por estado",
-  "registration_dashboard_chart_categories": "Inscrições por categoria",
+  "registration_dashboard_chart_categories": "Inscrições por categoria / estilo",
   "registration_dashboard_chart_styles": "Inscrições por estilo",
   "registration_dashboard_chart_registrations_per_day": "Inscrições por dia",
   "registration_dashboard_chart_schools_per_day": "Novas escolas por dia",
