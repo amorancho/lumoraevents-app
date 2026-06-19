@@ -328,6 +328,7 @@
   "registration_competitions_total_paid": "Total paid",
   "registration_competitions_total_pending": "Total pending",
   "registration_competitions_table_total_amount": "Total amount",
+  "registration_competitions_rule_economics": "Economics",
   "registration_competitions_rule_fee_per_group": "Fee per group",
   "registration_competitions_rule_price_per_person": "Price/person",
   "registration_payment_total_to_pay": "Total to pay"

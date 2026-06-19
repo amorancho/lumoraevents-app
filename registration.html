@@ -18,21 +18,84 @@
       margin-bottom: 0;
       padding-left: 1rem;
     }
-    .registration-category-info-economics {
+    .registration-category-info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.55rem;
+      width: 100%;
+    }
+    .registration-category-info-grid--no-age .registration-category-info-card--rules {
+      grid-column: 1 / -1;
+    }
+    .registration-category-info-card {
+      width: 100%;
+      padding: 0.55rem 0.7rem;
+      border-radius: 0.8rem;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      background: rgba(248, 249, 250, 0.95);
+    }
+    .registration-category-info-title {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-bottom: 0.35rem;
+      font-size: 0.72rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #495057;
+    }
+    .registration-category-info-values {
       display: inline-flex;
       flex-wrap: wrap;
       gap: 0.35rem 1rem;
-      margin-top: 0.45rem;
-      padding: 0.4rem 0.65rem;
-      border-radius: 0.75rem;
-      border: 1px solid rgba(25, 135, 84, 0.2);
-      background: rgba(25, 135, 84, 0.08);
-      color: #146c43;
+    }
+    .registration-category-info-values span {
+      color: #212529;
       font-weight: 600;
     }
-    .registration-category-info-economics strong {
-      color: #0f5132;
+    .registration-category-info-values strong {
+      color: #0f172a;
       font-weight: 700;
+    }
+    .registration-category-info-card--rules {
+      border-color: rgba(13, 110, 253, 0.18);
+      background: rgba(13, 110, 253, 0.06);
+    }
+    .registration-category-info-card--rules .registration-category-info-title {
+      color: #0a58ca;
+    }
+    .registration-category-info-card--age {
+      border-color: rgba(255, 193, 7, 0.28);
+      background: rgba(255, 193, 7, 0.1);
+    }
+    .registration-category-info-card--age .registration-category-info-title {
+      color: #997404;
+    }
+    .registration-category-info-card--music {
+      border-color: rgba(13, 202, 240, 0.24);
+      background: rgba(13, 202, 240, 0.09);
+    }
+    .registration-category-info-card--music .registration-category-info-title {
+      color: #087990;
+    }
+    .registration-category-info-card--music strong {
+      color: #055160;
+    }
+    .registration-category-info-card--economics {
+      border: 1px solid rgba(25, 135, 84, 0.2);
+      background: rgba(25, 135, 84, 0.08);
+    }
+    .registration-category-info-card--economics .registration-category-info-title {
+      color: #146c43;
+    }
+    .registration-category-info-card--economics strong {
+      color: #0f5132;
+    }
+    @media (max-width: 767.98px) {
+      .registration-category-info-grid {
+        grid-template-columns: 1fr;
+      }
     }
     .members-modal .modal-dialog {
       height: calc(100vh - 2rem);
@@ -1393,13 +1456,15 @@
                 <select id="registrationCategory" class="form-select" required>
                   <option value=""></option>
                 </select>
-                <div class="form-text" id="categoryRuleInfo"></div>
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationStyle" data-i18n="registration_competitions_style">Disciplina/Estilo</label>
                 <select id="registrationStyle" class="form-select" required>
                   <option value=""></option>
                 </select>
+              </div>
+              <div class="col-12">
+                <div class="form-text mt-1" id="categoryRuleInfo"></div>
               </div>
               <div class="col-12">
                 <label class="form-label" for="registrationObservations" data-i18n="registration_competitions_observations">Observaciones</label>
@@ -1691,11 +1756,13 @@
               </button>
             </div>
 
-            <div class="d-flex align-items-center justify-content-between mt-3">
-              <span class="text-muted" data-i18n="registration_competitions_members_total">Total miembros</span>
-              <span class="badge bg-secondary" id="registrationMembersCount">0</span>
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-3">
+              <div class="d-inline-flex align-items-center gap-2">
+                <span class="text-muted" data-i18n="registration_competitions_members_total">Total miembros</span>
+                <span class="badge bg-secondary" id="registrationMembersCount">0</span>
+              </div>
+              <div id="registrationMembersOutOfRangeInfo" class="small text-muted d-none"></div>
             </div>
-            <div id="registrationMembersOutOfRangeInfo" class="small text-end text-muted mt-1 d-none"></div>
 
             <div class="table-responsive mt-2">
               <table class="table table-sm align-middle">

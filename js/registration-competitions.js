@@ -309,30 +309,78 @@
 
     const minLabel = t('registration_competitions_rule_min', 'Min');
     const maxLabel = t('registration_competitions_rule_max', 'Max');
+    const participantsLabel = t('registration_competitions_table_participants', 'Participantes');
+    const ageRequirementsLabel = t('registration_competitions_rule_age', 'Edad');
+    const musicLabel = t('registration_competitions_table_music', 'Música');
+    const musicDurationLabel = t('registration_categories_field_music_max_duration', 'Duración música');
+    const economicsLabel = t('registration_competitions_rule_economics', 'Información económica');
     const minPar = normalizeNumber(category.min_par);
     const maxPar = normalizeNumber(category.max_par);
-
-    let info = `${minLabel}: ${minPar ?? '-'} | ${maxLabel}: ${maxPar ?? '-'}`;
-
-    if (isIndividualCategory(category)) {
-      const minYears = normalizeNumber(category.min_years);
-      const maxYears = normalizeNumber(category.max_years);
-      if (minYears !== null || maxYears !== null) {
-        const ageLabel = t('registration_competitions_rule_age', 'Edad');
-        info += ` | ${ageLabel}: ${minYears ?? '-'}-${maxYears ?? '-'}`;
-      }
-    }
+    const minYears = normalizeNumber(category.min_years);
+    const maxYears = normalizeNumber(category.max_years);
+    const musicMaxDuration = normalizeNumber(category.music_max_duration);
+    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera de rango');
+    const participantsInfo = `
+      <div class="registration-category-info-card registration-category-info-card--rules">
+        <div class="registration-category-info-title">
+          <i class="bi bi-people"></i>
+          <span>${participantsLabel}</span>
+        </div>
+        <div class="registration-category-info-values">
+          <span><strong>${minLabel}:</strong> ${minPar ?? '-'}</span>
+          <span><strong>${maxLabel}:</strong> ${maxPar ?? '-'}</span>
+        </div>
+      </div>
+    `;
+    const hasAgeInfo = categoryHasAgeRange(category);
+    const ageInfo = hasAgeInfo
+      ? `
+        <div class="registration-category-info-card registration-category-info-card--age">
+          <div class="registration-category-info-title">
+            <i class="bi bi-hourglass-split"></i>
+            <span>${ageRequirementsLabel}</span>
+          </div>
+          <div class="registration-category-info-values">
+            <span><strong>${minLabel}:</strong> ${minYears ?? '-'}</span>
+            <span><strong>${maxLabel}:</strong> ${maxYears ?? '-'}</span>
+            <span><strong>${maxOutOfRangeLabel}:</strong> ${getCategoryMaxOutOfRange(category)}</span>
+          </div>
+        </div>
+      `
+      : '';
+    const musicInfo = `
+      <div class="registration-category-info-card registration-category-info-card--music">
+        <div class="registration-category-info-title">
+          <i class="bi bi-music-note-beamed"></i>
+          <span>${musicLabel}</span>
+        </div>
+        <div class="registration-category-info-values">
+          <span><strong>${musicDurationLabel}:</strong> ${musicMaxDuration == null ? '-' : formatDuration(musicMaxDuration)}</span>
+        </div>
+      </div>
+    `;
 
     const feeCost = getEventFeeCost();
     const categoryPrice = getCategoryRegistrationPrice(category);
     const feePerGroupLabel = t('registration_competitions_rule_fee_per_group', 'Fee por grupo');
     const pricePerPaxLabel = t('registration_categories_field_price', 'Precio por pax');
     const economicsInfo = `
-      <span><strong>${feePerGroupLabel}:</strong> ${formatCurrencyDisplay(feeCost)}</span>
-      <span><strong>${pricePerPaxLabel}:</strong> ${formatCurrencyDisplay(categoryPrice)}</span>
+      <div class="registration-category-info-card registration-category-info-card--economics">
+        <div class="registration-category-info-title">
+          <i class="bi bi-cash-stack"></i>
+          <span>${economicsLabel}</span>
+        </div>
+        <div class="registration-category-info-values">
+          <span><strong>${feePerGroupLabel}:</strong> ${formatCurrencyDisplay(feeCost)}</span>
+          <span><strong>${pricePerPaxLabel}:</strong> ${formatCurrencyDisplay(categoryPrice)}</span>
+        </div>
+      </div>
     `;
 
-    elements.categoryInfo.innerHTML = `${info}<div class="registration-category-info-economics">${economicsInfo}</div>`;
+    const gridClassName = hasAgeInfo
+      ? 'registration-category-info-grid'
+      : 'registration-category-info-grid registration-category-info-grid--no-age';
+    elements.categoryInfo.innerHTML = `<div class="${gridClassName}">${participantsInfo}${ageInfo}${musicInfo}${economicsInfo}</div>`;
   };
 
   const formatDuration = (value) => {
@@ -1510,27 +1558,51 @@
     if (!elements.membersRuleInfo) return;
     const category = getMembersCategory();
     if (!category) {
-      elements.membersRuleInfo.textContent = '';
+      elements.membersRuleInfo.innerHTML = '';
       return;
     }
 
     const minLabel = t('registration_competitions_rule_min', 'Min');
     const maxLabel = t('registration_competitions_rule_max', 'Max');
+    const participantsLabel = t('registration_competitions_table_participants', 'Participantes');
+    const ageRequirementsLabel = t('registration_competitions_rule_age', 'Edad');
     const minPar = normalizeNumber(category.min_par);
     const maxPar = normalizeNumber(category.max_par);
-
-    let info = `${minLabel}: ${minPar ?? '-'} | ${maxLabel}: ${maxPar ?? '-'}`;
-
     const minYears = normalizeNumber(category.min_years);
     const maxYears = normalizeNumber(category.max_years);
-    if (categoryHasAgeRange(category)) {
-      const ageLabel = t('registration_competitions_rule_age', 'Edad');
-      info += ` | ${ageLabel}: ${minYears ?? '-'}-${maxYears ?? '-'}`;
-      const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera de rango');
-      info += ` | ${maxOutOfRangeLabel}: ${getCategoryMaxOutOfRange(category)}`;
-    }
-
-    elements.membersRuleInfo.textContent = info;
+    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera de rango');
+    const participantsInfo = `
+      <div class="registration-category-info-card registration-category-info-card--rules">
+        <div class="registration-category-info-title">
+          <i class="bi bi-people"></i>
+          <span>${participantsLabel}</span>
+        </div>
+        <div class="registration-category-info-values">
+          <span><strong>${minLabel}:</strong> ${minPar ?? '-'}</span>
+          <span><strong>${maxLabel}:</strong> ${maxPar ?? '-'}</span>
+        </div>
+      </div>
+    `;
+    const hasAgeInfo = categoryHasAgeRange(category);
+    const ageInfo = hasAgeInfo
+      ? `
+        <div class="registration-category-info-card registration-category-info-card--age">
+          <div class="registration-category-info-title">
+            <i class="bi bi-hourglass-split"></i>
+            <span>${ageRequirementsLabel}</span>
+          </div>
+          <div class="registration-category-info-values">
+            <span><strong>${minLabel}:</strong> ${minYears ?? '-'}</span>
+            <span><strong>${maxLabel}:</strong> ${maxYears ?? '-'}</span>
+            <span><strong>${maxOutOfRangeLabel}:</strong> ${getCategoryMaxOutOfRange(category)}</span>
+          </div>
+        </div>
+      `
+      : '';
+    const gridClassName = hasAgeInfo
+      ? 'registration-category-info-grid'
+      : 'registration-category-info-grid registration-category-info-grid--no-age';
+    elements.membersRuleInfo.innerHTML = `<div class="${gridClassName}">${participantsInfo}${ageInfo}</div>`;
   };
   /*
   const getParticipantsCount = (registration) => {

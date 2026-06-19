@@ -328,6 +328,7 @@
   "registration_competitions_total_paid": "Total paye",
   "registration_competitions_total_pending": "Total en attente",
   "registration_competitions_table_total_amount": "Montant total",
+  "registration_competitions_rule_economics": "Informations economiques",
   "registration_competitions_rule_fee_per_group": "Frais par groupe",
   "registration_competitions_rule_price_per_person": "Prix/personne",
   "registration_payment_total_to_pay": "Total a payer"

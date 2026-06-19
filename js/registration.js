@@ -5118,25 +5118,52 @@ function initOrganizerRegistrationsTab() {
   const updateMembersRuleInfo = (category) => {
     if (!membersElements.ruleInfo) return;
     if (!category) {
-      membersElements.ruleInfo.textContent = '';
+      membersElements.ruleInfo.innerHTML = '';
       return;
     }
 
     const minLabel = t('registration_competitions_rule_min', 'Min');
     const maxLabel = t('registration_competitions_rule_max', 'Max');
+    const participantsLabel = t('registration_competitions_table_participants', 'Participantes');
+    const ageRequirementsLabel = t('registration_competitions_rule_age', 'Edad');
     const minPar = normalizeNumber(category.min_par);
     const maxPar = normalizeNumber(category.max_par);
-
-    let info = `${minLabel}: ${minPar ?? '-'} | ${maxLabel}: ${maxPar ?? '-'}`;
-
     const minYears = normalizeNumber(category.min_years);
     const maxYears = normalizeNumber(category.max_years);
-    if (minYears !== null || maxYears !== null) {
-      const ageLabel = t('registration_competitions_rule_age', 'Edad');
-      info += ` | ${ageLabel}: ${minYears ?? '-'}-${maxYears ?? '-'}`;
-    }
-
-    membersElements.ruleInfo.textContent = info;
+    const maxOutOfRange = normalizeNumber(category?.max_outofrange) ?? 0;
+    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera de rango');
+    const participantsInfo = `
+      <div class="registration-category-info-card registration-category-info-card--rules">
+        <div class="registration-category-info-title">
+          <i class="bi bi-people"></i>
+          <span>${participantsLabel}</span>
+        </div>
+        <div class="registration-category-info-values">
+          <span><strong>${minLabel}:</strong> ${minPar ?? '-'}</span>
+          <span><strong>${maxLabel}:</strong> ${maxPar ?? '-'}</span>
+        </div>
+      </div>
+    `;
+    const hasAgeInfo = minYears !== null || maxYears !== null;
+    const ageInfo = hasAgeInfo
+      ? `
+        <div class="registration-category-info-card registration-category-info-card--age">
+          <div class="registration-category-info-title">
+            <i class="bi bi-hourglass-split"></i>
+            <span>${ageRequirementsLabel}</span>
+          </div>
+          <div class="registration-category-info-values">
+            <span><strong>${minLabel}:</strong> ${minYears ?? '-'}</span>
+            <span><strong>${maxLabel}:</strong> ${maxYears ?? '-'}</span>
+            <span><strong>${maxOutOfRangeLabel}:</strong> ${maxOutOfRange}</span>
+          </div>
+        </div>
+      `
+      : '';
+    const gridClassName = hasAgeInfo
+      ? 'registration-category-info-grid'
+      : 'registration-category-info-grid registration-category-info-grid--no-age';
+    membersElements.ruleInfo.innerHTML = `<div class="${gridClassName}">${participantsInfo}${ageInfo}</div>`;
   };
 
   const fetchRegistrationDetails = async (registrationId) => {
