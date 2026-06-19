@@ -253,6 +253,79 @@ async function fetchOrganizerRegistrationsForEvent() {
   return registrations;
 }
 
+function escapeRegistrationTooltipHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function normalizeRegistrationValidationErrorMessages(value) {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => normalizeRegistrationValidationErrorMessages(item));
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const text = `${value}`.trim();
+    return text ? [text] : [];
+  }
+
+  if (!value || typeof value !== 'object') {
+    return [];
+  }
+
+  const directText = value.text_error
+    ?? value.message
+    ?? value.error
+    ?? value.detail
+    ?? value.msg;
+
+  if (directText !== undefined && directText !== null) {
+    const text = `${directText}`.trim();
+    return text ? [text] : [];
+  }
+
+  return Object.values(value).flatMap((item) => normalizeRegistrationValidationErrorMessages(item));
+}
+
+function getRegistrationValidationErrorMessages(data) {
+  const messages = normalizeRegistrationValidationErrorMessages(data?.validation_errors);
+  return Array.from(new Set(messages));
+}
+
+function buildRegistrationValidationErrorsTooltip(data) {
+  const items = getRegistrationValidationErrorMessages(data)
+    .map((message) => `<li>${escapeRegistrationTooltipHtml(message)}</li>`);
+
+  if (!items.length) {
+    return escapeRegistrationTooltipHtml(t('registration_alerts_has_errors', 'Open alerts'));
+  }
+
+  return `<div style="text-align:left;"><ul class="mb-0 ps-3">${items.join('')}</ul></div>`;
+}
+
+function createRegistrationAlertsIcon(data) {
+  const icon = document.createElement('i');
+  const hasValidationErrors = isRegistrationFlagEnabled(data?.has_validation_errors);
+
+  if (hasValidationErrors) {
+    icon.className = 'bi bi-exclamation-triangle-fill text-warning';
+    icon.setAttribute('data-bs-toggle', 'tooltip');
+    icon.setAttribute('data-bs-placement', 'top');
+    icon.setAttribute('data-bs-custom-class', 'alerts-tooltip');
+    icon.setAttribute('data-bs-html', 'true');
+    icon.setAttribute('data-bs-title', buildRegistrationValidationErrorsTooltip(data));
+    icon.setAttribute('aria-label', t('registration_alerts_has_errors', 'Open alerts'));
+    return icon;
+  }
+
+  icon.className = 'bi bi-patch-check-fill text-success';
+  icon.setAttribute('aria-label', t('registration_alerts_no_errors', 'No alerts'));
+  return icon;
+}
+
 function syncRegistrationConfigState() {
   registrationState.registrationConfig = {
     categories: Array.isArray(registrationState.registrationCategories)
@@ -1938,7 +2011,6 @@ function initParticipantsTab(role) {
   const allowEdit = role === 'school';
   const showSchoolColumn = role === 'organizer';
   const ageHeaderInfoBtn = document.getElementById('participantsAgeInfoBtn');
-  const getParticipantsAgeReferenceDate = () => getEvent()?.start || null;
   const registrationsHeader = document.querySelector('th[data-i18n="registration_participants_registrations"]');
   if (!allowEdit) {
     if (addBtn) addBtn.classList.add('d-none');
@@ -2005,52 +2077,12 @@ function initParticipantsTab(role) {
   const participantModal = new bootstrap.Modal(modalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
   const duplicateModal = duplicateModalEl ? new bootstrap.Modal(duplicateModalEl) : null;
-  const ageHeaderTooltip = ageHeaderInfoBtn
-    ? bootstrap.Tooltip.getOrCreateInstance(ageHeaderInfoBtn)
-    : null;
   let participantToDelete = null;
   const duplicateMessageEl = document.getElementById('duplicateParticipantMessage');
   const confirmDuplicateBtn = document.getElementById('confirmDuplicateParticipantBtn');
 
-  const formatParticipantsAgeReferenceDate = (dateValue) => {
-    const normalizedDate = getDateOnlyValue(dateValue);
-    if (!normalizedDate) {
-      return '-';
-    }
-
-    const [year, month, day] = normalizedDate.split('-').map(Number);
-    if (!year || !month || !day) {
-      return normalizedDate;
-    }
-
-    const date = new Date(year, month - 1, day);
-    if (Number.isNaN(date.getTime())) {
-      return normalizedDate;
-    }
-
-    return new Intl.DateTimeFormat(getRegistrationLanguage(), {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).format(date);
-  };
-
   const updateParticipantsAgeHeaderTooltip = () => {
-    if (!ageHeaderInfoBtn) {
-      return;
-    }
-
-    const referenceDateLabel = formatParticipantsAgeReferenceDate(getParticipantsAgeReferenceDate());
-    const tooltipText = t(
-      'registration_participants_age_tooltip',
-      'Age is calculated using the event start date ({date}).'
-    ).replace('{date}', referenceDateLabel);
-
-    ageHeaderInfoBtn.setAttribute('aria-label', tooltipText);
-    ageHeaderInfoBtn.setAttribute('data-bs-original-title', tooltipText);
-    ageHeaderInfoBtn.removeAttribute('title');
-    ageHeaderTooltip?.setContent({ '.tooltip-inner': tooltipText });
-    ageHeaderTooltip?.update();
+    syncRegistrationAgeTooltipButton(ageHeaderInfoBtn);
   };
 
   const getParticipantRegistrations = (participant) => {
@@ -2134,7 +2166,7 @@ function initParticipantsTab(role) {
 
   const renderParticipants = () => {
     tableBody.innerHTML = '';
-    const participantsAgeReferenceDate = getParticipantsAgeReferenceDate();
+    const participantsAgeReferenceDate = getRegistrationAgeReferenceDate();
 
     const participants = Array.isArray(registrationState.participants)
       ? registrationState.participants
@@ -2649,6 +2681,59 @@ function calculateAge(dateValue, referenceDateValue = null) {
     age -= 1;
   }
   return age;
+}
+
+function getRegistrationAgeReferenceDate() {
+  return getEvent()?.start || null;
+}
+
+function formatRegistrationAgeReferenceDate(dateValue) {
+  const normalizedDate = getDateOnlyValue(dateValue);
+  if (!normalizedDate) {
+    return '-';
+  }
+
+  const [year, month, day] = normalizedDate.split('-').map(Number);
+  if (!year || !month || !day) {
+    return normalizedDate;
+  }
+
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) {
+    return normalizedDate;
+  }
+
+  return new Intl.DateTimeFormat(getRegistrationLanguage(), {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+}
+
+function getRegistrationAgeTooltipText() {
+  const referenceDateLabel = formatRegistrationAgeReferenceDate(getRegistrationAgeReferenceDate());
+  return t(
+    'registration_participants_age_tooltip',
+    'Age is calculated using the event start date ({date}).'
+  ).replace('{date}', referenceDateLabel);
+}
+
+function syncRegistrationAgeTooltipButton(buttonEl) {
+  if (!buttonEl) {
+    return;
+  }
+
+  const tooltipText = getRegistrationAgeTooltipText();
+  buttonEl.setAttribute('aria-label', tooltipText);
+  buttonEl.setAttribute('data-bs-title', tooltipText);
+  buttonEl.setAttribute('data-bs-original-title', tooltipText);
+  buttonEl.removeAttribute('title');
+
+  const tooltipInstance = window.bootstrap?.Tooltip?.getOrCreateInstance(buttonEl);
+  if (tooltipInstance) {
+    tooltipInstance.setContent({ '.tooltip-inner': tooltipText });
+    tooltipInstance.update();
+  }
 }
 
 function getCountryName(code, countryMap) {
@@ -4222,6 +4307,7 @@ function initOrganizerRegistrationsTab() {
     style: document.getElementById('registrationMembersStyle'),
     participantSelect: document.getElementById('registrationParticipantSelect'),
     addMemberBtn: document.getElementById('addRegistrationMemberBtn'),
+    ageInfoBtn: document.getElementById('registrationMembersAgeInfoBtn'),
     saveBtn: document.getElementById('registrationMembersSaveBtn'),
     actionsHeader: document.querySelector('#registrationMembersModal th[data-i18n="registration_competitions_member_actions"]')
   };
@@ -4985,6 +5071,10 @@ function initOrganizerRegistrationsTab() {
     }
   };
 
+  const updateMembersAgeHeaderTooltip = () => {
+    syncRegistrationAgeTooltipButton(membersElements.ageInfoBtn);
+  };
+
   const renderMembersTable = (members) => {
     if (!membersElements.table) return;
     membersElements.table.innerHTML = '';
@@ -5018,7 +5108,7 @@ function initOrganizerRegistrationsTab() {
       row.appendChild(dobCell);
 
       const ageCell = document.createElement('td');
-      ageCell.textContent = `${calculateAge(dobValue)}`;
+      ageCell.textContent = `${calculateAge(dobValue, getRegistrationAgeReferenceDate())}`;
       row.appendChild(ageCell);
 
       membersElements.table.appendChild(row);
@@ -5364,6 +5454,12 @@ function initOrganizerRegistrationsTab() {
       observationsCell.appendChild(observationsIcon);
       row.appendChild(observationsCell);
 
+      const alertsCell = document.createElement('td');
+      alertsCell.className = 'text-center';
+      alertsCell.setAttribute('data-tsv-ignore', 'true');
+      alertsCell.appendChild(createRegistrationAlertsIcon(registration));
+      row.appendChild(alertsCell);
+
       const totalAmountCell = document.createElement('td');
       totalAmountCell.className = 'text-center';
       totalAmountCell.textContent = formatCurrencyDisplay(getRegistrationTotalAmount(registration));
@@ -5470,7 +5566,7 @@ function initOrganizerRegistrationsTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 12;
+    cell.colSpan = 13;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -5520,6 +5616,16 @@ function initOrganizerRegistrationsTab() {
   };
   window.addEventListener('registration:config-updated', handleConfigUpdate);
   window.addEventListener('registration:organizer-registrations-updated', renderRegistrations);
+
+  if (membersElements.ageInfoBtn) {
+    const membersAgeLanguageObserver = new MutationObserver(() => {
+      updateMembersAgeHeaderTooltip();
+    });
+    membersAgeLanguageObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['lang']
+    });
+  }
 
   tableBody.addEventListener('click', (event) => {
     const detailsBtn = event.target.closest('.btn-org-registration-details');
@@ -5603,6 +5709,7 @@ function initOrganizerRegistrationsTab() {
 
   window.addEventListener('beforeunload', disposeRegistrationsTooltips);
 
+  updateMembersAgeHeaderTooltip();
   Promise.resolve()
     .then(loadRegistrationConfig)
     .then(loadSchools)

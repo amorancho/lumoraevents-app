@@ -11,6 +11,29 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <style>
+    .alerts-tooltip .tooltip-inner {
+      text-align: left;
+    }
+    .alerts-tooltip .tooltip-inner ul {
+      margin-bottom: 0;
+      padding-left: 1rem;
+    }
+    .registration-category-info-economics {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 1rem;
+      margin-top: 0.45rem;
+      padding: 0.4rem 0.65rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(25, 135, 84, 0.2);
+      background: rgba(25, 135, 84, 0.08);
+      color: #146c43;
+      font-weight: 600;
+    }
+    .registration-category-info-economics strong {
+      color: #0f5132;
+      font-weight: 700;
+    }
     .members-modal .modal-dialog {
       height: calc(100vh - 2rem);
     }
@@ -895,6 +918,7 @@
                           <th data-i18n="org_registrations_table_style">Disciplina/Estilo</th>
                           <th class="text-center" data-i18n="org_registrations_table_participants"># Participantes</th>
                           <th class="text-center" data-i18n="registration_competitions_table_observations_short" data-tsv-ignore="true">Obs.</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_alerts" data-tsv-ignore="true">Alertas</th>
                           <th class="text-center" data-i18n="registration_competitions_table_total_amount">Importe total</th>
                           <th data-i18n="org_registrations_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_payment">Pago</th>
@@ -1022,6 +1046,8 @@
                           <th data-i18n="registration_competitions_table_category">Categoria</th>
                           <th data-i18n="registration_competitions_table_style">Disciplina/Estilo</th>
                           <th class="text-center" data-i18n="registration_competitions_table_participants">Participantes</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_observations_short" data-tsv-ignore="true">Obs.</th>
+                          <th class="text-center" data-i18n="registration_competitions_table_alerts" data-tsv-ignore="true">Alertas</th>
                           <th class="text-center" data-i18n="registration_competitions_table_total_amount">Importe total</th>
                           <th data-i18n="registration_competitions_table_status">Estado</th>
                           <th class="text-center" data-i18n="registration_competitions_table_payment">Pago</th>
@@ -1678,7 +1704,19 @@
                     <th data-i18n="registration_competitions_member_name">Nombre</th>
                     <th data-i18n="registration_competitions_member_gender">Genero</th>
                     <th data-i18n="registration_competitions_member_birth">Nacimiento</th>
-                    <th data-i18n="registration_competitions_member_age">Edad</th>
+                    <th>
+                      <span data-i18n="registration_competitions_member_age">Edad</span>
+                      <button
+                        type="button"
+                        id="registrationMembersAgeInfoBtn"
+                        class="btn btn-link text-body-secondary p-0 border-0 lh-1 text-decoration-none align-baseline ms-1"
+                        data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        aria-label="La edad está calculada respecto a la fecha de inicio del evento."
+                        title="La edad está calculada respecto a la fecha de inicio del evento.">
+                        <i class="bi bi-info-circle"></i>
+                      </button>
+                    </th>
                     <th class="text-center" data-i18n="registration_competitions_member_actions">Acciones</th>
                   </tr>
                 </thead>

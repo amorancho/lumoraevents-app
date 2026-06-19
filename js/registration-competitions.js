@@ -25,6 +25,7 @@
     showMessageModal(t('registration_school_no_user', 'No user found.'), t('error_title', 'Error'));
     return;
   }
+  const isSchoolUser = `${user?.role || ''}`.toLowerCase() === 'school';
 
   const form = document.getElementById('registrationForm');
   const elements = {
@@ -53,6 +54,7 @@
     membersChoreo: document.getElementById('registrationMembersChoreo'),
     membersCategory: document.getElementById('registrationMembersCategory'),
     membersStyle: document.getElementById('registrationMembersStyle'),
+    membersAgeInfoBtn: document.getElementById('registrationMembersAgeInfoBtn'),
     saveBtn: document.getElementById('registrationSaveBtn'),
     membersForm: document.getElementById('registrationMembersForm'),
     membersId: document.getElementById('registrationMembersId'),
@@ -136,6 +138,7 @@
   let membersCategoryId = null;
   let audioRegistration = null;
   let paymentRegistration = null;
+  let registrationsTooltipInstances = [];
   let audioState = {
     file: null,
     duration: null,
@@ -269,7 +272,14 @@
 
   const getCategoryMaxOutOfRange = (category) => normalizeNumber(category?.max_outofrange) ?? 0;
 
-  const getMemberAgeValue = (member) => calculateAge(getDateOnlyValue(member?.date_of_birth));
+  const updateMembersAgeHeaderTooltip = () => {
+    syncRegistrationAgeTooltipButton(elements.membersAgeInfoBtn);
+  };
+
+  const getMemberAgeValue = (member) => calculateAge(
+    getDateOnlyValue(member?.date_of_birth),
+    getRegistrationAgeReferenceDate()
+  );
 
   const isMemberOutOfAgeRange = (member, category = getMembersCategory()) => {
     if (!member || !categoryHasAgeRange(category)) return false;
@@ -293,7 +303,7 @@
     if (!elements.categoryInfo) return;
     const category = getSelectedCategory();
     if (!category) {
-      elements.categoryInfo.textContent = '';
+      elements.categoryInfo.innerHTML = '';
       return;
     }
 
@@ -315,13 +325,14 @@
 
     const feeCost = getEventFeeCost();
     const categoryPrice = getCategoryRegistrationPrice(category);
-    const pricePerPerson = getCategoryPricePerPerson(category);
-    const perPersonLabel = t('registration_competitions_rule_price_per_person', 'Precio/persona');
-    const feeLabel = t('registration_categories_fee_cost', 'Cuota inscripcion');
-    const categoryPriceLabel = t('registration_categories_price', 'Precio');
-    info += ` | ${perPersonLabel}: ${formatCurrencyDisplay(pricePerPerson)} (${feeLabel}: ${formatCurrencyDisplay(feeCost)} + ${categoryPriceLabel}: ${formatCurrencyDisplay(categoryPrice)})`;
+    const feePerGroupLabel = t('registration_competitions_rule_fee_per_group', 'Fee por grupo');
+    const pricePerPaxLabel = t('registration_categories_field_price', 'Precio por pax');
+    const economicsInfo = `
+      <span><strong>${feePerGroupLabel}:</strong> ${formatCurrencyDisplay(feeCost)}</span>
+      <span><strong>${pricePerPaxLabel}:</strong> ${formatCurrencyDisplay(categoryPrice)}</span>
+    `;
 
-    elements.categoryInfo.textContent = info;
+    elements.categoryInfo.innerHTML = `${info}<div class="registration-category-info-economics">${economicsInfo}</div>`;
   };
 
   const formatDuration = (value) => {
@@ -1043,7 +1054,7 @@
         placeholder: t('registration_competitions_participant_placeholder', 'Escribe para buscar...'),
         render: {
           option: (data, escape) => {
-            const ageValue = calculateAge(getDateOnlyValue(data.dob));
+            const ageValue = calculateAge(getDateOnlyValue(data.dob), getRegistrationAgeReferenceDate());
             const ageText = ageValue === '-' ? '' : `${ageValue}`;
             return `<div class="d-flex justify-content-between">
               <span>${escape(data.text)}</span>
@@ -1227,6 +1238,19 @@
     ?? data?.observaciones
     ?? data?.remarks
     ?? '';
+
+  const disposeRegistrationsTooltips = () => {
+    registrationsTooltipInstances.forEach((instance) => instance.dispose());
+    registrationsTooltipInstances = [];
+  };
+
+  const initRegistrationsTooltips = () => {
+    disposeRegistrationsTooltips();
+    const tooltipElements = tableBody.querySelectorAll('[data-bs-toggle="tooltip"]');
+    registrationsTooltipInstances = Array.from(tooltipElements).map((element) =>
+      new bootstrap.Tooltip(element)
+    );
+  };
 
   const setObservationsEditable = (editable) => {
     if (!elements.observations) return;
@@ -1572,6 +1596,7 @@
   };
 
   const renderRegistrations = () => {
+    disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
     const registrations = Array.isArray(registrationState.registrations)
       ? registrationState.registrations
@@ -1637,6 +1662,37 @@
       participantsCell.className = 'text-center';
       participantsCell.textContent = `${getRegistrationParticipantsCount(registration)}`;
       row.appendChild(participantsCell);
+
+      const observationsCell = document.createElement('td');
+      observationsCell.className = 'text-center';
+      observationsCell.setAttribute('data-tsv-ignore', 'true');
+      const observationsIcon = document.createElement('i');
+      const hasObservations = `${getRegistrationObservationsValue(registration)}`.trim().length > 0;
+      observationsIcon.className = hasObservations
+        ? 'bi bi-chat-left-text-fill text-warning'
+        : 'bi bi-dash-circle text-body-tertiary';
+      observationsIcon.setAttribute('data-bs-toggle', 'tooltip');
+      observationsIcon.setAttribute('data-bs-placement', 'top');
+      observationsIcon.setAttribute(
+        'data-bs-title',
+        hasObservations
+          ? t('registration_competitions_observations_yes', 'Con observaciones')
+          : t('registration_competitions_observations_no', 'Sin observaciones')
+      );
+      observationsIcon.setAttribute(
+        'aria-label',
+        hasObservations
+          ? t('registration_competitions_observations_yes', 'Con observaciones')
+          : t('registration_competitions_observations_no', 'Sin observaciones')
+      );
+      observationsCell.appendChild(observationsIcon);
+      row.appendChild(observationsCell);
+
+      const alertsCell = document.createElement('td');
+      alertsCell.className = 'text-center';
+      alertsCell.setAttribute('data-tsv-ignore', 'true');
+      alertsCell.appendChild(createRegistrationAlertsIcon(registration));
+      row.appendChild(alertsCell);
 
       const totalAmountCell = document.createElement('td');
       totalAmountCell.className = 'text-center';
@@ -1748,12 +1804,15 @@
 
       tableBody.appendChild(row);
     });
+
+    initRegistrationsTooltips();
   };
   const showRegistrationsError = (message) => {
+    disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 9;
+    cell.colSpan = 11;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -1888,19 +1947,6 @@
       );
       showMessageModal(message, t('error_title', 'Error'));
       return false;
-    }
-
-    if (categoryHasAgeRange(category)) {
-      const outOfRangeCount = getOutOfAgeRangeMembersCount(selectedMembers, category);
-      const allowedOutOfRange = getCategoryMaxOutOfRange(category);
-      if (outOfRangeCount > allowedOutOfRange) {
-        const message = formatTemplate(
-          t('registration_competitions_members_outofrange_exceeded_error', 'Se ha superado el numero de personas permitidas fuera del rango de edad. Maximo: {allowed}. Actual: {count}.'),
-          { allowed: allowedOutOfRange, count: outOfRangeCount }
-        );
-        showMessageModal(message, t('error_title', 'Error'));
-        return false;
-      }
     }
 
     return true;
@@ -2368,6 +2414,18 @@
   };
   window.addEventListener('registration:config-updated', handleConfigUpdate);
 
+  if (isSchoolUser && elements.membersAgeInfoBtn) {
+    const membersAgeLanguageObserver = new MutationObserver(() => {
+      updateMembersAgeHeaderTooltip();
+    });
+    membersAgeLanguageObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['lang']
+    });
+  }
+  window.addEventListener('beforeunload', disposeRegistrationsTooltips);
+
+  updateMembersAgeHeaderTooltip();
   Promise.resolve()
     .then(loadRegistrationConfig)
     .then(loadRegistrations)

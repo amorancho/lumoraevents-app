@@ -102,10 +102,13 @@
   "registration_competitions_category": "Catégorie",
   "registration_competitions_style": "Discipline/Style",
   "registration_competitions_table_observations_short": "Obs.",
+  "registration_competitions_table_alerts": "Alertes",
   "registration_competitions_observations": "Observations",
   "registration_competitions_observations_placeholder": "Observations de l'inscription",
   "registration_competitions_observations_yes": "Avec observations",
   "registration_competitions_observations_no": "Sans observations",
+  "registration_alerts_has_errors": "Alertes ouvertes",
+  "registration_alerts_no_errors": "Sans alertes",
   "registration_competitions_participant_search": "Rechercher participant",
   "registration_competitions_participant_placeholder": "Taper pour chercher...",
   "registration_competitions_add_member": "Ajouter",
@@ -325,6 +328,7 @@
   "registration_competitions_total_paid": "Total paye",
   "registration_competitions_total_pending": "Total en attente",
   "registration_competitions_table_total_amount": "Montant total",
+  "registration_competitions_rule_fee_per_group": "Frais par groupe",
   "registration_competitions_rule_price_per_person": "Prix/personne",
   "registration_payment_total_to_pay": "Total a payer"
 }
