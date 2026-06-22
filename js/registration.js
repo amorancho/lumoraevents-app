@@ -3528,12 +3528,57 @@ function initRegistrationCategoriesTab() {
     ? bootstrap.Tooltip.getOrCreateInstance(elements.maxOutOfRangeInfo)
     : null;
   let categoryToDelete = null;
+  const requiredFields = [
+    elements.name,
+    elements.minPar,
+    elements.maxPar,
+    elements.minYears,
+    elements.maxYears,
+    elements.musicMaxDuration
+  ];
+  const validationFields = [
+    elements.name,
+    elements.minPar,
+    elements.maxPar,
+    elements.minYears,
+    elements.maxYears,
+    elements.maxOutOfRange,
+    elements.musicMaxDuration,
+    elements.price
+  ].filter(Boolean);
 
   const normalizeNumber = (value) => {
     const raw = `${value ?? ''}`.trim();
     if (!raw) return null;
     const parsed = Number(raw);
     return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const syncCategoryRequiredFields = () => {
+    requiredFields.forEach((field) => {
+      if (field) field.required = true;
+    });
+
+    if (elements.maxOutOfRange) elements.maxOutOfRange.required = false;
+    if (elements.price) elements.price.required = false;
+  };
+
+  const clearCategoryValidationState = () => {
+    validationFields.forEach((field) => {
+      field.classList.remove('is-invalid', 'is-valid');
+      field.removeAttribute('aria-invalid');
+    });
+  };
+
+  const setCategoryFieldInvalidState = (field, isInvalid) => {
+    if (!field) return;
+    field.classList.toggle('is-invalid', isInvalid);
+    field.classList.remove('is-valid');
+    if (isInvalid) {
+      field.setAttribute('aria-invalid', 'true');
+    } else {
+      field.removeAttribute('aria-invalid');
+    }
   };
 
   const getLanguage = () => getCurrentAppLanguage?.() || document.documentElement.getAttribute('lang') || 'es';
@@ -3584,6 +3629,39 @@ function initRegistrationCategoriesTab() {
     elements.musicMaxDuration.value = formatDurationValue(totalSeconds);
   };
 
+  const validateCategoryField = (field) => {
+    if (!field) return true;
+
+    if (field === elements.musicMaxDuration) {
+      syncDurationFieldValidity();
+    }
+
+    const rawValue = `${field.value ?? ''}`.trim();
+    const shouldValidate = field.required || rawValue !== '';
+    const isValid = shouldValidate ? field.checkValidity() : true;
+    setCategoryFieldInvalidState(field, !isValid);
+    return isValid;
+  };
+
+  const validateCategoryForm = () => {
+    syncCategoryRequiredFields();
+
+    let firstInvalidField = null;
+    validationFields.forEach((field) => {
+      const isValid = validateCategoryField(field);
+      if (!isValid && !firstInvalidField) {
+        firstInvalidField = field;
+      }
+    });
+
+    if (firstInvalidField) {
+      firstInvalidField.focus();
+      return false;
+    }
+
+    return true;
+  };
+
   const formatCentsToCurrencyValue = (value) => {
     if (value === null || value === undefined || value === '') return '';
     const cents = Number(value);
@@ -3625,8 +3703,10 @@ function initRegistrationCategoriesTab() {
 
   const openCategoryModal = (mode, category = null) => {
     if (!form) return;
+    syncCategoryRequiredFields();
     form.dataset.mode = mode;
     form.classList.remove('was-validated');
+    clearCategoryValidationState();
 
     if (mode === 'edit') {
       if (elements.modalTitle) {
@@ -3783,12 +3863,12 @@ function initRegistrationCategoriesTab() {
 
   const saveCategory = async () => {
     if (!form) return;
+    if (!validateCategoryForm()) {
+      return;
+    }
+
     if (syncDurationFieldValidity()) {
       normalizeDurationFieldDisplay();
-    }
-    if (!form.checkValidity()) {
-      form.classList.add('was-validated');
-      return;
     }
 
     if (elements.saveBtn) {
@@ -3946,6 +4026,16 @@ function initRegistrationCategoriesTab() {
     if (!form) return;
     form.classList.remove('was-validated');
     form.dataset.mode = 'create';
+    clearCategoryValidationState();
+  });
+
+  validationFields.forEach((field) => {
+    field.addEventListener('input', () => {
+      validateCategoryField(field);
+    });
+    field.addEventListener('blur', () => {
+      validateCategoryField(field);
+    });
   });
 
   elements.musicMaxDuration?.addEventListener('input', syncDurationFieldValidity);
@@ -3955,6 +4045,7 @@ function initRegistrationCategoriesTab() {
     }
   });
 
+  syncCategoryRequiredFields();
   loadCategories();
 }
 
