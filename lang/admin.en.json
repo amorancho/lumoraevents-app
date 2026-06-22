@@ -2,5 +2,6 @@
   "home_title": "Administration LumoraEvents",
   "registration_finance_label": "Registration Finance",
   "registration_not_new_school_label": "Notify New School",
-  "registration_not_new_group_label": "Notify New Group"
+  "registration_not_new_group_label": "Notify New Group",
+  "show_gender_label": "Show Gender"
 }

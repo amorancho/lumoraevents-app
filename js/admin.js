@@ -497,6 +497,7 @@ function openEditEventModal(eventObj) {
   document.getElementById('judges_can_change_votes').checked = (Number(eventObj.judges_can_change_votes) === 1);
   document.getElementById('has_masters').checked = (Number(eventObj.has_masters) === 1);
   document.getElementById('show_flags').checked = (Number(eventObj.show_flags) === 1);
+  document.getElementById('show_gender').checked = (Number(eventObj.show_gender) === 1);
   document.getElementById('send_stats_code').checked = (Number(eventObj.send_stats_code) === 1);
   document.getElementById('hide_judges').checked = (Number(eventObj.hide_judges) === 1);
   document.getElementById('registration_start').value = eventObj.registration_start
@@ -574,6 +575,7 @@ async function saveEvent() {
     can_decide_positions: parseInt(document.getElementById('can_decide_positions').value, 10) || 0,
     restrict_voting: parseInt(document.getElementById('restrict_voting').value, 10) || 0,
     show_flags: document.getElementById('show_flags') ? (document.getElementById('show_flags').checked ? 1 : 0) : 1,
+    show_gender: document.getElementById('show_gender') ? (document.getElementById('show_gender').checked ? 1 : 0) : 0,
     send_stats_code: document.getElementById('send_stats_code') ? (document.getElementById('send_stats_code').checked ? 1 : 0) : 0,
     hide_judges: document.getElementById('hide_judges') ? (document.getElementById('hide_judges').checked ? 1 : 0) : 0
   };

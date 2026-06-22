@@ -891,10 +891,16 @@
               <div class="card shadow-sm">
                 <div class="card-body p-4">
                   <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
-                    <button type="button" class="btn btn-primary" id="addParticipantBtn">
-                      <i class="bi bi-person-plus me-2"></i>
-                      <span data-i18n="registration_participants_add">Alta participantes</span>
-                    </button>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-primary" id="addParticipantBtn">
+                        <i class="bi bi-person-plus me-2"></i>
+                        <span data-i18n="registration_participants_add">Alta participantes</span>
+                      </button>
+                      <button type="button" class="btn btn-outline-primary" id="importParticipantsOpenBtn">
+                        <i class="bi bi-clipboard-data me-2"></i>
+                        <span data-i18n="registration_participants_import">Importar participantes</span>
+                      </button>
+                    </div>
                     <form id="participantsFilters" class="row g-3 align-items-end flex-grow-1">
                       <div class="col-12 col-md-6 col-lg-3">
                         <label class="form-label" for="participantsFilterSchool" data-i18n="participants_filter_school">Escuela</label>
@@ -1304,7 +1310,8 @@
               </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="participantGender" data-i18n="registration_participants_gender">Genero</label>
-                <select id="participantGender" class="form-select" required>
+                <select id="participantGender" class="form-select">
+                  <option value=""></option>
                   <option value="M" data-i18n="gender_male">Male</option>
                   <option value="F" data-i18n="gender_female">Female</option>
                 </select>
@@ -1358,6 +1365,97 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-primary" id="confirmDuplicateParticipantBtn">Continuar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="importParticipantsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <span class="fw-bold text-primary" data-i18n="registration_participants_import_title">Importar participantes</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="alert alert-light border mb-3">
+            <div class="fw-semibold mb-2" data-i18n="registration_participants_import_instructions">
+              Pega las celdas copiadas desde Excel. Orden esperado de columnas:
+            </div>
+            <ul class="mb-0 ps-3 small">
+              <li data-i18n="registration_participants_import_column_name">Nombre</li>
+              <li data-i18n="registration_participants_import_column_birth">Fecha de nacimiento</li>
+              <li data-i18n="registration_participants_import_column_gender_optional">Género (opcional)</li>
+              <li data-i18n="registration_participants_import_column_country_optional">Nacionalidad ISO 2 letras (opcional)</li>
+            </ul>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="importParticipantsTextarea" data-i18n="registration_participants_import_expected_columns">Datos copiados desde Excel</label>
+            <textarea
+              id="importParticipantsTextarea"
+              class="form-control"
+              rows="8"
+              data-i18n-placeholder="registration_participants_import_textarea_placeholder"
+              placeholder="Nombre[TAB]Fecha nacimiento[TAB]Genero[TAB]Nacionalidad"></textarea>
+          </div>
+
+          <div id="importParticipantsPreviewWrap" class="d-none">
+            <div class="d-flex flex-column gap-3 mb-3">
+              <div>
+                <div class="small text-muted mb-2" data-i18n="registration_participants_import_detected_columns">Columnas detectadas</div>
+                <div id="importParticipantsDetectedColumns" class="d-flex flex-wrap gap-2"></div>
+              </div>
+              <div class="row g-2">
+                <div class="col-12 col-md-4">
+                  <div class="border rounded p-3 bg-light h-100">
+                    <div class="small text-muted mb-2" data-i18n="registration_participants_import_preview_total">Total</div>
+                    <span id="importParticipantsPreviewTotal" class="badge text-bg-secondary fs-6 px-3 py-2">0</span>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="border rounded p-3 bg-light h-100">
+                    <div class="small text-muted mb-2" data-i18n="registration_participants_import_preview_valid">Válidos</div>
+                    <span id="importParticipantsPreviewValid" class="badge text-bg-success fs-6 px-3 py-2">0</span>
+                  </div>
+                </div>
+                <div class="col-12 col-md-4">
+                  <div class="border rounded p-3 bg-light h-100">
+                    <div class="small text-muted mb-2" data-i18n="registration_participants_import_preview_invalid">Inválidos</div>
+                    <span id="importParticipantsPreviewInvalid" class="badge text-bg-danger fs-6 px-3 py-2">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th data-i18n="registration_participants_import_row">Fila</th>
+                    <th data-i18n="registration_participants_name">Nombre</th>
+                    <th data-i18n="registration_participants_birth">Fecha nacimiento</th>
+                    <th data-i18n="registration_participants_gender">Genero</th>
+                    <th data-i18n="registration_participants_country">Pais</th>
+                    <th data-i18n="registration_participants_import_status">Estado</th>
+                    <th data-i18n="registration_participants_import_errors">Errores</th>
+                  </tr>
+                </thead>
+                <tbody id="importParticipantsPreviewTableBody"></tbody>
+              </table>
+            </div>
+
+            <div id="importParticipantsPreviewEmpty" class="text-center text-muted py-3 d-none" data-i18n="registration_participants_import_no_rows">
+              No hay filas para previsualizar.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer flex-column flex-md-row gap-2">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-outline-primary" id="previewImportParticipantsBtn" data-i18n="registration_participants_import_preview">Previsualizar</button>
+          <button type="button" class="btn btn-primary" id="confirmImportParticipantsBtn" data-i18n="registration_participants_import_confirm" disabled>Importar válidos</button>
         </div>
       </div>
     </div>

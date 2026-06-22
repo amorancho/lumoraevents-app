@@ -55,6 +55,7 @@
     membersCategory: document.getElementById('registrationMembersCategory'),
     membersStyle: document.getElementById('registrationMembersStyle'),
     membersAgeInfoBtn: document.getElementById('registrationMembersAgeInfoBtn'),
+    membersGenderHeader: document.querySelector('#registrationMembersModal th[data-i18n="registration_competitions_member_gender"]'),
     saveBtn: document.getElementById('registrationSaveBtn'),
     membersForm: document.getElementById('registrationMembersForm'),
     membersId: document.getElementById('registrationMembersId'),
@@ -274,6 +275,12 @@
 
   const updateMembersAgeHeaderTooltip = () => {
     syncRegistrationAgeTooltipButton(elements.membersAgeInfoBtn);
+  };
+
+  const syncMembersGenderUi = () => {
+    if (elements.membersGenderHeader) {
+      elements.membersGenderHeader.classList.toggle('d-none', !Boolean(getEvent()?.showGender));
+    }
   };
 
   const getMemberAgeValue = (member) => calculateAge(
@@ -1041,9 +1048,11 @@
       nameCell.textContent = member.name || '';
       row.appendChild(nameCell);
 
-      const genderCell = document.createElement('td');
-      genderCell.textContent = member.gender;
-      row.appendChild(genderCell);
+      if (getEvent()?.showGender) {
+        const genderCell = document.createElement('td');
+        genderCell.textContent = member.gender || '-';
+        row.appendChild(genderCell);
+      }
 
       const dobValue = getDateOnlyValue(member.date_of_birth);
       const dobCell = document.createElement('td');
@@ -2498,6 +2507,7 @@
   window.addEventListener('beforeunload', disposeRegistrationsTooltips);
 
   updateMembersAgeHeaderTooltip();
+  syncMembersGenderUi();
   Promise.resolve()
     .then(loadRegistrationConfig)
     .then(loadRegistrations)

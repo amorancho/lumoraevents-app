@@ -218,7 +218,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hideSchoolInfo: data.hide_school_info === 1,
         hasMasters: data.has_masters === 1,
         judgesCanChangeVotes: data.judges_can_change_votes === 1,
-        registrationFeeCost: data.registration_fee_cost || 0
+        registrationFeeCost: data.registration_fee_cost || 0,
+        showGender: data.show_gender === 1,
       };
 
     }

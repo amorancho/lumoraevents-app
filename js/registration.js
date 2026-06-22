@@ -2092,6 +2092,7 @@ function initParticipantsTab(role) {
   const countEl = document.getElementById('participantsCount');
   const emptyEl = document.getElementById('participantsEmpty');
   const addBtn = document.getElementById('addParticipantBtn');
+  const importOpenBtn = document.getElementById('importParticipantsOpenBtn');
   const copyTsvBtn = document.getElementById('participantsCopyTsvBtn');
   const actionsHeader = document.querySelector('th[data-i18n="registration_participants_actions"]');
   const filtersForm = document.getElementById('participantsFilters');
@@ -2099,6 +2100,7 @@ function initParticipantsTab(role) {
   const filterName = document.getElementById('participantsFilterName');
   const filterClear = document.getElementById('participantsFilterClear');
   const modalEl = document.getElementById('participantModal');
+  const importModalEl = document.getElementById('importParticipantsModal');
   const deleteModalEl = document.getElementById('deleteParticipantModal');
   const duplicateModalEl = document.getElementById('duplicateParticipantModal');
 
@@ -2114,10 +2116,14 @@ function initParticipantsTab(role) {
 
   const allowEdit = role === 'school';
   const showSchoolColumn = role === 'organizer';
+  const shouldShowGender = Boolean(getEvent()?.showGender);
   const ageHeaderInfoBtn = document.getElementById('participantsAgeInfoBtn');
   const registrationsHeader = document.querySelector('th[data-i18n="registration_participants_registrations"]');
+  const participantTable = tableBody.closest('table');
+  const participantGenderHeader = participantTable?.querySelector('th[data-i18n="registration_participants_gender"]');
   if (!allowEdit) {
     if (addBtn) addBtn.classList.add('d-none');
+    if (importOpenBtn) importOpenBtn.classList.add('d-none');
     if (actionsHeader) actionsHeader.classList.add('d-none');
   }
   if (allowEdit && !showSchoolColumn && actionsHeader && registrationsHeader) {
@@ -2148,6 +2154,7 @@ function initParticipantsTab(role) {
     name: document.getElementById('participantName'),
     dob: document.getElementById('participantDob'),
     gender: document.getElementById('participantGender'),
+    genderField: document.getElementById('participantGender')?.closest('.col-12'),
     country: document.getElementById('participantCountry'),
     saveBtn: document.getElementById('participantSaveBtn'),
     saveAddBtn: document.getElementById('participantSaveAddBtn'),
@@ -2179,14 +2186,441 @@ function initParticipantsTab(role) {
   }
 
   const participantModal = new bootstrap.Modal(modalEl);
+  const importParticipantsModal = importModalEl ? new bootstrap.Modal(importModalEl) : null;
   const deleteModal = new bootstrap.Modal(deleteModalEl);
   const duplicateModal = duplicateModalEl ? new bootstrap.Modal(duplicateModalEl) : null;
   let participantToDelete = null;
   const duplicateMessageEl = document.getElementById('duplicateParticipantMessage');
   const confirmDuplicateBtn = document.getElementById('confirmDuplicateParticipantBtn');
+  const importElements = {
+    textarea: document.getElementById('importParticipantsTextarea'),
+    previewWrap: document.getElementById('importParticipantsPreviewWrap'),
+    detectedColumns: document.getElementById('importParticipantsDetectedColumns'),
+    total: document.getElementById('importParticipantsPreviewTotal'),
+    valid: document.getElementById('importParticipantsPreviewValid'),
+    invalid: document.getElementById('importParticipantsPreviewInvalid'),
+    tableBody: document.getElementById('importParticipantsPreviewTableBody'),
+    empty: document.getElementById('importParticipantsPreviewEmpty'),
+    previewBtn: document.getElementById('previewImportParticipantsBtn'),
+    confirmBtn: document.getElementById('confirmImportParticipantsBtn')
+  };
+  const importPreviewState = {
+    rawText: '',
+    preview: null
+  };
 
   const updateParticipantsAgeHeaderTooltip = () => {
     syncRegistrationAgeTooltipButton(ageHeaderInfoBtn);
+  };
+
+  const syncParticipantsGenderUi = () => {
+    if (participantGenderHeader) {
+      participantGenderHeader.classList.toggle('d-none', !shouldShowGender);
+    }
+    if (elements.genderField) {
+      elements.genderField.classList.toggle('d-none', role === 'school');
+    }
+    if (elements.gender) {
+      elements.gender.required = false;
+      if (role === 'school') {
+        elements.gender.value = '';
+      }
+    }
+  };
+
+  const safeJsonResponse = async (res) => {
+    try {
+      return await res.json();
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const normalizeImportPreviewErrors = (value) => {
+    if (Array.isArray(value)) {
+      return value.flatMap((item) => normalizeImportPreviewErrors(item));
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      const text = `${value}`.trim();
+      return text ? [text] : [];
+    }
+
+    if (!value || typeof value !== 'object') {
+      return [];
+    }
+
+    const directText = value.message ?? value.error ?? value.detail ?? value.msg;
+    if (directText !== undefined && directText !== null) {
+      const text = `${directText}`.trim();
+      return text ? [text] : [];
+    }
+
+    return Object.values(value).flatMap((item) => normalizeImportPreviewErrors(item));
+  };
+
+  const getNormalizedImportPreview = (preview) => {
+    const rows = Array.isArray(preview?.rows)
+      ? preview.rows.map((row, index) => {
+        const errors = Array.from(new Set(normalizeImportPreviewErrors(row?.errors)));
+        const status = `${row?.status || (errors.length ? 'invalid' : 'valid')}`.trim().toLowerCase();
+        return {
+          rowNumber: row?.rowNumber ?? row?.row_number ?? (index + 1),
+          data: row?.data && typeof row.data === 'object' ? row.data : {},
+          status,
+          errors
+        };
+      })
+      : [];
+
+    const summaryTotal = Number(preview?.summary?.total);
+    const summaryValid = Number(preview?.summary?.valid);
+    const summaryInvalid = Number(preview?.summary?.invalid);
+    const computedValid = rows.filter((row) => row.status === 'valid' && row.errors.length === 0).length;
+    const computedInvalid = rows.length - computedValid;
+
+    return {
+      columnsDetected: Array.isArray(preview?.columnsDetected)
+        ? preview.columnsDetected.map((value) => `${value ?? ''}`.trim()).filter(Boolean)
+        : [],
+      rows,
+      summary: {
+        total: Number.isFinite(summaryTotal) ? summaryTotal : rows.length,
+        valid: Number.isFinite(summaryValid) ? summaryValid : computedValid,
+        invalid: Number.isFinite(summaryInvalid) ? summaryInvalid : computedInvalid
+      }
+    };
+  };
+
+  const getImportPreviewBirthDate = (rowData) => {
+    const rawValue = `${rowData?.birth_date ?? rowData?.date_of_birth ?? ''}`.trim();
+    return getDateOnlyValue(rawValue) || rawValue;
+  };
+
+  const formatImportPreviewCountry = (value) => {
+    const rawValue = `${value ?? ''}`.trim();
+    if (!rawValue) return '-';
+
+    const normalizedCode = rawValue.toUpperCase();
+    if (countryMap.has(normalizedCode)) {
+      return `${normalizedCode} - ${countryMap.get(normalizedCode)}`;
+    }
+
+    return rawValue;
+  };
+
+  const getImportPreviewStatusInfo = (statusValue, errors) => {
+    const normalizedStatus = `${statusValue || ''}`.trim().toLowerCase();
+    if (normalizedStatus === 'valid' && (!Array.isArray(errors) || errors.length === 0)) {
+      return {
+        className: 'text-bg-success',
+        label: t('registration_participants_import_status_valid', 'Valido')
+      };
+    }
+
+    return {
+      className: 'text-bg-danger',
+      label: t('registration_participants_import_status_invalid', 'Invalido')
+    };
+  };
+
+  const clearImportParticipantsPreview = () => {
+    importPreviewState.rawText = '';
+    importPreviewState.preview = null;
+
+    if (importElements.previewWrap) {
+      importElements.previewWrap.classList.add('d-none');
+    }
+    if (importElements.detectedColumns) {
+      importElements.detectedColumns.innerHTML = '';
+    }
+    if (importElements.tableBody) {
+      importElements.tableBody.innerHTML = '';
+    }
+    if (importElements.total) {
+      importElements.total.textContent = '0';
+    }
+    if (importElements.valid) {
+      importElements.valid.textContent = '0';
+    }
+    if (importElements.invalid) {
+      importElements.invalid.textContent = '0';
+    }
+    if (importElements.empty) {
+      importElements.empty.classList.add('d-none');
+    }
+    if (importElements.confirmBtn) {
+      importElements.confirmBtn.disabled = true;
+      importElements.confirmBtn.textContent = t('registration_participants_import_confirm', 'Importar validos');
+    }
+  };
+
+  const resetImportParticipantsState = () => {
+    clearImportParticipantsPreview();
+
+    if (importElements.textarea) {
+      importElements.textarea.value = '';
+    }
+    if (importElements.previewBtn) {
+      importElements.previewBtn.disabled = false;
+      importElements.previewBtn.textContent = t('registration_participants_import_preview', 'Previsualizar');
+    }
+  };
+
+  const getValidImportPreviewRows = () => {
+    const preview = importPreviewState.preview;
+    if (!preview || !Array.isArray(preview.rows)) {
+      return [];
+    }
+
+    return preview.rows.filter((row) => {
+      if (!row || row.status !== 'valid' || row.errors.length > 0) {
+        return false;
+      }
+
+      const nameValue = `${row?.data?.name ?? ''}`.trim();
+      const birthDate = getImportPreviewBirthDate(row?.data || {});
+      return Boolean(nameValue && birthDate);
+    });
+  };
+
+  const renderImportParticipantsPreview = (preview) => {
+    const normalizedPreview = getNormalizedImportPreview(preview);
+    importPreviewState.preview = normalizedPreview;
+
+    if (importElements.previewWrap) {
+      importElements.previewWrap.classList.remove('d-none');
+    }
+    if (importElements.total) {
+      importElements.total.textContent = `${normalizedPreview.summary.total}`;
+    }
+    if (importElements.valid) {
+      importElements.valid.textContent = `${normalizedPreview.summary.valid}`;
+    }
+    if (importElements.invalid) {
+      importElements.invalid.textContent = `${normalizedPreview.summary.invalid}`;
+    }
+    if (importElements.detectedColumns) {
+      importElements.detectedColumns.innerHTML = '';
+      if (normalizedPreview.columnsDetected.length) {
+        normalizedPreview.columnsDetected.forEach((columnName) => {
+          const badge = document.createElement('span');
+          badge.className = 'badge rounded-pill text-bg-light border text-dark';
+          badge.textContent = columnName;
+          importElements.detectedColumns.appendChild(badge);
+        });
+      } else {
+        const emptyBadge = document.createElement('span');
+        emptyBadge.className = 'badge rounded-pill text-bg-light border text-dark';
+        emptyBadge.textContent = '-';
+        importElements.detectedColumns.appendChild(emptyBadge);
+      }
+    }
+    if (importElements.tableBody) {
+      importElements.tableBody.innerHTML = '';
+    }
+
+    if (!normalizedPreview.rows.length) {
+      if (importElements.empty) {
+        importElements.empty.classList.remove('d-none');
+      }
+    } else {
+      if (importElements.empty) {
+        importElements.empty.classList.add('d-none');
+      }
+
+      normalizedPreview.rows.forEach((row) => {
+        const tableRow = document.createElement('tr');
+        const statusInfo = getImportPreviewStatusInfo(row.status, row.errors);
+        const rowData = row.data || {};
+        const errorsValue = row.errors.length
+          ? row.errors.join(' | ')
+          : t('registration_participants_import_no_errors', 'Sin errores');
+
+        [
+          `${row.rowNumber ?? '-'}`,
+          `${rowData.name ?? ''}`.trim() || '-',
+          getImportPreviewBirthDate(rowData) || '-',
+          `${rowData.gender ?? ''}`.trim() || '-',
+          formatImportPreviewCountry(rowData.country)
+        ].forEach((value) => {
+          const cell = document.createElement('td');
+          cell.textContent = value;
+          tableRow.appendChild(cell);
+        });
+
+        const statusCell = document.createElement('td');
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `badge ${statusInfo.className}`;
+        statusBadge.textContent = statusInfo.label;
+        statusCell.appendChild(statusBadge);
+        tableRow.appendChild(statusCell);
+
+        const errorsCell = document.createElement('td');
+        errorsCell.className = row.errors.length ? 'text-danger small' : 'text-muted small';
+        errorsCell.textContent = errorsValue;
+        tableRow.appendChild(errorsCell);
+
+        if (importElements.tableBody) {
+          importElements.tableBody.appendChild(tableRow);
+        }
+      });
+    }
+
+    if (importElements.confirmBtn) {
+      importElements.confirmBtn.disabled = getValidImportPreviewRows().length === 0;
+    }
+  };
+
+  const buildImportParticipantsPreviewPayload = (rawText) => {
+    const eventObj = getEvent();
+    return {
+      event_id: eventObj?.id || registrationState.school?.event_id,
+      school_id: user.id,
+      text: rawText
+    };
+  };
+
+  const previewImportParticipants = async () => {
+    if (!importElements.textarea || !importElements.previewBtn) {
+      return;
+    }
+
+    const rawText = importElements.textarea.value;
+    if (!rawText.trim()) {
+      showMessageModal(
+        t('registration_participants_import_empty_error', 'Pega primero los datos que quieres importar.'),
+        t('error_title', 'Error')
+      );
+      return;
+    }
+
+    const originalPreviewText = importElements.previewBtn.textContent;
+    importElements.previewBtn.disabled = true;
+    importElements.previewBtn.textContent = t('registration_participants_import_preview_loading', 'Previsualizando...');
+    if (importElements.confirmBtn) {
+      importElements.confirmBtn.disabled = true;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/participants/import-preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildImportParticipantsPreviewPayload(rawText))
+      });
+
+      const data = await safeJsonResponse(res);
+      if (!res.ok) {
+        throw new Error(data?.error || t('registration_participants_import_preview_error', 'Error al previsualizar la importacion.'));
+      }
+
+      importPreviewState.rawText = rawText;
+      renderImportParticipantsPreview(data || {});
+    } catch (err) {
+      clearImportParticipantsPreview();
+      showMessageModal(
+        err.message || t('registration_participants_import_preview_error', 'Error al previsualizar la importacion.'),
+        t('error_title', 'Error')
+      );
+    } finally {
+      importElements.previewBtn.disabled = false;
+      importElements.previewBtn.textContent = originalPreviewText;
+    }
+  };
+
+  const normalizeImportConfirmCountry = (value) => {
+    const rawValue = `${value ?? ''}`.trim();
+    if (!rawValue) return '';
+
+    const normalizedCode = rawValue.toUpperCase();
+    if (countryMap.has(normalizedCode)) {
+      return normalizedCode;
+    }
+
+    return rawValue;
+  };
+
+  const buildImportParticipantsConfirmRows = () => {
+    return getValidImportPreviewRows().map((row) => {
+      const rowData = row.data || {};
+      const participantRow = {
+        name: `${rowData.name ?? ''}`.trim(),
+        birth_date: getImportPreviewBirthDate(rowData)
+      };
+
+      const genderValue = `${rowData.gender ?? ''}`.trim();
+      const countryValue = normalizeImportConfirmCountry(rowData.country);
+
+      if (genderValue) {
+        participantRow.gender = genderValue;
+      }
+      if (countryValue) {
+        participantRow.country = countryValue;
+      }
+
+      return participantRow;
+    }).filter((row) => row.name && row.birth_date);
+  };
+
+  const confirmImportParticipants = async () => {
+    if (!importElements.confirmBtn) {
+      return;
+    }
+
+    const rows = buildImportParticipantsConfirmRows();
+    if (!rows.length) {
+      showMessageModal(
+        t('registration_participants_import_empty_error', 'Pega primero los datos que quieres importar.'),
+        t('error_title', 'Error')
+      );
+      return;
+    }
+
+    const eventObj = getEvent();
+    const payload = {
+      event_id: eventObj?.id || registrationState.school?.event_id,
+      school_id: user.id,
+      rows
+    };
+
+    const originalConfirmText = importElements.confirmBtn.textContent;
+    importElements.confirmBtn.disabled = true;
+    if (importElements.previewBtn) {
+      importElements.previewBtn.disabled = true;
+    }
+    importElements.confirmBtn.textContent = t('registration_participants_import_confirm_loading', 'Importando...');
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/participants/import-confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await safeJsonResponse(res);
+      if (!res.ok) {
+        throw new Error(data?.error || t('registration_participants_import_confirm_error', 'Error al importar participantes.'));
+      }
+
+      importParticipantsModal?.hide();
+      await loadParticipants();
+      showMessageModal(
+        t('registration_participants_import_success', 'Se han importado {count} participantes validos.').replace('{count}', `${rows.length}`),
+        t('registration_participants_import_title', 'Importar participantes'),
+        'success'
+      );
+    } catch (err) {
+      showMessageModal(
+        err.message || t('registration_participants_import_confirm_error', 'Error al importar participantes.'),
+        t('error_title', 'Error')
+      );
+    } finally {
+      if (importElements.previewBtn) {
+        importElements.previewBtn.disabled = false;
+      }
+      importElements.confirmBtn.textContent = originalConfirmText;
+      importElements.confirmBtn.disabled = getValidImportPreviewRows().length === 0;
+    }
   };
 
   const getParticipantRegistrations = (participant) => {
@@ -2228,7 +2662,7 @@ function initParticipantsTab(role) {
     if (elements.id) elements.id.value = '';
     if (elements.name) elements.name.value = '';
     if (elements.dob) elements.dob.value = '';
-    if (elements.gender) elements.gender.value = 'M';
+    if (elements.gender) elements.gender.value = '';
     setCountryValue(defaultCountry);
   };
 
@@ -2260,7 +2694,7 @@ function initParticipantsTab(role) {
         if (elements.id) elements.id.value = participant.id || '';
         if (elements.name) elements.name.value = participant.name || '';
         if (elements.dob) elements.dob.value = getDateOnlyValue(participant.date_of_birth);
-        if (elements.gender) elements.gender.value = participant.gender || 'M';
+        if (elements.gender) elements.gender.value = role === 'school' ? '' : (participant.gender || '');
         setCountryValue(participant.country || '');
       }
     }
@@ -2303,9 +2737,11 @@ function initParticipantsTab(role) {
       nameCell.textContent = participant.name || '';
       row.appendChild(nameCell);
 
-      const genderCell = document.createElement('td');
-      genderCell.textContent = genderLabels[participant.gender] || participant.gender || '-';
-      row.appendChild(genderCell);
+      if (shouldShowGender) {
+        const genderCell = document.createElement('td');
+        genderCell.textContent = genderLabels[participant.gender] || participant.gender || '-';
+        row.appendChild(genderCell);
+      }
 
       const dobValue = getDateOnlyValue(participant.date_of_birth);
       const dobCell = document.createElement('td');
@@ -2386,7 +2822,7 @@ function initParticipantsTab(role) {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = ((allowEdit ? 6 : 5) + (showSchoolColumn ? 1 : 0)) + 1;
+    cell.colSpan = 5 + (shouldShowGender ? 1 : 0) + (showSchoolColumn ? 1 : 0) + (allowEdit ? 1 : 0);
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -2520,7 +2956,7 @@ function initParticipantsTab(role) {
       name: elements.name ? elements.name.value.trim() : '',
       date_of_birth: elements.dob ? elements.dob.value : '',
       country: elements.country ? elements.country.value : '',
-      gender: elements.gender ? elements.gender.value : 'M',
+      gender: role === 'school' ? null : ((elements.gender ? `${elements.gender.value || ''}`.trim() : '') || null),
       school_id: user.id
     };
 
@@ -2646,6 +3082,13 @@ function initParticipantsTab(role) {
     addBtn.addEventListener('click', () => openParticipantModal('create'));
   }
 
+  if (importOpenBtn && allowEdit && importParticipantsModal) {
+    importOpenBtn.addEventListener('click', () => {
+      resetImportParticipantsState();
+      importParticipantsModal.show();
+    });
+  }
+
   if (copyTsvBtn) {
     bindTableTsvExportButton(copyTsvBtn, tableBody);
   }
@@ -2688,10 +3131,35 @@ function initParticipantsTab(role) {
     elements.confirmDeleteBtn.addEventListener('click', deleteParticipant);
   }
 
+  if (importElements.previewBtn && allowEdit) {
+    importElements.previewBtn.addEventListener('click', previewImportParticipants);
+  }
+
+  if (importElements.confirmBtn && allowEdit) {
+    importElements.confirmBtn.addEventListener('click', confirmImportParticipants);
+  }
+
+  if (importElements.textarea && allowEdit) {
+    importElements.textarea.addEventListener('input', () => {
+      if (!importPreviewState.rawText) {
+        return;
+      }
+      if (importElements.textarea.value !== importPreviewState.rawText) {
+        clearImportParticipantsPreview();
+      }
+    });
+  }
+
   if (allowEdit) {
     modalEl.addEventListener('hidden.bs.modal', () => {
       loadParticipants();
     });
+    if (importModalEl) {
+      importModalEl.addEventListener('hidden.bs.modal', resetImportParticipantsState);
+      importModalEl.addEventListener('shown.bs.modal', () => {
+        importElements.textarea?.focus();
+      });
+    }
   }
 
   if (filtersForm) {
@@ -2739,6 +3207,7 @@ function initParticipantsTab(role) {
   });
 
   updateParticipantsAgeHeaderTooltip();
+  syncParticipantsGenderUi();
   loadParticipantSchools();
   loadParticipants();
 }
@@ -4501,6 +4970,7 @@ function initOrganizerRegistrationsTab() {
     participantSelect: document.getElementById('registrationParticipantSelect'),
     addMemberBtn: document.getElementById('addRegistrationMemberBtn'),
     ageInfoBtn: document.getElementById('registrationMembersAgeInfoBtn'),
+    genderHeader: document.querySelector('#registrationMembersModal th[data-i18n="registration_competitions_member_gender"]'),
     saveBtn: document.getElementById('registrationMembersSaveBtn'),
     actionsHeader: document.querySelector('#registrationMembersModal th[data-i18n="registration_competitions_member_actions"]')
   };
@@ -5268,6 +5738,12 @@ function initOrganizerRegistrationsTab() {
     syncRegistrationAgeTooltipButton(membersElements.ageInfoBtn);
   };
 
+  const syncMembersGenderUi = () => {
+    if (membersElements.genderHeader) {
+      membersElements.genderHeader.classList.toggle('d-none', !Boolean(getEvent()?.showGender));
+    }
+  };
+
   const renderMembersTable = (members) => {
     if (!membersElements.table) return;
     membersElements.table.innerHTML = '';
@@ -5291,9 +5767,11 @@ function initOrganizerRegistrationsTab() {
       nameCell.textContent = member.name || '';
       row.appendChild(nameCell);
 
-      const genderCell = document.createElement('td');
-      genderCell.textContent = member.gender || '-';
-      row.appendChild(genderCell);
+      if (getEvent()?.showGender) {
+        const genderCell = document.createElement('td');
+        genderCell.textContent = member.gender || '-';
+        row.appendChild(genderCell);
+      }
 
       const dobValue = getDateOnlyValue(member.date_of_birth);
       const dobCell = document.createElement('td');
@@ -5930,6 +6408,7 @@ function initOrganizerRegistrationsTab() {
   window.addEventListener('beforeunload', disposeRegistrationsTooltips);
 
   updateMembersAgeHeaderTooltip();
+  syncMembersGenderUi();
   Promise.resolve()
     .then(loadRegistrationConfig)
     .then(loadSchools)
