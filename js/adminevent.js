@@ -104,6 +104,7 @@ const EVENT_INFO_DEFAULT_DATA = Object.freeze({
   phone_contact: null,
   organizer: null,
   bases_document: null,
+  poster: null,
   event_description: null
 });
 const EVENT_INFO_ALLOWED_TAGS = ['p', 'br', 'strong', 'em', 'u', 's', 'ol', 'ul', 'li', 'a', 'h2', 'h3', 'blockquote'];
@@ -613,7 +614,8 @@ function populateEventInfoForm(data) {
     eventInfoEmail: normalized.email_contact,
     eventInfoPhone: normalized.phone_contact,
     eventInfoOrganizer: normalized.organizer,
-    eventInfoBases: normalized.bases_document
+    eventInfoBases: normalized.bases_document,
+    eventInfoPoster: normalized.poster
   };
 
   Object.entries(fieldMap).forEach(([fieldId, value]) => {
@@ -638,6 +640,7 @@ function normalizeEventInfoData(data) {
     phone_contact: String(data?.phone_contact ?? ''),
     organizer: String(data?.organizer ?? ''),
     bases_document: String(data?.bases_document ?? ''),
+    poster: String(data?.poster ?? ''),
     event_description: sanitizeEventInfoHtml(String(data?.event_description ?? ''))
   };
 }
@@ -653,6 +656,7 @@ function buildEventInfoPayload(eventId) {
     phone_contact: normalizeOptionalField(document.getElementById('eventInfoPhone')?.value),
     organizer: normalizeOptionalField(document.getElementById('eventInfoOrganizer')?.value),
     bases_document: normalizeOptionalField(document.getElementById('eventInfoBases')?.value),
+    poster: normalizeOptionalField(document.getElementById('eventInfoPoster')?.value),
     event_description: normalizeOptionalField(getEventInfoEditorHtml())
   };
 }

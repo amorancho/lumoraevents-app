@@ -123,6 +123,8 @@
   "event_info_organizer": "Organizador",
   "event_info_bases": "Bases",
   "event_info_bases_placeholder": "https://.../bases.pdf",
+  "event_info_poster": "URL del poster",
+  "event_info_poster_placeholder": "https://.../poster.jpg",
   "event_info_description": "Descripcion",
   "event_info_description_help": "Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.",
   "event_info_save": "Guardar",

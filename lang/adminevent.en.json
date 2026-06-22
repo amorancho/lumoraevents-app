@@ -123,6 +123,8 @@
   "event_info_organizer": "Organizer",
   "event_info_bases": "Rules",
   "event_info_bases_placeholder": "https://.../rules.pdf",
+  "event_info_poster": "Poster URL",
+  "event_info_poster_placeholder": "https://.../poster.jpg",
   "event_info_description": "Description",
   "event_info_description_help": "Only safe formatting is stored: headings, paragraphs, bold, italic, underline, lists and links.",
   "event_info_save": "Save",

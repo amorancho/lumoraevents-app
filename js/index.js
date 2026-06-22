@@ -65,6 +65,56 @@ const formatFecha = (isoString) => formatDateByLocale(isoString, { day: '2-digit
 
 const formatLongDate = (isoString) => formatDateByLocale(isoString, { day: '2-digit', month: 'long', year: 'numeric' });
 
+const parseIsoDateParts = (isoString) => {
+  const normalized = String(isoString || '').slice(0, 10);
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    return null;
+  }
+
+  const [, year, month, day] = match;
+  return {
+    normalized,
+    year: Number(year),
+    month: Number(month),
+    day: Number(day)
+  };
+};
+
+const createUtcDate = (parts) => new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
+
+const formatMonthOnly = (parts) =>
+  new Intl.DateTimeFormat(getCurrentLocale(), { month: 'long', timeZone: 'UTC' }).format(createUtcDate(parts));
+
+const formatMonthYear = (parts) =>
+  new Intl.DateTimeFormat(getCurrentLocale(), { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(createUtcDate(parts));
+
+const formatEventDetailsDateRange = (start, end) => {
+  if (!start) {
+    return '';
+  }
+
+  if (!end || String(start).slice(0, 10) === String(end).slice(0, 10)) {
+    return formatLongDate(start);
+  }
+
+  const startParts = parseIsoDateParts(start);
+  const endParts = parseIsoDateParts(end);
+  if (!startParts || !endParts) {
+    return `${formatLongDate(start)} / ${formatLongDate(end)}`;
+  }
+
+  if (startParts.year !== endParts.year) {
+    return `${formatLongDate(start)} / ${formatLongDate(end)}`;
+  }
+
+  if (startParts.month === endParts.month) {
+    return `${startParts.day}/ ${endParts.day} ${formatMonthYear(endParts)}`;
+  }
+
+  return `${startParts.day} ${formatMonthOnly(startParts)} / ${endParts.day} ${formatMonthYear(endParts)}`;
+};
+
 const formatEventDateRange = (start, end) => {
   if (!start) {
     return '';
@@ -248,9 +298,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   const eventDetailsTitleEl = document.getElementById('eventDetailsModalLabel');
   const eventDetailsLogoEl = document.getElementById('eventDetailsLogo');
   const eventDetailsStatusBadgeEl = document.getElementById('eventDetailsStatusBadge');
+  const eventDetailsPosterColumnEl = document.getElementById('eventDetailsPosterColumn');
+  const eventDetailsDescriptionColumnEl = document.getElementById('eventDetailsDescriptionColumn');
   const eventDetailsDescriptionEl = document.getElementById('eventDetailsDescription');
+  const eventDetailsPosterEl = document.getElementById('eventDetailsPoster');
   const eventDetailsInfoListEl = document.getElementById('eventDetailsInfoList');
   const eventDetailsGoToEventBtn = document.getElementById('eventDetailsGoToEventBtn');
+  const eventPosterPreviewModalEl = document.getElementById('eventPosterPreviewModal');
+  const eventPosterPreviewModal = eventPosterPreviewModalEl ? new bootstrap.Modal(eventPosterPreviewModalEl) : null;
+  const eventPosterPreviewImageEl = document.getElementById('eventPosterPreviewImage');
+  const eventPosterPreviewTitleEl = document.getElementById('eventPosterPreviewModalLabel');
 
   let allEvents = [];
   let selectedStatusFilter = 'all';
@@ -265,6 +322,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         ${translationKey}
       </p>
     `;
+  };
+
+  const setEventDetailsPosterLayout = (hasPoster) => {
+    if (eventDetailsPosterColumnEl) {
+      eventDetailsPosterColumnEl.className = hasPoster ? 'col-12 col-lg-auto' : 'col-12 col-lg-auto d-none';
+    }
+
+    if (eventDetailsDescriptionColumnEl) {
+      eventDetailsDescriptionColumnEl.className = hasPoster ? 'col-12 col-lg' : 'col-12';
+    }
   };
 
   const showLoadingSpinner = () => {
@@ -329,6 +396,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     eventDetailsInfoListEl.innerHTML = loadingMarkup;
     eventDetailsDescriptionEl.innerHTML = loadingMarkup;
+    eventDetailsPosterEl.innerHTML = '';
+    setEventDetailsPosterLayout(false);
     applyTranslations();
   };
 
@@ -341,6 +410,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const countryValue = getCountryName(info.country);
     const formattedStartDate = formatLongDate(event?.start);
     const formattedEndDate = formatLongDate(event?.end);
+    const formattedEventDateRange = formatEventDetailsDateRange(event?.start, event?.end);
     const normalizedStartDate = String(event?.start || '').slice(0, 10);
     const normalizedEndDate = String(event?.end || '').slice(0, 10);
     let eventDatesLabel = '';
@@ -352,7 +422,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         eventDatesValue = formattedStartDate || formattedEndDate;
       } else if (formattedStartDate && formattedEndDate) {
         eventDatesLabel = t('event_details_dates');
-        eventDatesValue = `${formattedStartDate} / ${formattedEndDate}`;
+        eventDatesValue = formattedEventDateRange;
       } else {
         eventDatesLabel = t('event_details_event_date');
         eventDatesValue = formattedStartDate || formattedEndDate;
@@ -463,6 +533,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     eventDetailsInfoListEl.innerHTML = itemsMarkup;
   };
 
+  const renderEventDetailsPoster = (event, info = {}) => {
+    const posterUrl = getSafeExternalUrl(info.poster);
+    if (!posterUrl) {
+      eventDetailsPosterEl.innerHTML = '';
+      setEventDetailsPosterLayout(false);
+      return;
+    }
+
+    const eventName = String(event?.name || t('event_details_default_name')).trim();
+    const posterAlt = `${eventName} - ${t('event_details_poster_title')}`;
+    setEventDetailsPosterLayout(true);
+    eventDetailsPosterEl.innerHTML = `
+      <button type="button" class="event-details-poster-trigger" data-poster-url="${escapeHtml(posterUrl)}" data-poster-alt="${escapeHtml(posterAlt)}">
+        <img class="event-details-poster-image" src="${escapeHtml(posterUrl)}" alt="${escapeHtml(posterAlt)}" loading="lazy">
+      </button>
+    `;
+  };
+
   const renderEventDetailsDescription = (info = {}) => {
     const descriptionHtml = sanitizeEventDescriptionHtml(info.event_description);
     if (!descriptionHtml) {
@@ -480,6 +568,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         Could not load event details.
       </div>
     `;
+    eventDetailsPosterEl.innerHTML = '';
+    setEventDetailsPosterLayout(false);
     renderEventDetailsInfo(event, {});
     applyTranslations();
   };
@@ -542,6 +632,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       renderEventDetailsInfo(event, info || {});
+      renderEventDetailsPoster(event, info || {});
       renderEventDetailsDescription(info || {});
       applyTranslations();
     } catch (error) {
@@ -731,8 +822,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   if (eventDetailsModalEl) {
+    eventDetailsModalEl.addEventListener('click', (event) => {
+      const trigger = event.target.closest('[data-poster-url]');
+      if (!trigger || !eventPosterPreviewModal || !eventPosterPreviewImageEl) {
+        return;
+      }
+
+      const posterUrl = getSafeExternalUrl(trigger.dataset.posterUrl);
+      if (!posterUrl) {
+        return;
+      }
+
+      const posterAlt = String(trigger.dataset.posterAlt || '').trim();
+      eventPosterPreviewImageEl.src = posterUrl;
+      eventPosterPreviewImageEl.alt = posterAlt;
+      if (eventPosterPreviewTitleEl && posterAlt) {
+        eventPosterPreviewTitleEl.textContent = posterAlt;
+      }
+      eventPosterPreviewModal.show();
+    });
+
     eventDetailsModalEl.addEventListener('hidden.bs.modal', () => {
       activeDetailsRequestId += 1;
+      eventDetailsPosterEl.innerHTML = '';
+      eventDetailsDescriptionEl.innerHTML = '';
+      eventDetailsInfoListEl.innerHTML = '';
+      setEventDetailsPosterLayout(false);
+    });
+  }
+
+  if (eventPosterPreviewModalEl) {
+    eventPosterPreviewModalEl.addEventListener('hidden.bs.modal', () => {
+      if (eventPosterPreviewImageEl) {
+        eventPosterPreviewImageEl.removeAttribute('src');
+        eventPosterPreviewImageEl.alt = '';
+      }
+
+      if (eventPosterPreviewTitleEl) {
+        eventPosterPreviewTitleEl.textContent = t('event_details_poster_preview_title');
+      }
     });
   }
 

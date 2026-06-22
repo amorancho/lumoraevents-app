@@ -124,6 +124,8 @@
   "event_info_organizer": "Organizzatore",
   "event_info_bases": "Regolamento",
   "event_info_bases_placeholder": "https://.../regolamento.pdf",
+  "event_info_poster": "URL del poster",
+  "event_info_poster_placeholder": "https://.../poster.jpg",
   "event_info_description": "Descrizione",
   "event_info_description_help": "Vengono salvati solo formati sicuri: titoli, paragrafi, grassetto, corsivo, sottolineato, liste e link.",
   "event_info_save": "Salva",

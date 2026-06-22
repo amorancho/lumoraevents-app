@@ -124,6 +124,8 @@
   "event_info_organizer": "Organisateur",
   "event_info_bases": "Reglement",
   "event_info_bases_placeholder": "https://.../reglement.pdf",
+  "event_info_poster": "URL du poster",
+  "event_info_poster_placeholder": "https://.../poster.jpg",
   "event_info_description": "Description",
   "event_info_description_help": "Seuls des formats surs sont enregistres : titres, paragraphes, gras, italique, souligne, listes et liens.",
   "event_info_save": "Enregistrer",
