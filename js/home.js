@@ -128,9 +128,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const registrationClosed =
             !currentEvent.hasRegistration ||
-            currentEvent.status !== "upcoming" ||
-            now < new Date(currentEvent.registrationStart) ||
-            now > new Date(currentEvent.registrationEnd);
+            currentEvent.status !== "upcoming";
 
         if (registrationClosed) {
             removeColumn(registrationCol);

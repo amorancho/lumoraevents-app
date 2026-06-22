@@ -103,6 +103,53 @@
     .registration-category-modal {
       --bs-modal-width: 640px;
     }
+    .registration-sidebar-card .card-body {
+      padding: 1rem;
+    }
+    .registration-sidebar-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .registration-sidebar-status[data-state="open"] {
+      background: rgba(25, 135, 84, 0.12);
+      color: #146c43;
+    }
+    .registration-sidebar-status[data-state="closed"] {
+      background: rgba(220, 53, 69, 0.12);
+      color: #b02a37;
+    }
+    .registration-sidebar-meta {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 0.9rem;
+    }
+    .registration-sidebar-meta-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+    .registration-sidebar-meta-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--bs-secondary-color);
+    }
+    .registration-sidebar-meta-value {
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
     .members-modal .modal-content {
       height: 100%;
     }

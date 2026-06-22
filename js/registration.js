@@ -410,13 +410,115 @@ function getRegistrationSidebarTitle() {
   return t('registration_sidebar_section', 'Registration');
 }
 
+function getRegistrationCalendarDate(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    const clone = new Date(value.getTime());
+    return Number.isNaN(clone.getTime()) ? null : clone;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const dateOnlyMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dateOnlyMatch) {
+      const [, year, month, day] = dateOnlyMatch;
+      return new Date(Number(year), Number(month) - 1, Number(day), 0, 0, 0, 0);
+    }
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getRegistrationDayDate(value) {
+  const date = getRegistrationCalendarDate(value);
+  if (!date) return null;
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+function formatRegistrationSidebarDate(value) {
+  const date = getRegistrationCalendarDate(value);
+  if (!date) return '-';
+
+  return new Intl.DateTimeFormat(getRegistrationLanguage(), {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(date);
+}
+
+function formatRegistrationSidebarRange(startValue, endValue) {
+  const startLabel = formatRegistrationSidebarDate(startValue);
+  const endLabel = formatRegistrationSidebarDate(endValue);
+
+  if (startLabel === '-' && endLabel === '-') return '-';
+  if (startLabel === '-') return endLabel;
+  if (endLabel === '-') return startLabel;
+  return `${startLabel} - ${endLabel}`;
+}
+
+function getRegistrationSidebarStatusInfo() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const startDate = getRegistrationDayDate(getEvent()?.registrationStart);
+  const endDate = getRegistrationDayDate(getEvent()?.registrationEnd);
+  const isOpen = Boolean(startDate && endDate && today >= startDate && today <= endDate);
+
+  return {
+    isOpen,
+    label: isOpen
+      ? t('registration_sidebar_status_open', 'Inscripciones abiertas')
+      : t('registration_sidebar_status_closed', 'Inscripciones cerradas'),
+    icon: isOpen ? 'bi-unlock-fill' : 'bi-lock-fill',
+    state: isOpen ? 'open' : 'closed'
+  };
+}
+
 function getRegistrationSidebarCopy() {
   return {
-    section: t('registration_sidebar_section', 'Registration'),
-    subtitle: t('registration_sidebar_subtitle', 'Private zone'),
+    eventDates: t('registration_sidebar_event_dates', 'Fechas del evento'),
+    registrationDates: t('registration_sidebar_registration_dates', 'Periodo de inscripcion'),
     menuButton: t('registration_sidebar_menu_button', 'Open menu'),
     closeButton: t('registration_sidebar_close_button', 'Close')
   };
+}
+
+function buildRegistrationSidebarHeroMarkup() {
+  const copy = getRegistrationSidebarCopy();
+  const eventObj = getEvent();
+  const statusInfo = getRegistrationSidebarStatusInfo();
+  const eventRange = formatRegistrationSidebarRange(eventObj?.start, eventObj?.end);
+  const registrationRange = formatRegistrationSidebarRange(eventObj?.registrationStart, eventObj?.registrationEnd);
+
+  return `
+    <div class="registration-sidebar-meta">
+      <div>
+        <span class="registration-sidebar-status" data-state="${statusInfo.state}">
+          <i class="bi ${statusInfo.icon}"></i>
+          <span>${statusInfo.label}</span>
+        </span>
+      </div>
+      <div class="registration-sidebar-meta-row">
+        <div class="registration-sidebar-meta-label">
+          <i class="bi bi-calendar-event"></i>
+          <span>${copy.eventDates}</span>
+        </div>
+        <div class="registration-sidebar-meta-value">${eventRange}</div>
+      </div>
+      <div class="registration-sidebar-meta-row">
+        <div class="registration-sidebar-meta-label">
+          <i class="bi bi-journal-check"></i>
+          <span>${copy.registrationDates}</span>
+        </div>
+        <div class="registration-sidebar-meta-value">${registrationRange}</div>
+      </div>
+    </div>
+  `;
 }
 
 function buildRegistrationSidebarItemsMarkup(role, activeKey, options = {}) {
@@ -458,14 +560,14 @@ function renderRegistrationSidebar(role) {
   const copy = getRegistrationSidebarCopy();
   const title = getRegistrationSidebarTitle();
   const activeKey = registrationNavigationState.activeKey;
+  const heroMarkup = buildRegistrationSidebarHeroMarkup();
 
   const desktopMarkup = `
     <div class="sticky-lg-top">
-      <div class="card border-0 shadow-sm">
+      <div class="card border-0 shadow-sm registration-sidebar-card">
         <div class="card-body border-bottom">
-          <div class="small text-uppercase text-body-secondary fw-semibold mb-2">${copy.subtitle}</div>
           <div class="h5 mb-1">${title}</div>
-          <div class="small text-body-secondary">${copy.section}</div>
+          ${heroMarkup}
         </div>
         <div class="list-group list-group-flush">
           ${buildRegistrationSidebarItemsMarkup(role, activeKey, {
@@ -490,11 +592,13 @@ function renderRegistrationSidebar(role) {
       <div class="offcanvas-header border-bottom">
         <div>
           <div class="h5 mb-1" id="registrationSidebarTitleMobile">${title}</div>
-          <div class="small text-body-secondary">${copy.section}</div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="${copy.closeButton}"></button>
       </div>
       <div class="offcanvas-body p-0">
+        <div class="p-3 border-bottom">
+          ${heroMarkup}
+        </div>
         <div class="list-group list-group-flush">
           ${buildRegistrationSidebarItemsMarkup(role, activeKey)}
         </div>
@@ -3281,24 +3385,22 @@ function renderEventSyncSummary(container, items, options = {}) {
   return summary;
 }
 
+function getEventRegistrationStartDate() {
+  return getRegistrationDayDate(getEvent()?.registrationStart);
+}
+
 function getEventRegistrationEndDate() {
-  const rawValue = getEvent()?.registrationEnd;
-  if (!rawValue) return null;
-
-  const parsedDate = new Date(rawValue);
-  if (Number.isNaN(parsedDate.getTime())) return null;
-
-  parsedDate.setHours(0, 0, 0, 0);
-  return parsedDate;
+  return getRegistrationDayDate(getEvent()?.registrationEnd);
 }
 
 function isEventRegistrationStillOpen() {
+  const registrationStartDate = getEventRegistrationStartDate();
   const registrationEndDate = getEventRegistrationEndDate();
-  if (!registrationEndDate) return false;
+  if (!registrationStartDate || !registrationEndDate) return false;
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  return today <= registrationEndDate;
+  return today >= registrationStartDate && today <= registrationEndDate;
 }
 
 function showEventSyncBeforeDeadlineModal() {
