@@ -2081,7 +2081,7 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
     tdTotal.textContent =
       totalNumber === null || Number.isNaN(totalNumber)
         ? '-'
-        : (formatScoreForDisplay(totalNumber, scoreType) || '-');
+        : (formatTotalForDisplay(totalNumber, scoreType) || '-');
     tr.appendChild(tdTotal);
 
     dancersTableBody.appendChild(tr);
@@ -2505,11 +2505,7 @@ function isScoreInRange(value, min = 1, max = 10) {
 
 function formatScoreForDisplay(value, scoreType) {
   if (typeof value !== 'number' || Number.isNaN(value)) return '';
-  
-  const eventData = typeof getEvent === 'function' ? getEvent() : null;
-  const criteriaConfig = eventData?.criteriaConfig;
-  const isWeighted = criteriaConfig === 'WITH_POR';
-  const normalizedType = (isWeighted ? 'DEC' : (scoreType || 'INT')).toUpperCase();
+  const normalizedType = (scoreType || 'INT').toUpperCase();
 
   switch (normalizedType) {
     case 'DEC':
@@ -2521,6 +2517,17 @@ function formatScoreForDisplay(value, scoreType) {
     default:
       return Math.round(value).toString();
   }
+}
+
+function formatTotalForDisplay(value, scoreType) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return '';
+
+  const eventData = typeof getEvent === 'function' ? getEvent() : null;
+  if (eventData?.criteriaConfig === 'WITH_POR') {
+    return (Math.round(value * 10) / 10).toFixed(1);
+  }
+
+  return formatScoreForDisplay(value, scoreType);
 }
 
 function parseCriteriaPercentage(criteria) {
