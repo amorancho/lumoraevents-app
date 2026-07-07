@@ -169,7 +169,7 @@ function getBulkDeleteElements() {
 function updateBulkDeleteButtonState(visibleCount = getFilteredDancers().length) {
   const button = document.getElementById('openBulkDeleteDancersBtn');
   if (!button) return;
-  button.disabled = bulkDeleteState.isProcessing || visibleCount === 0 || getEvent()?.status === 'finished';
+  button.disabled = bulkDeleteState.isProcessing || visibleCount === 0 || isFinishedEventReadOnly();
 }
 
 function buildBulkDeleteStatusContent(item) {
@@ -512,12 +512,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (getEvent().status == 'finished') {
       closedPanel.style.display = 'block';
+  }
 
-      // deshabilitar inputs y botones
-      document.querySelectorAll('input, button').forEach(el => {
-        if (el.closest('#organizationSidebarToggle')) return;
-        el.disabled = true;
-      });
+  if (isFinishedEventReadOnly()) {
+    document.querySelectorAll('input, button').forEach(el => {
+      if (el.closest('#organizationSidebarToggle')) return;
+      el.disabled = true;
+    });
   }
 
   var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -873,7 +874,7 @@ function loadDancers() {
   dancers.forEach(dancer => {
 
     let btnDisabled = '';
-    if (getEvent().status === 'finished') {
+    if (isFinishedEventReadOnly()) {
       btnDisabled = 'disabled';
     }
 

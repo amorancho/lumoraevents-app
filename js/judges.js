@@ -14,12 +14,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (getEvent().status == 'finished') {
       closedPanel.style.display = 'block';
+  }
 
-      // deshabilitar inputs y botones
-      document.querySelectorAll('input, button').forEach(el => {
-        if (el.closest('#organizationSidebarToggle')) return;
-        el.disabled = true;
-      });
+  if (isFinishedEventReadOnly()) {
+    document.querySelectorAll('input, button').forEach(el => {
+      if (el.closest('#organizationSidebarToggle')) return;
+      el.disabled = true;
+    });
   }
 
   await ensureTranslationsReady();
@@ -372,7 +373,7 @@ function renderJudges() {
     row.dataset.master = judge.ismaster;
 
     let btnDisabled = '';
-    if (getEvent().status === 'finished') {
+    if (isFinishedEventReadOnly()) {
       btnDisabled = 'disabled';
     }
 

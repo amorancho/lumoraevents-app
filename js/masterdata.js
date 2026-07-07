@@ -27,8 +27,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (getEvent().status == 'finished') {
         closedPanel.style.display = 'block';
+    }
 
-        // deshabilitar inputs y botones
+    if (isFinishedEventReadOnly()) {
         document.querySelectorAll('input, button').forEach(el => {
             if (el.closest('#organizationSidebarToggle')) return;
             el.disabled = true;
@@ -631,7 +632,7 @@ function renderPenaltiesTable() {
         const row = document.createElement('tr');
         row.dataset.id = penalty.id;
 
-        const isFinished = getEvent().status === 'finished';
+        const isFinished = isFinishedEventReadOnly();
         const nameCell = document.createElement('td');
         nameCell.textContent = penalty?.name || '-';
 
@@ -862,7 +863,7 @@ function renderSchoolsTable() {
         const row = document.createElement('tr');
         row.dataset.id = school.id;
 
-        const isFinished = getEvent().status === 'finished';
+        const isFinished = isFinishedEventReadOnly();
         const schoolName = school?.name || '-';
         const schoolLocation = school?.location || '-';
         const schoolEmail = school?.email || '-';

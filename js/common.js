@@ -91,6 +91,15 @@ function getEvent() {
   return eventObj;
 }
 
+function isAdminUser() {
+  const user = getUserFromToken();
+  return user?.role === 'admin';
+}
+
+function isFinishedEventReadOnly() {
+  return getEvent()?.status === 'finished' && !isAdminUser();
+}
+
 const TIED_POSITIONS_NONE = 'NO';
 const TIED_POSITIONS_COMPETITION = 'CR';
 const TIED_POSITIONS_DENSE = 'DR';
@@ -828,6 +837,8 @@ window.getDancerFlagUrl = getDancerFlagUrl;
 window.getDancerFlagImgHtml = getDancerFlagImgHtml;
 window.tableToTsv = tableToTsv;
 window.copyTableToClipboardAsTsv = copyTableToClipboardAsTsv;
+window.isAdminUser = isAdminUser;
+window.isFinishedEventReadOnly = isFinishedEventReadOnly;
 window.bindTableTsvExportButton = bindTableTsvExportButton;
 
 

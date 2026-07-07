@@ -556,7 +556,7 @@ function getBulkDeleteCompetitionElements() {
 function updateBulkDeleteCompetitionsButtonState(visibleCount = getFilteredCompetitions().length) {
   const button = document.getElementById('openBulkDeleteCompetitionsBtn');
   if (!button) return;
-  button.disabled = bulkDeleteCompetitionsState.isProcessing || visibleCount === 0 || getEvent()?.status === 'finished';
+  button.disabled = bulkDeleteCompetitionsState.isProcessing || visibleCount === 0 || isFinishedEventReadOnly();
 }
 
 function buildBulkDeleteCompetitionStatusContent(item) {
@@ -891,12 +891,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (getEvent().status == 'finished') {
       closedPanel.style.display = 'block';
+  }
 
-      // deshabilitar inputs y botones
-      document.querySelectorAll('input, button').forEach(el => {
-        if (el.closest('#organizationSidebarToggle')) return;
-        el.disabled = true;
-      });
+  if (isFinishedEventReadOnly()) {
+    document.querySelectorAll('input, button').forEach(el => {
+      if (el.closest('#organizationSidebarToggle')) return;
+      el.disabled = true;
+    });
   }
 
   setupHeadJudgeFieldVisibility();
@@ -1072,7 +1073,7 @@ function loadCompetitions() {
       : escapeTooltipHtml(t('alerts_status_has_errors', 'Open alerts'));
 
     let btnDisabled = '';
-    if (getEvent().status === 'finished') {
+    if (isFinishedEventReadOnly()) {
       btnDisabled = 'disabled';
     }
 
