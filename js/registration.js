@@ -373,11 +373,16 @@ function notifyOrganizerRegistrationsUpdate() {
   window.dispatchEvent(new CustomEvent('registration:organizer-registrations-updated'));
 }
 
+function getRegistrationRole(user = getUserFromToken()) {
+  const role = user?.role?.toLowerCase() || 'guest';
+  return role === 'admin' ? 'organizer' : role;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
   await ensureTranslationsReady();
   const user = getUserFromToken();
-  const role = user?.role?.toLowerCase() || 'guest';
+  const role = getRegistrationRole(user);
   setupRegistrationNavigation(role);
   if (role === 'school') {
     initSchoolTab();
@@ -2125,7 +2130,7 @@ function initParticipantsTab(role) {
   }
 
   const user = getUserFromToken();
-  if (!user || !user.id) {
+  if (!user || (role === 'school' && !user.id)) {
     showMessageModal(t('registration_school_no_user', 'No user found.'), t('error_title', 'Error'));
     return;
   }
