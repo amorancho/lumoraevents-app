@@ -18,6 +18,40 @@
       margin-bottom: 0;
       padding-left: 1rem;
     }
+    .choreo-status-legend-tooltip {
+      text-align: left;
+    }
+    .choreo-status-legend-tooltip-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .choreo-status-legend-tooltip-row + .choreo-status-legend-tooltip-row {
+      margin-top: 0.25rem;
+    }
+    .choreo-status-legend-tooltip-dot {
+      display: inline-block;
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 0.2rem;
+      flex: 0 0 auto;
+      border: 1px solid rgba(255, 255, 255, 0.65);
+    }
+    .choreo-status-legend-tooltip-dot--dark {
+      background: #212529;
+    }
+    .choreo-status-legend-tooltip-dot--primary {
+      background: #0d6efd;
+    }
+    .choreo-status-legend-tooltip-dot--warning {
+      background: #ffc107;
+    }
+    .choreo-status-legend-tooltip-dot--success {
+      background: #198754;
+    }
+    .choreo-status-legend-tooltip-dot--danger {
+      background: #dc3545;
+    }
     .registration-category-info-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1219,7 +1253,6 @@
                           <th data-i18n="schools_table_country">Pais</th>
                           <th data-i18n="schools_table_representative">Representante</th>
                           <th class="text-center" data-i18n="schools_table_participants"># de participantes</th>
-                          <th class="text-center" data-i18n="schools_table_choreos"># de choreos</th>
                           <th class="text-center" data-i18n="schools_table_choreos_status">Estados de las coreos</th>
                           <th class="text-center" data-i18n="schools_table_syncro">Syncro</th>
                           <th class="text-center" data-i18n="schools_table_actions" data-tsv-ignore="true">Acciones</th>

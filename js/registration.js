@@ -326,6 +326,21 @@ function createRegistrationAlertsIcon(data) {
   return icon;
 }
 
+function disposeTooltipInstances(instances = []) {
+  (Array.isArray(instances) ? instances : []).forEach((instance) => instance?.dispose?.());
+  return [];
+}
+
+function initTooltipInstances(rootEl) {
+  if (!rootEl || !window.bootstrap?.Tooltip) {
+    return [];
+  }
+
+  return Array.from(rootEl.querySelectorAll('[data-bs-toggle="tooltip"]')).map((element) =>
+    bootstrap.Tooltip.getOrCreateInstance(element)
+  );
+}
+
 function syncRegistrationConfigState() {
   registrationState.registrationConfig = {
     categories: Array.isArray(registrationState.registrationCategories)
@@ -3513,6 +3528,7 @@ function initSchoolsTab() {
     phone: document.getElementById('schoolDetailPhone'),
     representative: document.getElementById('schoolDetailRepresentative')
   };
+  let schoolsTooltipInstances = [];
 
   const applyFilters = () => {
     const nameValue = filterName.value.trim().toLowerCase();
@@ -3532,6 +3548,7 @@ function initSchoolsTab() {
   };
 
   const renderSchools = (schools) => {
+    schoolsTooltipInstances = disposeTooltipInstances(schoolsTooltipInstances);
     tableBody.innerHTML = '';
 
     if (!schools.length) {
@@ -3567,31 +3584,17 @@ function initSchoolsTab() {
       participantsCell.appendChild(participantsBadge);
       row.appendChild(participantsCell);
 
-      const choreosCell = document.createElement('td');
-      choreosCell.className = 'text-center';
-      const totalChoreosBadge = document.createElement('span');
-      totalChoreosBadge.className = 'badge bg-dark';
-      totalChoreosBadge.textContent = `${school.num_choreos ?? 0}`;
-      choreosCell.appendChild(totalChoreosBadge);
-      row.appendChild(choreosCell);
-
       const choreoStatusCell = document.createElement('td');
       choreoStatusCell.className = 'text-center';
-      const statusBadges = [
-        { value: school.choreos_cre, className: 'bg-primary' },
-        { value: school.choreos_pen, className: 'bg-warning text-dark' },
-        { value: school.choreos_val, className: 'bg-success' },
-        { value: school.choreos_rej, className: 'bg-danger' }
-      ];
-      statusBadges.forEach((badgeData, index) => {
-        const badge = document.createElement('span');
-        badge.className = `badge ${badgeData.className}`;
-        badge.textContent = `${badgeData.value ?? 0}`;
-        choreoStatusCell.appendChild(badge);
-        if (index < statusBadges.length - 1) {
-          choreoStatusCell.appendChild(document.createTextNode(' / '));
-        }
-      });
+      choreoStatusCell.appendChild(createChoreoStatusBadges(buildChoreoStatusSummaryFromCounts({
+        CRE: school.choreos_cre,
+        PEN: school.choreos_pen,
+        VAL: school.choreos_val,
+        REJ: school.choreos_rej
+      }), {
+        className: 'd-flex flex-wrap justify-content-center gap-1',
+        totalCountOverride: school.num_choreos
+      }));
       row.appendChild(choreoStatusCell);
 
       const syncroCell = document.createElement('td');
@@ -3616,13 +3619,16 @@ function initSchoolsTab() {
 
       tableBody.appendChild(row);
     });
+
+    schoolsTooltipInstances = initTooltipInstances(tableBody);
   };
 
   const showSchoolsError = (message) => {
+    schoolsTooltipInstances = disposeTooltipInstances(schoolsTooltipInstances);
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 8;
+    cell.colSpan = 7;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -3679,6 +3685,10 @@ function initSchoolsTab() {
 
   filterForm.addEventListener('submit', (event) => {
     event.preventDefault();
+  });
+
+  window.addEventListener('beforeunload', () => {
+    schoolsTooltipInstances = disposeTooltipInstances(schoolsTooltipInstances);
   });
 
   loadSchools();
@@ -3739,22 +3749,84 @@ function getChoreoStatusBadgeInfo(code, count) {
   }
 }
 
+function getChoreoStatusLegendItems() {
+  return [
+    { dotClass: 'choreo-status-legend-tooltip-dot--dark', label: t('registration_choreo_status_legend_total', 'Number of choreos') },
+    { dotClass: 'choreo-status-legend-tooltip-dot--primary', label: t('registration_choreo_status_legend_cre', 'In creation') },
+    { dotClass: 'choreo-status-legend-tooltip-dot--warning', label: t('registration_choreo_status_legend_pen', 'Pending validation') },
+    { dotClass: 'choreo-status-legend-tooltip-dot--success', label: t('registration_choreo_status_legend_val', 'Validated') },
+    { dotClass: 'choreo-status-legend-tooltip-dot--danger', label: t('registration_choreo_status_legend_rej', 'Rejected') }
+  ];
+}
+
+function buildChoreoStatusLegendTooltipHtml() {
+  return `
+    <div class="choreo-status-legend-tooltip">
+      ${getChoreoStatusLegendItems().map((item) => `
+        <div class="choreo-status-legend-tooltip-row">
+          <span aria-hidden="true" class="choreo-status-legend-tooltip-dot ${item.dotClass}"></span>
+          <span>${escapeRegistrationTooltipHtml(item.label)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `.trim();
+}
+
+function getChoreoStatusLegendTooltipText() {
+  return getChoreoStatusLegendItems()
+    .map((item) => item.label)
+    .join('. ');
+}
+
+function setChoreoStatusLegendTooltip(element) {
+  if (!element) {
+    return;
+  }
+
+  const tooltipText = getChoreoStatusLegendTooltipText();
+  element.setAttribute('data-bs-toggle', 'tooltip');
+  element.setAttribute('data-bs-placement', 'top');
+  element.setAttribute('data-bs-html', 'true');
+  element.setAttribute('data-bs-title', buildChoreoStatusLegendTooltipHtml());
+  element.setAttribute('aria-label', tooltipText);
+  element.style.cursor = 'help';
+}
+
+function buildChoreoStatusSummaryFromCounts(statusCounts = {}) {
+  const parseCount = (value) => {
+    const parsed = Number.parseInt(`${value ?? ''}`.trim(), 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  return ['CRE', 'PEN', 'VAL', 'REJ']
+    .map((code) => `${code}:${parseCount(statusCounts[code])}`)
+    .join('|');
+}
+
 function createChoreoStatusBadges(status, options = {}) {
   const wrap = document.createElement('div');
   wrap.className = options.className || 'd-flex flex-wrap gap-1';
+  const showTotalBadge = options.showTotalBadge !== false;
 
   const choreoStatuses = parseChoreoStatusSummary(status);
-  const totalChoreoCount = choreoStatuses.reduce((sum, statusItem) => sum + (Number(statusItem.count) || 0), 0);
-  const totalBadge = document.createElement('span');
-  totalBadge.className = 'badge bg-dark';
-  totalBadge.textContent = `${totalChoreoCount}`;
-  wrap.appendChild(totalBadge);
+  const computedTotalChoreoCount = choreoStatuses.reduce((sum, statusItem) => sum + (Number(statusItem.count) || 0), 0);
+  const overrideTotal = Number(options.totalCountOverride);
+  const totalChoreoCount = Number.isFinite(overrideTotal) ? overrideTotal : computedTotalChoreoCount;
+  if (showTotalBadge) {
+    const totalBadge = document.createElement('span');
+    totalBadge.className = 'badge bg-dark';
+    totalBadge.textContent = `${totalChoreoCount}`;
+    wrap.appendChild(totalBadge);
+  }
 
   if (!choreoStatuses.length) {
     const emptyBadge = document.createElement('span');
     emptyBadge.className = 'badge bg-danger';
     emptyBadge.textContent = t('registration_categories_choreo_status_none', 'NO REGISTRATIONS').toUpperCase();
     wrap.appendChild(emptyBadge);
+    if (options.showLegendTooltip !== false) {
+      setChoreoStatusLegendTooltip(wrap);
+    }
     return wrap;
   }
 
@@ -3765,6 +3837,10 @@ function createChoreoStatusBadges(status, options = {}) {
     badge.textContent = badgeInfo.label;
     wrap.appendChild(badge);
   });
+
+  if (options.showLegendTooltip !== false) {
+    setChoreoStatusLegendTooltip(wrap);
+  }
 
   return wrap;
 }
@@ -4099,6 +4175,7 @@ function initRegistrationCategoriesTab() {
     ? bootstrap.Tooltip.getOrCreateInstance(elements.maxOutOfRangeInfo)
     : null;
   let categoryToDelete = null;
+  let categoriesTooltipInstances = [];
   const requiredFields = [
     elements.name,
     elements.minPar,
@@ -4295,6 +4372,7 @@ function initRegistrationCategoriesTab() {
   };
 
   const renderCategories = () => {
+    categoriesTooltipInstances = disposeTooltipInstances(categoriesTooltipInstances);
     tableBody.innerHTML = '';
     const categories = Array.isArray(registrationState.registrationCategories)
       ? registrationState.registrationCategories
@@ -4407,9 +4485,12 @@ function initRegistrationCategoriesTab() {
 
       tableBody.appendChild(row);
     });
+
+    categoriesTooltipInstances = initTooltipInstances(tableBody);
   };
 
   const showCategoriesError = (message) => {
+    categoriesTooltipInstances = disposeTooltipInstances(categoriesTooltipInstances);
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
@@ -4616,6 +4697,10 @@ function initRegistrationCategoriesTab() {
     }
   });
 
+  window.addEventListener('beforeunload', () => {
+    categoriesTooltipInstances = disposeTooltipInstances(categoriesTooltipInstances);
+  });
+
   syncCategoryRequiredFields();
   loadCategories();
 }
@@ -4639,8 +4724,10 @@ function initRegistrationDisciplinesTab() {
   const deleteModal = new bootstrap.Modal(deleteModalEl);
   let disciplineToDelete = null;
   let sortableInstance = null;
+  let disciplinesTooltipInstances = [];
 
   const renderDisciplines = () => {
+    disciplinesTooltipInstances = disposeTooltipInstances(disciplinesTooltipInstances);
     listEl.innerHTML = '';
     const disciplines = Array.isArray(registrationState.registrationDisciplines)
       ? [...registrationState.registrationDisciplines]
@@ -4699,6 +4786,8 @@ function initRegistrationDisciplinesTab() {
       listEl.appendChild(li);
     });
 
+    disciplinesTooltipInstances = initTooltipInstances(listEl);
+
     if (countEl) {
       countEl.textContent = `${disciplines.length}`;
     }
@@ -4747,6 +4836,7 @@ function initRegistrationDisciplinesTab() {
   };
 
   const showDisciplinesError = (message) => {
+    disciplinesTooltipInstances = disposeTooltipInstances(disciplinesTooltipInstances);
     listEl.innerHTML = '';
     const li = document.createElement('li');
     li.className = 'list-group-item text-danger';
@@ -4866,6 +4956,10 @@ function initRegistrationDisciplinesTab() {
   if (elements.confirmDeleteBtn) {
     elements.confirmDeleteBtn.addEventListener('click', deleteDiscipline);
   }
+
+  window.addEventListener('beforeunload', () => {
+    disciplinesTooltipInstances = disposeTooltipInstances(disciplinesTooltipInstances);
+  });
 
   loadDisciplines();
 }
