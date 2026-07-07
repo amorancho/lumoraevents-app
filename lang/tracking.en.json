@@ -96,6 +96,7 @@
   "export_modal_available_competitions": "Available competitions",
   "export_modal_competitions_selected": "competitions selected",
   "export_modal_full_selected": "All finished competitions will be exported.",
+  "export_modal_finished_only_disclaimer": "Only finished competitions can be exported.",
   "export_modal_no_options": "No finished competitions are available to export.",
   "export_modal_select_competition_validation": "Select at least one competition to export.",
   "exporting": "Exporting...",

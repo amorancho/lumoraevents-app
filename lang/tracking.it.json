@@ -97,6 +97,7 @@
   "export_modal_available_competitions": "Competizioni disponibili",
   "export_modal_competitions_selected": "competizioni selezionate",
   "export_modal_full_selected": "Verranno esportate tutte le competizioni finalizzate.",
+  "export_modal_finished_only_disclaimer": "Si possono esportare solo i risultati delle competizioni finalizzate.",
   "export_modal_no_options": "Non ci sono competizioni finalizzate disponibili per l'esportazione.",
   "export_modal_select_competition_validation": "Seleziona almeno una competizione da esportare.",
   "exporting": "Esportazione...",

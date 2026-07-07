@@ -225,9 +225,7 @@ function normalizeCompetitionExportOptions(competitions) {
       name: getCompetitionExportLabel(competition)
     });
     return acc;
-  }, []).sort((left, right) => (
-    String(left?.name || '').localeCompare(String(right?.name || ''), undefined, { sensitivity: 'base' })
-  ));
+  }, []);
 }
 
 function renderClassificationExportOptions(competitions) {
@@ -248,6 +246,9 @@ function renderClassificationExportOptions(competitions) {
   }).join('');
 
   modalBody.innerHTML = `
+    <div class="alert alert-warning py-2 mb-3" role="alert">
+      ${escapeHtml(t('export_modal_finished_only_disclaimer', 'Only finished competitions can be exported.'))}
+    </div>
     <div class="mb-3">
       <div class="form-check">
         <input class="form-check-input js-export-scope-option" type="radio" name="classificationExportScope" id="exportScopeFull" value="FULL" checked>
