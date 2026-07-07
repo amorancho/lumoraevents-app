@@ -1146,13 +1146,26 @@ function initOrganizerDashboard() {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   };
 
-  const getDateKey = (value) => {
-    const parsed = parseDashboardDate(value);
+  const formatDateKeyFromDate = (parsed) => {
     if (!parsed) return '';
     const year = parsed.getFullYear();
     const month = String(parsed.getMonth() + 1).padStart(2, '0');
     const day = String(parsed.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  };
+
+  const getDateKey = (value) => formatDateKeyFromDate(parseDashboardDate(value));
+  const getTimestampDateKey = (value) => {
+    if (!value) return '';
+    if (typeof value === 'string') {
+      const rawValue = value.trim();
+      if (!rawValue) return '';
+      const match = rawValue.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (match) {
+        return match[1];
+      }
+    }
+    return formatDateKeyFromDate(parseDashboardDate(value));
   };
 
   const formatShortDate = (dateKey) => {
@@ -1194,7 +1207,7 @@ function initOrganizerDashboard() {
   const buildDailySeries = (items, options = {}) => {
     const counts = new Map();
     (Array.isArray(items) ? items : []).forEach((item) => {
-      const dateKey = getDateKey(getCreatedAt(item));
+      const dateKey = getTimestampDateKey(getCreatedAt(item));
       if (!dateKey) return;
       counts.set(dateKey, (counts.get(dateKey) || 0) + 1);
     });
