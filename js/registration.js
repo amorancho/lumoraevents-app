@@ -469,8 +469,9 @@ function formatRegistrationSidebarDate(value) {
 function formatRegistrationSidebarRange(startValue, endValue) {
   const startLabel = formatRegistrationSidebarDate(startValue);
   const endLabel = formatRegistrationSidebarDate(endValue);
+  const noDatesLabel = t('registration_sidebar_no_dates', 'No dates available');
 
-  if (startLabel === '-' && endLabel === '-') return '-';
+  if (startLabel === '-' && endLabel === '-') return noDatesLabel;
   if (startLabel === '-') return endLabel;
   if (endLabel === '-') return startLabel;
   return `${startLabel} - ${endLabel}`;
