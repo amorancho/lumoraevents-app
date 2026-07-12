@@ -99,6 +99,14 @@ const REGISTRATION_NAV_ITEMS = [
     icon: 'bi-arrow-repeat',
     labelKey: 'registration_tab_event_sync',
     fallbackLabel: 'Event Synchronization'
+  },
+  {
+    key: 'payments',
+    paneId: 'payments',
+    roles: ['school', 'organizer'],
+    icon: 'bi-cash-stack',
+    labelKey: 'registration_tab_payments',
+    fallbackLabel: 'Payments'
   }
 ];
 const registrationNavigationState = {
@@ -2124,6 +2132,8 @@ function initSchoolTab() {
 function initParticipantsTab(role) {
   const tableBody = document.getElementById('participantsTable');
   const countEl = document.getElementById('participantsCount');
+  const feeSummaryEl = document.getElementById('participantsFeeSummary');
+  const feeCostEl = document.getElementById('participantsFeeCost');
   const emptyEl = document.getElementById('participantsEmpty');
   const addBtn = document.getElementById('addParticipantBtn');
   const importOpenBtn = document.getElementById('importParticipantsOpenBtn');
@@ -2155,6 +2165,9 @@ function initParticipantsTab(role) {
   const registrationsHeader = document.querySelector('th[data-i18n="registration_participants_registrations"]');
   const participantTable = tableBody.closest('table');
   const participantGenderHeader = participantTable?.querySelector('th[data-i18n="registration_participants_gender"]');
+  if (feeSummaryEl) {
+    feeSummaryEl.classList.remove('d-none');
+  }
   if (!allowEdit) {
     if (addBtn) addBtn.classList.add('d-none');
     if (importOpenBtn) importOpenBtn.classList.add('d-none');
@@ -2268,6 +2281,13 @@ function initParticipantsTab(role) {
     } catch (error) {
       return null;
     }
+  };
+
+  const updateParticipantsFeeInfo = () => {
+    if (!feeCostEl) {
+      return;
+    }
+    feeCostEl.textContent = formatRegistrationCurrency(getEvent()?.registrationFeeCost ?? 0);
   };
 
   const normalizeImportPreviewErrors = (value) => {
@@ -3222,6 +3242,7 @@ function initParticipantsTab(role) {
       // Ignore translation loading failures and keep current labels.
     }
     updateParticipantsAgeHeaderTooltip();
+    updateParticipantsFeeInfo();
     renderParticipants();
   };
 
@@ -3237,10 +3258,12 @@ function initParticipantsTab(role) {
 
   window.addEventListener('registration:config-updated', () => {
     updateParticipantsAgeHeaderTooltip();
+    updateParticipantsFeeInfo();
     renderParticipants();
   });
 
   updateParticipantsAgeHeaderTooltip();
+  updateParticipantsFeeInfo();
   syncParticipantsGenderUi();
   loadParticipantSchools();
   loadParticipants();
@@ -3453,23 +3476,27 @@ function getRegistrationParticipantsTotal(registration) {
 }
 
 function getRegistrationTotalAmountValue(registration, options = {}) {
-  const directAmount = normalizeRegistrationNumber(
-    registration?.total_amount
-    ?? registration?.totalAmount
-    ?? registration?.amount_total
-  );
-  if (directAmount !== null) {
-    return directAmount;
-  }
-
   let category = null;
   if (options.categoryById instanceof Map) {
     category = options.categoryById.get(`${getRegistrationCategoryIdValue(registration)}`) || null;
   }
 
-  const categoryPrice = normalizeRegistrationNumber(category?.registration_price) ?? 0;
-  const feeCost = normalizeRegistrationNumber(options.registrationFeeCost ?? getEvent()?.registrationFeeCost) ?? 0;
-  return (feeCost + categoryPrice) * getRegistrationParticipantsTotal(registration);
+  const categoryPrice = normalizeRegistrationNumber(
+    category?.registration_price
+    ?? registration?.reg_category?.registration_price
+    ?? registration?.category?.registration_price
+    ?? registration?.registration_price
+  );
+  if (categoryPrice !== null) {
+    return categoryPrice * getRegistrationParticipantsTotal(registration);
+  }
+
+  const directAmount = normalizeRegistrationNumber(
+    registration?.total_amount
+    ?? registration?.totalAmount
+    ?? registration?.amount_total
+  );
+  return directAmount ?? 0;
 }
 
 function buildRegistrationFinanceMetrics(registrations, options = {}) {
@@ -4987,9 +5014,6 @@ function initOrganizerRegistrationsTab() {
   const tableBody = document.getElementById('orgRegistrationsTable');
   const emptyEl = document.getElementById('orgRegistrationsEmpty');
   const countEl = document.getElementById('orgRegistrationsCount');
-  const totalAmountEl = document.getElementById('orgRegistrationsTotalAmount');
-  const paidAmountEl = document.getElementById('orgRegistrationsPaidAmount');
-  const pendingAmountEl = document.getElementById('orgRegistrationsPendingAmount');
   const filterForm = document.getElementById('orgRegistrationsFilters');
   const filterSchool = document.getElementById('orgRegistrationsFilterSchool');
   const filterStatus = document.getElementById('orgRegistrationsFilterStatus');
@@ -5032,8 +5056,6 @@ function initOrganizerRegistrationsTab() {
     statusBadge: document.getElementById('registrationStatusBadge'),
     musicStatusWrapper: document.getElementById('registrationMusicStatusWrapper'),
     musicStatusBadge: document.getElementById('registrationMusicStatusBadge'),
-    paymentStatusWrapper: document.getElementById('registrationPaymentStatusWrapper'),
-    paymentStatusBadge: document.getElementById('registrationPaymentStatusBadge'),
     totalAmountWrapper: document.getElementById('registrationTotalAmountWrapper'),
     totalAmountValue: document.getElementById('registrationTotalAmountValue'),
     rejectWrapper: document.getElementById('registrationRejectReasonWrapper'),
@@ -5173,24 +5195,25 @@ function initOrganizerRegistrationsTab() {
   };
 
   const getRegistrationTotalAmount = (registration) => {
+    const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+    const category = categoryById.get(`${categoryId}`) || null;
+    const categoryPrice = normalizeNumber(
+      category?.registration_price
+      ?? registration?.reg_category?.registration_price
+      ?? registration?.category?.registration_price
+      ?? registration?.registration_price
+    );
+    if (categoryPrice !== null) {
+      return categoryPrice * getParticipantsCount(registration);
+    }
+
     const directAmount = normalizeNumber(
       registration?.total_amount
       ?? registration?.totalAmount
       ?? registration?.amount_total
     );
-
-    if (directAmount !== null) {
-      return directAmount;
-    }
-
-    const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
-    const category = categoryById.get(`${categoryId}`) || null;
-    const categoryPrice = normalizeNumber(category?.registration_price) ?? 0;
-    const feeCost = normalizeNumber(getEvent()?.registrationFeeCost) ?? 0;
-    return (feeCost + categoryPrice) * getParticipantsCount(registration);
+    return directAmount ?? 0;
   };
-
-  const isPaymentValidated = (registration) => isRegistrationFlagEnabled(registration?.payment_validated);
 
   const safeJson = async (res) => {
     try {
@@ -5771,7 +5794,6 @@ function initOrganizerRegistrationsTab() {
       modalElements.statusWrapper.classList.add('d-none');
       if (modalElements.rejectWrapper) modalElements.rejectWrapper.classList.add('d-none');
       if (modalElements.musicStatusWrapper) modalElements.musicStatusWrapper.classList.add('d-none');
-      if (modalElements.paymentStatusWrapper) modalElements.paymentStatusWrapper.classList.add('d-none');
       if (modalElements.totalAmountWrapper) modalElements.totalAmountWrapper.classList.add('d-none');
       return;
     }
@@ -5787,15 +5809,6 @@ function initOrganizerRegistrationsTab() {
         const musicInfo = getRegistrationMusicBadgeInfo(registration || {});
         modalElements.musicStatusBadge.className = `badge ${musicInfo.className}`;
         modalElements.musicStatusBadge.textContent = musicInfo.label;
-      }
-    }
-
-    if (modalElements.paymentStatusWrapper && modalElements.paymentStatusBadge) {
-      modalElements.paymentStatusWrapper.classList.toggle('d-none', !showExtended);
-      if (showExtended) {
-        const paymentInfo = getRegistrationPaymentBadgeInfo(registration || {});
-        modalElements.paymentStatusBadge.className = `badge ${paymentInfo.className}`;
-        modalElements.paymentStatusBadge.textContent = paymentInfo.label;
       }
     }
 
@@ -6090,14 +6103,9 @@ function initOrganizerRegistrationsTab() {
     modalEl.dataset.viewOnly = 'true';
     setModalViewMode(true);
     setAudioSectionVisible(true);
-    setPaymentSectionVisible(true);
     resetAudioInfo();
-    resetPaymentInfo();
     updateAudioValidateButtonState(data);
-    setPaymentInfo(data, data);
-    setPaymentActions(data.id, extractPaymentInfo(data));
     await fetchRegistrationAudioInfo(data.id);
-    await fetchRegistrationPaymentInfo(data.id);
   };
 
   const validateMusicUpload = async () => {
@@ -6178,25 +6186,8 @@ function initOrganizerRegistrationsTab() {
     disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
     const registrations = applyFilters();
-    const totalAmount = registrations.reduce((sum, registration) => sum + getRegistrationTotalAmount(registration), 0);
-    const paidAmount = registrations.reduce((sum, registration) => (
-      isPaymentValidated(registration) ? sum + getRegistrationTotalAmount(registration) : sum
-    ), 0);
-    const pendingAmount = registrations.reduce((sum, registration) => (
-      isPaymentValidated(registration) ? sum : sum + getRegistrationTotalAmount(registration)
-    ), 0);
-
     if (countEl) {
       countEl.textContent = `${registrations.length}`;
-    }
-    if (totalAmountEl) {
-      totalAmountEl.textContent = formatCurrencyDisplay(totalAmount);
-    }
-    if (paidAmountEl) {
-      paidAmountEl.textContent = formatCurrencyDisplay(paidAmount);
-    }
-    if (pendingAmountEl) {
-      pendingAmountEl.textContent = formatCurrencyDisplay(pendingAmount);
     }
 
     if (!registrations.length) {
@@ -6284,15 +6275,6 @@ function initOrganizerRegistrationsTab() {
       statusCell.appendChild(statusBadge);
       row.appendChild(statusCell);
 
-      const paymentCell = document.createElement('td');
-      paymentCell.className = 'text-center';
-      const paymentInfo = getRegistrationPaymentBadgeInfo(registration);
-      const paymentBadge = document.createElement('span');
-      paymentBadge.className = `badge ${paymentInfo.className}`;
-      paymentBadge.textContent = paymentInfo.label;
-      paymentCell.appendChild(paymentBadge);
-      row.appendChild(paymentCell);
-
       const musicCell = document.createElement('td');
       musicCell.className = 'text-center';
       const musicInfo = getRegistrationMusicBadgeInfo(registration);
@@ -6377,7 +6359,7 @@ function initOrganizerRegistrationsTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 13;
+    cell.colSpan = 12;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -6386,9 +6368,6 @@ function initOrganizerRegistrationsTab() {
     if (countEl) {
       countEl.textContent = '0';
     }
-    if (totalAmountEl) totalAmountEl.textContent = formatCurrencyDisplay(0);
-    if (paidAmountEl) paidAmountEl.textContent = formatCurrencyDisplay(0);
-    if (pendingAmountEl) pendingAmountEl.textContent = formatCurrencyDisplay(0);
   };
 
   const loadRegistrations = async () => {

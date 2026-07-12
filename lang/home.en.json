@@ -6,7 +6,7 @@
   "sch_access": "Schedule and Tracking",
   "sta_access": "Statistics",
   "res_access": "Results",
-  "reg_access": "Participant Registration",
+  "reg_access": "Registrations",
   "org_access_sub": "Exclusive panel to configure the event.",
   "jud_access_sub": "Exclusive panel for the event's jury.",
   "par_access_sub": "Explore the participants of the event.",

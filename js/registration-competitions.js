@@ -2,9 +2,6 @@
   const tableBody = document.getElementById('registrationsTable');
   const countEl = document.getElementById('registrationsCount');
   const feeCostEl = document.getElementById('registrationsFeeCost');
-  const totalAmountEl = document.getElementById('registrationsTotalAmount');
-  const paidAmountEl = document.getElementById('registrationsPaidAmount');
-  const pendingAmountEl = document.getElementById('registrationsPendingAmount');
   const emptyEl = document.getElementById('registrationsEmpty');
   const createBtn = document.getElementById('createRegistrationBtn');
   const copyTsvBtn = document.getElementById('competitionsCopyTsvBtn');
@@ -197,8 +194,6 @@
 
   const getCategoryRegistrationPrice = (category) => normalizeNumber(category?.registration_price) ?? 0;
 
-  const getCategoryPricePerPerson = (category) => getEventFeeCost() + getCategoryRegistrationPrice(category);
-
   const getSelectedCategory = () => {
     const categoryId = elements.category ? elements.category.value : '';
     if (!categoryId) return null;
@@ -237,24 +232,23 @@
   };
 
   const getRegistrationTotalAmount = (registration) => {
+    const category = categoryById.get(`${getRegistrationCategoryId(registration)}`) || null;
+    const categoryPrice = normalizeNumber(
+      category?.registration_price
+      ?? registration?.reg_category?.registration_price
+      ?? registration?.category?.registration_price
+      ?? registration?.registration_price
+    );
+    if (categoryPrice !== null) {
+      return categoryPrice * getRegistrationParticipantsCount(registration);
+    }
+
     const directAmount = normalizeNumber(
       registration?.total_amount
       ?? registration?.totalAmount
       ?? registration?.amount_total
     );
-    if (directAmount !== null) {
-      return directAmount;
-    }
-
-    const category = categoryById.get(`${getRegistrationCategoryId(registration)}`) || null;
-    return getCategoryPricePerPerson(category) * getRegistrationParticipantsCount(registration);
-  };
-
-  const isPaymentValidated = (registration) => {
-    if (typeof isRegistrationFlagEnabled === 'function') {
-      return isRegistrationFlagEnabled(registration?.payment_validated);
-    }
-    return registration?.payment_validated === true || Number(registration?.payment_validated) === 1;
+    return directAmount ?? 0;
   };
 
   const isIndividualCategory = (category) => {
@@ -1682,28 +1676,11 @@
     const registrations = Array.isArray(registrationState.registrations)
       ? registrationState.registrations
       : [];
-    const totalAmount = registrations.reduce((sum, registration) => sum + getRegistrationTotalAmount(registration), 0);
-    const paidAmount = registrations.reduce((sum, registration) => (
-      isPaymentValidated(registration) ? sum + getRegistrationTotalAmount(registration) : sum
-    ), 0);
-    const pendingAmount = registrations.reduce((sum, registration) => (
-      isPaymentValidated(registration) ? sum : sum + getRegistrationTotalAmount(registration)
-    ), 0);
-
     if (countEl) {
       countEl.textContent = `${registrations.length}`;
     }
     if (feeCostEl) {
       feeCostEl.textContent = formatCurrencyDisplay(getEventFeeCost());
-    }
-    if (totalAmountEl) {
-      totalAmountEl.textContent = formatCurrencyDisplay(totalAmount);
-    }
-    if (paidAmountEl) {
-      paidAmountEl.textContent = formatCurrencyDisplay(paidAmount);
-    }
-    if (pendingAmountEl) {
-      pendingAmountEl.textContent = formatCurrencyDisplay(pendingAmount);
     }
 
     if (!registrations.length) {
@@ -1788,20 +1765,6 @@
       statusCell.appendChild(statusBadge);
       row.appendChild(statusCell);
 
-      const paymentCell = document.createElement('td');
-      paymentCell.className = 'text-center';
-      const paymentInfo = typeof getRegistrationPaymentBadgeInfo === 'function'
-        ? getRegistrationPaymentBadgeInfo(registration)
-        : {
-          label: `${registration?.payment_status ?? registration?.pay_status ?? '-'}`.trim() || '-',
-          className: 'bg-secondary-subtle text-secondary-emphasis'
-        };
-      const paymentBadge = document.createElement('span');
-      paymentBadge.className = `badge ${paymentInfo.className}`;
-      paymentBadge.textContent = paymentInfo.label;
-      paymentCell.appendChild(paymentBadge);
-      row.appendChild(paymentCell);
-
       const musicCell = document.createElement('td');
       musicCell.className = 'text-center';
       const musicInfo = getRegistrationMusicBadgeInfo(registration);
@@ -1835,14 +1798,6 @@
       audioBtn.setAttribute('aria-label', audioBtn.title);
       audioBtn.innerHTML = '<i class="bi bi-music-note-beamed"></i>';
 
-      const paymentBtn = document.createElement('button');
-      paymentBtn.type = 'button';
-      paymentBtn.className = 'btn btn-outline-dark btn-sm btn-registration-payment';
-      paymentBtn.dataset.id = registration.id;
-      paymentBtn.title = t('registration_payment_manage', 'Gestionar pago');
-      paymentBtn.setAttribute('aria-label', paymentBtn.title);
-      paymentBtn.innerHTML = '<i class="bi bi-cash-coin"></i>';
-
       const membersBtn = document.createElement('button');
       membersBtn.type = 'button';
       membersBtn.className = 'btn btn-outline-secondary btn-sm btn-members-registration';
@@ -1875,7 +1830,6 @@
       deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
 
       actionGroup.appendChild(editBtn);
-      actionGroup.appendChild(paymentBtn);
       actionGroup.appendChild(audioBtn);
       actionGroup.appendChild(membersBtn);
       actionGroup.appendChild(confirmBtn);
@@ -1893,16 +1847,13 @@
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 11;
+    cell.colSpan = 10;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
     tableBody.appendChild(row);
     if (countEl) countEl.textContent = '0';
     if (feeCostEl) feeCostEl.textContent = formatCurrencyDisplay(getEventFeeCost());
-    if (totalAmountEl) totalAmountEl.textContent = formatCurrencyDisplay(0);
-    if (paidAmountEl) paidAmountEl.textContent = formatCurrencyDisplay(0);
-    if (pendingAmountEl) pendingAmountEl.textContent = formatCurrencyDisplay(0);
     if (emptyEl) emptyEl.classList.add('d-none');
   };
 
