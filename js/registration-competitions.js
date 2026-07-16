@@ -1,7 +1,6 @@
 ﻿function initCompetitionsTab() {
   const tableBody = document.getElementById('registrationsTable');
   const countEl = document.getElementById('registrationsCount');
-  const feeCostEl = document.getElementById('registrationsFeeCost');
   const emptyEl = document.getElementById('registrationsEmpty');
   const createBtn = document.getElementById('createRegistrationBtn');
   const copyTsvBtn = document.getElementById('competitionsCopyTsvBtn');
@@ -190,8 +189,6 @@
     }).format(amount);
   };
 
-  const getEventFeeCost = () => normalizeNumber(getEvent()?.registrationFeeCost) ?? 0;
-
   const getCategoryRegistrationPrice = (category) => normalizeNumber(category?.registration_price) ?? 0;
 
   const getSelectedCategory = () => {
@@ -229,6 +226,14 @@
     if (Array.isArray(registration.members)) return registration.members.length;
     if (Array.isArray(registration.participants)) return registration.participants.length;
     return 0;
+  };
+
+  const formatParticipantsCountLabel = (registration) => {
+    const count = getRegistrationParticipantsCount(registration);
+    const suffix = count === 1
+      ? t('registration_competitions_member_single', 'miembro')
+      : t('registration_competitions_member_plural', 'miembros');
+    return `${count} ${suffix}`;
   };
 
   const getRegistrationTotalAmount = (registration) => {
@@ -361,9 +366,7 @@
       </div>
     `;
 
-    const feeCost = getEventFeeCost();
     const categoryPrice = getCategoryRegistrationPrice(category);
-    const feePerGroupLabel = t('registration_competitions_rule_fee_per_group', 'Fee por grupo');
     const pricePerPaxLabel = t('registration_categories_field_price', 'Precio por pax');
     const economicsInfo = `
       <div class="registration-category-info-card registration-category-info-card--economics">
@@ -372,7 +375,6 @@
           <span>${economicsLabel}</span>
         </div>
         <div class="registration-category-info-values">
-          <span><strong>${feePerGroupLabel}:</strong> ${formatCurrencyDisplay(feeCost)}</span>
           <span><strong>${pricePerPaxLabel}:</strong> ${formatCurrencyDisplay(categoryPrice)}</span>
         </div>
       </div>
@@ -1348,7 +1350,7 @@
     if (elements.choreographyName) elements.choreographyName.value = '';
     if (elements.participantsCountAddon) {
       elements.participantsCountAddon.classList.add('d-none');
-      elements.participantsCountAddon.textContent = '0 miembros';
+      elements.participantsCountAddon.textContent = formatParticipantsCountLabel(null);
     }
     if (elements.choreographer) elements.choreographer.value = '';
     if (elements.category) elements.category.value = '';
@@ -1425,6 +1427,10 @@
 
     elements.id.value = registrationData.id || '';
     elements.choreographyName.value = registrationData.name || '';
+    if (elements.participantsCountAddon) {
+      elements.participantsCountAddon.textContent = formatParticipantsCountLabel(registrationData);
+      elements.participantsCountAddon.classList.remove('d-none');
+    }
     elements.choreographer.value = registrationData.choreographer || '';
     elements.category.value = registrationData.reg_category_id ?? registrationData.category_id ?? registration.reg_category_id ?? '';
     elements.style.value = registrationData.reg_style_id ?? registrationData.style_id ?? registration.reg_style_id ?? '';
@@ -1679,9 +1685,6 @@
     if (countEl) {
       countEl.textContent = `${registrations.length}`;
     }
-    if (feeCostEl) {
-      feeCostEl.textContent = formatCurrencyDisplay(getEventFeeCost());
-    }
 
     if (!registrations.length) {
       if (emptyEl) emptyEl.classList.remove('d-none');
@@ -1853,7 +1856,6 @@
     row.appendChild(cell);
     tableBody.appendChild(row);
     if (countEl) countEl.textContent = '0';
-    if (feeCostEl) feeCostEl.textContent = formatCurrencyDisplay(getEventFeeCost());
     if (emptyEl) emptyEl.classList.add('d-none');
   };
 
@@ -2420,7 +2422,7 @@
     updateRegistrationTotalAmountInfo(null);
     if (elements.participantsCountAddon) {
       elements.participantsCountAddon.classList.add('d-none');
-      elements.participantsCountAddon.textContent = '0 miembros';
+      elements.participantsCountAddon.textContent = formatParticipantsCountLabel(null);
     }
     loadRegistrations();
   });
