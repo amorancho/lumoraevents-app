@@ -3,6 +3,7 @@ const registrationState = {
   participants: [],
   registrations: [],
   organizerRegistrations: [],
+  paymentDocuments: [],
   schools: [],
   registrationConfig: {
     categories: [],
@@ -93,20 +94,20 @@ const REGISTRATION_NAV_ITEMS = [
     fallbackLabel: 'Disciplines/Styles'
   },
   {
+    key: 'payments',
+    paneId: 'payments',
+    roles: ['school', 'organizer'],
+    icon: 'bi-cash-stack',
+    labelKey: 'registration_tab_payments_invoices',
+    fallbackLabel: 'Payments / Invoices'
+  },
+  {
     key: 'event-sync',
     paneId: 'event-sync',
     roles: ['organizer'],
     icon: 'bi-arrow-repeat',
     labelKey: 'registration_tab_event_sync',
     fallbackLabel: 'Event Synchronization'
-  },
-  {
-    key: 'payments',
-    paneId: 'payments',
-    roles: ['school', 'organizer'],
-    icon: 'bi-cash-stack',
-    labelKey: 'registration_tab_payments',
-    fallbackLabel: 'Payments'
   }
 ];
 const registrationNavigationState = {
@@ -1089,9 +1090,11 @@ function initOrganizerDashboard() {
     topRegistrationSchools: document.getElementById('organizerDashboardTopRegistrationSchoolsChart')
   };
   const chartInstances = {};
+  const paymentDocumentsEndpoint = '/api/registrations/payments';
   let renderQueued = false;
   let needsChartRefresh = true;
   let currentMetrics = null;
+  let activePaymentDocumentsRequestId = 0;
 
   const reorderDashboardPanels = () => {
     if (!panelsContainer) {
@@ -1312,6 +1315,156 @@ function initOrganizerDashboard() {
     };
   };
 
+  const safeJson = async (res) => {
+    try {
+      return await res.json();
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const getParticipantRegistrationCount = (participant) => {
+    const directCount = Number(
+      participant?.registrations_count
+      ?? participant?.registration_count
+      ?? participant?.num_registrations
+      ?? participant?.registrationsCount
+    );
+    if (Number.isFinite(directCount)) {
+      return { hasInfo: true, count: directCount };
+    }
+
+    if (Object.prototype.hasOwnProperty.call(participant || {}, 'reg_cat_sty')
+      || Object.prototype.hasOwnProperty.call(participant || {}, 'regCatSty')) {
+      const rawValue = `${participant?.reg_cat_sty ?? participant?.regCatSty ?? ''}`.trim();
+      if (!rawValue || rawValue.toUpperCase() === 'NULL') {
+        return { hasInfo: true, count: 0 };
+      }
+
+      return {
+        hasInfo: true,
+        count: rawValue.split('|').map((value) => value.trim()).filter(Boolean).length
+      };
+    }
+
+    return { hasInfo: false, count: 0 };
+  };
+
+  const getRegisteredParticipantsCount = (registrations, participants) => {
+    if (participants.length) {
+      let hasParticipantInfo = false;
+      const count = participants.reduce((total, participant) => {
+        const info = getParticipantRegistrationCount(participant);
+        hasParticipantInfo = hasParticipantInfo || info.hasInfo;
+        return total + (info.count > 0 ? 1 : 0);
+      }, 0);
+
+      if (hasParticipantInfo) {
+        return count;
+      }
+    }
+
+    const participantIds = new Set();
+    registrations.forEach((registration) => {
+      const members = Array.isArray(registration?.members)
+        ? registration.members
+        : (Array.isArray(registration?.participants) ? registration.participants : []);
+
+      members.forEach((member) => {
+        const memberId = member?.id ?? member?.participant_id ?? member?.participantId;
+        if (memberId !== undefined && memberId !== null && `${memberId}` !== '') {
+          participantIds.add(`${memberId}`);
+        }
+      });
+    });
+
+    if (participantIds.size) {
+      return participantIds.size;
+    }
+
+    return registrations.reduce(
+      (sum, registration) => sum + getRegistrationParticipantsTotal(registration),
+      0
+    );
+  };
+
+  const buildPaymentDocumentsListUrl = () => {
+    const params = new URLSearchParams();
+    const eventIdValue = getEvent()?.id;
+    if (eventIdValue) {
+      params.set('event_id', eventIdValue);
+    }
+    return `${API_BASE_URL}${paymentDocumentsEndpoint}?${params.toString()}`;
+  };
+
+  const setPaymentDocumentsState = (rows) => {
+    const normalizedRows = Array.isArray(rows) ? rows : [];
+    registrationState.paymentDocuments = normalizedRows;
+    window.dispatchEvent(new CustomEvent('registration:payment-documents-updated', {
+      detail: { rows: normalizedRows }
+    }));
+  };
+
+  const fetchPaymentDocuments = async () => {
+    const eventIdValue = getEvent()?.id;
+    if (!eventIdValue) {
+      setPaymentDocumentsState([]);
+      return;
+    }
+
+    const requestId = ++activePaymentDocumentsRequestId;
+
+    try {
+      const res = await fetch(buildPaymentDocumentsListUrl());
+      const data = await safeJson(res);
+
+      if (!res.ok) {
+        throw new Error(data?.error || data?.message || 'Error loading payment documents.');
+      }
+
+      if (requestId !== activePaymentDocumentsRequestId) {
+        return;
+      }
+
+      setPaymentDocumentsState(Array.isArray(data) ? data : []);
+    } catch (error) {
+      if (requestId !== activePaymentDocumentsRequestId) {
+        return;
+      }
+
+      setPaymentDocumentsState([]);
+    }
+  };
+
+  const buildDashboardFinanceMetrics = (registrations, participants, categoryById) => {
+    const registrationFinance = buildRegistrationFinanceMetrics(registrations, { categoryById });
+    const registeredParticipantsCount = getRegisteredParticipantsCount(registrations, participants);
+    const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
+    const totalFee = registrationFeeCost * registeredParticipantsCount;
+    const paymentRows = (Array.isArray(registrationState.paymentDocuments) ? registrationState.paymentDocuments : [])
+      .filter((row) => `${row?.payment_type ?? ''}`.trim().toUpperCase() === 'PAY');
+    const validatedPayments = paymentRows.filter((row) => `${row?.status ?? ''}`.trim().toUpperCase() === 'VAL');
+    const pendingValidationPayments = paymentRows.filter((row) => {
+      const status = `${row?.status ?? ''}`.trim().toUpperCase();
+      return status === 'PEN' || status === 'REJ';
+    });
+    const paidAmount = validatedPayments.reduce(
+      (sum, row) => sum + (normalizeRegistrationNumber(row?.amount) ?? 0),
+      0
+    );
+    const totalAmount = totalFee + registrationFinance.totalAmount;
+
+    return {
+      totalAmount,
+      paidAmount,
+      pendingAmount: totalAmount - paidAmount,
+      pendingValidationPaymentsCount: pendingValidationPayments.length,
+      registeredParticipantsCount,
+      totalRegistrationsCount: registrationFinance.totalRegistrationsCount,
+      validatedPaymentsCount: validatedPayments.length
+    };
+  };
+
   const renderChart = (key, element, options) => {
     if (!element || typeof ApexCharts === 'undefined') {
       return;
@@ -1332,20 +1485,20 @@ function initOrganizerDashboard() {
     if (statElements.statusPen) statElements.statusPen.textContent = formatInteger(metrics.status.PEN);
     if (statElements.statusVal) statElements.statusVal.textContent = formatInteger(metrics.status.VAL);
     if (statElements.statusRej) statElements.statusRej.textContent = formatInteger(metrics.status.REJ);
-    if (statElements.totalAmount) statElements.totalAmount.textContent = formatRegistrationCurrency(metrics.finance.totalAmount);
+    if (statElements.totalAmount) statElements.totalAmount.textContent = formatRegistrationCurrency(metrics.dashboardFinance.totalAmount);
     if (statElements.totalAmountMeta) {
-      statElements.totalAmountMeta.textContent = `${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
+      statElements.totalAmountMeta.textContent = `${formatInteger(metrics.dashboardFinance.registeredParticipantsCount)} ${t('registration_dashboard_kpi_participants', 'Participants')} / ${formatInteger(metrics.dashboardFinance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
-    if (statElements.paidAmount) statElements.paidAmount.textContent = formatRegistrationCurrency(metrics.finance.paidAmount);
+    if (statElements.paidAmount) statElements.paidAmount.textContent = formatRegistrationCurrency(metrics.dashboardFinance.paidAmount);
     if (statElements.paidAmountMeta) {
-      statElements.paidAmountMeta.textContent = `${formatInteger(metrics.finance.paidRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
+      statElements.paidAmountMeta.textContent = `${formatInteger(metrics.dashboardFinance.validatedPaymentsCount)} ${t('registration_payments_validated', 'Validated payments')}`;
     }
-    if (statElements.pendingAmount) statElements.pendingAmount.textContent = formatRegistrationCurrency(metrics.finance.pendingAmount);
+    if (statElements.pendingAmount) statElements.pendingAmount.textContent = formatRegistrationCurrency(metrics.dashboardFinance.pendingAmount);
     if (statElements.pendingAmountMeta) {
-      statElements.pendingAmountMeta.textContent = `${formatInteger(metrics.finance.pendingRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
+      statElements.pendingAmountMeta.textContent = `${formatInteger(metrics.dashboardFinance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
     if (statElements.pendingValidationPayments) {
-      statElements.pendingValidationPayments.textContent = formatInteger(metrics.finance.pendingValidationPaymentsCount);
+      statElements.pendingValidationPayments.textContent = formatInteger(metrics.dashboardFinance.pendingValidationPaymentsCount);
     }
 
     const showListLabel = t('registration_dashboard_show_list', 'Show list');
@@ -1466,6 +1619,7 @@ function initOrganizerDashboard() {
       totalParticipants: participants.length,
       totalRegistrations: registrations.length,
       finance: buildRegistrationFinanceMetrics(registrations, { categoryById: categoriesById }),
+      dashboardFinance: buildDashboardFinanceMetrics(registrations, participants, categoriesById),
       categoriesWithoutRegistrations: categories.filter((category) => !categoryIdsWithRegistrations.has(`${category.id}`)).length,
       stylesWithoutRegistrations: styles.filter((style) => !styleIdsWithRegistrations.has(`${style.id}`)).length,
       categoriesWithoutRegistrationItems: sortDashboardItems(
@@ -1718,7 +1872,11 @@ function initOrganizerDashboard() {
 
   window.addEventListener('registration:schools-updated', scheduleRender);
   window.addEventListener('registration:participants-updated', scheduleRender);
-  window.addEventListener('registration:organizer-registrations-updated', scheduleRender);
+  window.addEventListener('registration:organizer-registrations-updated', () => {
+    fetchPaymentDocuments();
+    scheduleRender();
+  });
+  window.addEventListener('registration:payment-documents-updated', scheduleRender);
   window.addEventListener('registration:config-updated', scheduleRender);
   statElements.categoriesWithoutAction?.addEventListener('click', () => openMissingItemsModal('categories'));
   statElements.stylesWithoutAction?.addEventListener('click', () => openMissingItemsModal('styles'));
@@ -1726,9 +1884,11 @@ function initOrganizerDashboard() {
     if (event?.detail?.key !== 'dashboard') {
       return;
     }
+    fetchPaymentDocuments();
     window.setTimeout(scheduleRender, 0);
   });
 
+  fetchPaymentDocuments();
   scheduleRender();
 }
 
@@ -5358,40 +5518,14 @@ function initOrganizerRegistrationsTab() {
   };
 
   const extractPaymentInfo = (data) => {
-    const nestedPayment = data?.payment && typeof data.payment === 'object'
-      ? data.payment
-      : null;
-    const hasDirectPaymentRecord = Boolean(
-      data?.original_name || data?.file_url || data?.download_url || data?.mime_type
-    );
-    const fallbackStatus = typeof getRegistrationPaymentBadgeInfo === 'function'
-      ? getRegistrationPaymentBadgeInfo(data || {}).label
-      : '';
-    const status = data?.payment_status
-      || data?.pay_status
-      || nestedPayment?.status
-      || data?.payment_state
-      || fallbackStatus;
-    const name = data?.payment_file_name
-      || data?.payment_original_name
-      || data?.payment_pdf_name
-      || nestedPayment?.original_name
-      || nestedPayment?.name
-      || (hasDirectPaymentRecord ? (data?.original_name || '') : '')
-      || '';
-    const size = normalizeNumber(
-      data?.payment_file_size
-      ?? data?.payment_size
-      ?? nestedPayment?.size
-      ?? (hasDirectPaymentRecord ? (data?.size ?? null) : null)
-      ?? null
-    );
-    const hasFile = Boolean(
-      name
-      || nestedPayment?.file_url
-      || nestedPayment?.download_url
-      || (hasDirectPaymentRecord ? (data?.file_url || data?.download_url || data?.url) : '')
-    );
+    if (!data || typeof data !== 'object') {
+      return { status: '', name: '', size: null, hasFile: false };
+    }
+
+    const status = typeof data.status === 'string' ? data.status : '';
+    const name = typeof data.original_name === 'string' ? data.original_name : '';
+    const size = normalizeNumber(data.size);
+    const hasFile = Boolean(name || data.file_url);
 
     return { status, name, size, hasFile };
   };
@@ -5603,43 +5737,11 @@ function initOrganizerRegistrationsTab() {
       }
       const data = await safeJson(res);
       if (!data) {
-        updatePaymentActionButtonState(detailRegistration, extractPaymentInfo(detailRegistration || {}));
+        updatePaymentActionButtonState(detailRegistration, extractPaymentInfo(null));
         return;
       }
-      const registrationSnapshot = detailRegistration || {};
-      const paymentViewData = {
-        ...registrationSnapshot,
-        payment: {
-          ...(registrationSnapshot.payment && typeof registrationSnapshot.payment === 'object'
-            ? registrationSnapshot.payment
-            : {}),
-          ...data
-        },
-        payment_file_name: data?.original_name
-          || data?.payment_file_name
-          || registrationSnapshot.payment_file_name
-          || '',
-        payment_original_name: data?.original_name
-          || data?.payment_original_name
-          || registrationSnapshot.payment_original_name
-          || '',
-        payment_file_size: data?.size
-          ?? data?.payment_file_size
-          ?? registrationSnapshot.payment_file_size
-          ?? null,
-        payment_size: data?.size
-          ?? data?.payment_size
-          ?? registrationSnapshot.payment_size
-          ?? null,
-        payment_status: data?.payment_status
-          || data?.pay_status
-          || registrationSnapshot.payment_status
-          || '',
-        file_url: data?.file_url || registrationSnapshot.file_url || '',
-        download_url: data?.download_url || registrationSnapshot.download_url || ''
-      };
-      const paymentInfo = extractPaymentInfo(paymentViewData);
-      setPaymentInfo(paymentViewData, registrationSnapshot);
+      const paymentInfo = extractPaymentInfo(data);
+      setPaymentInfo(data, detailRegistration);
       setPaymentActions(registrationId, paymentInfo);
     } catch (err) {
       showMessageModal(err.message || t('registration_payment_load_error', 'Error al cargar el pago.'), t('error_title', 'Error'));

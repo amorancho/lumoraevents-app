@@ -405,36 +405,16 @@
   };
 
   const extractPaymentInfo = (data) => {
-    const nestedPayment = data?.payment && typeof data.payment === 'object'
-      ? data.payment
-      : null;
-    const hasDirectPaymentRecord = Boolean(
-      data?.original_name || data?.file_url || data?.download_url || data?.mime_type
-    );
-    const fallbackStatus = typeof getRegistrationPaymentBadgeInfo === 'function'
-      ? getRegistrationPaymentBadgeInfo(data || {}).label
-      : '';
-    const status = data?.payment_status
-      || data?.pay_status
-      || nestedPayment?.status
-      || data?.payment_state
-      || fallbackStatus;
-    const name = data?.payment_file_name
-      || data?.payment_original_name
-      || data?.payment_pdf_name
-      || nestedPayment?.original_name
-      || nestedPayment?.name
-      || (hasDirectPaymentRecord ? (data?.original_name || '') : '')
-      || '';
-    const size = normalizeNumber(
-      data?.payment_file_size
-      ?? data?.payment_size
-      ?? nestedPayment?.size
-      ?? (hasDirectPaymentRecord ? (data?.size ?? null) : null)
-      ?? null
-    );
+    if (!data || typeof data !== 'object') {
+      return { status: '', name: '', size: null, hasFile: false };
+    }
 
-    return { status, name, size };
+    const status = typeof data.status === 'string' ? data.status : '';
+    const name = typeof data.original_name === 'string' ? data.original_name : '';
+    const size = normalizeNumber(data.size);
+    const hasFile = Boolean(name || data.file_url);
+
+    return { status, name, size, hasFile };
   };
 
   const setAudioSectionVisible = (visible) => {
@@ -705,10 +685,10 @@
 
   const setRemotePaymentInfo = (info = null) => {
     const paymentInfo = extractPaymentInfo(info);
-    paymentState.existingName = paymentInfo.name || '';
+    paymentState.existingName = paymentInfo.name;
     paymentState.existingSize = paymentInfo.size;
-    paymentState.existingStatus = paymentInfo.status || '';
-    paymentState.hasRemote = Boolean(paymentState.existingName || info?.file_url);
+    paymentState.existingStatus = paymentInfo.status;
+    paymentState.hasRemote = paymentInfo.hasFile;
     updatePaymentUi();
   };
 
@@ -740,11 +720,7 @@
       if (!data) {
         return;
       }
-      const mergedPaymentInfo = {
-        ...(paymentRegistration || {}),
-        ...data
-      };
-      setRemotePaymentInfo(mergedPaymentInfo);
+      setRemotePaymentInfo(data);
     } catch (err) {
       showMessageModal(err.message || t('registration_payment_load_error', 'Error al cargar el pago.'), t('error_title', 'Error'));
     }

@@ -223,6 +223,15 @@
       gap: 1rem;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     }
+    .registration-payments-shared-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .registration-payments-shared-filter-select {
+      width: min(100%, 320px);
+    }
     .registration-dashboard-panels {
       display: grid;
       gap: 1rem;
@@ -458,6 +467,16 @@
       background: rgba(25, 135, 84, 0.14);
       color: #198754;
     }
+    .registration-dashboard-finance-card[data-finance="invoiced"] {
+      background: linear-gradient(135deg, rgba(13, 202, 240, 0.12), rgba(255, 255, 255, 1));
+    }
+    .registration-dashboard-finance-card[data-finance="invoiced"]::before {
+      background: #0dcaf0;
+    }
+    .registration-dashboard-finance-card[data-finance="invoiced"] .registration-dashboard-kpi-icon {
+      background: rgba(13, 202, 240, 0.18);
+      color: #087990;
+    }
     .registration-dashboard-finance-card[data-finance="pending"] {
       background: linear-gradient(135deg, rgba(255, 193, 7, 0.12), rgba(255, 255, 255, 1));
     }
@@ -477,6 +496,9 @@
     .registration-dashboard-finance-card[data-finance="validation"] .registration-dashboard-kpi-icon {
       background: rgba(253, 126, 20, 0.18);
       color: #c55a11;
+    }
+    #payments .registration-dashboard-kpi-value {
+      font-size: clamp(1.45rem, 2vw, 1.9rem);
     }
     .registration-dashboard-chart {
       min-height: 320px;
@@ -637,7 +659,6 @@
                         <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                           <div class="registration-dashboard-kpi-copy">
                             <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_total_and_paid">Total</div>
-                            <div class="registration-dashboard-kpi-meta" id="organizerDashboardTotalAmountMeta">0 Inscripciones</div>
                           </div>
                           <span class="registration-dashboard-kpi-icon"><i class="bi bi-cash-stack"></i></span>
                         </div>
@@ -649,7 +670,6 @@
                         <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                           <div class="registration-dashboard-kpi-copy">
                             <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_paid_label">Pagado</div>
-                            <div class="registration-dashboard-kpi-meta" id="organizerDashboardPaidAmountMeta">0 Inscripciones</div>
                           </div>
                           <span class="registration-dashboard-kpi-icon"><i class="bi bi-check2-circle"></i></span>
                         </div>
@@ -661,7 +681,6 @@
                         <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                           <div class="registration-dashboard-kpi-copy">
                             <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_pending_payment">Pdte. de pago</div>
-                            <div class="registration-dashboard-kpi-meta" id="organizerDashboardPendingAmountMeta">0 Inscripciones</div>
                           </div>
                           <span class="registration-dashboard-kpi-icon"><i class="bi bi-wallet2"></i></span>
                         </div>
@@ -1331,11 +1350,23 @@
                       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                         <div class="registration-dashboard-kpi-copy">
                           <div class="registration-dashboard-kpi-label" data-i18n="registration_competitions_total_paid">Total pagado</div>
-                          <div class="registration-dashboard-kpi-meta" id="registrationPaymentsPaidMeta">0 Registrations</div>
+                          <div class="registration-dashboard-kpi-meta" id="registrationPaymentsPaidMeta">0 Payments</div>
                         </div>
                         <span class="registration-dashboard-kpi-icon"><i class="bi bi-check2-circle"></i></span>
                       </div>
                       <div class="registration-dashboard-kpi-value" id="registrationPaymentsPaidValue">EUR 0.00</div>
+                    </div>
+                  </div>
+                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="invoiced">
+                    <div class="card-body">
+                      <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                        <div class="registration-dashboard-kpi-copy">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_payments_total_invoiced">Total facturado</div>
+                          <div class="registration-dashboard-kpi-meta" id="registrationPaymentsInvoicedMeta">0 Invoices</div>
+                        </div>
+                        <span class="registration-dashboard-kpi-icon"><i class="bi bi-receipt-cutoff"></i></span>
+                      </div>
+                      <div class="registration-dashboard-kpi-value" id="registrationPaymentsInvoicedValue">EUR 0.00</div>
                     </div>
                   </div>
                   <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="pending">
@@ -1353,6 +1384,17 @@
                 </div>
 
                 <div class="mt-3">
+                  <div class="mb-2 d-none" id="registrationPaymentsSharedOrganizerFilter">
+                    <div class="registration-payments-shared-filter-bar">
+                      <select
+                        class="form-select form-select-sm registration-payments-shared-filter-select"
+                        id="registrationPaymentsSharedSchoolFilter"
+                        data-i18n-title="org_registrations_filter_school"
+                      >
+                        <option value="" data-i18n="registration_payments_filter_all_schools">Todas las escuelas</option>
+                      </select>
+                    </div>
+                  </div>
                   <ul class="nav nav-tabs" id="registrationPaymentsSubtabs" role="tablist">
                     <li class="nav-item" role="presentation">
                       <button class="nav-link active" id="registrationPaymentsSubtabPayments" data-bs-toggle="tab" data-bs-target="#registrationPaymentsPanelPayments" type="button" role="tab" aria-controls="registrationPaymentsPanelPayments" aria-selected="true" data-i18n="registration_tab_payments">Pagos</button>
@@ -1365,12 +1407,6 @@
                     <div class="tab-pane fade show active" id="registrationPaymentsPanelPayments" role="tabpanel" aria-labelledby="registrationPaymentsSubtabPayments">
                       <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
                         <form id="registrationPaymentsOrganizerHeader" class="row g-3 align-items-end flex-grow-1 d-none">
-                          <div class="col-12 col-md-6 col-lg-3">
-                            <label class="form-label" for="registrationPaymentsSchoolFilter" data-i18n="org_registrations_filter_school">Escuela</label>
-                            <select class="form-select" id="registrationPaymentsSchoolFilter">
-                              <option value="" data-i18n="registration_payments_filter_all_schools">Todas las escuelas</option>
-                            </select>
-                          </div>
                           <div class="col-12 col-md-6 col-lg-2">
                             <label class="form-label" for="registrationPaymentsStatusFilter" data-i18n="org_registrations_filter_status">Estado</label>
                             <select class="form-select" id="registrationPaymentsStatusFilter">
@@ -1390,16 +1426,18 @@
                           <span class="text-muted" data-i18n="registration_payments_total">Total pagos</span>
                           <span class="badge bg-secondary" id="registrationPaymentsCount">0</span>
                         </div>
-                        <div class="d-flex align-items-center gap-3 ms-lg-auto flex-wrap d-none" id="registrationPaymentsSchoolActions">
+                        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap w-100 d-none" id="registrationPaymentsSchoolActions">
                           <button type="button" class="btn btn-primary btn-sm d-none" id="registrationPaymentsAddBtn" data-i18n="registration_payments_add">
                             Añadir pago
                           </button>
-                          <button type="button" class="btn btn-outline-success btn-sm" id="registrationPaymentsCopyTsvBtnSchool">
-                            <i class="bi bi-file-earmark-excel me-2"></i>Export
-                          </button>
-                          <div class="d-flex align-items-center gap-2">
-                            <span class="text-muted" data-i18n="registration_payments_total">Total pagos</span>
-                            <span class="badge bg-secondary" id="registrationPaymentsCountSchool">0</span>
+                          <div class="d-flex align-items-center gap-3 flex-wrap ms-lg-auto">
+                            <button type="button" class="btn btn-outline-success btn-sm" id="registrationPaymentsCopyTsvBtnSchool">
+                              <i class="bi bi-file-earmark-excel me-2"></i>Export
+                            </button>
+                            <div class="d-flex align-items-center gap-2">
+                              <span class="text-muted" data-i18n="registration_payments_total">Total pagos</span>
+                              <span class="badge bg-secondary" id="registrationPaymentsCountSchool">0</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1424,10 +1462,42 @@
                       </div>
                     </div>
                     <div class="tab-pane fade" id="registrationPaymentsPanelInvoices" role="tabpanel" aria-labelledby="registrationPaymentsSubtabInvoices">
-                      <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
-                        <h5 class="mb-0" data-i18n="registration_tab_invoices">Facturas</h5>
+                      <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
+                        <form id="registrationInvoicesOrganizerHeader" class="d-none"></form>
+                        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap w-100 d-none" id="registrationInvoicesActions">
+                          <button type="button" class="btn btn-primary btn-sm d-none" id="registrationInvoicesAddBtn" data-i18n="registration_invoices_add">
+                            Añadir factura
+                          </button>
+                          <div class="d-flex align-items-center gap-3 flex-wrap ms-lg-auto">
+                            <button type="button" class="btn btn-outline-success btn-sm d-none" id="registrationInvoicesCopyTsvBtn">
+                              <i class="bi bi-file-earmark-excel me-2"></i>Export
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm" id="registrationInvoicesCopyTsvBtnSchool">
+                              <i class="bi bi-file-earmark-excel me-2"></i>Export
+                            </button>
+                            <div class="d-flex align-items-center gap-2">
+                              <span class="text-muted" data-i18n="registration_invoices_total">Total facturas</span>
+                              <span class="badge bg-secondary" id="registrationInvoicesCount">0</span>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div class="text-center text-muted py-4" data-i18n="registration_invoices_empty">
+
+                      <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                          <thead class="table-light">
+                            <tr>
+                              <th id="registrationInvoicesSchoolHeader" data-i18n="org_registrations_table_school">Escuela</th>
+                              <th class="text-center" data-i18n="registration_competitions_table_total_amount">Importe total</th>
+                              <th class="text-center" data-i18n="registration_payments_created_at">Fecha creación</th>
+                              <th class="text-center" data-i18n="org_registrations_table_actions" data-tsv-ignore="true">Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody id="registrationInvoicesTable"></tbody>
+                        </table>
+                      </div>
+
+                      <div id="registrationInvoicesEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_invoices_empty">
                         No hay facturas disponibles.
                       </div>
                     </div>
@@ -1991,13 +2061,21 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
-            <span class="fw-bold text-primary" data-i18n="registration_payments_add_modal_title">AÃ±adir pago</span>
+            <span class="fw-bold text-primary" id="registrationPaymentsCreateModalTitle" data-i18n="registration_payments_add_modal_title">AÃ±adir pago</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <form id="registrationPaymentsCreateForm" novalidate>
           <div class="modal-body">
             <div class="row g-3">
+              <div class="col-12 d-none" id="registrationPaymentsCreateSchoolField">
+                <label class="form-label" for="registrationPaymentsCreateSchoolSelect" data-i18n="org_registrations_filter_school">Escuela</label>
+                <select class="form-select" id="registrationPaymentsCreateSchoolSelect"></select>
+                <div class="invalid-feedback" data-i18n="registration_invoices_school_required">
+                  Selecciona una escuela.
+                </div>
+              </div>
+
               <div class="col-12">
                 <label class="form-label" for="registrationPaymentsCreateAmount" data-i18n="registration_payments_amount_label">Importe</label>
                 <div class="input-group">
@@ -2058,7 +2136,7 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" data-i18n="registration_payment_remove">Eliminar justificante</h5>
+          <h5 class="modal-title" id="registrationPaymentsDeleteTitle" data-i18n="registration_payment_remove">Eliminar justificante</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
