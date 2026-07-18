@@ -500,6 +500,32 @@
     #payments .registration-dashboard-kpi-value {
       font-size: clamp(1.45rem, 2vw, 1.9rem);
     }
+    #payments .registration-payments-summary-card .card-body {
+      height: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 0.9rem;
+    }
+    #payments .registration-payments-summary-card .card-body > .d-flex {
+      flex: 0 0 auto;
+      width: 100%;
+      min-width: 100%;
+      align-items: flex-start !important;
+      justify-content: space-between !important;
+    }
+    #payments .registration-payments-summary-card .registration-dashboard-kpi-copy {
+      flex: 1 1 auto;
+      min-width: 0;
+      justify-content: flex-start;
+      gap: 0.3rem;
+    }
+    #payments .registration-payments-summary-card .registration-dashboard-kpi-value {
+      width: 100%;
+      margin-left: 0;
+      margin-top: auto;
+      text-align: left;
+    }
     .registration-dashboard-chart {
       min-height: 320px;
     }
@@ -1321,7 +1347,7 @@
             <div class="tab-pane fade" id="payments" role="tabpanel">
               <div class="registration-dashboard-shell">
                 <div class="registration-dashboard-finance-grid">
-                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="fee">
+                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card registration-payments-summary-card" data-finance="fee">
                     <div class="card-body">
                       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                         <div class="registration-dashboard-kpi-copy">
@@ -1333,7 +1359,7 @@
                       <div class="registration-dashboard-kpi-value" id="registrationPaymentsFeeValue">EUR 0.00</div>
                     </div>
                   </div>
-                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="total">
+                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card registration-payments-summary-card" data-finance="total">
                     <div class="card-body">
                       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                         <div class="registration-dashboard-kpi-copy">
@@ -1345,7 +1371,7 @@
                       <div class="registration-dashboard-kpi-value" id="registrationPaymentsAmountValue">EUR 0.00</div>
                     </div>
                   </div>
-                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="paid">
+                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card registration-payments-summary-card" data-finance="paid">
                     <div class="card-body">
                       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                         <div class="registration-dashboard-kpi-copy">
@@ -1357,7 +1383,18 @@
                       <div class="registration-dashboard-kpi-value" id="registrationPaymentsPaidValue">EUR 0.00</div>
                     </div>
                   </div>
-                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="invoiced">
+                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card registration-payments-summary-card" data-finance="pending">
+                    <div class="card-body">
+                      <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
+                        <div class="registration-dashboard-kpi-copy">
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_pending_payment">Pdte. de pago</div>
+                        </div>
+                        <span class="registration-dashboard-kpi-icon"><i class="bi bi-wallet2"></i></span>
+                      </div>
+                      <div class="registration-dashboard-kpi-value" id="registrationPaymentsPendingValue">EUR 0.00</div>
+                    </div>
+                  </div>
+                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card registration-payments-summary-card" data-finance="invoiced">
                     <div class="card-body">
                       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                         <div class="registration-dashboard-kpi-copy">
@@ -1367,18 +1404,6 @@
                         <span class="registration-dashboard-kpi-icon"><i class="bi bi-receipt-cutoff"></i></span>
                       </div>
                       <div class="registration-dashboard-kpi-value" id="registrationPaymentsInvoicedValue">EUR 0.00</div>
-                    </div>
-                  </div>
-                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="pending">
-                    <div class="card-body">
-                      <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-                        <div class="registration-dashboard-kpi-copy">
-                          <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_pending_payment">Pdte. de pago</div>
-                          <div class="registration-dashboard-kpi-meta" id="registrationPaymentsPendingMeta">0 Registrations</div>
-                        </div>
-                        <span class="registration-dashboard-kpi-icon"><i class="bi bi-wallet2"></i></span>
-                      </div>
-                      <div class="registration-dashboard-kpi-value" id="registrationPaymentsPendingValue">EUR 0.00</div>
                     </div>
                   </div>
                 </div>

@@ -21,8 +21,7 @@ function initPaymentsTab(role) {
     paidMeta: document.getElementById('registrationPaymentsPaidMeta'),
     invoicedValue: document.getElementById('registrationPaymentsInvoicedValue'),
     invoicedMeta: document.getElementById('registrationPaymentsInvoicedMeta'),
-    pendingValue: document.getElementById('registrationPaymentsPendingValue'),
-    pendingMeta: document.getElementById('registrationPaymentsPendingMeta')
+    pendingValue: document.getElementById('registrationPaymentsPendingValue')
   };
 
   const sharedFilterElements = {
@@ -250,11 +249,14 @@ function initPaymentsTab(role) {
   };
 
   const getRegisteredParticipantsCount = (registrations, options = {}) => {
+    const relevantRegistrations = options.validatedOnly
+      ? (Array.isArray(registrations) ? registrations : []).filter((registration) => isRegistrationValidated(registration))
+      : (Array.isArray(registrations) ? registrations : []);
     const participants = Array.isArray(options.participants)
       ? options.participants
       : (Array.isArray(registrationState.participants) ? registrationState.participants : []);
 
-    if (participants.length) {
+    if (!options.validatedOnly && participants.length) {
       let hasParticipantInfo = false;
       const count = participants.reduce((total, participant) => {
         const info = getParticipantRegistrationCount(participant);
@@ -268,7 +270,7 @@ function initPaymentsTab(role) {
     }
 
     const participantIds = new Set();
-    (Array.isArray(registrations) ? registrations : []).forEach((registration) => {
+    relevantRegistrations.forEach((registration) => {
       const members = Array.isArray(registration?.members)
         ? registration.members
         : (Array.isArray(registration?.participants) ? registration.participants : []);
@@ -285,7 +287,7 @@ function initPaymentsTab(role) {
       return participantIds.size;
     }
 
-    return (Array.isArray(registrations) ? registrations : []).reduce(
+    return relevantRegistrations.reduce(
       (sum, registration) => sum + getRegistrationParticipantsTotal(registration),
       0
     );
@@ -293,9 +295,14 @@ function initPaymentsTab(role) {
 
   const buildMetrics = () => {
     const registrations = getFilteredRegistrations();
+    const validatedRegistrations = registrations.filter((registration) => isRegistrationValidated(registration));
     const categoryById = getCategoryById();
-    const finance = buildRegistrationFinanceMetrics(registrations, { categoryById });
-    const registeredParticipantsCount = getRegisteredParticipantsCount(registrations, {
+    const finance = buildRegistrationFinanceMetrics(registrations, {
+      categoryById,
+      validatedOnly: true
+    });
+    const registeredParticipantsCount = getRegisteredParticipantsCount(validatedRegistrations, {
+      validatedOnly: true,
       participants: getFilteredParticipants()
     });
     const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
@@ -353,9 +360,6 @@ function initPaymentsTab(role) {
     }
     if (summaryElements.pendingValue) {
       summaryElements.pendingValue.textContent = formatRegistrationCurrency(metrics.pendingAmount);
-    }
-    if (summaryElements.pendingMeta) {
-      summaryElements.pendingMeta.textContent = `${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
   };
 

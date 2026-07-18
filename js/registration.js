@@ -1350,8 +1350,12 @@ function initOrganizerDashboard() {
     return { hasInfo: false, count: 0 };
   };
 
-  const getRegisteredParticipantsCount = (registrations, participants) => {
-    if (participants.length) {
+  const getRegisteredParticipantsCount = (registrations, participants, options = {}) => {
+    const relevantRegistrations = options.validatedOnly
+      ? registrations.filter((registration) => isRegistrationValidated(registration))
+      : registrations;
+
+    if (!options.validatedOnly && participants.length) {
       let hasParticipantInfo = false;
       const count = participants.reduce((total, participant) => {
         const info = getParticipantRegistrationCount(participant);
@@ -1365,7 +1369,7 @@ function initOrganizerDashboard() {
     }
 
     const participantIds = new Set();
-    registrations.forEach((registration) => {
+    relevantRegistrations.forEach((registration) => {
       const members = Array.isArray(registration?.members)
         ? registration.members
         : (Array.isArray(registration?.participants) ? registration.participants : []);
@@ -1382,7 +1386,7 @@ function initOrganizerDashboard() {
       return participantIds.size;
     }
 
-    return registrations.reduce(
+    return relevantRegistrations.reduce(
       (sum, registration) => sum + getRegistrationParticipantsTotal(registration),
       0
     );
@@ -1437,8 +1441,14 @@ function initOrganizerDashboard() {
   };
 
   const buildDashboardFinanceMetrics = (registrations, participants, categoryById) => {
-    const registrationFinance = buildRegistrationFinanceMetrics(registrations, { categoryById });
-    const registeredParticipantsCount = getRegisteredParticipantsCount(registrations, participants);
+    const validatedRegistrations = registrations.filter((registration) => isRegistrationValidated(registration));
+    const registrationFinance = buildRegistrationFinanceMetrics(registrations, {
+      categoryById,
+      validatedOnly: true
+    });
+    const registeredParticipantsCount = getRegisteredParticipantsCount(validatedRegistrations, participants, {
+      validatedOnly: true
+    });
     const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
     const totalFee = registrationFeeCost * registeredParticipantsCount;
     const paymentRows = (Array.isArray(registrationState.paymentDocuments) ? registrationState.paymentDocuments : [])
@@ -1618,7 +1628,10 @@ function initOrganizerDashboard() {
       totalSchools: schools.length,
       totalParticipants: participants.length,
       totalRegistrations: registrations.length,
-      finance: buildRegistrationFinanceMetrics(registrations, { categoryById: categoriesById }),
+      finance: buildRegistrationFinanceMetrics(registrations, {
+        categoryById: categoriesById,
+        validatedOnly: true
+      }),
       dashboardFinance: buildDashboardFinanceMetrics(registrations, participants, categoriesById),
       categoriesWithoutRegistrations: categories.filter((category) => !categoryIdsWithRegistrations.has(`${category.id}`)).length,
       stylesWithoutRegistrations: styles.filter((style) => !styleIdsWithRegistrations.has(`${style.id}`)).length,
@@ -2003,7 +2016,10 @@ function initSchoolDashboard() {
     return {
       totalParticipants: participants.length,
       totalRegistrations: registrations.length,
-      finance: buildRegistrationFinanceMetrics(registrations, { categoryById: categoriesById }),
+      finance: buildRegistrationFinanceMetrics(registrations, {
+        categoryById: categoriesById,
+        validatedOnly: true
+      }),
       registrationsWithoutMusic: registrations.filter((registration) => !hasMusic(registration)).length,
       status: statusCounts.reduce((summary, item) => {
         summary[item.code] = item.count;
@@ -3621,6 +3637,14 @@ function getRegistrationCategoryIdValue(registration) {
     ?? '';
 }
 
+function getRegistrationStatusValue(registration) {
+  return `${registration?.status ?? ''}`.trim().toUpperCase();
+}
+
+function isRegistrationValidated(registration) {
+  return getRegistrationStatusValue(registration) === 'VAL';
+}
+
 function getRegistrationParticipantsTotal(registration) {
   if (!registration) return 0;
   const directCount = registration?.member_count
@@ -3660,7 +3684,11 @@ function getRegistrationTotalAmountValue(registration, options = {}) {
 }
 
 function buildRegistrationFinanceMetrics(registrations, options = {}) {
-  const summary = (Array.isArray(registrations) ? registrations : []).reduce((summary, registration) => {
+  const relevantRegistrations = (Array.isArray(registrations) ? registrations : []).filter((registration) => (
+    !options.validatedOnly || isRegistrationValidated(registration)
+  ));
+
+  const summary = relevantRegistrations.reduce((summary, registration) => {
     const amount = getRegistrationTotalAmountValue(registration, options);
     const hasPayment = isRegistrationFlagEnabled(registration?.has_payment);
     const isValidated = isRegistrationFlagEnabled(registration?.payment_validated);
