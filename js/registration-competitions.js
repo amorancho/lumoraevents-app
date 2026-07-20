@@ -88,6 +88,8 @@
     size: document.getElementById('registrationAudioModalSize'),
     max: document.getElementById('registrationAudioModalMax'),
     error: document.getElementById('registrationAudioModalError'),
+    unsavedWarning: document.getElementById('registrationAudioModalUnsavedWarning'),
+    discardBtn: document.getElementById('registrationAudioModalDiscardBtn'),
     removeBtn: document.getElementById('registrationAudioModalRemoveBtn'),
     saveBtn: document.getElementById('registrationAudioModalSaveBtn')
   };
@@ -157,6 +159,7 @@
   const membersSaveBtnLabel = elements.membersSaveBtn ? elements.membersSaveBtn.textContent : '';
   const audioSaveBtnLabel = audioElements.saveBtn ? audioElements.saveBtn.textContent : '';
   const paymentSaveBtnLabel = paymentElements.saveBtn ? paymentElements.saveBtn.textContent : '';
+  let audioModalDiscardRequested = false;
 
   const getEventIdValue = () => {
     const eventObj = getEvent();
@@ -448,6 +451,11 @@
     }
   };
 
+  const setAudioUnsavedWarningVisible = (visible) => {
+    if (!audioElements.unsavedWarning) return;
+    audioElements.unsavedWarning.classList.toggle('d-none', !visible);
+  };
+
   const validateAudioDuration = () => {
     if (!audioState.file) {
       audioState.isValid = true;
@@ -542,6 +550,7 @@
     };
     if (audioElements.input) audioElements.input.value = '';
     setAudioError('');
+    setAudioUnsavedWarningVisible(false);
     updateAudioUi();
   };
 
@@ -622,6 +631,7 @@
       setAudioError('Selecciona un archivo de audio valido.');
       return;
     }
+    setAudioUnsavedWarningVisible(false);
     audioState.file = file;
     audioState.duration = await readAudioDuration(file);
     updateAudioUi();
@@ -631,6 +641,7 @@
     audioState.file = null;
     audioState.duration = null;
     if (audioElements.input) audioElements.input.value = '';
+    setAudioUnsavedWarningVisible(false);
     updateAudioUi();
   };
 
@@ -746,7 +757,9 @@
   const saveRegistrationAudio = async () => {
     const registrationId = audioRegistration?.id ? `${audioRegistration.id}` : '';
     if (!registrationId) return;
-    if (!audioState.file) {
+    const selectedFile = audioState.file;
+    const selectedDuration = audioState.duration;
+    if (!selectedFile) {
       showMessageModal('Selecciona un archivo de audio.', t('error_title', 'Error'));
       return;
     }
@@ -762,9 +775,9 @@
     try {
       const url = getMusicUrl(registrationId);
       const formData = new FormData();
-      formData.append('audio', audioState.file);
-      if (audioState.duration != null) {
-        formData.append('duration', `${Math.round(audioState.duration)}`);
+      formData.append('audio', selectedFile);
+      if (selectedDuration != null) {
+        formData.append('duration', `${Math.round(selectedDuration)}`);
       }
 
       const res = await fetch(url, {
@@ -778,15 +791,17 @@
         throw new Error(message);
       }
 
-      audioState.existingName = audioState.file.name;
-      audioState.existingDuration = audioState.duration;
-      audioState.existingSize = audioState.file.size;
+      audioState.existingName = selectedFile.name;
+      audioState.existingDuration = selectedDuration;
+      audioState.existingSize = selectedFile.size;
       audioState.hasRemote = true;
       if (audioRegistration) {
         audioRegistration.has_music = true;
         audioRegistration.music_validated = false;
       }
-      clearSelectedAudio();
+      if (audioState.file === selectedFile) {
+        clearSelectedAudio();
+      }
       await loadRegistrations();
     } catch (err) {
       showMessageModal(err.message || 'Error al guardar el audio.', t('error_title', 'Error'));
@@ -2235,6 +2250,13 @@
     audioElements.saveBtn.addEventListener('click', saveRegistrationAudio);
   }
 
+  if (audioElements.discardBtn) {
+    audioElements.discardBtn.addEventListener('click', () => {
+      audioModalDiscardRequested = true;
+      registrationAudioModal.hide();
+    });
+  }
+
   if (paymentElements.browseBtn && paymentElements.input) {
     paymentElements.browseBtn.addEventListener('click', () => {
       paymentElements.input.click();
@@ -2403,7 +2425,18 @@
     loadRegistrations();
   });
 
+  audioModalEl.addEventListener('hide.bs.modal', (event) => {
+    if (audioModalDiscardRequested || !audioState.file) {
+      setAudioUnsavedWarningVisible(false);
+      return;
+    }
+
+    event.preventDefault();
+    setAudioUnsavedWarningVisible(true);
+  });
+
   audioModalEl.addEventListener('hidden.bs.modal', () => {
+    audioModalDiscardRequested = false;
     audioRegistration = null;
     resetAudioState();
   });

@@ -385,6 +385,8 @@
   "registration_audio_max": "Maximum",
   "registration_audio_remove": "Remove music",
   "registration_audio_save": "Save audio",
+  "registration_audio_unsaved_close_confirm": "You selected an audio file without saving it. Save it before closing or use \"Close without saving\" to discard it.",
+  "registration_audio_discard_close": "Close without saving",
   "registration_audio_size": "Size",
   "registration_competitions_audio": "Music",
   "registration_competitions_confirm_title": "Confirm registration",

@@ -2003,6 +2003,12 @@
           </div>
 
           <div id="registrationAudioModalError" class="text-danger small mt-2 d-none"></div>
+          <div id="registrationAudioModalUnsavedWarning" class="alert alert-warning d-none mt-3 mb-0" role="alert">
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+              <span data-i18n="registration_audio_unsaved_close_confirm">Has cargado un archivo de audio sin guardar. Si cierras ahora, se perderá. ¿Quieres cerrar igualmente?</span>
+              <button type="button" class="btn btn-sm btn-outline-warning" id="registrationAudioModalDiscardBtn" data-i18n="registration_audio_discard_close">Cerrar sin guardar</button>
+            </div>
+          </div>
 
           <div class="d-flex flex-column flex-md-row gap-2 mt-3">
             <button type="button" class="btn btn-outline-danger" id="registrationAudioModalRemoveBtn" disabled data-i18n="registration_audio_remove">Eliminar musica</button>
