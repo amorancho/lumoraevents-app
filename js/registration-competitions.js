@@ -110,6 +110,7 @@
     removeBtn: document.getElementById('registrationPaymentModalRemoveBtn'),
     saveBtn: document.getElementById('registrationPaymentModalSaveBtn')
   };
+  const registrationHasMusic = (registration) => Number(registration?.has_music) === 1 || registration?.has_music === true || Boolean(registration?.audio);
 
   const registrationEndpoints = {
     list: '/api/registrations/choreographies',
@@ -2385,7 +2386,12 @@
       registrationToDelete = registration;
       if (elements.deleteMessage) {
         const name = registration.name;
-        elements.deleteMessage.innerHTML = `${t('registration_competitions_delete_question', 'Seguro que deseas eliminar la inscripcion de')} <strong>${name}</strong>?`;
+        const deleteQuestion = t('registration_competitions_delete_question', 'Seguro que deseas eliminar la inscripcion de');
+        const musicWarning = t('registration_competitions_delete_music_warning', 'Esta inscripcion tiene musica asociada y tambien se eliminara.');
+        const warningHtml = registrationHasMusic(registration)
+          ? `<br><span class="text-danger">${musicWarning}</span>`
+          : '';
+        elements.deleteMessage.innerHTML = `${deleteQuestion} <strong>${name}</strong>?${warningHtml}`;
       }
       deleteModal.show();
     }

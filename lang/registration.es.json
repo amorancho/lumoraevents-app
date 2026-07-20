@@ -209,6 +209,7 @@
   "registration_competitions_members_empty": "No hay miembros añadidos.",
   "registration_competitions_delete_title": "Eliminar inscripción",
   "registration_competitions_delete_question": "Seguro que deseas eliminar la inscripción de",
+  "registration_competitions_delete_music_warning": "Esta inscripción tiene música asociada y también se eliminará.",
   "registration_competitions_rule_min": "Mín",
   "registration_competitions_rule_max": "Máx",
   "registration_competitions_rule_age": "Edad",
