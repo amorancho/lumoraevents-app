@@ -2417,6 +2417,8 @@ function initParticipantsTab(role) {
   const confirmDuplicateBtn = document.getElementById('confirmDuplicateParticipantBtn');
   const importElements = {
     textarea: document.getElementById('importParticipantsTextarea'),
+    genderHint: document.getElementById('importParticipantsGenderHint'),
+    genderHeader: document.getElementById('importParticipantsPreviewGenderHeader'),
     previewWrap: document.getElementById('importParticipantsPreviewWrap'),
     detectedColumns: document.getElementById('importParticipantsDetectedColumns'),
     total: document.getElementById('importParticipantsPreviewTotal'),
@@ -2431,6 +2433,29 @@ function initParticipantsTab(role) {
     rawText: '',
     preview: null
   };
+
+  const syncImportParticipantsModalUi = () => {
+    const showImportGender = Boolean(getEvent()?.showGender);
+
+    if (importElements.genderHint) {
+      importElements.genderHint.classList.toggle('d-none', !showImportGender);
+    }
+    if (importElements.genderHeader) {
+      importElements.genderHeader.classList.toggle('d-none', !showImportGender);
+    }
+    if (importElements.textarea) {
+      const placeholderKey = showImportGender
+        ? 'registration_participants_import_textarea_placeholder'
+        : 'registration_participants_import_textarea_placeholder_nogender';
+      const placeholderFallback = showImportGender
+        ? 'Nombre[TAB]Fecha nacimiento[TAB]Genero[TAB]Nacionalidad'
+        : 'Nombre[TAB]Fecha nacimiento[TAB]Nacionalidad';
+
+      importElements.textarea.dataset.i18nPlaceholder = placeholderKey;
+      importElements.textarea.placeholder = t(placeholderKey, placeholderFallback);
+    }
+  };
+  syncImportParticipantsModalUi();
 
   const updateParticipantsAgeHeaderTooltip = () => {
     syncRegistrationAgeTooltipButton(ageHeaderInfoBtn);
@@ -2616,6 +2641,7 @@ function initParticipantsTab(role) {
 
   const renderImportParticipantsPreview = (preview) => {
     const normalizedPreview = getNormalizedImportPreview(preview);
+    const showImportGender = Boolean(getEvent()?.showGender);
     importPreviewState.preview = normalizedPreview;
 
     if (importElements.previewWrap) {
@@ -2667,13 +2693,21 @@ function initParticipantsTab(role) {
           ? row.errors.join(' | ')
           : t('registration_participants_import_no_errors', 'Sin errores');
 
-        [
+        const previewCells = [
           `${row.rowNumber ?? '-'}`,
           `${rowData.name ?? ''}`.trim() || '-',
-          getImportPreviewBirthDate(rowData) || '-',
-          `${rowData.gender ?? ''}`.trim() || '-',
+          getImportPreviewBirthDate(rowData) || '-'
+        ];
+
+        if (showImportGender) {
+          previewCells.push(`${rowData.gender ?? ''}`.trim() || '-');
+        }
+
+        previewCells.push(
           formatImportPreviewCountry(rowData.country)
-        ].forEach((value) => {
+        );
+
+        previewCells.forEach((value) => {
           const cell = document.createElement('td');
           cell.textContent = value;
           tableRow.appendChild(cell);
@@ -2771,6 +2805,7 @@ function initParticipantsTab(role) {
   };
 
   const buildImportParticipantsConfirmRows = () => {
+    const showImportGender = Boolean(getEvent()?.showGender);
     return getValidImportPreviewRows().map((row) => {
       const rowData = row.data || {};
       const participantRow = {
@@ -2781,7 +2816,7 @@ function initParticipantsTab(role) {
       const genderValue = `${rowData.gender ?? ''}`.trim();
       const countryValue = normalizeImportConfirmCountry(rowData.country);
 
-      if (genderValue) {
+      if (showImportGender && genderValue) {
         participantRow.gender = genderValue;
       }
       if (countryValue) {
@@ -3315,6 +3350,7 @@ function initParticipantsTab(role) {
   if (importOpenBtn && allowEdit && importParticipantsModal) {
     importOpenBtn.addEventListener('click', () => {
       resetImportParticipantsState();
+      syncImportParticipantsModalUi();
       importParticipantsModal.show();
     });
   }
