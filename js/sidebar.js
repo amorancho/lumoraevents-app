@@ -11,7 +11,8 @@ const ORGANIZATION_SIDEBAR_COPY = {
     participants: 'Participants',
     competitions: 'Competitions',
     scheduleconfig: 'Schedule Configurator',
-    tracking: 'Tracking'
+    tracking: 'Tracking',
+    audienceVoting: 'Audience voting'
   },
   es: {
     section: 'Acceso Organizadores',
@@ -25,7 +26,8 @@ const ORGANIZATION_SIDEBAR_COPY = {
     participants: 'Participantes',
     competitions: 'Competiciones',
     scheduleconfig: 'Configurador de Programacion',
-    tracking: 'Tracking'
+    tracking: 'Tracking',
+    audienceVoting: 'Votación del público'
   },
   it: {
     section: 'Accesso Organizzazione',
@@ -39,7 +41,8 @@ const ORGANIZATION_SIDEBAR_COPY = {
     participants: 'Partecipanti',
     competitions: 'Competizioni',
     scheduleconfig: 'Configuratore Programmazione',
-    tracking: 'Tracking'
+    tracking: 'Tracking',
+    audienceVoting: 'Votazione del pubblico'
   },
   pt: {
     section: 'Acesso Organizacao',
@@ -53,7 +56,8 @@ const ORGANIZATION_SIDEBAR_COPY = {
     participants: 'Participantes',
     competitions: 'Competicoes',
     scheduleconfig: 'Configurador de Programacao',
-    tracking: 'Tracking'
+    tracking: 'Tracking',
+    audienceVoting: 'Votação do público'
   },
   fr: {
     section: 'Acces Organisation',
@@ -67,7 +71,8 @@ const ORGANIZATION_SIDEBAR_COPY = {
     participants: 'Participants',
     competitions: 'Competitions',
     scheduleconfig: 'Configurateur de planning',
-    tracking: 'Tracking'
+    tracking: 'Tracking',
+    audienceVoting: 'Vote du public'
   }
 };
 
@@ -79,7 +84,8 @@ const ORGANIZATION_SIDEBAR_ITEMS = [
   { key: 'participants', href: 'dancers.html', icon: 'bi-people', labelKey: 'participants' },
   { key: 'competitions', href: 'competitions.html', icon: 'bi-trophy', labelKey: 'competitions' },
   { key: 'scheduleconfig', href: 'scheduleconfig.html', icon: 'bi-calendar3', labelKey: 'scheduleconfig' },
-  { key: 'tracking', href: 'tracking.html', icon: 'bi-activity', labelKey: 'tracking' }
+  { key: 'tracking', href: 'tracking.html', icon: 'bi-activity', labelKey: 'tracking' },
+  { key: 'audienceVoting', href: 'audience-voting.html', icon: 'bi-megaphone', labelKey: 'audienceVoting' }
 ];
 
 function getOrganizationSidebarLanguage() {
@@ -107,7 +113,8 @@ function getOrganizationSidebarActiveKey() {
     dancers: 'participants',
     competitions: 'competitions',
     scheduleconfig: 'scheduleconfig',
-    tracking: 'tracking'
+    tracking: 'tracking',
+    'audience-voting': 'audienceVoting'
   };
 
   return pageToKey[pageName] || '';
@@ -123,8 +130,11 @@ function getOrganizationSidebarTitle() {
 
 function buildOrganizationSidebarItemsMarkup(copy, activeKey, options = {}) {
   const itemClassName = options.itemClassName || 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3';
+  const currentEvent = typeof getEvent === 'function' ? getEvent() : null;
 
-  return ORGANIZATION_SIDEBAR_ITEMS.map((item) => {
+  return ORGANIZATION_SIDEBAR_ITEMS.filter((item) => {
+    return item.key !== 'audienceVoting' || currentEvent?.hasAudienceVoting === true;
+  }).map((item) => {
     const isActive = item.key === activeKey;
     const activeClasses = isActive ? ' active' : '';
     const activeAttributes = isActive ? ' aria-current="page"' : '';
@@ -215,15 +225,16 @@ function renderOrganizationSidebar() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  renderOrganizationSidebar();
-
   if (typeof WaitEventLoaded === 'function') {
     WaitEventLoaded()
-      .then(() => updateOrganizationSidebarTitles())
+      .then(() => renderOrganizationSidebar())
       .catch(() => {
-        // Keep the generic sidebar title when the event cannot be loaded.
+        renderOrganizationSidebar();
       });
+    return;
   }
+
+  renderOrganizationSidebar();
 });
 
 window.renderOrganizationSidebar = renderOrganizationSidebar;

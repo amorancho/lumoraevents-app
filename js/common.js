@@ -81,7 +81,7 @@ function getEventIdFromUrl() {
   }
 
 
-  if (pageName !== 'index' && pageName !== 'admin') {
+  if (!['index', 'admin', 'public-vote'].includes(pageName)) {
     window.location.href = 'index.html';
   }
   return null;
@@ -154,8 +154,13 @@ function setPageTitleAndLang(title, lang) {
 eventReadyPromise = new Promise(async (resolve, reject) => {
   try {
 
-    if (eventId) {
-      const res = await fetch(`${API_BASE_URL}/api/events/code/${eventId}`);
+    const publicAudiencePage = ['public-votes', 'public-vote'].includes(pageName);
+    const validPublicEventId = Number.isInteger(Number(eventId)) && Number(eventId) > 0;
+    if (eventId && (!publicAudiencePage || validPublicEventId)) {
+      const eventEndpoint = publicAudiencePage
+        ? `${API_BASE_URL}/api/events/${encodeURIComponent(eventId)}`
+        : `${API_BASE_URL}/api/events/code/${encodeURIComponent(eventId)}`;
+      const res = await fetch(eventEndpoint);
       if (!res.ok) throw new Error(`Error ${res.status} al recuperar el evento`);
       const data = await res.json();
 
@@ -186,7 +191,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
 
       eventObj = {
         id: data.id,
-        code: eventId,
+        code: data.code || eventId,
         name: data.name,
         start: data.start,
         end: data.end,
@@ -195,7 +200,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         visible: data.visible === 1,
         trial: data.trial === 1,
         status: status,
-        homeUrl: `home.html?eventId=${eventId}`,
+        homeUrl: `home.html?eventId=${encodeURIComponent(data.code || eventId)}`,
         language: data.language,
         autoRefreshMin: data.autorefresh_minutes ?? null,
         catClassification: data.category_class_type,
@@ -229,6 +234,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         judgesCanChangeVotes: data.judges_can_change_votes === 1,
         registrationFeeCost: data.registration_fee_cost || 0,
         showGender: data.show_gender === 1,
+        hasAudienceVoting: data.has_audience_voting === 1
       };
 
     }
@@ -244,7 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const user = getUserFromToken();
 
-  if (eventId && user && user.eventId !== eventId && user.role !== 'admin') {
+  if (!['public-votes', 'public-vote'].includes(pageName) && eventId && user && user.eventId !== eventId && user.role !== 'admin') {
     console.warn('El usuario no tiene permiso para este evento. Redirigiendo a la página principal.');
     alert('No tienes permiso para acceder a este evento');
     window.location.href = 'index.html';
@@ -261,7 +267,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Esperamos a que los datos del evento estén listos
   try {
     await eventReadyPromise;
-    if (pageName !== 'index' && pageName !== 'admin') {
+    if (!['index', 'admin', 'public-votes', 'public-vote'].includes(pageName)) {
       generateHeader(() => {
         setPageTitleAndLang(t('title'), getCurrentAppLanguage());
         applyTranslations();
@@ -336,6 +342,11 @@ function applyTranslations() {
     const key = el.dataset.i18nTitle;
     if (translations[key]) applyTranslatedTitle(el, translations[key]);
   });
+
+  document.querySelectorAll("[data-i18n-aria-label]").forEach(el => {
+    const key = el.dataset.i18nAriaLabel;
+    if (translations[key]) el.setAttribute('aria-label', translations[key]);
+  });
 }
 
 async function changeLanguage(lang, page = null) {
@@ -366,6 +377,18 @@ async function changeLanguage(lang, page = null) {
   } else if (pageName === 'dashboard') {
     if (window.renderDashboardOverview) {
       await window.renderDashboardOverview();
+    }
+  } else if (pageName === 'audience-voting') {
+    if (window.renderAudienceVotePage) {
+      window.renderAudienceVotePage();
+    }
+  } else if (pageName === 'public-votes') {
+    if (window.renderPublicVotesPage) {
+      window.renderPublicVotesPage();
+    }
+  } else if (pageName === 'public-vote') {
+    if (window.renderPublicVotePage) {
+      window.renderPublicVotePage();
     }
   }
 
@@ -829,6 +852,43 @@ async function WaitEventLoaded() {
   }
 }
 
+function setPublicPageEventContext(publicEvent = {}, options = {}) {
+  const fallbackName = options.fallbackName || t('title', 'LumoraEvents');
+  const eventCode = publicEvent.code || null;
+  eventObj = {
+    id: publicEvent.id || null,
+    code: eventCode,
+    name: publicEvent.name || fallbackName,
+    start: publicEvent.start || null,
+    end: publicEvent.end || null,
+    eventLogo: publicEvent.eventLogo || publicEvent.eventlogo || publicEvent.logo || null,
+    eventUrl: publicEvent.eventUrl || publicEvent.eventurl || publicEvent.url || '',
+    visible: true,
+    trial: false,
+    status: 'ongoing',
+    homeUrl: options.homeUrl || publicEvent.homeUrl || (eventCode ? `home.html?eventId=${encodeURIComponent(eventCode)}` : 'index.html'),
+    language: publicEvent.language || getCurrentAppLanguage(),
+    showFlags: true,
+    hasAudienceVoting: publicEvent.hasAudienceVoting === true || Number(publicEvent.has_audience_voting) === 1
+  };
+
+  generateHeader(() => {
+    setPageTitleAndLang(t('title', fallbackName), getCurrentAppLanguage());
+    applyTranslations();
+  });
+  generateFooter();
+  return eventObj;
+}
+
+function ensureAudienceVotingEnabled() {
+  const currentEvent = getEvent();
+  if (currentEvent?.hasAudienceVoting === true) return true;
+
+  alert(t('page_not_visible', 'You do not have permission to access audience voting.'));
+  window.location.href = currentEvent?.homeUrl || 'index.html';
+  return false;
+}
+
 // 5. Hacer la función global para usarla desde cualquier script inline o externo
 window.showMessageModal = showMessageModal;
 window.showToastNotice = showToastNotice;
@@ -840,6 +900,8 @@ window.copyTableToClipboardAsTsv = copyTableToClipboardAsTsv;
 window.isAdminUser = isAdminUser;
 window.isFinishedEventReadOnly = isFinishedEventReadOnly;
 window.bindTableTsvExportButton = bindTableTsvExportButton;
+window.setPublicPageEventContext = setPublicPageEventContext;
+window.ensureAudienceVotingEnabled = ensureAudienceVotingEnabled;
 
 
 

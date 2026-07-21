@@ -111,12 +111,13 @@ function initUserInfo() {
   if (authBtn) {
     authBtn.addEventListener("click", () => {
       const token = getToken();
+      const currentEventHome = typeof getEvent === 'function' ? getEvent()?.homeUrl : null;
       if (token) {
         localStorage.removeItem("token");
         renderUser();
-        window.location.href = `/home.html?eventId=${encodeURIComponent(eventId)}`;
+        window.location.href = currentEventHome || (eventId ? `/home.html?eventId=${encodeURIComponent(eventId)}` : '/index.html');
       } else {
-        window.location.href = `/login.html?eventId=${encodeURIComponent(eventId)}`;
+        window.location.href = eventId ? `/login.html?eventId=${encodeURIComponent(eventId)}` : '/index.html';
       }
     });
   }

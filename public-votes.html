@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon32.png" type="image/png">
+  <title data-i18n="title">Audience voting</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    .public-votes-shell { max-width: 72rem; }
+    .public-vote-card { border: 0; border-radius: 1.25rem; box-shadow: 0 .75rem 2rem rgba(15, 23, 42, .08); }
+    .public-vote-countdown { font-variant-numeric: tabular-nums; }
+    .public-vote-card .card-footer { background: transparent; border-top-color: rgba(15, 23, 42, .08); }
+  </style>
+  <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
+</head>
+<body class="d-flex flex-column min-vh-100 bg-body-tertiary">
+  <div id="header"></div>
+
+  <main class="container public-votes-shell py-4 py-md-5 flex-grow-1">
+    <div class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center justify-content-between mb-4">
+      <div>
+        <h1 class="h2 mb-1" data-i18n="page_heading">Audience voting</h1>
+        <p class="text-body-secondary mb-0" data-i18n="page_intro">Vote in an open session or view published results.</p>
+      </div>
+      <a class="btn btn-outline-secondary flex-shrink-0" href="index.html">
+        <i class="bi bi-arrow-left me-1"></i><span data-i18n="back_home">Back to events</span>
+      </a>
+    </div>
+
+    <div id="publicVotesLoading" class="card public-vote-card">
+      <div class="card-body text-center py-5">
+        <div class="spinner-border text-primary" role="status"><span class="visually-hidden" data-i18n="loading">Loading...</span></div>
+        <p class="text-body-secondary mt-3 mb-0" data-i18n="loading_sessions">Loading voting sessions...</p>
+      </div>
+    </div>
+
+    <div id="publicVotesError" class="alert alert-danger d-none" role="alert">
+      <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-3">
+        <span class="me-auto" id="publicVotesErrorText"></span>
+        <button class="btn btn-sm btn-outline-danger" type="button" id="retryPublicVotesBtn" data-i18n="retry">Try again</button>
+      </div>
+    </div>
+
+    <div id="publicVotesEmpty" class="card public-vote-card d-none">
+      <div class="card-body text-center py-5 px-3">
+        <i class="bi bi-megaphone text-body-secondary" style="font-size:3rem"></i>
+        <h2 class="h4 mt-3" data-i18n="empty_title">No voting sessions are available right now.</h2>
+        <a class="btn btn-primary mt-2" href="index.html"><i class="bi bi-house me-1"></i><span data-i18n="back_home">Back to events</span></a>
+      </div>
+    </div>
+
+    <div id="publicVotesContent" class="d-none">
+      <section id="openVotesSection" class="mb-5 d-none" aria-labelledby="openVotesHeading">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="badge rounded-pill text-bg-success"><i class="bi bi-broadcast"></i></span>
+          <h2 class="h4 mb-0" id="openVotesHeading" data-i18n="open_sessions">Open voting</h2>
+        </div>
+        <div class="row g-4" id="openVotesList"></div>
+      </section>
+
+      <section id="publishedVotesSection" class="d-none" aria-labelledby="publishedVotesHeading">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <span class="badge rounded-pill text-bg-primary"><i class="bi bi-trophy"></i></span>
+          <h2 class="h4 mb-0" id="publishedVotesHeading" data-i18n="published_sessions">Published results</h2>
+        </div>
+        <div class="row g-4" id="publishedVotesList"></div>
+      </section>
+    </div>
+  </main>
+
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/header.js"></script>
+  <script src="js/footer.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/public-votes.js"></script>
+</body>
+</html>

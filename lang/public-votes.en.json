@@ -1,0 +1,22 @@
+{
+  "title": "Audience voting",
+  "page_heading": "Audience voting",
+  "page_intro": "Vote in an open session or view published results.",
+  "back_home": "Back to events",
+  "loading": "Loading...",
+  "loading_sessions": "Loading voting sessions...",
+  "retry": "Try again",
+  "empty_title": "No voting sessions are available right now.",
+  "open_sessions": "Open voting",
+  "published_sessions": "Published results",
+  "invalid_event": "The event identifier is missing or invalid.",
+  "load_error": "Voting sessions could not be loaded.",
+  "network_error": "Network error. Try again.",
+  "voting_open": "Voting open",
+  "closes_at": "Closes",
+  "vote_now": "Vote now",
+  "results_published": "Results published",
+  "closed_at": "Closed",
+  "view_results": "View results",
+  "page_not_visible": "You do not have permission to access audience voting."
+}

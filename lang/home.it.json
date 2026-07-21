@@ -13,5 +13,6 @@
   "sch_access_sub": "Programmazione dell'Evento e Monitoraggio in Tempo Reale.",
   "sta_access_sub": "Le tue statistiche per questo evento.",
   "res_access_sub": "Visualizza le classifiche e le votazioni.",
-  "reg_access_sub": "Area di Registrazione Partecipanti."
+  "reg_access_sub": "Area di Registrazione Partecipanti.",
+  "audience_vote_access": "Votazione del pubblico"
 }

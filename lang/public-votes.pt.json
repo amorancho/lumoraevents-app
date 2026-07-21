@@ -1,0 +1,22 @@
+{
+  "title": "Votação do público",
+  "page_heading": "Votação do público",
+  "page_intro": "Vote numa sessão aberta ou consulte resultados publicados.",
+  "back_home": "Voltar aos eventos",
+  "loading": "A carregar...",
+  "loading_sessions": "A carregar votações...",
+  "retry": "Tentar novamente",
+  "empty_title": "Não existem votações disponíveis neste momento.",
+  "open_sessions": "Votações abertas",
+  "published_sessions": "Resultados publicados",
+  "invalid_event": "O identificador do evento está ausente ou é inválido.",
+  "load_error": "Não foi possível carregar as votações.",
+  "network_error": "Erro de rede. Tente novamente.",
+  "voting_open": "Votação aberta",
+  "closes_at": "Fecha",
+  "vote_now": "Votar agora",
+  "results_published": "Resultados publicados",
+  "closed_at": "Fechada",
+  "view_results": "Ver resultados",
+  "page_not_visible": "Não tem permissão para aceder à votação do público."
+}

@@ -7,7 +7,8 @@ var API_BASE_URL;
   var host = window.location.hostname;
 
   if (host === "localhost" || host === "127.0.0.1") {
-    API_BASE_URL = "http://localhost:3000"; // local
+    const protocol = window.location.protocol === "https:" ? "https:" : "http:";
+    API_BASE_URL = `${protocol}//${host}:3000`; // local, conservando el mismo site para las cookies SameSite
   } else {
     API_BASE_URL = "https://api.lumoraevents.net"; // producción
   }

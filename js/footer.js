@@ -10,7 +10,11 @@ function generateFooter() {
       const eventOficialPage = doc.getElementById('eventUrl');
 
       if (eventOficialPage) {
-        eventOficialPage.href = getEvent().eventUrl;
+        if (getEvent()?.eventUrl) {
+          eventOficialPage.href = getEvent().eventUrl;
+        } else {
+          eventOficialPage.classList.add('d-none');
+        }
       }
 
       const today = new Date();

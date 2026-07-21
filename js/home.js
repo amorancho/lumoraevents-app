@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateElementProperty("scheduleUrl", "href", `?eventId=${eventId}`, false);
     updateElementProperty("resultsUrl", "href", `?eventId=${eventId}`, false);
     updateElementProperty("statisticsUrl", "href", `?eventId=${eventId}`, false);
+    updateElementProperty("audienceVoteUrl", "href", `?eventId=${encodeURIComponent(currentEvent.id)}`, false);
 
     const principalContainer = document.getElementById("principalContainer");
     const hiddenMessage = document.getElementById("eventHiddenMessage");
@@ -43,6 +44,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const scheduleCol = document.getElementById("col-scheduleUrl");
     const resultsCol = document.getElementById("col-resultsUrl");
     const statisticsCol = document.getElementById("col-statisticsUrl");
+    const audienceVoteCol = document.getElementById("col-audienceVoteUrl");
     const registrationCol = document.getElementById("col-registrationUrl");
 
     const showColumn = (column) => {
@@ -139,6 +141,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         principalContainer.classList.add("d-none");
         hiddenMessage.classList.remove("d-none");
         return;
+    }
+
+    if (currentEvent.hasAudienceVoting) {
+        showColumn(audienceVoteCol);
     }
 
     syncRowVisibility(accessRow);

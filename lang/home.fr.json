@@ -13,5 +13,6 @@
   "sch_access_sub": "Programme de l'Événement et Suivi en Direct.",
   "sta_access_sub": "Vos statistiques pour cet ?v?nement.",
   "res_access_sub": "Visualisez les classements et les votes.",
-  "reg_access_sub": "Zone d'inscription des participants."
+  "reg_access_sub": "Zone d'inscription des participants.",
+  "audience_vote_access": "Vote du public"
 }
