@@ -62,6 +62,7 @@
     confirmMessage: document.getElementById('confirmRegistrationMessage'),
     confirmRegistrationBtn: document.getElementById('confirmRegistrationBtn'),
     audioDeleteModal: deleteAudioModalEl,
+    audioDeleteMessage: document.getElementById('deleteAudioMessage'),
     audioDeleteConfirmBtn: document.getElementById('confirmDeleteAudioBtn'),
     audioSection: document.getElementById('registrationAudioSection'),
     paymentSection: document.getElementById('registrationPaymentSection')
@@ -1326,10 +1327,26 @@
   };
 
   const showAudioDeleteConfirm = () => new Promise((resolve) => {
+    const deletingValidatedAudio = isSchoolUser
+      && isRegistrationFlagEnabled(audioRegistration?.music_validated);
+    const confirmMessage = deletingValidatedAudio
+      ? t(
+          'registration_audio_delete_validated_confirm',
+          'Esta música ya está validada. Si la eliminas, la nueva música que subas tendrá que volver a validarse. ¿Quieres continuar?'
+        )
+      : t('registration_audio_delete_confirm', '¿Seguro que deseas eliminar la música?');
+
     if (!audioDeleteModal || !elements.audioDeleteConfirmBtn || !elements.audioDeleteModal) {
-      resolve(window.confirm('Seguro que deseas eliminar la musica?'));
+      resolve(window.confirm(confirmMessage));
       return;
     }
+
+    if (elements.audioDeleteMessage) {
+      elements.audioDeleteMessage.textContent = confirmMessage;
+    }
+    elements.audioDeleteConfirmBtn.textContent = deletingValidatedAudio
+      ? t('registration_audio_delete_validated_continue', 'Continuar y eliminar')
+      : t('delete', 'Eliminar');
 
     let resolved = false;
     const handleHidden = () => {
