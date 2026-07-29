@@ -6096,7 +6096,7 @@ function initOrganizerRegistrationsTab() {
     const minYears = normalizeNumber(category.min_years);
     const maxYears = normalizeNumber(category.max_years);
     const maxOutOfRange = normalizeNumber(category?.max_outofrange) ?? 0;
-    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera de rango');
+    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. por encima del rango');
     const participantsInfo = `
       <div class="registration-category-info-card registration-category-info-card--rules">
         <div class="registration-category-info-title">

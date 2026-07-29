@@ -44,6 +44,7 @@
     membersTable: document.getElementById('registrationMembersTable'),
     membersCount: document.getElementById('registrationMembersCount'),
     membersOutOfRangeInfo: document.getElementById('registrationMembersOutOfRangeInfo'),
+    membersBelowRangeNote: document.getElementById('registrationMembersBelowRangeNote'),
     membersEmpty: document.getElementById('registrationMembersEmpty'),
     membersSaveBtn: document.getElementById('registrationMembersSaveBtn'),
     membersRuleInfo: document.getElementById('registrationMembersRuleInfo'),
@@ -291,22 +292,27 @@
     getRegistrationAgeReferenceDate()
   );
 
-  const isMemberOutOfAgeRange = (member, category = getMembersCategory()) => {
-    if (!member || !categoryHasAgeRange(category)) return false;
+  const getMemberAgeRangeStatus = (member, category = getMembersCategory()) => {
+    if (!member || !categoryHasAgeRange(category)) return 'in-range';
 
     const age = getMemberAgeValue(member);
     const minYears = normalizeNumber(category?.min_years);
     const maxYears = normalizeNumber(category?.max_years);
     if (age === '-') {
-      return true;
+      return 'unknown';
     }
 
-    return (minYears !== null && age < minYears) || (maxYears !== null && age > maxYears);
+    if (minYears !== null && age < minYears) return 'below';
+    if (maxYears !== null && age > maxYears) return 'above';
+    return 'in-range';
   };
 
-  const getOutOfAgeRangeMembersCount = (members = selectedMembers, category = getMembersCategory()) => {
+  const getAboveAgeRangeMembersCount = (members = selectedMembers, category = getMembersCategory()) => {
     if (!Array.isArray(members) || !categoryHasAgeRange(category)) return 0;
-    return members.reduce((count, member) => count + (isMemberOutOfAgeRange(member, category) ? 1 : 0), 0);
+    return members.reduce(
+      (count, member) => count + (getMemberAgeRangeStatus(member, category) === 'above' ? 1 : 0),
+      0
+    );
   };
 
   const updateCategoryInfo = () => {
@@ -329,7 +335,7 @@
     const minYears = normalizeNumber(category.min_years);
     const maxYears = normalizeNumber(category.max_years);
     const musicMaxDuration = normalizeNumber(category.music_max_duration);
-    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera de rango');
+    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. por encima del rango');
     const participantsInfo = `
       <div class="registration-category-info-card registration-category-info-card--rules">
         <div class="registration-category-info-title">
@@ -987,10 +993,10 @@
       return;
     }
 
-    const outOfRangeCount = getOutOfAgeRangeMembersCount(selectedMembers, category);
+    const outOfRangeCount = getAboveAgeRangeMembersCount(selectedMembers, category);
     const allowedOutOfRange = getCategoryMaxOutOfRange(category);
     elements.membersOutOfRangeInfo.textContent = formatTemplate(
-      t('registration_competitions_members_outofrange_count', 'Fuera de rango: {count}'),
+      t('registration_competitions_members_outofrange_count', 'Por encima del rango: {count}'),
       { count: outOfRangeCount }
     );
     elements.membersOutOfRangeInfo.classList.remove('d-none', 'text-muted', 'text-warning-emphasis', 'text-danger', 'fw-semibold');
@@ -1004,12 +1010,22 @@
     }
   };
 
+  const updateMembersBelowRangeNote = () => {
+    if (!elements.membersBelowRangeNote) return;
+
+    const category = getMembersCategory();
+    const hasMinimumAge = normalizeNumber(category?.min_years) !== null;
+    elements.membersBelowRangeNote.classList.toggle('d-none', !hasMinimumAge);
+    elements.membersBelowRangeNote.classList.toggle('d-flex', hasMinimumAge);
+  };
+
   const renderMembersTable = () => {
     if (!elements.membersTable) return;
     elements.membersTable.innerHTML = '';
 
     updateMemberCount();
     updateMembersOutOfRangeInfo();
+    updateMembersBelowRangeNote();
 
     if (!selectedMembers.length) {
       if (elements.membersEmpty) elements.membersEmpty.classList.remove('d-none');
@@ -1027,9 +1043,13 @@
       const row = document.createElement('tr');
       row.dataset.id = member.id;
       const memberAge = getMemberAgeValue(member);
-      const outOfRange = isMemberOutOfAgeRange(member, category);
-      if (outOfRange) {
+      const ageRangeStatus = getMemberAgeRangeStatus(member, category);
+      const isAboveRange = ageRangeStatus === 'above';
+      const isBelowRange = ageRangeStatus === 'below';
+      if (isAboveRange) {
         row.classList.add('table-warning');
+      } else if (isBelowRange) {
+        row.classList.add('table-info');
       }
 
       const nameCell = document.createElement('td');
@@ -1049,8 +1069,10 @@
 
       const ageCell = document.createElement('td');
       ageCell.textContent = `${memberAge}`;
-      if (outOfRange) {
+      if (isAboveRange) {
         ageCell.classList.add('fw-semibold', 'text-warning-emphasis');
+      } else if (isBelowRange) {
+        ageCell.classList.add('fw-semibold', 'text-info-emphasis');
       }
       row.appendChild(ageCell);
 
@@ -1571,7 +1593,7 @@
     const maxPar = normalizeNumber(category.max_par);
     const minYears = normalizeNumber(category.min_years);
     const maxYears = normalizeNumber(category.max_years);
-    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera de rango');
+    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. por encima del rango');
     const participantsInfo = `
       <div class="registration-category-info-card registration-category-info-card--rules">
         <div class="registration-category-info-title">
