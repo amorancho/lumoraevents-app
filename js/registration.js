@@ -2466,11 +2466,11 @@ function initParticipantsTab(role) {
       participantGenderHeader.classList.toggle('d-none', !shouldShowGender);
     }
     if (elements.genderField) {
-      elements.genderField.classList.toggle('d-none', role === 'school');
+      elements.genderField.classList.toggle('d-none', !shouldShowGender);
     }
     if (elements.gender) {
       elements.gender.required = false;
-      if (role === 'school') {
+      if (!shouldShowGender) {
         elements.gender.value = '';
       }
     }
@@ -2959,7 +2959,7 @@ function initParticipantsTab(role) {
         if (elements.id) elements.id.value = participant.id || '';
         if (elements.name) elements.name.value = participant.name || '';
         if (elements.dob) elements.dob.value = getDateOnlyValue(participant.date_of_birth);
-        if (elements.gender) elements.gender.value = role === 'school' ? '' : (participant.gender || '');
+        if (elements.gender) elements.gender.value = shouldShowGender ? (participant.gender || '') : '';
         setCountryValue(participant.country || '');
       }
     }
@@ -3221,7 +3221,9 @@ function initParticipantsTab(role) {
       name: elements.name ? elements.name.value.trim() : '',
       date_of_birth: elements.dob ? elements.dob.value : '',
       country: elements.country ? elements.country.value : '',
-      gender: role === 'school' ? null : ((elements.gender ? `${elements.gender.value || ''}`.trim() : '') || null),
+      gender: shouldShowGender
+        ? ((elements.gender ? `${elements.gender.value || ''}`.trim() : '') || null)
+        : null,
       school_id: user.id
     };
 
