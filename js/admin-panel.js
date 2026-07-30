@@ -4,6 +4,30 @@ let clients=[],events=[],directoryEvents=[],selectedEventId=null,currentEventDet
 let clientModal,clearEventDataModal,categoryEditorModal,directoryEventModal;
 let directoryEventsLoaded=false;
 let categoryEditorDraft=[];
+const directoryEventValueConfig={
+  status:{
+    ACT:{label:'ACTIVO',badgeClass:'text-bg-success'},
+    INA:{label:'INACTIVO',badgeClass:'text-bg-secondary'},
+    DEL:{label:'DESCARTADO',badgeClass:'text-bg-danger'}
+  },
+  update_status:{
+    OK:{label:'OK',badgeClass:'text-bg-success'},
+    PEN:{label:'PENDIENTE',badgeClass:'text-bg-warning'}
+  },
+  is_published:{
+    1:{label:'PUBLICADO',filterLabel:'Sí',badgeClass:'text-bg-success'},
+    0:{label:'NO PUBLICADO',filterLabel:'No',badgeClass:'text-bg-secondary'}
+  },
+  contact_status:{
+    NON:{label:'sin contacto',badgeClass:'text-bg-secondary'},
+    INB:{label:'han contactado',badgeClass:'text-bg-info'},
+    SEN:{label:'info enviada',badgeClass:'text-bg-primary'},
+    RES:{label:'han respondido',badgeClass:'text-bg-warning'},
+    INT:{label:'interesados',badgeClass:'text-bg-success'},
+    NIN:{label:'no interesados',badgeClass:'text-bg-danger'},
+    CLI:{label:'clientes',badgeClass:'text-bg-dark'}
+  }
+};
 
 function setLoadingButtonState(button,isLoading,loadingText='Guardando...'){
   if(!button) return;
@@ -129,57 +153,47 @@ function renderAdminLayout(){
           </div>
     </section>
     <section id="bellydanceSection" data-admin-panel="bellydance" class="d-none">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-        <div>
-          <h2 class="h4 mb-1">Bellydance</h2>
-          <p class="text-body-secondary mb-0">Eventos del directorio de Bellydance.</p>
-        </div>
-        <button id="createDirectoryEventBtn" class="btn btn-primary">
-          <i class="bi bi-plus-lg me-1"></i> Nuevo evento
-        </button>
-      </div>
-
       <div class="card shadow-sm border-0 mb-3">
         <div class="card-header bg-body-tertiary">
           <h3 class="h6 mb-0"><i class="bi bi-funnel me-2"></i>Filtros</h3>
         </div>
         <div class="card-body">
           <div class="row g-3 align-items-end">
-            <div class="col-12 col-lg-3">
-              <label for="directoryNameFilter" class="form-label">name</label>
+            <div class="col-12 col-md-6 col-lg-3">
+              <label for="directoryNameFilter" class="form-label">Nombre</label>
               <input type="search" id="directoryNameFilter" class="form-control" autocomplete="off">
             </div>
-            <div class="col-12 col-sm-6 col-lg-2">
-              <label for="directoryCountryFilter" class="form-label">country</label>
+            <div class="col-12 col-sm-6 col-lg-1">
+              <label for="directoryCountryFilter" class="form-label">País</label>
               <select id="directoryCountryFilter" class="form-select"><option value="">Todos</option></select>
             </div>
-            <div class="col-12 col-sm-6 col-lg-2">
-              <label for="directoryDateFromFilter" class="form-label">fecha desde</label>
+            <div class="col-12 col-sm-6 col-lg-1">
+              <label for="directoryDateFromFilter" class="form-label">Desde</label>
               <input type="date" id="directoryDateFromFilter" class="form-control">
             </div>
-            <div class="col-12 col-sm-6 col-lg-2">
-              <label for="directoryDateToFilter" class="form-label">fecha hasta</label>
+            <div class="col-12 col-sm-6 col-lg-1">
+              <label for="directoryDateToFilter" class="form-label">Hasta</label>
               <input type="date" id="directoryDateToFilter" class="form-control">
             </div>
-            <div class="col-12 col-sm-6 col-lg-3">
-              <label for="directoryStatusFilter" class="form-label">status</label>
+            <div class="col-12 col-sm-6 col-lg-1">
+              <label for="directoryStatusFilter" class="form-label">Estado</label>
               <select id="directoryStatusFilter" class="form-select"><option value="">Todos</option></select>
             </div>
-            <div class="col-12 col-sm-6 col-lg-3">
-              <label for="directoryUpdateStatusFilter" class="form-label">update_status</label>
+            <div class="col-12 col-sm-6 col-lg-1">
+              <label for="directoryUpdateStatusFilter" class="form-label">Actualización</label>
               <select id="directoryUpdateStatusFilter" class="form-select"><option value="">Todos</option></select>
             </div>
-            <div class="col-12 col-sm-6 col-lg-3">
-              <label for="directoryPublishedFilter" class="form-label">is_published</label>
+            <div class="col-12 col-sm-6 col-lg-1">
+              <label for="directoryPublishedFilter" class="form-label">Publicado</label>
               <select id="directoryPublishedFilter" class="form-select"><option value="">Todos</option></select>
             </div>
-            <div class="col-12 col-sm-6 col-lg-3">
-              <label for="directoryContactStatusFilter" class="form-label">contact_status</label>
+            <div class="col-12 col-sm-6 col-lg-1">
+              <label for="directoryContactStatusFilter" class="form-label">Contacto</label>
               <select id="directoryContactStatusFilter" class="form-select"><option value="">Todos</option></select>
             </div>
-            <div class="col-12 col-sm-6 col-lg-3">
+            <div class="col-12 col-sm-6 col-lg-2">
               <button type="button" id="clearDirectoryFiltersBtn" class="btn btn-outline-secondary w-100">
-                Limpiar filtros
+                Limpiar
               </button>
             </div>
           </div>
@@ -189,21 +203,26 @@ function renderAdminLayout(){
       <div class="card shadow-sm border-0">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
           <h3 class="h5 mb-0"><i class="bi bi-calendar-event me-2"></i>Eventos</h3>
-          <span id="count-directory-events" class="badge bg-secondary rounded-pill">0</span>
+          <div class="d-flex align-items-center gap-2">
+            <button id="createDirectoryEventBtn" class="btn btn-primary btn-sm">
+              <i class="bi bi-plus-lg me-1"></i> Nuevo evento
+            </button>
+            <span id="count-directory-events" class="badge bg-secondary rounded-pill">0</span>
+          </div>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
               <thead class="table-light">
                 <tr>
-                  <th>name</th>
-                  <th>start_date</th>
-                  <th>end_date</th>
-                  <th>country_code</th>
-                  <th>status</th>
-                  <th>update_status</th>
-                  <th>is_published</th>
-                  <th>contact_status</th>
+                  <th>Nombre</th>
+                  <th>Fecha inicio</th>
+                  <th>Fecha fin</th>
+                  <th>País</th>
+                  <th>Estado</th>
+                  <th>Actualización</th>
+                  <th>Publicado</th>
+                  <th>Contacto</th>
                   <th class="text-center">Acciones</th>
                 </tr>
               </thead>
@@ -244,15 +263,15 @@ function ensureDirectoryEventModal(){
             <form id="directoryEventForm" data-action="create">
               <div class="row g-3">
                 <div class="col-12 col-md-2">
-                  <label class="form-label" for="directoryEventId">id</label>
+                  <label class="form-label" for="directoryEventId">ID</label>
                   <input type="text" class="form-control bg-body-tertiary" id="directoryEventId" name="id" readonly>
                 </div>
                 <div class="col-12 col-md-5">
-                  <label class="form-label" for="directoryEventCreatedAt">created_at</label>
+                  <label class="form-label" for="directoryEventCreatedAt">Fecha de creación</label>
                   <input type="text" class="form-control bg-body-tertiary" id="directoryEventCreatedAt" name="created_at" readonly>
                 </div>
                 <div class="col-12 col-md-5">
-                  <label class="form-label" for="directoryEventUpdatedAt">updated_at</label>
+                  <label class="form-label" for="directoryEventUpdatedAt">Última actualización</label>
                   <input type="text" class="form-control bg-body-tertiary" id="directoryEventUpdatedAt" name="updated_at" readonly>
                 </div>
 
@@ -260,131 +279,128 @@ function ensureDirectoryEventModal(){
                   <hr class="my-1">
                 </div>
                 <div class="col-12 col-lg-6">
-                  <label class="form-label" for="directoryEventName">name</label>
+                  <label class="form-label" for="directoryEventName">Nombre</label>
                   <input type="text" class="form-control" id="directoryEventName" name="name" maxlength="150" required>
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
-                  <label class="form-label" for="directoryEventStartDate">start_date</label>
+                  <label class="form-label" for="directoryEventStartDate">Fecha de inicio</label>
                   <input type="date" class="form-control" id="directoryEventStartDate" name="start_date" required>
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
-                  <label class="form-label" for="directoryEventEndDate">end_date</label>
+                  <label class="form-label" for="directoryEventEndDate">Fecha de fin</label>
                   <input type="date" class="form-control" id="directoryEventEndDate" name="end_date" required>
-                  <div class="invalid-feedback">end_date no puede ser anterior a start_date.</div>
+                  <div class="invalid-feedback">La fecha de fin no puede ser anterior a la fecha de inicio.</div>
                 </div>
                 <div class="col-12">
-                  <label class="form-label" for="directoryEventDescription">description</label>
+                  <label class="form-label" for="directoryEventDescription">Descripción</label>
                   <textarea class="form-control" id="directoryEventDescription" name="description" rows="3"></textarea>
                 </div>
                 <div class="col-12 col-md-4">
-                  <label class="form-label" for="directoryEventCity">city</label>
+                  <label class="form-label" for="directoryEventCity">Ciudad</label>
                   <input type="text" class="form-control" id="directoryEventCity" name="city" maxlength="100">
                 </div>
                 <div class="col-12 col-md-2">
-                  <label class="form-label" for="directoryEventCountryCode">country_code</label>
+                  <label class="form-label" for="directoryEventCountryCode">Código de país</label>
                   <input type="text" class="form-control text-uppercase" id="directoryEventCountryCode" name="country_code" maxlength="2" pattern="[A-Za-z]{2}">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label" for="directoryEventVenue">venue</label>
+                  <label class="form-label" for="directoryEventVenue">Lugar</label>
                   <input type="text" class="form-control" id="directoryEventVenue" name="venue" maxlength="150">
                 </div>
 
                 <div class="col-12">
                   <hr class="my-1">
                 </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="directoryEventEventType">Tipo de evento</label>
+                  <input type="text" class="form-control" id="directoryEventEventType" name="event_type" maxlength="50">
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="directoryEventDanceStyles">Estilos de baile</label>
+                  <input type="text" class="form-control" id="directoryEventDanceStyles" name="dance_styles" maxlength="500" required>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="directoryEventMasters">Maestros/as</label>
+                  <input type="text" class="form-control" id="directoryEventMasters" name="masters" maxlength="500">
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventStatus">Estado</label>
+                  <select class="form-select" id="directoryEventStatus" name="status" data-directory-value-field="status" required></select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventUpdateStatus">Estado de actualización</label>
+                  <select class="form-select" id="directoryEventUpdateStatus" name="update_status" data-directory-value-field="update_status" required></select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventIsPublished">Publicado</label>
+                  <select class="form-select" id="directoryEventIsPublished" name="is_published" data-directory-value-field="is_published" required></select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventContactStatus">Estado de contacto</label>
+                  <select class="form-select" id="directoryEventContactStatus" name="contact_status" data-directory-value-field="contact_status" required></select>
+                </div>
+
+                <div class="col-12">
+                  <hr class="my-1">
+                </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label" for="directoryEventWebsiteUrl">website_url</label>
+                  <label class="form-label" for="directoryEventWebsiteUrl">Sitio web</label>
                   <input type="url" class="form-control" id="directoryEventWebsiteUrl" name="website_url" maxlength="300">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label" for="directoryEventRegistrationUrl">registration_url</label>
+                  <label class="form-label" for="directoryEventRegistrationUrl">Enlace de registro</label>
                   <input type="url" class="form-control" id="directoryEventRegistrationUrl" name="registration_url" maxlength="300">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label" for="directoryEventInstagramUrl">instagram_url</label>
+                  <label class="form-label" for="directoryEventInstagramUrl">Instagram</label>
                   <input type="url" class="form-control" id="directoryEventInstagramUrl" name="instagram_url" maxlength="300">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label" for="directoryEventFacebookUrl">facebook_url</label>
+                  <label class="form-label" for="directoryEventFacebookUrl">Facebook</label>
                   <input type="url" class="form-control" id="directoryEventFacebookUrl" name="facebook_url" maxlength="300">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label" for="directoryEventTiktokUrl">tiktok_url</label>
+                  <label class="form-label" for="directoryEventTiktokUrl">TikTok</label>
                   <input type="url" class="form-control" id="directoryEventTiktokUrl" name="tiktok_url" maxlength="300">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label" for="directoryEventYoutubeUrl">youtube_url</label>
+                  <label class="form-label" for="directoryEventYoutubeUrl">YouTube</label>
                   <input type="url" class="form-control" id="directoryEventYoutubeUrl" name="youtube_url" maxlength="300">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label" for="directoryEventPosterUrl">poster_url</label>
+                  <label class="form-label" for="directoryEventPosterUrl">Cartel</label>
                   <input type="url" class="form-control" id="directoryEventPosterUrl" name="poster_url" maxlength="300">
                 </div>
                 <div class="col-12 col-md-6">
-                  <label class="form-label" for="directoryEventContactEmail">contact_email</label>
+                  <label class="form-label" for="directoryEventContactEmail">Email de contacto</label>
                   <input type="email" class="form-control" id="directoryEventContactEmail" name="contact_email" maxlength="200">
                 </div>
 
                 <div class="col-12">
                   <hr class="my-1">
                 </div>
-                <div class="col-12 col-md-4">
-                  <label class="form-label" for="directoryEventEventType">event_type</label>
-                  <input type="text" class="form-control" id="directoryEventEventType" name="event_type" maxlength="50">
-                </div>
-                <div class="col-12 col-md-4">
-                  <label class="form-label" for="directoryEventDanceStyles">dance_styles</label>
-                  <input type="text" class="form-control" id="directoryEventDanceStyles" name="dance_styles" maxlength="500" required>
-                </div>
-                <div class="col-12 col-md-4">
-                  <label class="form-label" for="directoryEventMasters">masters</label>
-                  <input type="text" class="form-control" id="directoryEventMasters" name="masters" maxlength="500">
-                </div>
-                <div class="col-12 col-sm-6 col-lg-3">
-                  <label class="form-label" for="directoryEventStatus">status</label>
-                  <input type="text" class="form-control" id="directoryEventStatus" name="status" maxlength="3" required>
-                </div>
-                <div class="col-12 col-sm-6 col-lg-3">
-                  <label class="form-label" for="directoryEventUpdateStatus">update_status</label>
-                  <input type="text" class="form-control" id="directoryEventUpdateStatus" name="update_status" maxlength="3" required>
-                </div>
-                <div class="col-12 col-sm-6 col-lg-3">
-                  <label class="form-label" for="directoryEventIsPublished">is_published</label>
-                  <select class="form-select" id="directoryEventIsPublished" name="is_published" required>
-                    <option value="0">0</option>
-                    <option value="1">1</option>
-                  </select>
-                </div>
-                <div class="col-12 col-sm-6 col-lg-3">
-                  <label class="form-label" for="directoryEventContactStatus">contact_status</label>
-                  <input type="text" class="form-control" id="directoryEventContactStatus" name="contact_status" maxlength="3" required>
-                </div>
-
-                <div class="col-12">
-                  <hr class="my-1">
-                </div>
                 <div class="col-12 col-md-6 col-lg-3">
-                  <label class="form-label" for="directoryEventContactedUsAt">contacted_us_at</label>
+                  <label class="form-label" for="directoryEventContactedUsAt">Fecha de contacto recibido</label>
                   <input type="datetime-local" class="form-control" id="directoryEventContactedUsAt" name="contacted_us_at">
                 </div>
                 <div class="col-12 col-md-6 col-lg-3">
-                  <label class="form-label" for="directoryEventOutreachSentAt">outreach_sent_at</label>
+                  <label class="form-label" for="directoryEventOutreachSentAt">Fecha de información enviada</label>
                   <input type="datetime-local" class="form-control" id="directoryEventOutreachSentAt" name="outreach_sent_at">
                 </div>
                 <div class="col-12 col-md-6 col-lg-3">
-                  <label class="form-label" for="directoryEventOutreachResponseAt">outreach_response_at</label>
+                  <label class="form-label" for="directoryEventOutreachResponseAt">Fecha de respuesta</label>
                   <input type="datetime-local" class="form-control" id="directoryEventOutreachResponseAt" name="outreach_response_at">
                 </div>
                 <div class="col-12 col-md-6 col-lg-3">
-                  <label class="form-label" for="directoryEventLastCheckedAt">last_checked_at</label>
+                  <label class="form-label" for="directoryEventLastCheckedAt">Última comprobación</label>
                   <input type="datetime-local" class="form-control" id="directoryEventLastCheckedAt" name="last_checked_at">
                 </div>
                 <div class="col-12 col-md-4">
-                  <label class="form-label" for="directoryEventContactSource">contact_source</label>
+                  <label class="form-label" for="directoryEventContactSource">Origen del contacto</label>
                   <input type="text" class="form-control" id="directoryEventContactSource" name="contact_source" maxlength="20">
                 </div>
                 <div class="col-12 col-md-8">
-                  <label class="form-label" for="directoryEventInternalNotes">internal_notes</label>
+                  <label class="form-label" for="directoryEventInternalNotes">Notas internas</label>
                   <textarea class="form-control" id="directoryEventInternalNotes" name="internal_notes" rows="3"></textarea>
                 </div>
               </div>
@@ -398,6 +414,18 @@ function ensureDirectoryEventModal(){
       </div>
     </div>`;
   document.body.appendChild(wrapper.firstElementChild);
+  populateDirectoryEventValueFields();
+}
+
+function populateDirectoryEventValueFields(){
+  document.querySelectorAll('[data-directory-value-field]').forEach((select)=>{
+    const field=select.dataset.directoryValueField;
+    const options=directoryEventValueConfig[field]||{};
+    select.replaceChildren();
+    Object.entries(options).forEach(([value,config])=>{
+      select.appendChild(new Option(config.label,value));
+    });
+  });
 }
 
 function buildEventFormTabs(){
@@ -1192,13 +1220,13 @@ async function loadDirectoryEvents(){
 
 function populateDirectoryEventFilters(){
   populateDirectoryEventFilter('directoryCountryFilter',directoryEvents.map((event)=>event.country_code));
-  populateDirectoryEventFilter('directoryStatusFilter',directoryEvents.map((event)=>event.status));
-  populateDirectoryEventFilter('directoryUpdateStatusFilter',directoryEvents.map((event)=>event.update_status));
-  populateDirectoryEventFilter('directoryPublishedFilter',directoryEvents.map((event)=>event.is_published));
-  populateDirectoryEventFilter('directoryContactStatusFilter',directoryEvents.map((event)=>event.contact_status));
+  populateDirectoryEventFilter('directoryStatusFilter',directoryEvents.map((event)=>event.status),(value)=>getDirectoryEventValueLabel('status',value));
+  populateDirectoryEventFilter('directoryUpdateStatusFilter',directoryEvents.map((event)=>event.update_status),(value)=>getDirectoryEventValueLabel('update_status',value));
+  populateDirectoryEventFilter('directoryPublishedFilter',directoryEvents.map((event)=>event.is_published),(value)=>getDirectoryEventValueLabel('is_published',value,true));
+  populateDirectoryEventFilter('directoryContactStatusFilter',directoryEvents.map((event)=>event.contact_status),(value)=>getDirectoryEventValueLabel('contact_status',value));
 }
 
-function populateDirectoryEventFilter(id,values){
+function populateDirectoryEventFilter(id,values,getLabel=(value)=>value){
   const select=document.getElementById(id);
   if(!select) return;
   const selectedValue=select.value;
@@ -1207,8 +1235,25 @@ function populateDirectoryEventFilter(id,values){
     .map((value)=>String(value))
   )].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
   select.replaceChildren(new Option('Todos',''));
-  uniqueValues.forEach((value)=>select.appendChild(new Option(value,value)));
+  uniqueValues.forEach((value)=>select.appendChild(new Option(getLabel(value),value)));
   select.value=uniqueValues.includes(selectedValue)?selectedValue:'';
+}
+
+function getDirectoryEventValueLabel(field,value,useFilterLabel=false){
+  const normalizedValue=value===null||value===undefined?'':String(value);
+  const config=directoryEventValueConfig[field]?.[normalizedValue];
+  return useFilterLabel&&config?.filterLabel?config.filterLabel:config?.label||normalizedValue;
+}
+
+function appendDirectoryEventBadgeCell(row,field,value){
+  const normalizedValue=value===null||value===undefined?'':String(value);
+  const config=directoryEventValueConfig[field]?.[normalizedValue];
+  const cell=document.createElement('td');
+  const badge=document.createElement('span');
+  badge.className=`badge ${config?.badgeClass||'text-bg-secondary'}`;
+  badge.textContent=config?.label||normalizedValue;
+  cell.appendChild(badge);
+  row.appendChild(cell);
 }
 
 function getFilteredDirectoryEvents(){
@@ -1252,16 +1297,16 @@ function renderDirectoryEvents(){
       event.name,
       formatDirectoryDate(event.start_date),
       formatDirectoryDate(event.end_date),
-      event.country_code,
-      event.status,
-      event.update_status,
-      event.is_published,
-      event.contact_status
+      event.country_code
     ].forEach((value)=>{
       const cell=document.createElement('td');
       cell.textContent=value===null||value===undefined?'':String(value);
       row.appendChild(cell);
     });
+    appendDirectoryEventBadgeCell(row,'status',event.status);
+    appendDirectoryEventBadgeCell(row,'update_status',event.update_status);
+    appendDirectoryEventBadgeCell(row,'is_published',event.is_published);
+    appendDirectoryEventBadgeCell(row,'contact_status',event.contact_status);
     const actionsCell=document.createElement('td');
     actionsCell.className='text-center';
     actionsCell.innerHTML=`
@@ -1314,13 +1359,19 @@ function formatDirectoryDateTimeInput(value){
 function setDirectoryEventFormValue(form,name,value){
   const field=form.elements.namedItem(name);
   if(!field) return;
-  if(['start_date','end_date'].includes(name)) field.value=formatDirectoryDate(value);
-  else if(['contacted_us_at','outreach_sent_at','outreach_response_at','last_checked_at'].includes(name)) field.value=formatDirectoryDateTimeInput(value);
-  else field.value=value===null||value===undefined?'':String(value);
+  let normalizedValue;
+  if(['start_date','end_date'].includes(name)) normalizedValue=formatDirectoryDate(value);
+  else if(['contacted_us_at','outreach_sent_at','outreach_response_at','last_checked_at'].includes(name)) normalizedValue=formatDirectoryDateTimeInput(value);
+  else normalizedValue=value===null||value===undefined?'':String(value);
+  if(field.tagName==='SELECT'&&normalizedValue&&![...field.options].some((option)=>option.value===normalizedValue)){
+    field.appendChild(new Option(normalizedValue,normalizedValue));
+  }
+  field.value=normalizedValue;
 }
 
 function openCreateDirectoryEventModal(){
   const form=document.getElementById('directoryEventForm');
+  populateDirectoryEventValueFields();
   form.reset();
   form.dataset.action='create';
   form.removeAttribute('data-id');
@@ -1343,6 +1394,7 @@ async function openEditDirectoryEventModal(id,triggerButton){
     if(!response.ok) throw new Error(await getDirectoryResponseError(response,'Error al cargar el evento'));
     const event=await response.json();
     const form=document.getElementById('directoryEventForm');
+    populateDirectoryEventValueFields();
     form.reset();
     form.dataset.action='edit';
     form.dataset.id=String(event.id);
@@ -1396,7 +1448,7 @@ function validateDirectoryEventDates(){
   const endDate=document.getElementById('directoryEventEndDate');
   if(!startDate||!endDate) return true;
   const invalid=Boolean(startDate.value&&endDate.value&&endDate.value<startDate.value);
-  endDate.setCustomValidity(invalid?'end_date no puede ser anterior a start_date.':'');
+  endDate.setCustomValidity(invalid?'La fecha de fin no puede ser anterior a la fecha de inicio.':'');
   return !invalid;
 }
 
