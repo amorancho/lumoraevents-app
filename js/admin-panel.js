@@ -1,7 +1,8 @@
 ﻿var title='Administración LumoraEvents';
 const allowedRoles=['admin'];
-let clients=[],events=[],selectedEventId=null,currentEventDetail=null,keepCreateMode=false;
-let clientModal,clearEventDataModal,categoryEditorModal;
+let clients=[],events=[],directoryEvents=[],selectedEventId=null,currentEventDetail=null,keepCreateMode=false;
+let clientModal,clearEventDataModal,categoryEditorModal,directoryEventModal;
+let directoryEventsLoaded=false;
 let categoryEditorDraft=[];
 
 function setLoadingButtonState(button,isLoading,loadingText='Guardando...'){
@@ -43,6 +44,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   validateRoles(allowedRoles);
   await ensureTranslationsReady();
   renderAdminLayout();
+  ensureDirectoryEventModal();
   syncTiedPositionsFieldOptions();
   syncSendStatsCodeFieldOptions();
   syncJudgeFeedbackFieldOptions();
@@ -50,6 +52,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   clientModal=new bootstrap.Modal(document.getElementById('clientModal'));
   clearEventDataModal=new bootstrap.Modal(document.getElementById('clearEventDataModal'));
   categoryEditorModal=new bootstrap.Modal(document.getElementById('categoryEditorModal'));
+  directoryEventModal=new bootstrap.Modal(document.getElementById('directoryEventModal'));
   setEventCategories([]);
   await loadClients();
   await loadEvents();
@@ -68,6 +71,9 @@ function renderAdminLayout(){
       </li>
       <li class="nav-item" role="presentation">
         <button type="button" class="nav-link admin-section-link" data-admin-section="clients" aria-selected="false">Clientes</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button type="button" class="nav-link admin-section-link" data-admin-section="bellydance" aria-selected="false">Bellydance</button>
       </li>
     </ul>
 
@@ -121,12 +127,277 @@ function renderAdminLayout(){
               <div id="clientsEmptyState" class="text-center py-5 d-none"><i class="bi bi-person-x text-muted" style="font-size:3rem;"></i><h5 class="text-muted mt-3">No hay clientes</h5><p class="text-muted">Crea tu primer cliente usando el botón superior.</p></div>
             </div>
           </div>
+    </section>
+    <section id="bellydanceSection" data-admin-panel="bellydance" class="d-none">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+          <h2 class="h4 mb-1">Bellydance</h2>
+          <p class="text-body-secondary mb-0">Eventos del directorio de Bellydance.</p>
+        </div>
+        <button id="createDirectoryEventBtn" class="btn btn-primary">
+          <i class="bi bi-plus-lg me-1"></i> Nuevo evento
+        </button>
+      </div>
+
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-body-tertiary">
+          <h3 class="h6 mb-0"><i class="bi bi-funnel me-2"></i>Filtros</h3>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-12 col-lg-3">
+              <label for="directoryNameFilter" class="form-label">name</label>
+              <input type="search" id="directoryNameFilter" class="form-control" autocomplete="off">
+            </div>
+            <div class="col-12 col-sm-6 col-lg-2">
+              <label for="directoryCountryFilter" class="form-label">country</label>
+              <select id="directoryCountryFilter" class="form-select"><option value="">Todos</option></select>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-2">
+              <label for="directoryDateFromFilter" class="form-label">fecha desde</label>
+              <input type="date" id="directoryDateFromFilter" class="form-control">
+            </div>
+            <div class="col-12 col-sm-6 col-lg-2">
+              <label for="directoryDateToFilter" class="form-label">fecha hasta</label>
+              <input type="date" id="directoryDateToFilter" class="form-control">
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label for="directoryStatusFilter" class="form-label">status</label>
+              <select id="directoryStatusFilter" class="form-select"><option value="">Todos</option></select>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label for="directoryUpdateStatusFilter" class="form-label">update_status</label>
+              <select id="directoryUpdateStatusFilter" class="form-select"><option value="">Todos</option></select>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label for="directoryPublishedFilter" class="form-label">is_published</label>
+              <select id="directoryPublishedFilter" class="form-select"><option value="">Todos</option></select>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+              <label for="directoryContactStatusFilter" class="form-label">contact_status</label>
+              <select id="directoryContactStatusFilter" class="form-select"><option value="">Todos</option></select>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+              <button type="button" id="clearDirectoryFiltersBtn" class="btn btn-outline-secondary w-100">
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm border-0">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <h3 class="h5 mb-0"><i class="bi bi-calendar-event me-2"></i>Eventos</h3>
+          <span id="count-directory-events" class="badge bg-secondary rounded-pill">0</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>name</th>
+                  <th>start_date</th>
+                  <th>end_date</th>
+                  <th>country_code</th>
+                  <th>status</th>
+                  <th>update_status</th>
+                  <th>is_published</th>
+                  <th>contact_status</th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="directoryEventsTable"></tbody>
+            </table>
+          </div>
+          <div id="directoryEventsLoadingState" class="text-center py-5 d-none">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+            <p class="text-body-secondary mt-3 mb-0">Cargando eventos...</p>
+          </div>
+          <div id="directoryEventsEmptyState" class="text-center py-5 d-none">
+            <i class="bi bi-calendar-x text-muted" style="font-size:3rem;"></i>
+            <h4 class="h5 text-muted mt-3">No hay eventos</h4>
+            <p class="text-muted mb-0">Crea un evento o ajusta los filtros.</p>
+          </div>
+        </div>
+      </div>
     </section>`;
   document.getElementById('eventFormMount').appendChild(eventForm);
   buildEventFormTabs();
   eventModal.remove();
   const titleEl=document.querySelector('#event-name span');
   if(titleEl) titleEl.textContent='Administración';
+}
+
+function ensureDirectoryEventModal(){
+  if(document.getElementById('directoryEventModal')) return;
+  const wrapper=document.createElement('div');
+  wrapper.innerHTML=`
+    <div class="modal fade" id="directoryEventModal" tabindex="-1" aria-labelledby="directoryEventModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="directoryEventModalTitle">Crear evento Bellydance</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <form id="directoryEventForm" data-action="create">
+              <div class="row g-3">
+                <div class="col-12 col-md-2">
+                  <label class="form-label" for="directoryEventId">id</label>
+                  <input type="text" class="form-control bg-body-tertiary" id="directoryEventId" name="id" readonly>
+                </div>
+                <div class="col-12 col-md-5">
+                  <label class="form-label" for="directoryEventCreatedAt">created_at</label>
+                  <input type="text" class="form-control bg-body-tertiary" id="directoryEventCreatedAt" name="created_at" readonly>
+                </div>
+                <div class="col-12 col-md-5">
+                  <label class="form-label" for="directoryEventUpdatedAt">updated_at</label>
+                  <input type="text" class="form-control bg-body-tertiary" id="directoryEventUpdatedAt" name="updated_at" readonly>
+                </div>
+
+                <div class="col-12">
+                  <hr class="my-1">
+                </div>
+                <div class="col-12 col-lg-6">
+                  <label class="form-label" for="directoryEventName">name</label>
+                  <input type="text" class="form-control" id="directoryEventName" name="name" maxlength="150" required>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventStartDate">start_date</label>
+                  <input type="date" class="form-control" id="directoryEventStartDate" name="start_date" required>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventEndDate">end_date</label>
+                  <input type="date" class="form-control" id="directoryEventEndDate" name="end_date" required>
+                  <div class="invalid-feedback">end_date no puede ser anterior a start_date.</div>
+                </div>
+                <div class="col-12">
+                  <label class="form-label" for="directoryEventDescription">description</label>
+                  <textarea class="form-control" id="directoryEventDescription" name="description" rows="3"></textarea>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="directoryEventCity">city</label>
+                  <input type="text" class="form-control" id="directoryEventCity" name="city" maxlength="100">
+                </div>
+                <div class="col-12 col-md-2">
+                  <label class="form-label" for="directoryEventCountryCode">country_code</label>
+                  <input type="text" class="form-control text-uppercase" id="directoryEventCountryCode" name="country_code" maxlength="2" pattern="[A-Za-z]{2}">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventVenue">venue</label>
+                  <input type="text" class="form-control" id="directoryEventVenue" name="venue" maxlength="150">
+                </div>
+
+                <div class="col-12">
+                  <hr class="my-1">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventWebsiteUrl">website_url</label>
+                  <input type="url" class="form-control" id="directoryEventWebsiteUrl" name="website_url" maxlength="300">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventRegistrationUrl">registration_url</label>
+                  <input type="url" class="form-control" id="directoryEventRegistrationUrl" name="registration_url" maxlength="300">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventInstagramUrl">instagram_url</label>
+                  <input type="url" class="form-control" id="directoryEventInstagramUrl" name="instagram_url" maxlength="300">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventFacebookUrl">facebook_url</label>
+                  <input type="url" class="form-control" id="directoryEventFacebookUrl" name="facebook_url" maxlength="300">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventTiktokUrl">tiktok_url</label>
+                  <input type="url" class="form-control" id="directoryEventTiktokUrl" name="tiktok_url" maxlength="300">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventYoutubeUrl">youtube_url</label>
+                  <input type="url" class="form-control" id="directoryEventYoutubeUrl" name="youtube_url" maxlength="300">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventPosterUrl">poster_url</label>
+                  <input type="url" class="form-control" id="directoryEventPosterUrl" name="poster_url" maxlength="300">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventContactEmail">contact_email</label>
+                  <input type="email" class="form-control" id="directoryEventContactEmail" name="contact_email" maxlength="200">
+                </div>
+
+                <div class="col-12">
+                  <hr class="my-1">
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="directoryEventEventType">event_type</label>
+                  <input type="text" class="form-control" id="directoryEventEventType" name="event_type" maxlength="50">
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="directoryEventDanceStyles">dance_styles</label>
+                  <input type="text" class="form-control" id="directoryEventDanceStyles" name="dance_styles" maxlength="500" required>
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="directoryEventMasters">masters</label>
+                  <input type="text" class="form-control" id="directoryEventMasters" name="masters" maxlength="500">
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventStatus">status</label>
+                  <input type="text" class="form-control" id="directoryEventStatus" name="status" maxlength="3" required>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventUpdateStatus">update_status</label>
+                  <input type="text" class="form-control" id="directoryEventUpdateStatus" name="update_status" maxlength="3" required>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventIsPublished">is_published</label>
+                  <select class="form-select" id="directoryEventIsPublished" name="is_published" required>
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                  </select>
+                </div>
+                <div class="col-12 col-sm-6 col-lg-3">
+                  <label class="form-label" for="directoryEventContactStatus">contact_status</label>
+                  <input type="text" class="form-control" id="directoryEventContactStatus" name="contact_status" maxlength="3" required>
+                </div>
+
+                <div class="col-12">
+                  <hr class="my-1">
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                  <label class="form-label" for="directoryEventContactedUsAt">contacted_us_at</label>
+                  <input type="datetime-local" class="form-control" id="directoryEventContactedUsAt" name="contacted_us_at">
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                  <label class="form-label" for="directoryEventOutreachSentAt">outreach_sent_at</label>
+                  <input type="datetime-local" class="form-control" id="directoryEventOutreachSentAt" name="outreach_sent_at">
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                  <label class="form-label" for="directoryEventOutreachResponseAt">outreach_response_at</label>
+                  <input type="datetime-local" class="form-control" id="directoryEventOutreachResponseAt" name="outreach_response_at">
+                </div>
+                <div class="col-12 col-md-6 col-lg-3">
+                  <label class="form-label" for="directoryEventLastCheckedAt">last_checked_at</label>
+                  <input type="datetime-local" class="form-control" id="directoryEventLastCheckedAt" name="last_checked_at">
+                </div>
+                <div class="col-12 col-md-4">
+                  <label class="form-label" for="directoryEventContactSource">contact_source</label>
+                  <input type="text" class="form-control" id="directoryEventContactSource" name="contact_source" maxlength="20">
+                </div>
+                <div class="col-12 col-md-8">
+                  <label class="form-label" for="directoryEventInternalNotes">internal_notes</label>
+                  <textarea class="form-control" id="directoryEventInternalNotes" name="internal_notes" rows="3"></textarea>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="saveDirectoryEventBtn">Crear evento</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(wrapper.firstElementChild);
 }
 
 function buildEventFormTabs(){
@@ -499,8 +770,10 @@ function bindStaticEvents(){
   document.getElementById('auth-btn')?.addEventListener('click',logout);
   document.getElementById('createNewEventBtn')?.addEventListener('click',openCreateEventMode);
   document.getElementById('createNewClientBtn')?.addEventListener('click',openCreateClientModal);
+  document.getElementById('createDirectoryEventBtn')?.addEventListener('click',openCreateDirectoryEventModal);
   document.getElementById('saveEventBtn')?.addEventListener('click',saveEvent);
   document.getElementById('saveClientBtn')?.addEventListener('click',saveClient);
+  document.getElementById('saveDirectoryEventBtn')?.addEventListener('click',saveDirectoryEvent);
   document.getElementById('sendWelcome')?.addEventListener('click',sendEventWelcomeEmail);
   document.getElementById('confirmClearEventDataBtn')?.addEventListener('click',clearEventData);
   document.getElementById('openSelectedEventBtn')?.addEventListener('click',()=>openEventAccess(currentEventDetail));
@@ -525,6 +798,19 @@ function bindStaticEvents(){
     if(input) input.value='';
   });
   ['eventStatusFilter','eventVisibleFilter','eventTrialFilter'].forEach((id)=>document.getElementById(id)?.addEventListener('change',()=>renderEvents()));
+  document.getElementById('directoryNameFilter')?.addEventListener('input',renderDirectoryEvents);
+  [
+    'directoryCountryFilter',
+    'directoryDateFromFilter',
+    'directoryDateToFilter',
+    'directoryStatusFilter',
+    'directoryUpdateStatusFilter',
+    'directoryPublishedFilter',
+    'directoryContactStatusFilter'
+  ].forEach((id)=>document.getElementById(id)?.addEventListener('change',renderDirectoryEvents));
+  document.getElementById('clearDirectoryFiltersBtn')?.addEventListener('click',clearDirectoryEventFilters);
+  ['directoryEventStartDate','directoryEventEndDate'].forEach((id)=>document.getElementById(id)?.addEventListener('change',validateDirectoryEventDates));
+  document.getElementById('directoryEventCountryCode')?.addEventListener('input',(event)=>{event.target.value=event.target.value.toUpperCase();});
   ['visible','trial'].forEach((id)=>document.getElementById(id)?.addEventListener('change',syncEventPanelBadgesFromForm));
   document.getElementById('has_registrations')?.addEventListener('change',syncRegistrationsTabState);
   document.getElementById('clearEventDataCodeInput')?.addEventListener('input',()=>{document.getElementById('clearEventDataCodeInput')?.classList.remove('is-invalid');document.getElementById('clearEventDataFeedback')?.classList.add('d-none');});
@@ -539,7 +825,14 @@ function handleDocumentClick(ev){
   const editClientBtn=ev.target.closest('.btn-edit-client');
   if(editClientBtn){const client=clients.find((item)=>String(item.id)===String(editClientBtn.closest('tr')?.dataset.id));if(client) openEditClientModal(client);return;}
   const deleteClientBtn=ev.target.closest('.btn-delete-client');
-  if(deleteClientBtn){const client=clients.find((item)=>String(item.id)===String(deleteClientBtn.closest('tr')?.dataset.id));if(client) confirmDeleteClient(client);}
+  if(deleteClientBtn){const client=clients.find((item)=>String(item.id)===String(deleteClientBtn.closest('tr')?.dataset.id));if(client) confirmDeleteClient(client);return;}
+  const editDirectoryEventBtn=ev.target.closest('.btn-edit-directory-event');
+  if(editDirectoryEventBtn){openEditDirectoryEventModal(editDirectoryEventBtn.closest('tr')?.dataset.id,editDirectoryEventBtn);return;}
+  const deleteDirectoryEventBtn=ev.target.closest('.btn-delete-directory-event');
+  if(deleteDirectoryEventBtn){
+    const directoryEvent=directoryEvents.find((item)=>String(item.id)===String(deleteDirectoryEventBtn.closest('tr')?.dataset.id));
+    if(directoryEvent) confirmDeleteDirectoryEvent(directoryEvent);
+  }
 }
 
 function setActiveSection(section){
@@ -549,6 +842,7 @@ function setActiveSection(section){
     btn.classList.toggle('active',isActive);
     btn.setAttribute('aria-selected',isActive?'true':'false');
   });
+  if(section==='bellydance'&&!directoryEventsLoaded) loadDirectoryEvents();
 }
 
 function logout(){if(getToken()){localStorage.removeItem('token');window.location.href='/index.html';}}
@@ -867,6 +1161,348 @@ function renderClients(){
     tr.innerHTML=`<td>${client.id}</td><td>${client.name}</td><td>${client.contact_person}</td><td>${client.email}</td><td>${client.language}</td><td><span class="badge bg-primary">${client.booked_events}</span> / <span class="badge ${numEventsColor}">${client.num_events}</span> / <span class="badge bg-warning">${client.num_trials}</span></td><td class="text-center"><div class="btn-group"><button type="button" class="btn btn-outline-primary btn-sm btn-edit-client" title="Editar"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-outline-danger btn-sm btn-delete-client" title="Eliminar"><i class="bi bi-trash"></i></button></div></td>`;
     tableBody.appendChild(tr);
   });
+}
+
+async function getDirectoryResponseError(response,fallbackMessage){
+  const errorData=await response.json().catch(()=>null);
+  return errorData?.error||errorData?.message||fallbackMessage;
+}
+
+async function loadDirectoryEvents(){
+  const loadingState=document.getElementById('directoryEventsLoadingState');
+  const emptyState=document.getElementById('directoryEventsEmptyState');
+  loadingState?.classList.remove('d-none');
+  emptyState?.classList.add('d-none');
+  try{
+    const response=await fetch(`${API_BASE_URL}/api/directory/events`);
+    if(!response.ok) throw new Error(await getDirectoryResponseError(response,'Error al cargar los eventos de Bellydance'));
+    const data=await response.json();
+    directoryEvents=Array.isArray(data)?data:[];
+    directoryEventsLoaded=true;
+    populateDirectoryEventFilters();
+    renderDirectoryEvents();
+  }catch(error){
+    directoryEventsLoaded=false;
+    console.error('Error cargando eventos de Bellydance:',error);
+    showMessageModal(error.message||'Error al cargar los eventos de Bellydance','Error');
+  }finally{
+    loadingState?.classList.add('d-none');
+  }
+}
+
+function populateDirectoryEventFilters(){
+  populateDirectoryEventFilter('directoryCountryFilter',directoryEvents.map((event)=>event.country_code));
+  populateDirectoryEventFilter('directoryStatusFilter',directoryEvents.map((event)=>event.status));
+  populateDirectoryEventFilter('directoryUpdateStatusFilter',directoryEvents.map((event)=>event.update_status));
+  populateDirectoryEventFilter('directoryPublishedFilter',directoryEvents.map((event)=>event.is_published));
+  populateDirectoryEventFilter('directoryContactStatusFilter',directoryEvents.map((event)=>event.contact_status));
+}
+
+function populateDirectoryEventFilter(id,values){
+  const select=document.getElementById(id);
+  if(!select) return;
+  const selectedValue=select.value;
+  const uniqueValues=[...new Set(values
+    .filter((value)=>value!==null&&value!==undefined&&value!=='')
+    .map((value)=>String(value))
+  )].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+  select.replaceChildren(new Option('Todos',''));
+  uniqueValues.forEach((value)=>select.appendChild(new Option(value,value)));
+  select.value=uniqueValues.includes(selectedValue)?selectedValue:'';
+}
+
+function getFilteredDirectoryEvents(){
+  const name=(document.getElementById('directoryNameFilter')?.value||'').trim().toLocaleLowerCase();
+  const country=document.getElementById('directoryCountryFilter')?.value||'';
+  const dateFrom=document.getElementById('directoryDateFromFilter')?.value||'';
+  const dateTo=document.getElementById('directoryDateToFilter')?.value||'';
+  const status=document.getElementById('directoryStatusFilter')?.value||'';
+  const updateStatus=document.getElementById('directoryUpdateStatusFilter')?.value||'';
+  const published=document.getElementById('directoryPublishedFilter')?.value||'';
+  const contactStatus=document.getElementById('directoryContactStatusFilter')?.value||'';
+
+  return directoryEvents.filter((event)=>{
+    const startDate=formatDirectoryDate(event.start_date);
+    const endDate=formatDirectoryDate(event.end_date);
+    return (!name||String(event.name||'').toLocaleLowerCase().includes(name))
+      &&(!country||String(event.country_code??'')===country)
+      &&(!dateFrom||endDate>=dateFrom)
+      &&(!dateTo||startDate<=dateTo)
+      &&(!status||String(event.status??'')===status)
+      &&(!updateStatus||String(event.update_status??'')===updateStatus)
+      &&(!published||String(event.is_published??'')===published)
+      &&(!contactStatus||String(event.contact_status??'')===contactStatus);
+  });
+}
+
+function renderDirectoryEvents(){
+  const tableBody=document.getElementById('directoryEventsTable');
+  const emptyState=document.getElementById('directoryEventsEmptyState');
+  if(!tableBody||!emptyState) return;
+  const filteredEvents=getFilteredDirectoryEvents();
+  tableBody.replaceChildren();
+  document.getElementById('count-directory-events').textContent=String(filteredEvents.length);
+  emptyState.classList.toggle('d-none',filteredEvents.length>0);
+
+  const fragment=document.createDocumentFragment();
+  filteredEvents.forEach((event)=>{
+    const row=document.createElement('tr');
+    row.dataset.id=event.id;
+    [
+      event.name,
+      formatDirectoryDate(event.start_date),
+      formatDirectoryDate(event.end_date),
+      event.country_code,
+      event.status,
+      event.update_status,
+      event.is_published,
+      event.contact_status
+    ].forEach((value)=>{
+      const cell=document.createElement('td');
+      cell.textContent=value===null||value===undefined?'':String(value);
+      row.appendChild(cell);
+    });
+    const actionsCell=document.createElement('td');
+    actionsCell.className='text-center';
+    actionsCell.innerHTML=`
+      <div class="btn-group" role="group" aria-label="Acciones">
+        <button type="button" class="btn btn-outline-primary btn-sm btn-edit-directory-event" title="Editar" aria-label="Editar">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button type="button" class="btn btn-outline-danger btn-sm btn-delete-directory-event" title="Eliminar" aria-label="Eliminar">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>`;
+    row.appendChild(actionsCell);
+    fragment.appendChild(row);
+  });
+  tableBody.appendChild(fragment);
+}
+
+function clearDirectoryEventFilters(){
+  [
+    'directoryNameFilter',
+    'directoryCountryFilter',
+    'directoryDateFromFilter',
+    'directoryDateToFilter',
+    'directoryStatusFilter',
+    'directoryUpdateStatusFilter',
+    'directoryPublishedFilter',
+    'directoryContactStatusFilter'
+  ].forEach((id)=>{
+    const field=document.getElementById(id);
+    if(field) field.value='';
+  });
+  renderDirectoryEvents();
+}
+
+function formatDirectoryDate(value){
+  if(value===null||value===undefined||value==='') return '';
+  const normalized=String(value);
+  const match=normalized.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match?match[1]:normalized;
+}
+
+function formatDirectoryDateTimeInput(value){
+  if(value===null||value===undefined||value==='') return '';
+  const parsed=new Date(value);
+  if(Number.isNaN(parsed.getTime())) return String(value).replace(' ','T').slice(0,16);
+  const pad=(part)=>String(part).padStart(2,'0');
+  return `${parsed.getFullYear()}-${pad(parsed.getMonth()+1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+}
+
+function setDirectoryEventFormValue(form,name,value){
+  const field=form.elements.namedItem(name);
+  if(!field) return;
+  if(['start_date','end_date'].includes(name)) field.value=formatDirectoryDate(value);
+  else if(['contacted_us_at','outreach_sent_at','outreach_response_at','last_checked_at'].includes(name)) field.value=formatDirectoryDateTimeInput(value);
+  else field.value=value===null||value===undefined?'':String(value);
+}
+
+function openCreateDirectoryEventModal(){
+  const form=document.getElementById('directoryEventForm');
+  form.reset();
+  form.dataset.action='create';
+  form.removeAttribute('data-id');
+  setDirectoryEventFormValue(form,'dance_styles','BELLYDANCE');
+  setDirectoryEventFormValue(form,'status','ACT');
+  setDirectoryEventFormValue(form,'update_status','OK');
+  setDirectoryEventFormValue(form,'is_published',0);
+  setDirectoryEventFormValue(form,'contact_status','NON');
+  validateDirectoryEventDates();
+  document.getElementById('directoryEventModalTitle').textContent='Crear evento Bellydance';
+  document.getElementById('saveDirectoryEventBtn').textContent='Crear evento';
+  directoryEventModal.show();
+}
+
+async function openEditDirectoryEventModal(id,triggerButton){
+  if(!id) return;
+  setLoadingButtonState(triggerButton,true,'');
+  try{
+    const response=await fetch(`${API_BASE_URL}/api/directory/events/${encodeURIComponent(id)}`);
+    if(!response.ok) throw new Error(await getDirectoryResponseError(response,'Error al cargar el evento'));
+    const event=await response.json();
+    const form=document.getElementById('directoryEventForm');
+    form.reset();
+    form.dataset.action='edit';
+    form.dataset.id=String(event.id);
+    [
+      'id',
+      'created_at',
+      'updated_at',
+      'name',
+      'description',
+      'start_date',
+      'end_date',
+      'city',
+      'country_code',
+      'venue',
+      'website_url',
+      'registration_url',
+      'instagram_url',
+      'facebook_url',
+      'tiktok_url',
+      'youtube_url',
+      'contact_email',
+      'poster_url',
+      'event_type',
+      'dance_styles',
+      'masters',
+      'status',
+      'update_status',
+      'is_published',
+      'contact_status',
+      'contacted_us_at',
+      'outreach_sent_at',
+      'outreach_response_at',
+      'contact_source',
+      'internal_notes',
+      'last_checked_at'
+    ].forEach((field)=>setDirectoryEventFormValue(form,field,event[field]));
+    validateDirectoryEventDates();
+    document.getElementById('directoryEventModalTitle').textContent='Editar evento Bellydance';
+    document.getElementById('saveDirectoryEventBtn').textContent='Guardar cambios';
+    directoryEventModal.show();
+  }catch(error){
+    console.error('Error cargando el evento de Bellydance:',error);
+    showMessageModal(error.message||'Error al cargar el evento','Error');
+  }finally{
+    setLoadingButtonState(triggerButton,false);
+  }
+}
+
+function validateDirectoryEventDates(){
+  const startDate=document.getElementById('directoryEventStartDate');
+  const endDate=document.getElementById('directoryEventEndDate');
+  if(!startDate||!endDate) return true;
+  const invalid=Boolean(startDate.value&&endDate.value&&endDate.value<startDate.value);
+  endDate.setCustomValidity(invalid?'end_date no puede ser anterior a start_date.':'');
+  return !invalid;
+}
+
+function getOptionalDirectoryEventValue(form,name){
+  const value=String(form.elements.namedItem(name)?.value||'').trim();
+  return value||null;
+}
+
+function getDirectoryEventDateTimeValue(form,name){
+  const value=form.elements.namedItem(name)?.value||'';
+  if(!value) return null;
+  const parsed=new Date(value);
+  return Number.isNaN(parsed.getTime())?value:parsed.toISOString();
+}
+
+function collectDirectoryEventFormData(){
+  const form=document.getElementById('directoryEventForm');
+  return {
+    name:form.elements.namedItem('name').value.trim(),
+    description:getOptionalDirectoryEventValue(form,'description'),
+    start_date:form.elements.namedItem('start_date').value,
+    end_date:form.elements.namedItem('end_date').value,
+    city:getOptionalDirectoryEventValue(form,'city'),
+    country_code:getOptionalDirectoryEventValue(form,'country_code')?.toUpperCase()||null,
+    venue:getOptionalDirectoryEventValue(form,'venue'),
+    website_url:getOptionalDirectoryEventValue(form,'website_url'),
+    registration_url:getOptionalDirectoryEventValue(form,'registration_url'),
+    instagram_url:getOptionalDirectoryEventValue(form,'instagram_url'),
+    facebook_url:getOptionalDirectoryEventValue(form,'facebook_url'),
+    tiktok_url:getOptionalDirectoryEventValue(form,'tiktok_url'),
+    youtube_url:getOptionalDirectoryEventValue(form,'youtube_url'),
+    contact_email:getOptionalDirectoryEventValue(form,'contact_email'),
+    poster_url:getOptionalDirectoryEventValue(form,'poster_url'),
+    event_type:getOptionalDirectoryEventValue(form,'event_type'),
+    dance_styles:form.elements.namedItem('dance_styles').value.trim(),
+    masters:getOptionalDirectoryEventValue(form,'masters'),
+    status:form.elements.namedItem('status').value.trim(),
+    update_status:form.elements.namedItem('update_status').value.trim(),
+    is_published:Number(form.elements.namedItem('is_published').value),
+    contact_status:form.elements.namedItem('contact_status').value.trim(),
+    contacted_us_at:getDirectoryEventDateTimeValue(form,'contacted_us_at'),
+    outreach_sent_at:getDirectoryEventDateTimeValue(form,'outreach_sent_at'),
+    outreach_response_at:getDirectoryEventDateTimeValue(form,'outreach_response_at'),
+    contact_source:getOptionalDirectoryEventValue(form,'contact_source'),
+    internal_notes:getOptionalDirectoryEventValue(form,'internal_notes'),
+    last_checked_at:getDirectoryEventDateTimeValue(form,'last_checked_at')
+  };
+}
+
+async function saveDirectoryEvent(){
+  const form=document.getElementById('directoryEventForm');
+  validateDirectoryEventDates();
+  if(!form.reportValidity()) return;
+  const action=form.dataset.action;
+  const id=form.dataset.id;
+  const saveButton=document.getElementById('saveDirectoryEventBtn');
+  setLoadingButtonState(saveButton,true,action==='create'?'Creando...':'Guardando...');
+  try{
+    const url=action==='create'
+      ?`${API_BASE_URL}/api/directory/events`
+      :`${API_BASE_URL}/api/directory/events/${encodeURIComponent(id)}`;
+    const response=await fetch(url,{
+      method:action==='create'?'POST':'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(collectDirectoryEventFormData())
+    });
+    if(!response.ok) throw new Error(await getDirectoryResponseError(response,'Error al guardar el evento'));
+    directoryEventModal.hide();
+    directoryEventsLoaded=false;
+    await loadDirectoryEvents();
+    showToast(action==='create'?'Evento creado correctamente':'Evento actualizado correctamente');
+  }catch(error){
+    console.error('Error guardando el evento de Bellydance:',error);
+    showMessageModal(error.message||'Error al guardar el evento','Error');
+  }finally{
+    setLoadingButtonState(saveButton,false);
+  }
+}
+
+function confirmDeleteDirectoryEvent(event){
+  const modalElement=document.getElementById('deleteModal');
+  const deleteModal=bootstrap.Modal.getOrCreateInstance(modalElement);
+  const message=document.getElementById('deleteModalMessage');
+  message.replaceChildren(
+    document.createTextNode('¿Estás seguro de que quieres eliminar el evento '),
+    Object.assign(document.createElement('strong'),{textContent:String(event.name||'')}),
+    document.createTextNode('?')
+  );
+  const confirmButton=document.getElementById('confirmDeleteBtn');
+  confirmButton.onclick=async()=>{
+    setLoadingButtonState(confirmButton,true,'Eliminando...');
+    try{
+      const response=await fetch(`${API_BASE_URL}/api/directory/events/${encodeURIComponent(event.id)}`,{method:'DELETE'});
+      if(!response.ok) throw new Error(await getDirectoryResponseError(response,'Error al eliminar el evento'));
+      deleteModal.hide();
+      directoryEventsLoaded=false;
+      await loadDirectoryEvents();
+      showToast('Evento eliminado correctamente');
+    }catch(error){
+      console.error('Error eliminando el evento de Bellydance:',error);
+      showMessageModal(error.message||'Error al eliminar el evento','Error');
+    }finally{
+      setLoadingButtonState(confirmButton,false);
+    }
+  };
+  deleteModal.show();
 }
 
 function populateClientSelect(){
