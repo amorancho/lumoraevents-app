@@ -269,22 +269,9 @@ function initPaymentsTab(role) {
       }
     }
 
-    const participantIds = new Set();
-    relevantRegistrations.forEach((registration) => {
-      const members = Array.isArray(registration?.members)
-        ? registration.members
-        : (Array.isArray(registration?.participants) ? registration.participants : []);
-
-      members.forEach((member) => {
-        const memberId = member?.id ?? member?.participant_id ?? member?.participantId;
-        if (memberId !== undefined && memberId !== null && `${memberId}` !== '') {
-          participantIds.add(`${memberId}`);
-        }
-      });
-    });
-
-    if (participantIds.size) {
-      return participantIds.size;
+    const uniqueParticipantsCount = getUniqueRegistrationParticipantsCount(relevantRegistrations);
+    if (uniqueParticipantsCount !== null) {
+      return uniqueParticipantsCount;
     }
 
     return relevantRegistrations.reduce(

@@ -240,6 +240,106 @@ async function fetchRegistrationStyles({ force = false } = {}) {
   return styles;
 }
 
+function getRegistrationMembersList(registration) {
+  if (Array.isArray(registration?.members)) {
+    return registration.members;
+  }
+  if (Array.isArray(registration?.participants)) {
+    return registration.participants;
+  }
+  return null;
+}
+
+function getRegistrationMemberParticipantId(member) {
+  if (member === null || member === undefined) {
+    return null;
+  }
+  if (typeof member !== 'object') {
+    return `${member}`.trim() || null;
+  }
+
+  const participantId = member.participant_id
+    ?? member.participantId
+    ?? member.participant?.id
+    ?? member.id
+    ?? member.member_id;
+  return participantId !== null && participantId !== undefined && `${participantId}` !== ''
+    ? `${participantId}`
+    : null;
+}
+
+function hasCompleteRegistrationMembersList(registration) {
+  const members = getRegistrationMembersList(registration);
+  if (!members) {
+    return false;
+  }
+
+  return members.length >= getRegistrationParticipantsTotal(registration);
+}
+
+function getUniqueRegistrationParticipantsCount(registrations) {
+  const participantIds = new Set();
+  const rows = Array.isArray(registrations) ? registrations : [];
+
+  for (const registration of rows) {
+    if (!hasCompleteRegistrationMembersList(registration)) {
+      return null;
+    }
+
+    const members = getRegistrationMembersList(registration) || [];
+    for (const member of members) {
+      const participantId = getRegistrationMemberParticipantId(member);
+      if (!participantId) {
+        return null;
+      }
+      participantIds.add(participantId);
+    }
+  }
+
+  return participantIds.size;
+}
+
+async function hydrateValidatedRegistrationMembers(registrations, options = {}) {
+  const rows = Array.isArray(registrations) ? registrations : [];
+  const eventId = getEvent()?.id;
+
+  return Promise.all(rows.map(async (registration) => {
+    if (!isRegistrationValidated(registration)
+      || hasCompleteRegistrationMembersList(registration)
+      || registration?.id === null
+      || registration?.id === undefined
+      || `${registration.id}` === '') {
+      return registration;
+    }
+
+    const params = new URLSearchParams();
+    if (eventId) {
+      params.set('event_id', eventId);
+    }
+    if (options.schoolId !== null && options.schoolId !== undefined && `${options.schoolId}` !== '') {
+      params.set('school_id', options.schoolId);
+    }
+
+    const query = params.toString();
+    const url = `${API_BASE_URL}/api/registrations/${encodeURIComponent(registration.id)}${query ? `?${query}` : ''}`;
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) {
+        return registration;
+      }
+
+      const details = await res.json();
+      const members = getRegistrationMembersList(details);
+      return members
+        ? { ...registration, members }
+        : registration;
+    } catch (error) {
+      return registration;
+    }
+  }));
+}
+
 async function fetchOrganizerRegistrationsForEvent() {
   const params = new URLSearchParams();
   const eventObj = getEvent();
@@ -258,8 +358,9 @@ async function fetchOrganizerRegistrationsForEvent() {
 
   const data = await res.json();
   const registrations = Array.isArray(data) ? data : [];
-  registrationState.organizerRegistrations = registrations;
-  return registrations;
+  const registrationsWithMembers = await hydrateValidatedRegistrationMembers(registrations);
+  registrationState.organizerRegistrations = registrationsWithMembers;
+  return registrationsWithMembers;
 }
 
 function escapeRegistrationTooltipHtml(value) {
@@ -1368,22 +1469,9 @@ function initOrganizerDashboard() {
       }
     }
 
-    const participantIds = new Set();
-    relevantRegistrations.forEach((registration) => {
-      const members = Array.isArray(registration?.members)
-        ? registration.members
-        : (Array.isArray(registration?.participants) ? registration.participants : []);
-
-      members.forEach((member) => {
-        const memberId = member?.id ?? member?.participant_id ?? member?.participantId;
-        if (memberId !== undefined && memberId !== null && `${memberId}` !== '') {
-          participantIds.add(`${memberId}`);
-        }
-      });
-    });
-
-    if (participantIds.size) {
-      return participantIds.size;
+    const uniqueParticipantsCount = getUniqueRegistrationParticipantsCount(relevantRegistrations);
+    if (uniqueParticipantsCount !== null) {
+      return uniqueParticipantsCount;
     }
 
     return relevantRegistrations.reduce(

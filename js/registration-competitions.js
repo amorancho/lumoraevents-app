@@ -1908,7 +1908,10 @@
         throw new Error(t('registration_competitions_load_error', 'Error loading registrations.'));
       }
       const data = await res.json();
-      registrationState.registrations = Array.isArray(data) ? data : [];
+      const registrations = Array.isArray(data) ? data : [];
+      registrationState.registrations = await hydrateValidatedRegistrationMembers(registrations, {
+        schoolId: user.id
+      });
       if (typeof notifySchoolRegistrationsUpdate === 'function') {
         notifySchoolRegistrationsUpdate();
       }
