@@ -1473,6 +1473,7 @@
                             <tr>
                               <th id="registrationPaymentsSchoolHeader" data-i18n="org_registrations_table_school">Escuela</th>
                               <th data-i18n="registration_payment_status">Estado de pago</th>
+                              <th data-i18n="registration_competitions_reject_reason_label">Motivo rechazo</th>
                               <th class="text-center" data-i18n="registration_competitions_table_total_amount">Importe total</th>
                               <th class="text-center" data-i18n="registration_payments_created_at">Fecha creación</th>
                               <th class="text-center" data-i18n="org_registrations_table_actions" data-tsv-ignore="true">Acciones</th>
@@ -2183,6 +2184,39 @@
     </div>
   </div>
 
+  <div class="modal fade" id="registrationPaymentsAmountEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="registration_payments_edit_amount">Modificar importe</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="registrationPaymentsAmountEditForm" novalidate>
+          <div class="modal-body">
+            <label class="form-label" for="registrationPaymentsAmountEditInput" data-i18n="registration_payments_amount_label">Importe</label>
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control"
+                id="registrationPaymentsAmountEditInput"
+                inputmode="decimal"
+                placeholder="0.00"
+                required>
+              <span class="input-group-text">EUR</span>
+              <div class="invalid-feedback" data-i18n="registration_payments_amount_invalid">
+                Introduce un importe vÃ¡lido.
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="registrationPaymentsAmountEditSaveBtn" data-i18n="confirm">Confirmar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="registrationPaymentsValidateModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -2209,7 +2243,16 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p id="registrationPaymentsRejectMessage">Â¿Seguro que deseas rechazar este pago?</p>
+          <label for="registrationPaymentsRejectReason" class="form-label" data-i18n="org_registrations_reject_label">Por favor, indique los motivos del rechazo.</label>
+          <textarea
+            id="registrationPaymentsRejectReason"
+            class="form-control"
+            rows="4"
+            required
+            data-i18n-placeholder="org_registrations_reject_placeholder"
+            placeholder="Motivos del rechazo"
+          ></textarea>
+          <div class="invalid-feedback" data-i18n="org_registrations_reject_error">Indica los motivos del rechazo.</div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>

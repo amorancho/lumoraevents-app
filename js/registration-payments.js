@@ -70,6 +70,11 @@ function initPaymentsTab(role) {
   const createFileSizeEl = document.getElementById('registrationPaymentsCreateFileSize');
   const createSaveBtn = document.getElementById('registrationPaymentsCreateSaveBtn');
 
+  const amountEditModalEl = document.getElementById('registrationPaymentsAmountEditModal');
+  const amountEditForm = document.getElementById('registrationPaymentsAmountEditForm');
+  const amountEditInputEl = document.getElementById('registrationPaymentsAmountEditInput');
+  const amountEditSaveBtn = document.getElementById('registrationPaymentsAmountEditSaveBtn');
+
   const deleteModalEl = document.getElementById('registrationPaymentsDeleteModal');
   const deleteTitleEl = document.getElementById('registrationPaymentsDeleteTitle');
   const deleteMessageEl = document.getElementById('registrationPaymentsDeleteMessage');
@@ -78,10 +83,14 @@ function initPaymentsTab(role) {
   const validateModalEl = document.getElementById('registrationPaymentsValidateModal');
   const validateConfirmBtn = document.getElementById('confirmValidateRegistrationPaymentBtn');
   const rejectModalEl = document.getElementById('registrationPaymentsRejectModal');
+  const rejectReasonEl = document.getElementById('registrationPaymentsRejectReason');
   const rejectConfirmBtn = document.getElementById('confirmRejectRegistrationPaymentBtn');
 
   const createModal = createModalEl && window.bootstrap?.Modal
     ? new bootstrap.Modal(createModalEl)
+    : null;
+  const amountEditModal = amountEditModalEl && window.bootstrap?.Modal
+    ? new bootstrap.Modal(amountEditModalEl)
     : null;
   const deleteModal = deleteModalEl && window.bootstrap?.Modal
     ? new bootstrap.Modal(deleteModalEl)
@@ -154,6 +163,7 @@ function initPaymentsTab(role) {
   let activeDocumentsRequestId = 0;
   let activeCreateDocumentType = 'PAY';
   let activeDeleteDocumentType = 'PAY';
+  let activeAmountDocumentId = '';
 
   const getCategoryById = () => new Map(
     (Array.isArray(registrationState.registrationCategories) ? registrationState.registrationCategories : [])
@@ -676,6 +686,21 @@ function initPaymentsTab(role) {
     return `${API_BASE_URL}${paymentListEndpoint}/${encodeURIComponent(paymentId)}?${params.toString()}`;
   };
 
+  const buildDocumentAmountUrl = (paymentId) => {
+    if (!paymentId) {
+      return '';
+    }
+
+    const params = new URLSearchParams();
+    const eventIdValue = getEvent()?.id;
+    if (eventIdValue) {
+      params.set('event_id', eventIdValue);
+    }
+
+    const query = params.toString();
+    return `${API_BASE_URL}${paymentListEndpoint}/${encodeURIComponent(paymentId)}/amount${query ? `?${query}` : ''}`;
+  };
+
   const openActionUrl = (url, options = {}) => {
     if (!url) {
       return;
@@ -703,9 +728,7 @@ function initPaymentsTab(role) {
     return new Intl.DateTimeFormat(getRegistrationLanguage(), {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: '2-digit'
     }).format(date);
   };
 
@@ -837,6 +860,11 @@ function initPaymentsTab(role) {
       statusCell.appendChild(statusBadge);
       row.appendChild(statusCell);
 
+      const rejectReasonCell = document.createElement('td');
+      rejectReasonCell.className = 'text-break';
+      rejectReasonCell.textContent = `${payment?.reject_reason ?? ''}`.trim() || '-';
+      row.appendChild(rejectReasonCell);
+
       const amountCell = document.createElement('td');
       amountCell.className = 'text-center';
       amountCell.textContent = formatRegistrationCurrency(payment.amount);
@@ -856,6 +884,13 @@ function initPaymentsTab(role) {
       actionGroup.setAttribute('role', 'group');
 
       if (isOrganizer) {
+        actionGroup.appendChild(createRowActionButton({
+          action: 'edit-amount',
+          titleKey: 'registration_payments_edit_amount',
+          titleFallback: 'Edit amount',
+          className: 'btn-outline-secondary',
+          icon: 'bi-pencil-square'
+        }));
         actionGroup.appendChild(createRowActionButton({
           action: 'validate',
           titleKey: 'registration_payment_validate',
@@ -952,6 +987,13 @@ function initPaymentsTab(role) {
       }));
 
       if (isOrganizer) {
+        actionGroup.appendChild(createRowActionButton({
+          action: 'edit-amount',
+          titleKey: 'registration_payments_edit_amount',
+          titleFallback: 'Edit amount',
+          className: 'btn-outline-secondary',
+          icon: 'bi-pencil-square'
+        }));
         actionGroup.appendChild(createRowActionButton({
           action: 'download',
           titleKey: 'registration_invoice_download',
@@ -1102,6 +1144,77 @@ function initPaymentsTab(role) {
     if (createSaveBtn) {
       createSaveBtn.disabled = false;
       createSaveBtn.textContent = getDocumentMessages(activeCreateDocumentType).addAction;
+    }
+  };
+
+  const resetAmountEditModal = () => {
+    amountEditForm?.reset();
+    amountEditForm?.classList.remove('was-validated');
+    amountEditInputEl?.classList.remove('is-invalid');
+    activeAmountDocumentId = '';
+
+    if (amountEditSaveBtn) {
+      amountEditSaveBtn.disabled = false;
+    }
+  };
+
+  const openAmountEditModal = (documentRow) => {
+    if (!isOrganizer || !documentRow?.id || !amountEditModal || !amountEditInputEl) {
+      return;
+    }
+
+    resetAmountEditModal();
+    activeAmountDocumentId = `${documentRow.id}`;
+    amountEditInputEl.value = (getDocumentAmountValue(documentRow) / 100).toFixed(2);
+    amountEditModal.show();
+
+    window.setTimeout(() => {
+      amountEditInputEl.focus();
+      amountEditInputEl.select();
+    }, 150);
+  };
+
+  const submitAmountEdit = async () => {
+    if (!activeAmountDocumentId || !amountEditInputEl || !amountEditSaveBtn) {
+      return;
+    }
+
+    const amount = parseAmountToCents(amountEditInputEl.value);
+    if (amount === null) {
+      amountEditInputEl.classList.add('is-invalid');
+      amountEditForm?.classList.add('was-validated');
+      amountEditInputEl.focus();
+      return;
+    }
+
+    const paymentId = activeAmountDocumentId;
+    amountEditSaveBtn.disabled = true;
+
+    try {
+      const res = await fetch(buildDocumentAmountUrl(paymentId), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+      const data = await safeJson(res);
+
+      if (!res.ok) {
+        throw new Error(
+          data?.error
+          || data?.message
+          || t('registration_payments_edit_amount_error', 'Error updating the amount.')
+        );
+      }
+
+      amountEditModal?.hide();
+      await fetchDocumentTables({ showError: false });
+      showMessageModal(
+        t('registration_payments_edit_amount_success', 'Amount updated successfully.'),
+        t('success_title', 'Success'),
+        'success'
+      );
+    } finally {
+      amountEditSaveBtn.disabled = false;
     }
   };
 
@@ -1317,23 +1430,36 @@ function initPaymentsTab(role) {
   });
 
   const showRejectPaymentConfirm = () => new Promise((resolve) => {
-    if (!rejectModal || !rejectModalEl || !rejectConfirmBtn) {
-      resolve(window.confirm('Are you sure you want to reject this payment?'));
+    if (!rejectModal || !rejectModalEl || !rejectConfirmBtn || !rejectReasonEl) {
+      const reason = window.prompt(
+        t('org_registrations_reject_label', 'Please provide the reasons for rejection.')
+      );
+      resolve(`${reason ?? ''}`.trim() || null);
       return;
     }
+
+    rejectReasonEl.value = '';
+    rejectReasonEl.classList.remove('is-invalid');
 
     let resolved = false;
     const handleHidden = () => {
       if (!resolved) {
-        resolve(false);
+        resolve(null);
       }
     };
 
     rejectModalEl.addEventListener('hidden.bs.modal', handleHidden, { once: true });
     rejectConfirmBtn.onclick = () => {
+      const reason = rejectReasonEl.value.trim();
+      if (!reason) {
+        rejectReasonEl.classList.add('is-invalid');
+        rejectReasonEl.focus();
+        return;
+      }
+
       resolved = true;
       rejectModal.hide();
-      resolve(true);
+      resolve(reason);
     };
 
     rejectModal.show();
@@ -1344,9 +1470,12 @@ function initPaymentsTab(role) {
       return;
     }
 
+    const rejectReason = action === 'reject'
+      ? await showRejectPaymentConfirm()
+      : null;
     const shouldContinue = action === 'validate'
       ? await showValidatePaymentConfirm()
-      : await showRejectPaymentConfirm();
+      : Boolean(rejectReason);
 
     if (!shouldContinue) {
       return;
@@ -1359,9 +1488,16 @@ function initPaymentsTab(role) {
     }
 
     try {
-      const res = await fetch(buildDocumentActionUrl(paymentId, action, 'PAY'), {
-        method: 'POST'
-      });
+      const requestOptions = { method: 'POST' };
+      if (action === 'reject') {
+        requestOptions.headers = { 'Content-Type': 'application/json' };
+        requestOptions.body = JSON.stringify({ reject_reason: rejectReason });
+      }
+
+      const res = await fetch(
+        buildDocumentActionUrl(paymentId, action, 'PAY'),
+        requestOptions
+      );
       const data = await safeJson(res);
 
       if (!res.ok) {
@@ -1479,6 +1615,24 @@ function initPaymentsTab(role) {
   });
 
   createModalEl?.addEventListener('hidden.bs.modal', resetCreatePaymentModal);
+  amountEditModalEl?.addEventListener('hidden.bs.modal', resetAmountEditModal);
+  amountEditInputEl?.addEventListener('input', () => {
+    amountEditInputEl.classList.remove('is-invalid');
+  });
+  amountEditForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    try {
+      await submitAmountEdit();
+    } catch (error) {
+      showMessageModal(
+        error.message || t('registration_payments_edit_amount_error', 'Error updating the amount.'),
+        t('error_title', 'Error')
+      );
+    }
+  });
+  rejectReasonEl?.addEventListener('input', () => {
+    rejectReasonEl.classList.remove('is-invalid');
+  });
 
   sharedFilterElements.schoolFilterEl?.addEventListener('change', renderDocumentTables);
   sharedFilterElements.clearFiltersBtn?.addEventListener('click', () => {
@@ -1507,6 +1661,12 @@ function initPaymentsTab(role) {
     const row = actionButton.closest('tr');
     const paymentId = row?.dataset?.id;
     const action = actionButton.dataset.paymentAction;
+
+    if (action === 'edit-amount' && paymentId) {
+      const payment = paymentRows.find((item) => `${item?.id}` === `${paymentId}`);
+      openAmountEditModal(payment);
+      return;
+    }
 
     if (action === 'view' && paymentId) {
       openActionUrl(buildDocumentActionUrl(paymentId, 'view', 'PAY'), { newTab: true });
@@ -1565,6 +1725,12 @@ function initPaymentsTab(role) {
     const row = actionButton.closest('tr');
     const paymentId = row?.dataset?.id;
     const action = actionButton.dataset.paymentAction;
+
+    if (action === 'edit-amount' && paymentId) {
+      const invoice = invoiceRows.find((item) => `${item?.id}` === `${paymentId}`);
+      openAmountEditModal(invoice);
+      return;
+    }
 
     if (action === 'view' && paymentId) {
       openActionUrl(buildDocumentActionUrl(paymentId, 'view', 'INV'), { newTab: true });
