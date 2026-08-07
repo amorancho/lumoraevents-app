@@ -223,6 +223,7 @@ function renderAdminLayout(){
                   <th>Actualización</th>
                   <th>Publicado</th>
                   <th>Contacto</th>
+                  <th>Visitas</th>
                   <th class="text-center">Acciones</th>
                 </tr>
               </thead>
@@ -1307,6 +1308,9 @@ function renderDirectoryEvents(){
     appendDirectoryEventBadgeCell(row,'update_status',event.update_status);
     appendDirectoryEventBadgeCell(row,'is_published',event.is_published);
     appendDirectoryEventBadgeCell(row,'contact_status',event.contact_status);
+    const viewsCell=document.createElement('td');
+    viewsCell.textContent=event.views_count===null||event.views_count===undefined?'':String(event.views_count);
+    row.appendChild(viewsCell);
     const actionsCell=document.createElement('td');
     actionsCell.className='text-center';
     actionsCell.innerHTML=`
