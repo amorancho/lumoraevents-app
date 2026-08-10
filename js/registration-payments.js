@@ -671,6 +671,9 @@ function initPaymentsTab(role) {
     return `${API_BASE_URL}${paymentListEndpoint}/${encodeURIComponent(paymentId)}/${action}?${params.toString()}`;
   };
 
+  const buildDocumentDownloadUrl = (paymentId, documentType) =>
+    buildDocumentActionUrl(paymentId, 'download', documentType);
+
   const buildDocumentDeleteUrl = (paymentId, documentType) => {
     if (!paymentId) {
       return '';
@@ -717,6 +720,88 @@ function initPaymentsTab(role) {
     document.body.appendChild(link);
     link.click();
     link.remove();
+  };
+
+  const getDocumentDownloadError = (documentType) => documentType === 'INV'
+    ? t('registration_invoice_download_error', 'Error downloading invoice.')
+    : t('registration_payment_download_error', 'Error downloading receipt.');
+
+  const fetchDocumentDownloadInfo = async (paymentId, documentType) => {
+    const res = await fetch(buildDocumentDownloadUrl(paymentId, documentType));
+    const data = await safeJson(res);
+    const errorMessage = getDocumentDownloadError(documentType);
+
+    if (!res.ok) {
+      throw new Error(data?.error || data?.message || errorMessage);
+    }
+    if (!data || typeof data.url !== 'string' || !data.url.trim()) {
+      throw new Error(errorMessage);
+    }
+
+    return {
+      ...data,
+      url: data.url.trim(),
+      file_name: typeof data.file_name === 'string' ? data.file_name.trim() : ''
+    };
+  };
+
+  const downloadDocumentFromUrl = async (downloadInfo, documentType) => {
+    const fileFetch = typeof originalFetch === 'function' ? originalFetch : window.fetch;
+    const fileResponse = await fileFetch(downloadInfo.url);
+    if (!fileResponse.ok) {
+      throw new Error(getDocumentDownloadError(documentType));
+    }
+
+    const responseBlob = await fileResponse.blob();
+    const fileBlob = downloadInfo.mime_type && responseBlob.type !== downloadInfo.mime_type
+      ? responseBlob.slice(0, responseBlob.size, downloadInfo.mime_type)
+      : responseBlob;
+    const objectUrl = URL.createObjectURL(fileBlob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = downloadInfo.file_name || (documentType === 'INV' ? 'invoice.pdf' : 'payment.pdf');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  };
+
+  const handleDocumentFileAction = async (paymentId, documentType, action, triggerButton) => {
+    const previewWindow = action === 'view' ? window.open('', '_blank') : null;
+    if (previewWindow) {
+      previewWindow.opener = null;
+    }
+
+    const originalHtml = triggerButton?.innerHTML || '';
+    if (triggerButton) {
+      triggerButton.disabled = true;
+      triggerButton.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>';
+    }
+
+    try {
+      const downloadInfo = await fetchDocumentDownloadInfo(paymentId, documentType);
+      if (action === 'view') {
+        if (previewWindow) {
+          previewWindow.location.replace(downloadInfo.url);
+        } else {
+          openActionUrl(downloadInfo.url, { newTab: true });
+        }
+        return;
+      }
+
+      await downloadDocumentFromUrl(downloadInfo, documentType);
+    } catch (error) {
+      previewWindow?.close();
+      showMessageModal(
+        error.message || getDocumentDownloadError(documentType),
+        t('error_title', 'Error')
+      );
+    } finally {
+      if (triggerButton) {
+        triggerButton.disabled = false;
+        triggerButton.innerHTML = originalHtml;
+      }
+    }
   };
 
   const formatPaymentCreatedAt = (value) => {
@@ -1669,12 +1754,12 @@ function initPaymentsTab(role) {
     }
 
     if (action === 'view' && paymentId) {
-      openActionUrl(buildDocumentActionUrl(paymentId, 'view', 'PAY'), { newTab: true });
+      await handleDocumentFileAction(paymentId, 'PAY', 'view', actionButton);
       return;
     }
 
     if (action === 'download' && paymentId) {
-      openActionUrl(buildDocumentActionUrl(paymentId, 'download', 'PAY'));
+      await handleDocumentFileAction(paymentId, 'PAY', 'download', actionButton);
       return;
     }
 
@@ -1733,12 +1818,12 @@ function initPaymentsTab(role) {
     }
 
     if (action === 'view' && paymentId) {
-      openActionUrl(buildDocumentActionUrl(paymentId, 'view', 'INV'), { newTab: true });
+      await handleDocumentFileAction(paymentId, 'INV', 'view', actionButton);
       return;
     }
 
     if (action === 'download' && paymentId) {
-      openActionUrl(buildDocumentActionUrl(paymentId, 'download', 'INV'));
+      await handleDocumentFileAction(paymentId, 'INV', 'download', actionButton);
       return;
     }
 
