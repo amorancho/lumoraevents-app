@@ -5781,14 +5781,18 @@ function initOrganizerRegistrationsTab() {
     try {
       const res = await fetch(url);
       if (!res.ok) {
-        const data = await safeJson(res);
-        const message = data?.error || t('registration_audio_download_error', 'Error downloading audio.');
+        const errorData = await safeJson(res);
+        const message = errorData?.error || t('registration_audio_download_error', 'Error downloading audio.');
         throw new Error(message);
       }
-      const blob = await res.blob();
-      const headerFilename = getFilenameFromHeader(res.headers.get('content-disposition'));
+
+      const data = await safeJson(res);
+      if (!data?.url) {
+        throw new Error(t('registration_audio_download_error', 'Error downloading audio.'));
+      }
+
       const fallbackName = audioElements.name?.textContent || '';
-      downloadBlob(blob, headerFilename || fallbackName || 'audio');
+      openActionUrl(data.url, { download: true, filename: fallbackName || 'audio' });
     } catch (err) {
       showMessageModal(err.message || t('registration_audio_download_error', 'Error downloading audio.'), t('error_title', 'Error'));
     }
