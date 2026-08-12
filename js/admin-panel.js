@@ -4,6 +4,7 @@ let clients=[],events=[],directoryEvents=[],selectedEventId=null,currentEventDet
 let clientModal,clearEventDataModal,categoryEditorModal,directoryEventModal;
 let directoryEventsLoaded=false;
 let categoryEditorDraft=[];
+const directoryEventTypeOptions=['FESTIVAL','GALA SHOW','WORKSHOPS','MASTERCLASSES'];
 const directoryEventValueConfig={
   status:{
     ACT:{label:'ACTIVO',badgeClass:'text-bg-success'},
@@ -69,6 +70,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   await ensureTranslationsReady();
   renderAdminLayout();
   ensureDirectoryEventModal();
+  initDirectoryEventTypeSelect();
   syncTiedPositionsFieldOptions();
   syncSendStatsCodeFieldOptions();
   syncJudgeFeedbackFieldOptions();
@@ -314,7 +316,9 @@ function ensureDirectoryEventModal(){
                 </div>
                 <div class="col-12 col-md-4">
                   <label class="form-label" for="directoryEventEventType">Tipo de evento</label>
-                  <input type="text" class="form-control" id="directoryEventEventType" name="event_type" maxlength="50">
+                  <select class="form-select" id="directoryEventEventType" name="event_type" multiple>
+                    ${directoryEventTypeOptions.map((eventType)=>`<option value="${eventType}">${eventType}</option>`).join('')}
+                  </select>
                 </div>
                 <div class="col-12 col-md-4">
                   <label class="form-label" for="directoryEventDanceStyles">Estilos de baile</label>
@@ -1360,9 +1364,42 @@ function formatDirectoryDateTimeInput(value){
   return `${parsed.getFullYear()}-${pad(parsed.getMonth()+1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
 }
 
+function initDirectoryEventTypeSelect(){
+  const field=document.getElementById('directoryEventEventType');
+  if(!field) return;
+  if(field.tomselect) return;
+  if(typeof TomSelect!=='function') return;
+  new TomSelect(field,{
+    plugins:['remove_button'],
+    create:false,
+    closeAfterSelect:false,
+    placeholder:'Selecciona uno o varios tipos'
+  });
+}
+
+function setDirectoryEventTypeValues(field,value){
+  const selectedValues=String(value??'')
+    .split(',')
+    .map((item)=>item.trim())
+    .filter((item)=>directoryEventTypeOptions.includes(item));
+  if(field.tomselect) field.tomselect.setValue(selectedValues,true);
+  else [...field.options].forEach((option)=>{option.selected=selectedValues.includes(option.value);});
+}
+
+function getDirectoryEventTypeValue(form){
+  const field=form.elements.namedItem('event_type');
+  if(!field) return null;
+  const selectedValues=[...field.selectedOptions].map((option)=>option.value);
+  return selectedValues.length?selectedValues.join(','):null;
+}
+
 function setDirectoryEventFormValue(form,name,value){
   const field=form.elements.namedItem(name);
   if(!field) return;
+  if(name==='event_type'&&field.multiple){
+    setDirectoryEventTypeValues(field,value);
+    return;
+  }
   let normalizedValue;
   if(['start_date','end_date'].includes(name)) normalizedValue=formatDirectoryDate(value);
   else if(['contacted_us_at','outreach_sent_at','outreach_response_at','last_checked_at'].includes(name)) normalizedValue=formatDirectoryDateTimeInput(value);
@@ -1377,6 +1414,7 @@ function openCreateDirectoryEventModal(){
   const form=document.getElementById('directoryEventForm');
   populateDirectoryEventValueFields();
   form.reset();
+  setDirectoryEventTypeValues(form.elements.namedItem('event_type'),'');
   form.dataset.action='create';
   form.removeAttribute('data-id');
   setDirectoryEventFormValue(form,'dance_styles','BELLYDANCE');
@@ -1400,6 +1438,7 @@ async function openEditDirectoryEventModal(id,triggerButton){
     const form=document.getElementById('directoryEventForm');
     populateDirectoryEventValueFields();
     form.reset();
+    setDirectoryEventTypeValues(form.elements.namedItem('event_type'),'');
     form.dataset.action='edit';
     form.dataset.id=String(event.id);
     [
@@ -1486,7 +1525,7 @@ function collectDirectoryEventFormData(){
     youtube_url:getOptionalDirectoryEventValue(form,'youtube_url'),
     contact_email:getOptionalDirectoryEventValue(form,'contact_email'),
     poster_url:getOptionalDirectoryEventValue(form,'poster_url'),
-    event_type:getOptionalDirectoryEventValue(form,'event_type'),
+    event_type:getDirectoryEventTypeValue(form),
     dance_styles:form.elements.namedItem('dance_styles').value.trim(),
     masters:getOptionalDirectoryEventValue(form,'masters'),
     status:form.elements.namedItem('status').value.trim(),
