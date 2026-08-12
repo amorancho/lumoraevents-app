@@ -1,10 +1,14 @@
 ﻿var title='Administración LumoraEvents';
 const allowedRoles=['admin'];
-let clients=[],events=[],directoryEvents=[],selectedEventId=null,currentEventDetail=null,keepCreateMode=false;
-let clientModal,clearEventDataModal,categoryEditorModal,directoryEventModal;
-let directoryEventsLoaded=false;
+let clients=[],events=[],directoryEvents=[],directoryMasters=[],directoryStyles=[],selectedEventId=null,currentEventDetail=null,keepCreateMode=false;
+let clientModal,clearEventDataModal,categoryEditorModal,directoryEventModal,directoryCatalogModal;
+let directoryEventsLoaded=false,directoryCatalogsLoaded=false,directoryStylesLoaded=false;
 let categoryEditorDraft=[];
 const directoryEventTypeOptions=['FESTIVAL','GALA SHOW','WORKSHOPS','MASTERCLASSES'];
+const directoryCatalogConfig={
+  masters:{singular:'maestro/a',plural:'Maestros',nameMaxLength:100,hasNationality:true,tableId:'directoryMastersTable',countId:'count-directory-masters',loadingId:'directoryMastersLoadingState',emptyId:'directoryMastersEmptyState'},
+  styles:{singular:'estilo',plural:'Estilos',nameMaxLength:50,hasNationality:false,tableId:'directoryStylesTable',countId:'count-directory-styles',loadingId:'directoryStylesLoadingState',emptyId:'directoryStylesEmptyState'}
+};
 const directoryEventValueConfig={
   status:{
     ACT:{label:'ACTIVO',badgeClass:'text-bg-success'},
@@ -70,7 +74,9 @@ document.addEventListener('DOMContentLoaded',async()=>{
   await ensureTranslationsReady();
   renderAdminLayout();
   ensureDirectoryEventModal();
+  ensureDirectoryCatalogModal();
   initDirectoryEventTypeSelect();
+  initDirectoryDanceStyleSelect();
   syncTiedPositionsFieldOptions();
   syncSendStatsCodeFieldOptions();
   syncJudgeFeedbackFieldOptions();
@@ -79,6 +85,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   clearEventDataModal=new bootstrap.Modal(document.getElementById('clearEventDataModal'));
   categoryEditorModal=new bootstrap.Modal(document.getElementById('categoryEditorModal'));
   directoryEventModal=new bootstrap.Modal(document.getElementById('directoryEventModal'));
+  directoryCatalogModal=new bootstrap.Modal(document.getElementById('directoryCatalogModal'));
   setEventCategories([]);
   await loadClients();
   await loadEvents();
@@ -100,6 +107,9 @@ function renderAdminLayout(){
       </li>
       <li class="nav-item" role="presentation">
         <button type="button" class="nav-link admin-section-link" data-admin-section="bellydance" aria-selected="false">Bellydance</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button type="button" class="nav-link admin-section-link" data-admin-section="bellydance-catalogs" aria-selected="false">Bellydance - Maestros/Estilos</button>
       </li>
     </ul>
 
@@ -243,6 +253,60 @@ function renderAdminLayout(){
           </div>
         </div>
       </div>
+    </section>
+    <section id="bellydanceCatalogsSection" data-admin-panel="bellydance-catalogs" class="d-none">
+      <div class="row g-4">
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header d-flex justify-content-between align-items-center gap-2">
+              <h3 class="h5 mb-0"><i class="bi bi-person-badge me-2"></i>Maestros</h3>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-primary btn-sm btn-create-directory-catalog" data-resource="masters">
+                  <i class="bi bi-plus-lg me-1"></i>Nuevo maestro/a
+                </button>
+                <span id="count-directory-masters" class="badge bg-secondary rounded-pill">0</span>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th>Nombre</th><th>Nacionalidad</th><th class="text-center">Acciones</th></tr></thead>
+                  <tbody id="directoryMastersTable"></tbody>
+                </table>
+              </div>
+              <div id="directoryMastersLoadingState" class="text-center py-5 d-none">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+              </div>
+              <div id="directoryMastersEmptyState" class="text-center text-body-secondary py-5 d-none">No hay maestros registrados.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-6">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header d-flex justify-content-between align-items-center gap-2">
+              <h3 class="h5 mb-0"><i class="bi bi-stars me-2"></i>Estilos</h3>
+              <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-primary btn-sm btn-create-directory-catalog" data-resource="styles">
+                  <i class="bi bi-plus-lg me-1"></i>Nuevo estilo
+                </button>
+                <span id="count-directory-styles" class="badge bg-secondary rounded-pill">0</span>
+              </div>
+            </div>
+            <div class="card-body p-0">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                  <thead class="table-light"><tr><th>Nombre</th><th class="text-center">Acciones</th></tr></thead>
+                  <tbody id="directoryStylesTable"></tbody>
+                </table>
+              </div>
+              <div id="directoryStylesLoadingState" class="text-center py-5 d-none">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+              </div>
+              <div id="directoryStylesEmptyState" class="text-center text-body-secondary py-5 d-none">No hay estilos registrados.</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>`;
   document.getElementById('eventFormMount').appendChild(eventForm);
   buildEventFormTabs();
@@ -322,7 +386,7 @@ function ensureDirectoryEventModal(){
                 </div>
                 <div class="col-12 col-md-4">
                   <label class="form-label" for="directoryEventDanceStyles">Estilos de baile</label>
-                  <input type="text" class="form-control" id="directoryEventDanceStyles" name="dance_styles" maxlength="500" required>
+                  <select class="form-select" id="directoryEventDanceStyles" name="dance_styles" multiple required></select>
                 </div>
                 <div class="col-12 col-md-4">
                   <label class="form-label" for="directoryEventMasters">Maestros/as</label>
@@ -420,6 +484,40 @@ function ensureDirectoryEventModal(){
     </div>`;
   document.body.appendChild(wrapper.firstElementChild);
   populateDirectoryEventValueFields();
+}
+
+function ensureDirectoryCatalogModal(){
+  if(document.getElementById('directoryCatalogModal')) return;
+  const wrapper=document.createElement('div');
+  wrapper.innerHTML=`
+    <div class="modal fade" id="directoryCatalogModal" tabindex="-1" aria-labelledby="directoryCatalogModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="directoryCatalogModalTitle">Nuevo registro</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <form id="directoryCatalogForm" data-action="create">
+              <div class="mb-3">
+                <label class="form-label" for="directoryCatalogName">Nombre</label>
+                <input type="text" class="form-control" id="directoryCatalogName" name="name" required>
+              </div>
+              <div id="directoryCatalogNationalityGroup">
+                <label class="form-label" for="directoryCatalogNationality">Nacionalidad</label>
+                <input type="text" class="form-control text-uppercase" id="directoryCatalogNationality" name="nationality" maxlength="2" pattern="[A-Za-z]{2}" required>
+                <div class="form-text">Código de país de dos letras.</div>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="saveDirectoryCatalogBtn">Crear</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(wrapper.firstElementChild);
 }
 
 function populateDirectoryEventValueFields(){
@@ -807,6 +905,7 @@ function bindStaticEvents(){
   document.getElementById('saveEventBtn')?.addEventListener('click',saveEvent);
   document.getElementById('saveClientBtn')?.addEventListener('click',saveClient);
   document.getElementById('saveDirectoryEventBtn')?.addEventListener('click',saveDirectoryEvent);
+  document.getElementById('saveDirectoryCatalogBtn')?.addEventListener('click',saveDirectoryCatalog);
   document.getElementById('sendWelcome')?.addEventListener('click',sendEventWelcomeEmail);
   document.getElementById('confirmClearEventDataBtn')?.addEventListener('click',clearEventData);
   document.getElementById('openSelectedEventBtn')?.addEventListener('click',()=>openEventAccess(currentEventDetail));
@@ -844,6 +943,11 @@ function bindStaticEvents(){
   document.getElementById('clearDirectoryFiltersBtn')?.addEventListener('click',clearDirectoryEventFilters);
   ['directoryEventStartDate','directoryEventEndDate'].forEach((id)=>document.getElementById(id)?.addEventListener('change',validateDirectoryEventDates));
   document.getElementById('directoryEventCountryCode')?.addEventListener('input',(event)=>{event.target.value=event.target.value.toUpperCase();});
+  document.getElementById('directoryCatalogNationality')?.addEventListener('input',(event)=>{event.target.value=event.target.value.toUpperCase();});
+  document.getElementById('directoryCatalogModal')?.addEventListener('shown.bs.modal',()=>{
+    const form=document.getElementById('directoryCatalogForm');
+    if(form?.dataset.action==='create') document.getElementById('directoryCatalogName')?.focus();
+  });
   ['visible','trial'].forEach((id)=>document.getElementById(id)?.addEventListener('change',syncEventPanelBadgesFromForm));
   document.getElementById('has_registrations')?.addEventListener('change',syncRegistrationsTabState);
   document.getElementById('clearEventDataCodeInput')?.addEventListener('input',()=>{document.getElementById('clearEventDataCodeInput')?.classList.remove('is-invalid');document.getElementById('clearEventDataFeedback')?.classList.add('d-none');});
@@ -865,6 +969,18 @@ function handleDocumentClick(ev){
   if(deleteDirectoryEventBtn){
     const directoryEvent=directoryEvents.find((item)=>String(item.id)===String(deleteDirectoryEventBtn.closest('tr')?.dataset.id));
     if(directoryEvent) confirmDeleteDirectoryEvent(directoryEvent);
+    return;
+  }
+  const createDirectoryCatalogBtn=ev.target.closest('.btn-create-directory-catalog');
+  if(createDirectoryCatalogBtn){openCreateDirectoryCatalogModal(createDirectoryCatalogBtn.dataset.resource);return;}
+  const editDirectoryCatalogBtn=ev.target.closest('.btn-edit-directory-catalog');
+  if(editDirectoryCatalogBtn){openEditDirectoryCatalogModal(editDirectoryCatalogBtn.dataset.resource,editDirectoryCatalogBtn.closest('tr')?.dataset.id,editDirectoryCatalogBtn);return;}
+  const deleteDirectoryCatalogBtn=ev.target.closest('.btn-delete-directory-catalog');
+  if(deleteDirectoryCatalogBtn){
+    const resource=deleteDirectoryCatalogBtn.dataset.resource;
+    const records=resource==='masters'?directoryMasters:directoryStyles;
+    const record=records.find((item)=>String(item.id)===String(deleteDirectoryCatalogBtn.closest('tr')?.dataset.id));
+    if(record) confirmDeleteDirectoryCatalog(resource,record);
   }
 }
 
@@ -876,6 +992,7 @@ function setActiveSection(section){
     btn.setAttribute('aria-selected',isActive?'true':'false');
   });
   if(section==='bellydance'&&!directoryEventsLoaded) loadDirectoryEvents();
+  if(section==='bellydance-catalogs'&&!directoryCatalogsLoaded) loadDirectoryCatalogs();
 }
 
 function logout(){if(getToken()){localStorage.removeItem('token');window.location.href='/index.html';}}
@@ -1201,6 +1318,202 @@ async function getDirectoryResponseError(response,fallbackMessage){
   return errorData?.error||errorData?.message||fallbackMessage;
 }
 
+async function loadDirectoryCatalogs(){
+  const results=await Promise.all([
+    loadDirectoryCatalog('masters'),
+    loadDirectoryCatalog('styles')
+  ]);
+  directoryCatalogsLoaded=results.every(Boolean);
+}
+
+async function loadDirectoryCatalog(resource){
+  const config=directoryCatalogConfig[resource];
+  if(!config) return false;
+  const loadingState=document.getElementById(config.loadingId);
+  const emptyState=document.getElementById(config.emptyId);
+  loadingState?.classList.remove('d-none');
+  emptyState?.classList.add('d-none');
+  try{
+    const response=await fetch(`${API_BASE_URL}/api/directory/${resource}`);
+    if(!response.ok) throw new Error(await getDirectoryResponseError(response,`Error al cargar ${config.plural.toLocaleLowerCase()}`));
+    const payload=await response.json();
+    const records=Array.isArray(payload)?payload:(Array.isArray(payload?.[resource])?payload[resource]:[]);
+    if(resource==='masters') directoryMasters=records;
+    else{
+      directoryStyles=records;
+      directoryStylesLoaded=true;
+      refreshDirectoryDanceStyleOptions();
+    }
+    renderDirectoryCatalog(resource);
+    return true;
+  }catch(error){
+    if(resource==='styles') directoryStylesLoaded=false;
+    console.error(`Error cargando ${resource}:`,error);
+    showMessageModal(error.message||`Error al cargar ${config.plural.toLocaleLowerCase()}`,'Error');
+    return false;
+  }finally{
+    loadingState?.classList.add('d-none');
+  }
+}
+
+function renderDirectoryCatalog(resource){
+  const config=directoryCatalogConfig[resource];
+  if(!config) return;
+  const records=resource==='masters'?directoryMasters:directoryStyles;
+  const tableBody=document.getElementById(config.tableId);
+  const emptyState=document.getElementById(config.emptyId);
+  const count=document.getElementById(config.countId);
+  if(!tableBody||!emptyState||!count) return;
+  tableBody.replaceChildren();
+  count.textContent=String(records.length);
+  emptyState.classList.toggle('d-none',records.length>0);
+
+  const fragment=document.createDocumentFragment();
+  records.forEach((record)=>{
+    const row=document.createElement('tr');
+    row.dataset.id=record.id;
+    const values=config.hasNationality?[record.name,record.nationality]:[record.name];
+    values.forEach((value)=>{
+      const cell=document.createElement('td');
+      cell.textContent=value===null||value===undefined?'':String(value);
+      row.appendChild(cell);
+    });
+    const actionsCell=document.createElement('td');
+    actionsCell.className='text-center';
+    actionsCell.innerHTML=`
+      <div class="btn-group" role="group" aria-label="Acciones">
+        <button type="button" class="btn btn-outline-primary btn-sm btn-edit-directory-catalog" data-resource="${resource}" title="Editar" aria-label="Editar">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button type="button" class="btn btn-outline-danger btn-sm btn-delete-directory-catalog" data-resource="${resource}" title="Eliminar" aria-label="Eliminar">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>`;
+    row.appendChild(actionsCell);
+    fragment.appendChild(row);
+  });
+  tableBody.appendChild(fragment);
+}
+
+function configureDirectoryCatalogModal(resource,action,record={}){
+  const config=directoryCatalogConfig[resource];
+  const form=document.getElementById('directoryCatalogForm');
+  if(!config||!form) return false;
+  form.reset();
+  form.dataset.resource=resource;
+  form.dataset.action=action;
+  if(action==='edit') form.dataset.id=String(record.id);
+  else form.removeAttribute('data-id');
+
+  const nameInput=document.getElementById('directoryCatalogName');
+  const nationalityInput=document.getElementById('directoryCatalogNationality');
+  const nationalityGroup=document.getElementById('directoryCatalogNationalityGroup');
+  nameInput.maxLength=config.nameMaxLength;
+  nameInput.value=record.name??'';
+  nationalityInput.value=record.nationality??'';
+  nationalityInput.required=config.hasNationality;
+  nationalityInput.disabled=!config.hasNationality;
+  nationalityGroup.classList.toggle('d-none',!config.hasNationality);
+
+  const isCreate=action==='create';
+  document.getElementById('directoryCatalogModalTitle').textContent=`${isCreate?'Crear':'Editar'} ${config.singular}`;
+  document.getElementById('saveDirectoryCatalogBtn').textContent=isCreate?'Crear':'Guardar cambios';
+  return true;
+}
+
+function openCreateDirectoryCatalogModal(resource){
+  if(!configureDirectoryCatalogModal(resource,'create')) return;
+  directoryCatalogModal.show();
+}
+
+async function openEditDirectoryCatalogModal(resource,id,triggerButton){
+  const config=directoryCatalogConfig[resource];
+  if(!config||!id) return;
+  setLoadingButtonState(triggerButton,true,'');
+  try{
+    const response=await fetch(`${API_BASE_URL}/api/directory/${resource}/${encodeURIComponent(id)}`);
+    if(!response.ok) throw new Error(await getDirectoryResponseError(response,`Error al cargar el ${config.singular}`));
+    const payload=await response.json();
+    const record=Array.isArray(payload)?payload[0]:payload;
+    if(!record) throw new Error(`No se ha encontrado el ${config.singular}`);
+    if(!configureDirectoryCatalogModal(resource,'edit',record)) return;
+    directoryCatalogModal.show();
+  }catch(error){
+    console.error(`Error cargando ${resource}:`,error);
+    showMessageModal(error.message||`Error al cargar el ${config.singular}`,'Error');
+  }finally{
+    setLoadingButtonState(triggerButton,false);
+  }
+}
+
+async function saveDirectoryCatalog(){
+  const form=document.getElementById('directoryCatalogForm');
+  const resource=form?.dataset.resource;
+  const config=directoryCatalogConfig[resource];
+  if(!form||!config||!form.reportValidity()) return;
+  const action=form.dataset.action;
+  const id=form.dataset.id;
+  const payload={name:form.elements.namedItem('name').value.trim()};
+  if(config.hasNationality) payload.nationality=form.elements.namedItem('nationality').value.trim().toUpperCase();
+  const saveButton=document.getElementById('saveDirectoryCatalogBtn');
+  setLoadingButtonState(saveButton,true,action==='create'?'Creando...':'Guardando...');
+  try{
+    const url=action==='create'
+      ?`${API_BASE_URL}/api/directory/${resource}`
+      :`${API_BASE_URL}/api/directory/${resource}/${encodeURIComponent(id)}`;
+    const response=await fetch(url,{
+      method:action==='create'?'POST':'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    if(!response.ok) throw new Error(await getDirectoryResponseError(response,`Error al guardar el ${config.singular}`));
+    directoryCatalogModal.hide();
+    const loaded=await loadDirectoryCatalog(resource);
+    if(!loaded) directoryCatalogsLoaded=false;
+    showToast(`${config.singular.charAt(0).toUpperCase()+config.singular.slice(1)} ${action==='create'?'creado':'actualizado'} correctamente`);
+  }catch(error){
+    console.error(`Error guardando ${resource}:`,error);
+    showMessageModal(error.message||`Error al guardar el ${config.singular}`,'Error');
+  }finally{
+    setLoadingButtonState(saveButton,false);
+  }
+}
+
+function confirmDeleteDirectoryCatalog(resource,record){
+  const config=directoryCatalogConfig[resource];
+  if(!config) return;
+  const modalElement=document.getElementById('deleteModal');
+  const deleteModal=bootstrap.Modal.getOrCreateInstance(modalElement);
+  const title=modalElement.querySelector('.modal-title');
+  if(title) title.textContent='Confirmar eliminación';
+  const cancelButton=modalElement.querySelector('[data-bs-dismiss="modal"]:not(.btn-close)');
+  if(cancelButton) cancelButton.textContent='Cancelar';
+  document.getElementById('deleteModalMessage').replaceChildren(
+    document.createTextNode(`¿Estás seguro de que quieres eliminar el ${config.singular} `),
+    Object.assign(document.createElement('strong'),{textContent:String(record.name||'')}),
+    document.createTextNode('?')
+  );
+  const confirmButton=document.getElementById('confirmDeleteBtn');
+  confirmButton.textContent='Eliminar';
+  confirmButton.onclick=async()=>{
+    setLoadingButtonState(confirmButton,true,'Eliminando...');
+    try{
+      const response=await fetch(`${API_BASE_URL}/api/directory/${resource}/${encodeURIComponent(record.id)}`,{method:'DELETE'});
+      if(!response.ok) throw new Error(await getDirectoryResponseError(response,`Error al eliminar el ${config.singular}`));
+      deleteModal.hide();
+      const loaded=await loadDirectoryCatalog(resource);
+      if(!loaded) directoryCatalogsLoaded=false;
+      showToast(`${config.singular.charAt(0).toUpperCase()+config.singular.slice(1)} eliminado correctamente`);
+    }catch(error){
+      console.error(`Error eliminando ${resource}:`,error);
+      showMessageModal(error.message||`Error al eliminar el ${config.singular}`,'Error');
+    }finally{
+      setLoadingButtonState(confirmButton,false);
+    }
+  };
+  deleteModal.show();
+}
+
 async function loadDirectoryEvents(){
   const loadingState=document.getElementById('directoryEventsLoadingState');
   const emptyState=document.getElementById('directoryEventsEmptyState');
@@ -1377,6 +1690,81 @@ function initDirectoryEventTypeSelect(){
   });
 }
 
+function initDirectoryDanceStyleSelect(){
+  const field=document.getElementById('directoryEventDanceStyles');
+  if(!field||field.tomselect||typeof TomSelect!=='function') return;
+  new TomSelect(field,{
+    plugins:['remove_button'],
+    create:false,
+    closeAfterSelect:false,
+    placeholder:'Selecciona uno o varios estilos'
+  });
+}
+
+function parseDirectoryCsvValues(value){
+  return [...new Set(String(value??'')
+    .split(',')
+    .map((item)=>item.trim())
+    .filter(Boolean)
+  )];
+}
+
+function getDirectoryDanceStyleCatalogNames(){
+  return [...new Set(directoryStyles
+    .map((style)=>String(style?.name??'').trim())
+    .filter(Boolean)
+  )].sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+}
+
+function replaceDirectoryDanceStyleOptions(field){
+  const options=getDirectoryDanceStyleCatalogNames();
+  if(field.tomselect){
+    field.tomselect.clear(true);
+    field.tomselect.clearOptions();
+    field.tomselect.addOptions(options.map((value)=>({value,text:value})));
+    field.tomselect.refreshOptions(false);
+    return;
+  }
+  field.replaceChildren(...options.map((value)=>new Option(value,value)));
+}
+
+function setDirectoryDanceStyleValues(field,value){
+  if(!field) return;
+  const selectedValues=parseDirectoryCsvValues(value);
+  const catalogValues=new Set(getDirectoryDanceStyleCatalogNames());
+  const legacyValues=selectedValues.filter((item)=>!catalogValues.has(item));
+  if(field.tomselect){
+    legacyValues.forEach((legacyValue)=>field.tomselect.addOption({
+      value:legacyValue,
+      text:`${legacyValue} (sin catalogar)`
+    }));
+    field.tomselect.setValue(selectedValues,true);
+    return;
+  }
+  legacyValues.forEach((legacyValue)=>field.appendChild(new Option(`${legacyValue} (sin catalogar)`,legacyValue)));
+  [...field.options].forEach((option)=>{option.selected=selectedValues.includes(option.value);});
+}
+
+function getDirectoryDanceStyleValue(form){
+  const field=form.elements.namedItem('dance_styles');
+  if(!field) return null;
+  const selectedValues=[...field.selectedOptions].map((option)=>option.value);
+  return selectedValues.length?selectedValues.join(','):null;
+}
+
+function refreshDirectoryDanceStyleOptions(){
+  const field=document.getElementById('directoryEventDanceStyles');
+  if(!field) return;
+  const currentValue=getDirectoryDanceStyleValue(document.getElementById('directoryEventForm'));
+  replaceDirectoryDanceStyleOptions(field);
+  setDirectoryDanceStyleValues(field,currentValue);
+}
+
+async function ensureDirectoryStylesLoaded(){
+  if(directoryStylesLoaded) return true;
+  return loadDirectoryCatalog('styles');
+}
+
 function setDirectoryEventTypeValues(field,value){
   const selectedValues=String(value??'')
     .split(',')
@@ -1400,6 +1788,10 @@ function setDirectoryEventFormValue(form,name,value){
     setDirectoryEventTypeValues(field,value);
     return;
   }
+  if(name==='dance_styles'&&field.multiple){
+    setDirectoryDanceStyleValues(field,value);
+    return;
+  }
   let normalizedValue;
   if(['start_date','end_date'].includes(name)) normalizedValue=formatDirectoryDate(value);
   else if(['contacted_us_at','outreach_sent_at','outreach_response_at','last_checked_at'].includes(name)) normalizedValue=formatDirectoryDateTimeInput(value);
@@ -1410,14 +1802,17 @@ function setDirectoryEventFormValue(form,name,value){
   field.value=normalizedValue;
 }
 
-function openCreateDirectoryEventModal(){
+async function openCreateDirectoryEventModal(){
+  if(!await ensureDirectoryStylesLoaded()) return;
   const form=document.getElementById('directoryEventForm');
   populateDirectoryEventValueFields();
   form.reset();
   setDirectoryEventTypeValues(form.elements.namedItem('event_type'),'');
+  replaceDirectoryDanceStyleOptions(form.elements.namedItem('dance_styles'));
   form.dataset.action='create';
   form.removeAttribute('data-id');
-  setDirectoryEventFormValue(form,'dance_styles','BELLYDANCE');
+  const defaultStyle=getDirectoryDanceStyleCatalogNames().includes('BELLYDANCE')?'BELLYDANCE':'';
+  setDirectoryEventFormValue(form,'dance_styles',defaultStyle);
   setDirectoryEventFormValue(form,'status','ACT');
   setDirectoryEventFormValue(form,'update_status','OK');
   setDirectoryEventFormValue(form,'is_published',0);
@@ -1432,13 +1827,18 @@ async function openEditDirectoryEventModal(id,triggerButton){
   if(!id) return;
   setLoadingButtonState(triggerButton,true,'');
   try{
-    const response=await fetch(`${API_BASE_URL}/api/directory/events/${encodeURIComponent(id)}`);
+    const [response,stylesLoaded]=await Promise.all([
+      fetch(`${API_BASE_URL}/api/directory/events/${encodeURIComponent(id)}`),
+      ensureDirectoryStylesLoaded()
+    ]);
+    if(!stylesLoaded) return;
     if(!response.ok) throw new Error(await getDirectoryResponseError(response,'Error al cargar el evento'));
     const event=await response.json();
     const form=document.getElementById('directoryEventForm');
     populateDirectoryEventValueFields();
     form.reset();
     setDirectoryEventTypeValues(form.elements.namedItem('event_type'),'');
+    replaceDirectoryDanceStyleOptions(form.elements.namedItem('dance_styles'));
     form.dataset.action='edit';
     form.dataset.id=String(event.id);
     [
@@ -1526,7 +1926,7 @@ function collectDirectoryEventFormData(){
     contact_email:getOptionalDirectoryEventValue(form,'contact_email'),
     poster_url:getOptionalDirectoryEventValue(form,'poster_url'),
     event_type:getDirectoryEventTypeValue(form),
-    dance_styles:form.elements.namedItem('dance_styles').value.trim(),
+    dance_styles:getDirectoryDanceStyleValue(form),
     masters:getOptionalDirectoryEventValue(form,'masters'),
     status:form.elements.namedItem('status').value.trim(),
     update_status:form.elements.namedItem('update_status').value.trim(),
