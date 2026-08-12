@@ -2,7 +2,7 @@
 const allowedRoles=['admin'];
 let clients=[],events=[],directoryEvents=[],directoryMasters=[],directoryStyles=[],selectedEventId=null,currentEventDetail=null,keepCreateMode=false;
 let clientModal,clearEventDataModal,categoryEditorModal,directoryEventModal,directoryCatalogModal;
-let directoryEventsLoaded=false,directoryCatalogsLoaded=false,directoryStylesLoaded=false;
+let directoryEventsLoaded=false,directoryCatalogsLoaded=false,directoryStylesLoaded=false,directoryMastersLoaded=false;
 let categoryEditorDraft=[];
 const directoryEventTypeOptions=['FESTIVAL','GALA SHOW','WORKSHOPS','MASTERCLASSES'];
 const directoryCatalogConfig={
@@ -77,6 +77,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   ensureDirectoryCatalogModal();
   initDirectoryEventTypeSelect();
   initDirectoryDanceStyleSelect();
+  initDirectoryMasterSelect();
   syncTiedPositionsFieldOptions();
   syncSendStatsCodeFieldOptions();
   syncJudgeFeedbackFieldOptions();
@@ -390,7 +391,7 @@ function ensureDirectoryEventModal(){
                 </div>
                 <div class="col-12 col-md-4">
                   <label class="form-label" for="directoryEventMasters">Maestros/as</label>
-                  <input type="text" class="form-control" id="directoryEventMasters" name="masters" maxlength="500">
+                  <select class="form-select" id="directoryEventMasters" name="masters" multiple></select>
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
                   <label class="form-label" for="directoryEventStatus">Estado</label>
@@ -1338,8 +1339,11 @@ async function loadDirectoryCatalog(resource){
     if(!response.ok) throw new Error(await getDirectoryResponseError(response,`Error al cargar ${config.plural.toLocaleLowerCase()}`));
     const payload=await response.json();
     const records=Array.isArray(payload)?payload:(Array.isArray(payload?.[resource])?payload[resource]:[]);
-    if(resource==='masters') directoryMasters=records;
-    else{
+    if(resource==='masters'){
+      directoryMasters=records;
+      directoryMastersLoaded=true;
+      refreshDirectoryMasterOptions();
+    }else{
       directoryStyles=records;
       directoryStylesLoaded=true;
       refreshDirectoryDanceStyleOptions();
@@ -1347,6 +1351,7 @@ async function loadDirectoryCatalog(resource){
     renderDirectoryCatalog(resource);
     return true;
   }catch(error){
+    if(resource==='masters') directoryMastersLoaded=false;
     if(resource==='styles') directoryStylesLoaded=false;
     console.error(`Error cargando ${resource}:`,error);
     showMessageModal(error.message||`Error al cargar ${config.plural.toLocaleLowerCase()}`,'Error');
@@ -1765,6 +1770,77 @@ async function ensureDirectoryStylesLoaded(){
   return loadDirectoryCatalog('styles');
 }
 
+function initDirectoryMasterSelect(){
+  const field=document.getElementById('directoryEventMasters');
+  if(!field||field.tomselect||typeof TomSelect!=='function') return;
+  new TomSelect(field,{
+    plugins:['remove_button'],
+    create:false,
+    closeAfterSelect:false,
+    placeholder:'Selecciona uno o varios maestros/as'
+  });
+}
+
+function getDirectoryMasterCatalogValues(){
+  return [...new Set(directoryMasters
+    .map((master)=>{
+      const name=String(master?.name??'').trim();
+      const nationality=String(master?.nationality??'').trim();
+      return name&&nationality?`${name} (${nationality})`:'';
+    })
+    .filter(Boolean)
+  )].sort((a,b)=>a.localeCompare(b,'es',{sensitivity:'base'}));
+}
+
+function replaceDirectoryMasterOptions(field){
+  const options=getDirectoryMasterCatalogValues();
+  if(field.tomselect){
+    field.tomselect.clear(true);
+    field.tomselect.clearOptions();
+    field.tomselect.addOptions(options.map((value)=>({value,text:value})));
+    field.tomselect.refreshOptions(false);
+    return;
+  }
+  field.replaceChildren(...options.map((value)=>new Option(value,value)));
+}
+
+function setDirectoryMasterValues(field,value){
+  if(!field) return;
+  const selectedValues=parseDirectoryCsvValues(value);
+  const catalogValues=new Set(getDirectoryMasterCatalogValues());
+  const legacyValues=selectedValues.filter((item)=>!catalogValues.has(item));
+  if(field.tomselect){
+    legacyValues.forEach((legacyValue)=>field.tomselect.addOption({
+      value:legacyValue,
+      text:`${legacyValue} (sin catalogar)`
+    }));
+    field.tomselect.setValue(selectedValues,true);
+    return;
+  }
+  legacyValues.forEach((legacyValue)=>field.appendChild(new Option(`${legacyValue} (sin catalogar)`,legacyValue)));
+  [...field.options].forEach((option)=>{option.selected=selectedValues.includes(option.value);});
+}
+
+function getDirectoryMasterValue(form){
+  const field=form.elements.namedItem('masters');
+  if(!field) return null;
+  const selectedValues=[...field.selectedOptions].map((option)=>option.value);
+  return selectedValues.length?selectedValues.join(','):null;
+}
+
+function refreshDirectoryMasterOptions(){
+  const field=document.getElementById('directoryEventMasters');
+  if(!field) return;
+  const currentValue=getDirectoryMasterValue(document.getElementById('directoryEventForm'));
+  replaceDirectoryMasterOptions(field);
+  setDirectoryMasterValues(field,currentValue);
+}
+
+async function ensureDirectoryMastersLoaded(){
+  if(directoryMastersLoaded) return true;
+  return loadDirectoryCatalog('masters');
+}
+
 function setDirectoryEventTypeValues(field,value){
   const selectedValues=String(value??'')
     .split(',')
@@ -1792,6 +1868,10 @@ function setDirectoryEventFormValue(form,name,value){
     setDirectoryDanceStyleValues(field,value);
     return;
   }
+  if(name==='masters'&&field.multiple){
+    setDirectoryMasterValues(field,value);
+    return;
+  }
   let normalizedValue;
   if(['start_date','end_date'].includes(name)) normalizedValue=formatDirectoryDate(value);
   else if(['contacted_us_at','outreach_sent_at','outreach_response_at','last_checked_at'].includes(name)) normalizedValue=formatDirectoryDateTimeInput(value);
@@ -1803,12 +1883,17 @@ function setDirectoryEventFormValue(form,name,value){
 }
 
 async function openCreateDirectoryEventModal(){
-  if(!await ensureDirectoryStylesLoaded()) return;
+  const [stylesLoaded,mastersLoaded]=await Promise.all([
+    ensureDirectoryStylesLoaded(),
+    ensureDirectoryMastersLoaded()
+  ]);
+  if(!stylesLoaded||!mastersLoaded) return;
   const form=document.getElementById('directoryEventForm');
   populateDirectoryEventValueFields();
   form.reset();
   setDirectoryEventTypeValues(form.elements.namedItem('event_type'),'');
   replaceDirectoryDanceStyleOptions(form.elements.namedItem('dance_styles'));
+  replaceDirectoryMasterOptions(form.elements.namedItem('masters'));
   form.dataset.action='create';
   form.removeAttribute('data-id');
   const defaultStyle=getDirectoryDanceStyleCatalogNames().includes('BELLYDANCE')?'BELLYDANCE':'';
@@ -1827,11 +1912,12 @@ async function openEditDirectoryEventModal(id,triggerButton){
   if(!id) return;
   setLoadingButtonState(triggerButton,true,'');
   try{
-    const [response,stylesLoaded]=await Promise.all([
+    const [response,stylesLoaded,mastersLoaded]=await Promise.all([
       fetch(`${API_BASE_URL}/api/directory/events/${encodeURIComponent(id)}`),
-      ensureDirectoryStylesLoaded()
+      ensureDirectoryStylesLoaded(),
+      ensureDirectoryMastersLoaded()
     ]);
-    if(!stylesLoaded) return;
+    if(!stylesLoaded||!mastersLoaded) return;
     if(!response.ok) throw new Error(await getDirectoryResponseError(response,'Error al cargar el evento'));
     const event=await response.json();
     const form=document.getElementById('directoryEventForm');
@@ -1839,6 +1925,7 @@ async function openEditDirectoryEventModal(id,triggerButton){
     form.reset();
     setDirectoryEventTypeValues(form.elements.namedItem('event_type'),'');
     replaceDirectoryDanceStyleOptions(form.elements.namedItem('dance_styles'));
+    replaceDirectoryMasterOptions(form.elements.namedItem('masters'));
     form.dataset.action='edit';
     form.dataset.id=String(event.id);
     [
@@ -1927,7 +2014,7 @@ function collectDirectoryEventFormData(){
     poster_url:getOptionalDirectoryEventValue(form,'poster_url'),
     event_type:getDirectoryEventTypeValue(form),
     dance_styles:getDirectoryDanceStyleValue(form),
-    masters:getOptionalDirectoryEventValue(form,'masters'),
+    masters:getDirectoryMasterValue(form),
     status:form.elements.namedItem('status').value.trim(),
     update_status:form.elements.namedItem('update_status').value.trim(),
     is_published:Number(form.elements.namedItem('is_published').value),
