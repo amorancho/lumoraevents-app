@@ -375,6 +375,14 @@ function ensureDirectoryEventModal(){
                   <label class="form-label" for="directoryEventVenue">Lugar</label>
                   <input type="text" class="form-control" id="directoryEventVenue" name="venue" maxlength="150">
                 </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventOrganizerName">Organizador</label>
+                  <input type="text" class="form-control" id="directoryEventOrganizerName" name="organizer_name" maxlength="150">
+                </div>
+                <div class="col-12 col-md-6">
+                  <label class="form-label" for="directoryEventOrganizerInstagram">Instagram del organizador</label>
+                  <input type="text" class="form-control" id="directoryEventOrganizerInstagram" name="organizer_instagram" maxlength="300" placeholder="Indica el usuario de Instagram sin @">
+                </div>
 
                 <div class="col-12">
                   <hr class="my-1">
@@ -1976,6 +1984,8 @@ async function openEditDirectoryEventModal(id,triggerButton){
       'city',
       'country_code',
       'venue',
+      'organizer_name',
+      'organizer_instagram',
       'website_url',
       'registration_url',
       'instagram_url',
@@ -2041,6 +2051,8 @@ function collectDirectoryEventFormData(){
     city:getOptionalDirectoryEventValue(form,'city'),
     country_code:getOptionalDirectoryEventValue(form,'country_code')?.toUpperCase()||null,
     venue:getOptionalDirectoryEventValue(form,'venue'),
+    organizer_name:getOptionalDirectoryEventValue(form,'organizer_name'),
+    organizer_instagram:getOptionalDirectoryEventValue(form,'organizer_instagram'),
     website_url:getOptionalDirectoryEventValue(form,'website_url'),
     registration_url:getOptionalDirectoryEventValue(form,'registration_url'),
     instagram_url:getOptionalDirectoryEventValue(form,'instagram_url'),
