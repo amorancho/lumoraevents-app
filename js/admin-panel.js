@@ -379,19 +379,33 @@ function ensureDirectoryEventModal(){
                 <div class="col-12">
                   <hr class="my-1">
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-6">
                   <label class="form-label" for="directoryEventEventType">Tipo de evento</label>
                   <select class="form-select" id="directoryEventEventType" name="event_type" multiple>
                     ${directoryEventTypeOptions.map((eventType)=>`<option value="${eventType}">${eventType}</option>`).join('')}
                   </select>
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-6">
                   <label class="form-label" for="directoryEventDanceStyles">Estilos de baile</label>
                   <select class="form-select" id="directoryEventDanceStyles" name="dance_styles" multiple required></select>
                 </div>
-                <div class="col-12 col-md-4">
-                  <label class="form-label" for="directoryEventMasters">Maestros/as</label>
-                  <select class="form-select" id="directoryEventMasters" name="masters" multiple></select>
+                <div class="col-12">
+                  <div class="border rounded-3 bg-body-tertiary p-3">
+                    <h6 class="mb-3"><i class="bi bi-person-badge me-2"></i>Gestión de maestros/as</h6>
+                    <div class="row g-3">
+                      <div class="col-12 col-lg-5">
+                        <label class="form-label" for="directoryEventMasterCatalog">Añadir desde el catálogo</label>
+                        <select class="form-select" id="directoryEventMasterCatalog"></select>
+                        <div class="form-text">Selecciona un maestro/a para añadirlo al campo editable.</div>
+                      </div>
+                      <div class="col-12 col-lg-7">
+                        <label class="form-label" for="directoryEventMasters">Maestros/as del evento</label>
+                        <textarea class="form-control" id="directoryEventMasters" name="masters" rows="3" maxlength="500"></textarea>
+                        <div class="form-text">Puedes añadir, corregir o eliminar valores manualmente. Usa valores con formato Nombre (PAÍS), separados por comas.</div>
+                        <div id="directoryEventMasterStatus" class="d-flex flex-wrap gap-2 mt-2" aria-live="polite"></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div class="col-12 col-sm-6 col-lg-3">
                   <label class="form-label" for="directoryEventStatus">Estado</label>
@@ -945,6 +959,7 @@ function bindStaticEvents(){
   ['directoryEventStartDate','directoryEventEndDate'].forEach((id)=>document.getElementById(id)?.addEventListener('change',validateDirectoryEventDates));
   document.getElementById('directoryEventCountryCode')?.addEventListener('input',(event)=>{event.target.value=event.target.value.toUpperCase();});
   document.getElementById('directoryCatalogNationality')?.addEventListener('input',(event)=>{event.target.value=event.target.value.toUpperCase();});
+  document.getElementById('directoryEventMasters')?.addEventListener('input',renderDirectoryMasterValueStatus);
   document.getElementById('directoryCatalogModal')?.addEventListener('shown.bs.modal',()=>{
     const form=document.getElementById('directoryCatalogForm');
     if(form?.dataset.action==='create') document.getElementById('directoryCatalogName')?.focus();
@@ -1771,13 +1786,25 @@ async function ensureDirectoryStylesLoaded(){
 }
 
 function initDirectoryMasterSelect(){
-  const field=document.getElementById('directoryEventMasters');
-  if(!field||field.tomselect||typeof TomSelect!=='function') return;
+  const field=document.getElementById('directoryEventMasterCatalog');
+  if(!field||field.tomselect) return;
+  if(typeof TomSelect!=='function'){
+    field.addEventListener('change',()=>{
+      appendDirectoryMasterValue(field.value);
+      field.value='';
+    });
+    return;
+  }
   new TomSelect(field,{
-    plugins:['remove_button'],
     create:false,
-    closeAfterSelect:false,
-    placeholder:'Selecciona uno o varios maestros/as'
+    maxItems:1,
+    closeAfterSelect:true,
+    placeholder:'Selecciona para añadir',
+    onChange(value){
+      if(!value) return;
+      appendDirectoryMasterValue(value);
+      this.clear(true);
+    }
   });
 }
 
@@ -1793,6 +1820,7 @@ function getDirectoryMasterCatalogValues(){
 }
 
 function replaceDirectoryMasterOptions(field){
+  if(!field) return;
   const options=getDirectoryMasterCatalogValues();
   if(field.tomselect){
     field.tomselect.clear(true);
@@ -1801,39 +1829,50 @@ function replaceDirectoryMasterOptions(field){
     field.tomselect.refreshOptions(false);
     return;
   }
-  field.replaceChildren(...options.map((value)=>new Option(value,value)));
+  field.replaceChildren(new Option('Selecciona para añadir',''),...options.map((value)=>new Option(value,value)));
 }
 
-function setDirectoryMasterValues(field,value){
-  if(!field) return;
-  const selectedValues=parseDirectoryCsvValues(value);
-  const catalogValues=new Set(getDirectoryMasterCatalogValues());
-  const legacyValues=selectedValues.filter((item)=>!catalogValues.has(item));
-  if(field.tomselect){
-    legacyValues.forEach((legacyValue)=>field.tomselect.addOption({
-      value:legacyValue,
-      text:`${legacyValue} (sin catalogar)`
-    }));
-    field.tomselect.setValue(selectedValues,true);
+function appendDirectoryMasterValue(value){
+  const field=document.getElementById('directoryEventMasters');
+  const normalizedValue=String(value??'').trim();
+  if(!field||!normalizedValue) return;
+  const currentValues=parseDirectoryCsvValues(field.value);
+  if(!currentValues.includes(normalizedValue)) currentValues.push(normalizedValue);
+  const nextValue=currentValues.join(',');
+  if(field.maxLength>0&&nextValue.length>field.maxLength){
+    showToast('No se puede añadir: el campo de maestros ha alcanzado su longitud máxima.');
     return;
   }
-  legacyValues.forEach((legacyValue)=>field.appendChild(new Option(`${legacyValue} (sin catalogar)`,legacyValue)));
-  [...field.options].forEach((option)=>{option.selected=selectedValues.includes(option.value);});
+  field.value=nextValue;
+  field.dispatchEvent(new Event('input',{bubbles:true}));
 }
 
 function getDirectoryMasterValue(form){
   const field=form.elements.namedItem('masters');
   if(!field) return null;
-  const selectedValues=[...field.selectedOptions].map((option)=>option.value);
-  return selectedValues.length?selectedValues.join(','):null;
+  const values=parseDirectoryCsvValues(field.value);
+  return values.length?values.join(','):null;
+}
+
+function renderDirectoryMasterValueStatus(){
+  const field=document.getElementById('directoryEventMasters');
+  const status=document.getElementById('directoryEventMasterStatus');
+  if(!field||!status) return;
+  const catalogValues=new Set(getDirectoryMasterCatalogValues());
+  const fragment=document.createDocumentFragment();
+  parseDirectoryCsvValues(field.value).forEach((value)=>{
+    const isCatalogued=catalogValues.has(value);
+    const badge=document.createElement('span');
+    badge.className=`badge ${isCatalogued?'text-bg-success':'text-bg-warning'}`;
+    badge.textContent=isCatalogued?value:`${value} (sin catalogar)`;
+    fragment.appendChild(badge);
+  });
+  status.replaceChildren(fragment);
 }
 
 function refreshDirectoryMasterOptions(){
-  const field=document.getElementById('directoryEventMasters');
-  if(!field) return;
-  const currentValue=getDirectoryMasterValue(document.getElementById('directoryEventForm'));
-  replaceDirectoryMasterOptions(field);
-  setDirectoryMasterValues(field,currentValue);
+  replaceDirectoryMasterOptions(document.getElementById('directoryEventMasterCatalog'));
+  renderDirectoryMasterValueStatus();
 }
 
 async function ensureDirectoryMastersLoaded(){
@@ -1868,10 +1907,6 @@ function setDirectoryEventFormValue(form,name,value){
     setDirectoryDanceStyleValues(field,value);
     return;
   }
-  if(name==='masters'&&field.multiple){
-    setDirectoryMasterValues(field,value);
-    return;
-  }
   let normalizedValue;
   if(['start_date','end_date'].includes(name)) normalizedValue=formatDirectoryDate(value);
   else if(['contacted_us_at','outreach_sent_at','outreach_response_at','last_checked_at'].includes(name)) normalizedValue=formatDirectoryDateTimeInput(value);
@@ -1880,6 +1915,7 @@ function setDirectoryEventFormValue(form,name,value){
     field.appendChild(new Option(normalizedValue,normalizedValue));
   }
   field.value=normalizedValue;
+  if(name==='masters') renderDirectoryMasterValueStatus();
 }
 
 async function openCreateDirectoryEventModal(){
@@ -1893,7 +1929,8 @@ async function openCreateDirectoryEventModal(){
   form.reset();
   setDirectoryEventTypeValues(form.elements.namedItem('event_type'),'');
   replaceDirectoryDanceStyleOptions(form.elements.namedItem('dance_styles'));
-  replaceDirectoryMasterOptions(form.elements.namedItem('masters'));
+  replaceDirectoryMasterOptions(document.getElementById('directoryEventMasterCatalog'));
+  setDirectoryEventFormValue(form,'masters','');
   form.dataset.action='create';
   form.removeAttribute('data-id');
   const defaultStyle=getDirectoryDanceStyleCatalogNames().includes('BELLYDANCE')?'BELLYDANCE':'';
@@ -1925,7 +1962,7 @@ async function openEditDirectoryEventModal(id,triggerButton){
     form.reset();
     setDirectoryEventTypeValues(form.elements.namedItem('event_type'),'');
     replaceDirectoryDanceStyleOptions(form.elements.namedItem('dance_styles'));
-    replaceDirectoryMasterOptions(form.elements.namedItem('masters'));
+    replaceDirectoryMasterOptions(document.getElementById('directoryEventMasterCatalog'));
     form.dataset.action='edit';
     form.dataset.id=String(event.id);
     [
