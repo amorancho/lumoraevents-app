@@ -15,6 +15,73 @@
       --event-details-surface: #f6f9fc;
     }
 
+    .language-selector .dropdown-toggle {
+      min-width: 4.5rem;
+      padding: 0.46rem 0.7rem;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 0.8rem;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .language-selector .dropdown-toggle:hover,
+    .language-selector .dropdown-toggle:focus {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.5);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    .language-selector .dropdown-toggle:focus {
+      box-shadow: 0 0 0 0.22rem rgba(255, 255, 255, 0.16);
+    }
+
+    .language-selector .dropdown-toggle::after {
+      margin-left: 0.5rem;
+      vertical-align: 0.14em;
+    }
+
+    .language-selector-code {
+      display: inline-block;
+      min-width: 1.35rem;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .language-selector .dropdown-menu {
+      min-width: 8.25rem;
+      padding: 0.4rem;
+      margin-top: 0.55rem;
+      border: 1px solid rgba(15, 45, 85, 0.1);
+      border-radius: 1rem;
+      box-shadow: 0 16px 34px rgba(10, 32, 60, 0.2);
+    }
+
+    .language-selector .dropdown-item {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 2.35rem;
+      border-radius: 0.65rem;
+      color: #17314a;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      transition: background-color 0.18s ease, color 0.18s ease;
+    }
+
+    .language-selector .dropdown-item:hover,
+    .language-selector .dropdown-item:focus,
+    .language-selector .dropdown-item.is-active {
+      background: #eaf2fc;
+      color: #1f5aa6;
+    }
+
     .event-details-modal .modal-content {
       border: 0;
       border-radius: 28px;
@@ -455,42 +522,38 @@
 
       <!-- User info -->
       <div class="col-12 col-lg-4 d-flex justify-content-center justify-content-lg-end align-items-center pe-lg-4">
-        <div class="dropdown">
-          <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-2" type="button" id="languageDropdown" 
-            data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
-            <img src="https://flagcdn.com/24x18/es.png" alt="Español" width="24" height="18" id="current-flag">
+        <div class="dropdown language-selector">
+          <button class="btn btn-sm dropdown-toggle" type="button" id="languageDropdown"
+            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Cambiar idioma" title="Cambiar idioma">
+            <span class="language-selector-code" id="current-language-code">ES</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
             <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('es')">
-                <img src="https://flagcdn.com/24x18/es.png" alt="Español" width="24" height="18">
-                Español
+              <button class="dropdown-item" type="button" data-language="es" aria-label="Español" onclick="changeLanguage('es')">
+                ES
               </button>
             </li>
             <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('en')">
-                <img src="https://flagcdn.com/24x18/gb.png" alt="English" width="24" height="18">
-                English
+              <button class="dropdown-item" type="button" data-language="en" aria-label="English" onclick="changeLanguage('en')">
+                EN
               </button>
             </li>
             <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('it')">
-                <img src="https://flagcdn.com/24x18/it.png" alt="Italiano" width="24" height="18">
-                Italiano
+              <button class="dropdown-item" type="button" data-language="it" aria-label="Italiano" onclick="changeLanguage('it')">
+                IT
               </button>
             </li>
             <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('pt')">
-                <img src="https://flagcdn.com/24x18/pt.png" alt="Português" width="24" height="18">
-                Português
+              <button class="dropdown-item" type="button" data-language="pt" aria-label="Português" onclick="changeLanguage('pt')">
+                PT
               </button>
             </li>
             <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('fr')">
-                <img src="https://flagcdn.com/24x18/fr.png" alt="Français" width="24" height="18">
-                Français
+              <button class="dropdown-item" type="button" data-language="fr" aria-label="Français" onclick="changeLanguage('fr')">
+                FR
               </button>
-            </li>          </ul>
+            </li>
+          </ul>
         </div>
       </div>
     </div>

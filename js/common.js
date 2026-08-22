@@ -422,6 +422,33 @@ function updateFlag(lang) {
       flag.alt = lang;
     }
   }
+
+  const languageNames = {
+    es: 'Español',
+    en: 'English',
+    it: 'Italiano',
+    pt: 'Português',
+    fr: 'Français'
+  };
+  const normalizedLang = supportedAppLanguages.has(lang) ? lang : 'en';
+  const languageCode = document.getElementById('current-language-code');
+  const languageDropdown = document.getElementById('languageDropdown');
+
+  if (languageCode) {
+    languageCode.textContent = normalizedLang.toUpperCase();
+  }
+
+  if (languageDropdown && languageCode) {
+    const languageName = languageNames[normalizedLang];
+    languageDropdown.setAttribute('aria-label', `Cambiar idioma: ${languageName}`);
+    languageDropdown.title = `Cambiar idioma: ${languageName}`;
+  }
+
+  document.querySelectorAll('.language-selector [data-language]').forEach(option => {
+    const isCurrentLanguage = option.dataset.language === normalizedLang;
+    option.classList.toggle('is-active', isCurrentLanguage);
+    option.setAttribute('aria-current', isCurrentLanguage ? 'true' : 'false');
+  });
 }
 
 const DEFAULT_DANCER_FLAG_SIZE = 24;

@@ -6,6 +6,11 @@ function generateHeader(callback) {
       // Convertir string HTML en DOM manipulable
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
+      const languageSelectorStyles = doc.getElementById('header-language-selector-styles');
+
+      if (languageSelectorStyles && !document.getElementById('header-language-selector-styles')) {
+        document.head.appendChild(languageSelectorStyles.cloneNode(true));
+      }
 
       // Modificar campos dentro del fragmento
       const titulo = doc.getElementById('event-name');
@@ -33,6 +38,10 @@ function generateHeader(callback) {
       const headerContainer = document.getElementById('header');
       if (headerContainer) {
         headerContainer.outerHTML = doc.body.innerHTML;
+      }
+
+      if (typeof updateFlag === 'function' && typeof getCurrentAppLanguage === 'function') {
+        updateFlag(getCurrentAppLanguage());
       }
 
       initUserInfo();
