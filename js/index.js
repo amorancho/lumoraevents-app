@@ -41,6 +41,22 @@ const EVENT_STATUS_META = {
 
 const getCurrentLanguage = () => String(localStorage.getItem('lang') || 'en').toLowerCase();
 
+const initIndexAdminButton = () => {
+  const adminButton = document.getElementById('admin-btn');
+  if (!adminButton) {
+    return;
+  }
+
+  const userRole = String(getUserFromToken()?.role || '').toLowerCase();
+  adminButton.classList.toggle('d-none', userRole !== 'admin');
+
+  if (userRole === 'admin') {
+    adminButton.addEventListener('click', () => {
+      window.location.href = '/admin.html';
+    });
+  }
+};
+
 const COUNTRY_NAME_BY_CODE =
   typeof countries !== 'undefined' && Array.isArray(countries)
     ? new Map(countries.map((country) => [String(country.code || '').trim().toUpperCase(), String(country.name || '').trim()]))
@@ -289,6 +305,8 @@ const sanitizeEventDescriptionHtml = (rawHtml) => {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
+  initIndexAdminButton();
+
   const container = document.getElementById('eventsContainer');
   const searchInput = document.getElementById('eventSearchInput');
   const categoryFilterSelect = document.getElementById('eventCategoryFilter');
