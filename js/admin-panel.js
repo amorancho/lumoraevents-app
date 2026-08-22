@@ -239,6 +239,7 @@ function renderAdminLayout(){
                   <th>Fecha fin</th>
                   <th>País</th>
                   <th class="text-center">Poster</th>
+                  <th class="text-center">Notas Int.</th>
                   <th>Estado</th>
                   <th>Actualización</th>
                   <th>Publicado</th>
@@ -1677,6 +1678,13 @@ function renderDirectoryEvents(){
       ? '<i class="bi bi-check-circle-fill text-success" role="img" aria-label="Poster informado" title="Poster informado"></i>'
       : '<i class="bi bi-x-circle text-secondary" role="img" aria-label="Poster no informado" title="Poster no informado"></i>';
     row.appendChild(posterCell);
+    const hasInternalNotes=typeof event.internal_notes==='string'&&event.internal_notes.trim()!=='';
+    const internalNotesCell=document.createElement('td');
+    internalNotesCell.className='text-center';
+    internalNotesCell.innerHTML=hasInternalNotes
+      ? '<i class="bi bi-check-circle-fill text-success" role="img" aria-label="Notas internas informadas" title="Notas internas informadas"></i>'
+      : '<i class="bi bi-x-circle text-secondary" role="img" aria-label="Notas internas no informadas" title="Notas internas no informadas"></i>';
+    row.appendChild(internalNotesCell);
     appendDirectoryEventBadgeCell(row,'status',event.status);
     appendDirectoryEventBadgeCell(row,'update_status',event.update_status);
     appendDirectoryEventBadgeCell(row,'is_published',event.is_published);
