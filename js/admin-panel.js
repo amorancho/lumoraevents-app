@@ -109,9 +109,6 @@ function renderAdminLayout(){
       <li class="nav-item" role="presentation">
         <button type="button" class="nav-link admin-section-link" data-admin-section="bellydance" aria-selected="false">Bellydance</button>
       </li>
-      <li class="nav-item" role="presentation">
-        <button type="button" class="nav-link admin-section-link" data-admin-section="bellydance-catalogs" aria-selected="false">Bellydance - Maestros/Estilos</button>
-      </li>
     </ul>
 
     <section id="eventsSection" data-admin-panel="events">
@@ -166,6 +163,15 @@ function renderAdminLayout(){
           </div>
     </section>
     <section id="bellydanceSection" data-admin-panel="bellydance" class="d-none">
+      <ul class="nav nav-tabs mb-4" role="tablist" aria-label="Secciones de Bellydance">
+        <li class="nav-item" role="presentation">
+          <button type="button" class="nav-link bellydance-tab-link active" data-bellydance-tab="events" aria-selected="true">Eventos</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button type="button" class="nav-link bellydance-tab-link" data-bellydance-tab="catalogs" aria-selected="false">Maestros/Estilos</button>
+        </li>
+      </ul>
+      <div data-bellydance-panel="events">
       <div class="card shadow-sm border-0 mb-3">
         <div class="card-header bg-body-tertiary">
           <h3 class="h6 mb-0"><i class="bi bi-funnel me-2"></i>Filtros</h3>
@@ -237,6 +243,7 @@ function renderAdminLayout(){
                   <th>Publicado</th>
                   <th>Contacto</th>
                   <th>Visitas</th>
+                  <th>Última actualización</th>
                   <th class="text-center">Acciones</th>
                 </tr>
               </thead>
@@ -254,8 +261,8 @@ function renderAdminLayout(){
           </div>
         </div>
       </div>
-    </section>
-    <section id="bellydanceCatalogsSection" data-admin-panel="bellydance-catalogs" class="d-none">
+      </div>
+      <div data-bellydance-panel="catalogs" class="d-none">
       <div class="row g-4">
         <div class="col-12 col-lg-6">
           <div class="card shadow-sm border-0 h-100">
@@ -307,6 +314,7 @@ function renderAdminLayout(){
             </div>
           </div>
         </div>
+      </div>
       </div>
     </section>`;
   document.getElementById('eventFormMount').appendChild(eventForm);
@@ -981,6 +989,8 @@ function bindStaticEvents(){
 function handleDocumentClick(ev){
   const sectionBtn=ev.target.closest('[data-admin-section]');
   if(sectionBtn){setActiveSection(sectionBtn.dataset.adminSection);return;}
+  const bellydanceTabBtn=ev.target.closest('[data-bellydance-tab]');
+  if(bellydanceTabBtn){setActiveBellydanceTab(bellydanceTabBtn.dataset.bellydanceTab);return;}
   const eventItem=ev.target.closest('.event-list-item');
   if(eventItem){loadEventDetail(eventItem.dataset.eventId);return;}
   const editClientBtn=ev.target.closest('.btn-edit-client');
@@ -1016,7 +1026,17 @@ function setActiveSection(section){
     btn.setAttribute('aria-selected',isActive?'true':'false');
   });
   if(section==='bellydance'&&!directoryEventsLoaded) loadDirectoryEvents();
-  if(section==='bellydance-catalogs'&&!directoryCatalogsLoaded) loadDirectoryCatalogs();
+}
+
+function setActiveBellydanceTab(tab){
+  document.querySelectorAll('[data-bellydance-panel]').forEach((panel)=>panel.classList.toggle('d-none',panel.dataset.bellydancePanel!==tab));
+  document.querySelectorAll('[data-bellydance-tab]').forEach((btn)=>{
+    const isActive=btn.dataset.bellydanceTab===tab;
+    btn.classList.toggle('active',isActive);
+    btn.setAttribute('aria-selected',isActive?'true':'false');
+  });
+  if(tab==='events'&&!directoryEventsLoaded) loadDirectoryEvents();
+  if(tab==='catalogs'&&!directoryCatalogsLoaded) loadDirectoryCatalogs();
 }
 
 function logout(){if(getToken()){localStorage.removeItem('token');window.location.href='/index.html';}}
@@ -1656,6 +1676,9 @@ function renderDirectoryEvents(){
     const viewsCell=document.createElement('td');
     viewsCell.textContent=event.views_count===null||event.views_count===undefined?'':String(event.views_count);
     row.appendChild(viewsCell);
+    const updatedAtCell=document.createElement('td');
+    updatedAtCell.textContent=formatDirectoryDateTime(event.updated_at);
+    row.appendChild(updatedAtCell);
     const actionsCell=document.createElement('td');
     actionsCell.className='text-center';
     actionsCell.innerHTML=`
@@ -1705,6 +1728,13 @@ function formatDirectoryDateTimeInput(value){
   return `${parsed.getFullYear()}-${pad(parsed.getMonth()+1)}-${pad(parsed.getDate())}T${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
 }
 
+function formatDirectoryDateTime(value){
+  if(value===null||value===undefined||value==='') return '';
+  const parsed=new Date(value);
+  if(Number.isNaN(parsed.getTime())) return String(value);
+  return parsed.toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'});
+}
+
 function initDirectoryEventTypeSelect(){
   const field=document.getElementById('directoryEventEventType');
   if(!field) return;
@@ -1714,7 +1744,8 @@ function initDirectoryEventTypeSelect(){
     plugins:['remove_button'],
     create:false,
     closeAfterSelect:false,
-    placeholder:'Selecciona uno o varios tipos'
+    placeholder:'Selecciona uno o varios tipos',
+    onItemAdd(){field.tomselect?.setTextboxValue('');}
   });
 }
 
@@ -1725,7 +1756,8 @@ function initDirectoryDanceStyleSelect(){
     plugins:['remove_button'],
     create:false,
     closeAfterSelect:false,
-    placeholder:'Selecciona uno o varios estilos'
+    placeholder:'Selecciona uno o varios estilos',
+    onItemAdd(){field.tomselect?.setTextboxValue('');}
   });
 }
 
