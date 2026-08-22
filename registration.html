@@ -526,6 +526,49 @@
       margin-top: auto;
       text-align: left;
     }
+    .registration-support-shell {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .registration-support-hero {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0d6efd 0%, #5837d8 100%);
+    }
+    .registration-support-hero::before,
+    .registration-support-hero::after {
+      position: absolute;
+      border-radius: 50%;
+      content: '';
+      background: rgba(255, 255, 255, 0.12);
+    }
+    .registration-support-hero::before {
+      width: 220px;
+      height: 220px;
+      top: -105px;
+      right: -45px;
+    }
+    .registration-support-hero::after {
+      width: 140px;
+      height: 140px;
+      bottom: -85px;
+      left: 42%;
+    }
+    .registration-support-hero-content {
+      position: relative;
+      z-index: 1;
+    }
+    .registration-support-icon {
+      display: inline-flex;
+      width: 3.5rem;
+      height: 3.5rem;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 1rem;
+      background: rgba(255, 255, 255, 0.16);
+      font-size: 1.7rem;
+    }
     .registration-dashboard-chart {
       min-height: 320px;
     }
@@ -1526,6 +1569,39 @@
                       <div id="registrationInvoicesEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_invoices_empty">
                         No hay facturas disponibles.
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="tab-pane fade" id="support" role="tabpanel">
+              <div class="registration-support-shell">
+                <div class="card border-0 shadow-sm registration-support-hero">
+                  <div class="card-body p-4 p-md-5 text-white registration-support-hero-content">
+                    <div class="registration-support-icon mb-4">
+                      <i class="bi bi-life-preserver"></i>
+                    </div>
+                    <h2 class="display-6 fw-semibold mb-3" data-i18n="registration_support_title">How can we help?</h2>
+                    <p class="lead mb-4 text-white-50" data-i18n="registration_support_description">
+                      Si tienes alguna duda o problema, contacta con nosotros y te ayudaremos lo más rápido posible.
+                    </p>
+                    <a
+                      class="btn btn-light btn-lg fw-semibold"
+                      href="https://lumoraevents.atlassian.net/servicedesk/customer/portal/2"
+                      target="_blank"
+                      rel="noopener noreferrer">
+                      <i class="bi bi-box-arrow-up-right me-2"></i><span data-i18n="registration_support_portal_link">Open support portal</span>
+                    </a>
+                  </div>
+                </div>
+                <div class="card border-0 shadow-sm mt-4">
+                  <div class="card-body p-4 d-flex align-items-start gap-3">
+                    <i class="bi bi-info-circle-fill fs-4 text-primary"></i>
+                    <div>
+                      <h3 class="h5 mb-2" data-i18n="registration_support_portal_title">Your support portal</h3>
+                      <p class="mb-0 text-body-secondary" data-i18n="registration_support_portal_description">
+                        Create a request and track its status directly from the support portal.
+                      </p>
                     </div>
                   </div>
                 </div>

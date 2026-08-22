@@ -102,6 +102,14 @@ const REGISTRATION_NAV_ITEMS = [
     fallbackLabel: 'Payments / Invoices'
   },
   {
+    key: 'support',
+    paneId: 'support',
+    roles: ['school'],
+    icon: 'bi-life-preserver',
+    labelKey: 'registration_tab_support',
+    fallbackLabel: 'Support'
+  },
+  {
     key: 'event-sync',
     paneId: 'event-sync',
     roles: ['organizer'],
