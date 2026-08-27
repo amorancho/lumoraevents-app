@@ -298,10 +298,7 @@ function initPaymentsTab(role) {
       categoryById,
       validatedOnly: true
     });
-    const registeredParticipantsCount = getRegisteredParticipantsCount(validatedRegistrations, {
-      validatedOnly: true,
-      participants: getFilteredParticipants()
-    });
+    const registeredParticipantsCount = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
     const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
     const totalFee = registrationFeeCost * registeredParticipantsCount;
     const validatedPayments = getSchoolScopedPaymentRows().filter(

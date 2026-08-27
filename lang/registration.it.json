@@ -409,6 +409,7 @@
   "registration_competitions_members_save": "Salva",
   "save_choreo": "Salva iscrizione",
   "registration_categories_price": "Prezzo",
+  "registration_categories_fee": "Fee",
   "registration_categories_fee_cost": "Quota iscrizione",
   "registration_categories_field_price": "Prezzo per pax",
   "registration_categories_field_music_max_duration_invalid": "Usa il formato mm:ss.",
@@ -419,5 +420,6 @@
   "registration_competitions_rule_economics": "Informazioni economiche",
   "registration_competitions_rule_fee_per_group": "Quota per gruppo",
   "registration_competitions_rule_price_per_person": "Prezzo/persona",
+  "registration_competitions_free_registration": "Iscrizione gratuita",
   "registration_payment_total_to_pay": "Totale da pagare"
 }

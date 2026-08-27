@@ -307,6 +307,32 @@ function getUniqueRegistrationParticipantsCount(registrations) {
   return participantIds.size;
 }
 
+function registrationAppliesFee(registration, categoryById) {
+  const categoryId = registration?.reg_category_id
+    ?? registration?.category_id
+    ?? registration?.reg_category?.id
+    ?? registration?.category?.id;
+  const category = categoryById?.get?.(`${categoryId}`)
+    ?? registration?.reg_category
+    ?? registration?.category;
+  return Number(category?.apply_fee ?? registration?.apply_fee ?? 1) === 1;
+}
+
+function getRegistrationFeeParticipantsCount(registrations, categoryById) {
+  const feeRegistrations = (Array.isArray(registrations) ? registrations : [])
+    .filter((registration) => registrationAppliesFee(registration, categoryById));
+  const uniqueParticipantsCount = getUniqueRegistrationParticipantsCount(feeRegistrations);
+
+  if (uniqueParticipantsCount !== null) {
+    return uniqueParticipantsCount;
+  }
+
+  return feeRegistrations.reduce(
+    (sum, registration) => sum + getRegistrationParticipantsTotal(registration),
+    0
+  );
+}
+
 async function hydrateValidatedRegistrationMembers(registrations, options = {}) {
   const rows = Array.isArray(registrations) ? registrations : [];
   const eventId = getEvent()?.id;
@@ -1542,9 +1568,7 @@ function initOrganizerDashboard() {
       categoryById,
       validatedOnly: true
     });
-    const registeredParticipantsCount = getRegisteredParticipantsCount(validatedRegistrations, participants, {
-      validatedOnly: true
-    });
+    const registeredParticipantsCount = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
     const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
     const totalFee = registrationFeeCost * registeredParticipantsCount;
     const paymentRows = (Array.isArray(registrationState.paymentDocuments) ? registrationState.paymentDocuments : [])
@@ -4531,6 +4555,7 @@ function initRegistrationCategoriesTab() {
     maxOutOfRangeInfo: modalEl.querySelector('[data-bs-toggle="tooltip"]'),
     musicMaxDuration: document.getElementById('registrationCategoryMusicMaxDuration'),
     price: document.getElementById('registrationCategoryPrice'),
+    applyFee: document.getElementById('registrationCategoryApplyFee'),
     modalTitle: document.getElementById('registrationCategoryModalTitle'),
     saveBtn: document.getElementById('registrationCategorySaveBtn'),
     deleteMessage: document.getElementById('registrationCategoryDeleteMessage'),
@@ -4714,6 +4739,7 @@ function initRegistrationCategoriesTab() {
     if (elements.maxOutOfRange) elements.maxOutOfRange.value = category?.max_outofrange ?? '';
     if (elements.musicMaxDuration) elements.musicMaxDuration.value = formatDurationValue(category?.music_max_duration);
     if (elements.price) elements.price.value = formatCentsToCurrencyValue(category?.registration_price);
+    if (elements.applyFee) elements.applyFee.checked = Number(category?.apply_fee ?? 1) === 1;
     syncDurationFieldValidity();
   };
 
@@ -4803,10 +4829,24 @@ function initRegistrationCategoriesTab() {
 
       const priceCell = document.createElement('td');
       priceCell.className = 'text-center';
-      priceCell.textContent = category.registration_price != null
-        ? formatCurrencyDisplay(category.registration_price)
-        : '-';
+      if (Number(category.registration_price) === 0) {
+        const freeBadge = document.createElement('span');
+        freeBadge.className = 'badge bg-success';
+        freeBadge.textContent = 'FREE';
+        priceCell.appendChild(freeBadge);
+      } else {
+        priceCell.textContent = category.registration_price != null
+          ? formatCurrencyDisplay(category.registration_price)
+          : '-';
+      }
       row.appendChild(priceCell);
+
+      const feeCell = document.createElement('td');
+      feeCell.className = 'text-center';
+      feeCell.innerHTML = Number(category.apply_fee ?? 1) === 1
+        ? '<i class="bi bi-check-circle-fill text-success" aria-label="Fee"></i>'
+        : '<i class="bi bi-circle" aria-label="No fee"></i>';
+      row.appendChild(feeCell);
 
       const choreoStatusCell = document.createElement('td');
       choreoStatusCell.className = 'text-start';
@@ -4862,7 +4902,7 @@ function initRegistrationCategoriesTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 11;
+    cell.colSpan = 12;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -4909,7 +4949,8 @@ function initRegistrationCategoriesTab() {
       max_years: normalizeNumber(elements.maxYears?.value),
       max_outofrange: normalizeNumber(elements.maxOutOfRange?.value),
       music_max_duration: parseDurationValue(elements.musicMaxDuration?.value),
-      registration_price: parseCurrencyValueToCents(elements.price?.value)
+      registration_price: parseCurrencyValueToCents(elements.price?.value),
+      apply_fee: elements.applyFee?.checked ? 1 : 0
     };
 
     if (!payload.event_id) delete payload.event_id;
@@ -6532,7 +6573,15 @@ function initOrganizerRegistrationsTab() {
 
       const totalAmountCell = document.createElement('td');
       totalAmountCell.className = 'text-center';
-      totalAmountCell.textContent = formatCurrencyDisplay(getRegistrationTotalAmount(registration));
+      const totalAmount = getRegistrationTotalAmount(registration);
+      if (totalAmount === 0) {
+        const freeBadge = document.createElement('span');
+        freeBadge.className = 'badge bg-success';
+        freeBadge.textContent = 'FREE';
+        totalAmountCell.appendChild(freeBadge);
+      } else {
+        totalAmountCell.textContent = formatCurrencyDisplay(totalAmount);
+      }
       row.appendChild(totalAmountCell);
 
       const statusCell = document.createElement('td');

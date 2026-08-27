@@ -379,6 +379,10 @@
 
     const categoryPrice = getCategoryRegistrationPrice(category);
     const pricePerPaxLabel = t('registration_categories_field_price', 'Precio por pax');
+    const freeRegistrationLabel = t('registration_competitions_free_registration', 'Inscripción gratuita');
+    const economicsValue = categoryPrice === 0
+      ? `<span>${freeRegistrationLabel}</span>`
+      : `<span><strong>${pricePerPaxLabel}:</strong> ${formatCurrencyDisplay(categoryPrice)}</span>`;
     const economicsInfo = `
       <div class="registration-category-info-card registration-category-info-card--economics">
         <div class="registration-category-info-title">
@@ -386,7 +390,7 @@
           <span>${economicsLabel}</span>
         </div>
         <div class="registration-category-info-values">
-          <span><strong>${pricePerPaxLabel}:</strong> ${formatCurrencyDisplay(categoryPrice)}</span>
+          ${economicsValue}
         </div>
       </div>
     `;
@@ -1788,7 +1792,15 @@
 
       const totalAmountCell = document.createElement('td');
       totalAmountCell.className = 'text-center';
-      totalAmountCell.textContent = formatCurrencyDisplay(getRegistrationTotalAmount(registration));
+      const totalAmount = getRegistrationTotalAmount(registration);
+      if (totalAmount === 0) {
+        const freeBadge = document.createElement('span');
+        freeBadge.className = 'badge bg-success';
+        freeBadge.textContent = 'FREE';
+        totalAmountCell.appendChild(freeBadge);
+      } else {
+        totalAmountCell.textContent = formatCurrencyDisplay(totalAmount);
+      }
       row.appendChild(totalAmountCell);
 
       const statusCell = document.createElement('td');

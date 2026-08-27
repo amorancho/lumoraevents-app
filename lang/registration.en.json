@@ -411,6 +411,7 @@
   "registration_competitions_members_save": "Save",
   "save_choreo": "Save registration",
   "registration_categories_price": "Price",
+  "registration_categories_fee": "Fee",
   "registration_categories_fee_cost": "Registration fee",
   "registration_categories_field_price": "Price per pax",
   "registration_categories_field_music_max_duration_invalid": "Use mm:ss format.",
@@ -421,5 +422,6 @@
   "registration_competitions_rule_economics": "Economics",
   "registration_competitions_rule_fee_per_group": "Fee per group",
   "registration_competitions_rule_price_per_person": "Price/person",
+  "registration_competitions_free_registration": "Registration is free",
   "registration_payment_total_to_pay": "Total to pay"
 }
