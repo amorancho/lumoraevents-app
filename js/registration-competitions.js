@@ -6,13 +6,12 @@
   const copyTsvBtn = document.getElementById('competitionsCopyTsvBtn');
   const modalEl = document.getElementById('registrationModal');
   const audioModalEl = document.getElementById('registrationAudioModal');
-  const paymentModalEl = document.getElementById('registrationPaymentModal');
   const deleteModalEl = document.getElementById('deleteRegistrationModal');
   const deleteAudioModalEl = document.getElementById('deleteAudioModal');
   const membersModalEl = document.getElementById('registrationMembersModal');
   const confirmModalEl = document.getElementById('confirmRegistrationModal');
 
-  if (!tableBody || !modalEl || !audioModalEl || !paymentModalEl || !deleteModalEl || !membersModalEl || !confirmModalEl) {
+  if (!tableBody || !modalEl || !audioModalEl || !deleteModalEl || !membersModalEl || !confirmModalEl) {
     return;
   }
 
@@ -64,13 +63,11 @@
     audioDeleteModal: deleteAudioModalEl,
     audioDeleteMessage: document.getElementById('deleteAudioMessage'),
     audioDeleteConfirmBtn: document.getElementById('confirmDeleteAudioBtn'),
-    audioSection: document.getElementById('registrationAudioSection'),
-    paymentSection: document.getElementById('registrationPaymentSection')
+    audioSection: document.getElementById('registrationAudioSection')
   };
 
   const registrationModal = new bootstrap.Modal(modalEl);
   const registrationAudioModal = new bootstrap.Modal(audioModalEl);
-  const registrationPaymentModal = new bootstrap.Modal(paymentModalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
   const audioDeleteModal = deleteAudioModalEl ? new bootstrap.Modal(deleteAudioModalEl) : null;
   const registrationMembersModal = new bootstrap.Modal(membersModalEl);
@@ -95,23 +92,6 @@
     removeBtn: document.getElementById('registrationAudioModalRemoveBtn'),
     saveBtn: document.getElementById('registrationAudioModalSaveBtn')
   };
-  const paymentElements = {
-    modal: paymentModalEl,
-    choreo: document.getElementById('registrationPaymentModalChoreo'),
-    category: document.getElementById('registrationPaymentModalCategory'),
-    style: document.getElementById('registrationPaymentModalStyle'),
-    dropzone: document.getElementById('registrationPaymentModalDropzone'),
-    input: document.getElementById('registrationPaymentModalInput'),
-    browseBtn: document.getElementById('registrationPaymentModalBrowseBtn'),
-    statusBadge: document.getElementById('registrationPaymentModalStatusBadge'),
-    totalAmount: document.getElementById('registrationPaymentModalTotalAmount'),
-    name: document.getElementById('registrationPaymentModalName'),
-    size: document.getElementById('registrationPaymentModalSize'),
-    viewBtn: document.getElementById('registrationPaymentModalViewBtn'),
-    downloadBtn: document.getElementById('registrationPaymentModalDownloadBtn'),
-    removeBtn: document.getElementById('registrationPaymentModalRemoveBtn'),
-    saveBtn: document.getElementById('registrationPaymentModalSaveBtn')
-  };
   const registrationHasMusic = (registration) => Number(registration?.has_music) === 1 || registration?.has_music === true || Boolean(registration?.audio);
 
   const registrationEndpoints = {
@@ -122,10 +102,7 @@
     detail: (id) => `/api/registrations/${id}`,
     confirm: (id) => `/api/registrations/choreographies/${id}/confirm`,
     desconfirm: (id) => `/api/registrations/choreographies/${id}/desconfirm`,
-    music: (id) => `/api/registrations/choreographies/${id}/music`,
-    payment: (id) => `/api/registrations/choreographies/${id}/payment`,
-    paymentView: (id) => `/api/registrations/choreographies/${id}/payment/view`,
-    paymentDownload: (id) => `/api/registrations/choreographies/${id}/payment/download`
+    music: (id) => `/api/registrations/choreographies/${id}/music`
   };
 
   let participantSelect = null;
@@ -139,7 +116,6 @@
   let membersRegistration = null;
   let membersCategoryId = null;
   let audioRegistration = null;
-  let paymentRegistration = null;
   let registrationsTooltipInstances = [];
   let audioState = {
     file: null,
@@ -151,17 +127,9 @@
     hasRemote: false,
     isValid: true
   };
-  let paymentState = {
-    file: null,
-    existingName: '',
-    existingSize: null,
-    existingStatus: '',
-    hasRemote: false
-  };
   const saveBtnLabel = elements.saveBtn ? elements.saveBtn.textContent : '';
   const membersSaveBtnLabel = elements.membersSaveBtn ? elements.membersSaveBtn.textContent : '';
   const audioSaveBtnLabel = audioElements.saveBtn ? audioElements.saveBtn.textContent : '';
-  const paymentSaveBtnLabel = paymentElements.saveBtn ? paymentElements.saveBtn.textContent : '';
   let audioModalDiscardRequested = false;
 
   const getEventIdValue = () => {
@@ -419,27 +387,9 @@
     return `${mb.toFixed(1)} MB`;
   };
 
-  const extractPaymentInfo = (data) => {
-    if (!data || typeof data !== 'object') {
-      return { status: '', name: '', size: null, hasFile: false };
-    }
-
-    const status = typeof data.status === 'string' ? data.status : '';
-    const name = typeof data.original_name === 'string' ? data.original_name : '';
-    const size = normalizeNumber(data.size);
-    const hasFile = Boolean(name || data.file_url);
-
-    return { status, name, size, hasFile };
-  };
-
   const setAudioSectionVisible = (visible) => {
     if (!elements.audioSection) return;
     elements.audioSection.classList.toggle('d-none', !visible);
-  };
-
-  const setPaymentSectionVisible = (visible) => {
-    if (!elements.paymentSection) return;
-    elements.paymentSection.classList.toggle('d-none', !visible);
   };
 
   const setAudioUploadControlsVisible = (visible) => {
@@ -585,18 +535,6 @@
     return buildActionUrl(registrationEndpoints.music(registrationId));
   };
 
-  const getPaymentUrl = (registrationId) => {
-    return buildActionUrl(registrationEndpoints.payment(registrationId));
-  };
-
-  const getPaymentViewUrl = (registrationId) => {
-    return buildActionUrl(registrationEndpoints.paymentView(registrationId));
-  };
-
-  const getPaymentDownloadUrl = (registrationId) => {
-    return buildActionUrl(registrationEndpoints.paymentDownload(registrationId));
-  };
-
   const fetchRegistrationAudioInfo = async (registrationId) => {
     if (!registrationId) return;
     resetAudioState();
@@ -655,115 +593,6 @@
     if (audioElements.input) audioElements.input.value = '';
     setAudioUnsavedWarningVisible(false);
     updateAudioUi();
-  };
-
-  const updatePaymentUi = () => {
-    const activeName = paymentState.file ? paymentState.file.name : (paymentState.existingName || '-');
-    const activeSize = paymentState.file ? paymentState.file.size : paymentState.existingSize;
-
-    updatePaymentStatusBadge();
-    if (paymentElements.name) {
-      paymentElements.name.textContent = activeName;
-    }
-    if (paymentElements.size) {
-      paymentElements.size.textContent = activeSize != null ? formatBytes(activeSize) : '-';
-    }
-    if (paymentElements.saveBtn) {
-      paymentElements.saveBtn.disabled = !paymentState.file;
-    }
-    if (paymentElements.viewBtn) {
-      paymentElements.viewBtn.disabled = !paymentState.hasRemote;
-    }
-    if (paymentElements.downloadBtn) {
-      paymentElements.downloadBtn.disabled = !paymentState.hasRemote;
-    }
-    if (paymentElements.removeBtn) {
-      paymentElements.removeBtn.disabled = !paymentState.hasRemote;
-    }
-  };
-
-  const updatePaymentStatusBadge = (registration = paymentRegistration) => {
-    if (!paymentElements.statusBadge) return;
-    if (!registration || typeof getRegistrationPaymentBadgeInfo !== 'function') {
-      paymentElements.statusBadge.className = 'badge bg-secondary-subtle text-secondary-emphasis';
-      paymentElements.statusBadge.textContent = '-';
-      return;
-    }
-    const badgeInfo = getRegistrationPaymentBadgeInfo(registration);
-    paymentElements.statusBadge.className = `badge ${badgeInfo.className}`;
-    paymentElements.statusBadge.textContent = badgeInfo.label;
-  };
-
-  const resetPaymentState = () => {
-    paymentState = {
-      file: null,
-      existingName: '',
-      existingSize: null,
-      existingStatus: '',
-      hasRemote: false
-    };
-    if (paymentElements.input) paymentElements.input.value = '';
-    updatePaymentUi();
-  };
-
-  const setRemotePaymentInfo = (info = null) => {
-    const paymentInfo = extractPaymentInfo(info);
-    paymentState.existingName = paymentInfo.name;
-    paymentState.existingSize = paymentInfo.size;
-    paymentState.existingStatus = paymentInfo.status;
-    paymentState.hasRemote = paymentInfo.hasFile;
-    updatePaymentUi();
-  };
-
-  const handlePaymentFile = (file) => {
-    if (!file) return;
-    const normalizedName = `${file.name || ''}`.toLowerCase();
-    if (file.type !== 'application/pdf' && !normalizedName.endsWith('.pdf')) {
-      showMessageModal(t('registration_payment_invalid_file', 'Selecciona un archivo PDF valido.'), t('error_title', 'Error'));
-      return;
-    }
-    paymentState.file = file;
-    updatePaymentUi();
-  };
-
-  const fetchRegistrationPaymentInfo = async (registrationId) => {
-    if (!registrationId) return;
-    try {
-      const url = getPaymentUrl(registrationId);
-      const res = await fetch(url);
-      if (!res.ok) {
-        if (res.status === 404) {
-          return;
-        }
-        const data = await safeJson(res);
-        const message = data?.error || t('registration_payment_load_error', 'Error al cargar el pago.');
-        throw new Error(message);
-      }
-      const data = await safeJson(res);
-      if (!data) {
-        return;
-      }
-      setRemotePaymentInfo(data);
-    } catch (err) {
-      showMessageModal(err.message || t('registration_payment_load_error', 'Error al cargar el pago.'), t('error_title', 'Error'));
-    }
-  };
-
-  const openActionUrl = (url, options = {}) => {
-    if (!url) return;
-    const { newTab = false, download = false, filename = '' } = options;
-    const link = document.createElement('a');
-    link.href = url;
-    if (newTab) {
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-    }
-    if (download && filename) {
-      link.setAttribute('download', filename);
-    }
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
   };
 
   const saveRegistrationAudio = async () => {
@@ -862,109 +691,6 @@
       if (audioElements.removeBtn) {
         audioElements.removeBtn.disabled = !(audioState.file || audioState.existingName);
       }
-    }
-  };
-
-  const saveRegistrationPayment = async () => {
-    const registrationId = paymentRegistration?.id ? `${paymentRegistration.id}` : '';
-    if (!registrationId) return;
-    if (!paymentState.file) {
-      showMessageModal(t('registration_payment_invalid_file', 'Selecciona un archivo PDF valido.'), t('error_title', 'Error'));
-      return;
-    }
-
-    if (paymentElements.saveBtn) {
-      paymentElements.saveBtn.disabled = true;
-      paymentElements.saveBtn.textContent = t('saving', 'Guardando...');
-    }
-
-    try {
-      const url = getPaymentUrl(registrationId);
-      const formData = new FormData();
-      const selectedFile = paymentState.file;
-      formData.append('payment', selectedFile);
-
-      const res = await fetch(url, {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await safeJson(res);
-      if (!res.ok) {
-        const message = data?.error || t('registration_payment_save_error', 'Error al guardar el pago.');
-        throw new Error(message);
-      }
-
-      paymentState.file = null;
-      if (paymentElements.input) paymentElements.input.value = '';
-      if (paymentRegistration) {
-        paymentRegistration.has_payment = true;
-        paymentRegistration.payment_validated = false;
-      }
-      setRemotePaymentInfo(data || {
-        original_name: selectedFile.name,
-        size: selectedFile.size
-      });
-      await fetchRegistrationPaymentInfo(registrationId);
-      await loadRegistrations();
-    } catch (err) {
-      showMessageModal(err.message || t('registration_payment_save_error', 'Error al guardar el pago.'), t('error_title', 'Error'));
-    } finally {
-      if (paymentElements.saveBtn) {
-        paymentElements.saveBtn.disabled = !paymentState.file;
-        paymentElements.saveBtn.textContent = paymentSaveBtnLabel;
-      }
-    }
-  };
-
-  const viewRegistrationPayment = () => {
-    const registrationId = paymentRegistration?.id ? `${paymentRegistration.id}` : '';
-    if (!registrationId || !paymentState.hasRemote) return;
-    openActionUrl(getPaymentViewUrl(registrationId), { newTab: true });
-  };
-
-  const downloadRegistrationPayment = () => {
-    const registrationId = paymentRegistration?.id ? `${paymentRegistration.id}` : '';
-    if (!registrationId || !paymentState.hasRemote) return;
-    openActionUrl(getPaymentDownloadUrl(registrationId), {
-      download: true,
-      filename: paymentState.existingName || 'payment.pdf'
-    });
-  };
-
-  const deleteRegistrationPayment = async () => {
-    const registrationId = paymentRegistration?.id ? `${paymentRegistration.id}` : '';
-    if (!registrationId || !paymentState.hasRemote) return;
-
-    const confirmDelete = window.confirm(
-      t('registration_payment_remove_confirm', 'Seguro que deseas eliminar el justificante de pago?')
-    );
-    if (!confirmDelete) {
-      return;
-    }
-
-    if (paymentElements.removeBtn) {
-      paymentElements.removeBtn.disabled = true;
-    }
-
-    try {
-      const url = getPaymentUrl(registrationId);
-      const res = await fetch(url, { method: 'DELETE' });
-      const data = await safeJson(res);
-      if (!res.ok) {
-        const message = data?.error || t('registration_payment_remove_error', 'Error al eliminar el pago.');
-        throw new Error(message);
-      }
-      if (paymentRegistration) {
-        paymentRegistration.has_payment = false;
-        paymentRegistration.payment_validated = false;
-      }
-      setRemotePaymentInfo(null);
-      await loadRegistrations();
-    } catch (err) {
-      showMessageModal(err.message || t('registration_payment_remove_error', 'Error al eliminar el pago.'), t('error_title', 'Error'));
-    } finally {
-      updatePaymentUi();
     }
   };
 
@@ -1437,7 +1163,6 @@
     if (mode === 'create') {
       resetChoreoForm();
       setAudioSectionVisible(false);
-      setPaymentSectionVisible(false);
       updateModalStatusInfo('', '');
       updateRegistrationTotalAmountInfo(null);
       registrationModal.show();
@@ -1447,7 +1172,6 @@
     if (!registration) {
       resetChoreoForm();
       setAudioSectionVisible(false);
-      setPaymentSectionVisible(false);
       updateModalStatusInfo('', '');
       updateRegistrationTotalAmountInfo(null);
       registrationModal.show();
@@ -1475,7 +1199,6 @@
 
     updateCategoryInfo();
     setAudioSectionVisible(false);
-    setPaymentSectionVisible(false);
     updateRegistrationTotalAmountInfo(registrationData);
     const statusValue = registrationData.status || registration.status || '';
     const rejectReason = getRejectReasonValue(registrationData) || getRejectReasonValue(registration);
@@ -1515,42 +1238,6 @@
     resetAudioState();
     await fetchRegistrationAudioInfo(registration.id);
     registrationAudioModal.show();
-  };
-
-  const openPaymentModal = async (registration) => {
-    if (!registration) return;
-
-    try {
-      await loadRegistrationConfig();
-    } catch (err) {
-      showMessageModal(err.message || t('registration_competitions_load_error', 'Error loading registrations.'), t('error_title', 'Error'));
-      return;
-    }
-
-    paymentRegistration = registration;
-
-    const categoryId = getRegistrationCategoryId(registration);
-    const category = categoryById.get(`${categoryId}`) || null;
-    const styleId = getRegistrationStyleId(registration);
-    const styleName = styleById.get(`${styleId}`)?.name || registration.style_name || '-';
-
-    if (paymentElements.choreo) {
-      paymentElements.choreo.textContent = registration.name || registration.choreography || '-';
-    }
-    if (paymentElements.category) {
-      paymentElements.category.textContent = category?.name || registration.category_name || '-';
-    }
-    if (paymentElements.style) {
-      paymentElements.style.textContent = styleName;
-    }
-    if (paymentElements.totalAmount) {
-      paymentElements.totalAmount.textContent = formatCurrencyDisplay(getRegistrationTotalAmount(registration));
-    }
-
-    resetPaymentState();
-    setRemotePaymentInfo(registration);
-    registrationPaymentModal.show();
-    await fetchRegistrationPaymentInfo(registration.id);
   };
 
   const openMembersModal = async (registration) => {
@@ -2312,56 +1999,6 @@
     });
   }
 
-  if (paymentElements.browseBtn && paymentElements.input) {
-    paymentElements.browseBtn.addEventListener('click', () => {
-      paymentElements.input.click();
-    });
-  }
-
-  if (paymentElements.input) {
-    paymentElements.input.addEventListener('change', (event) => {
-      const file = event.target.files && event.target.files[0];
-      handlePaymentFile(file);
-    });
-  }
-
-  if (paymentElements.dropzone) {
-    ['dragenter', 'dragover'].forEach(eventName => {
-      paymentElements.dropzone.addEventListener(eventName, (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        paymentElements.dropzone.classList.add('is-dragover');
-      });
-    });
-    ['dragleave', 'drop'].forEach(eventName => {
-      paymentElements.dropzone.addEventListener(eventName, (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        paymentElements.dropzone.classList.remove('is-dragover');
-      });
-    });
-    paymentElements.dropzone.addEventListener('drop', (event) => {
-      const file = event.dataTransfer?.files && event.dataTransfer.files[0];
-      handlePaymentFile(file);
-    });
-  }
-
-  if (paymentElements.viewBtn) {
-    paymentElements.viewBtn.addEventListener('click', viewRegistrationPayment);
-  }
-
-  if (paymentElements.downloadBtn) {
-    paymentElements.downloadBtn.addEventListener('click', downloadRegistrationPayment);
-  }
-
-  if (paymentElements.removeBtn) {
-    paymentElements.removeBtn.addEventListener('click', deleteRegistrationPayment);
-  }
-
-  if (paymentElements.saveBtn) {
-    paymentElements.saveBtn.addEventListener('click', saveRegistrationPayment);
-  }
-
   if (createBtn) {
     createBtn.addEventListener('click', () => openRegistrationModal('create'));
   }
@@ -2373,7 +2010,6 @@
   tableBody.addEventListener('click', (event) => {
     const editBtn = event.target.closest('.btn-edit-registration');
     const audioBtn = event.target.closest('.btn-registration-audio');
-    const paymentBtn = event.target.closest('.btn-registration-payment');
     const membersBtn = event.target.closest('.btn-members-registration');
     const confirmBtn = event.target.closest('.btn-confirm-registration');
     const deleteBtn = event.target.closest('.btn-delete-registration');
@@ -2389,13 +2025,6 @@
       const id = audioBtn.dataset.id;
       const registration = registrationState.registrations.find(item => `${item.id}` === `${id}`);
       openAudioModal(registration || null);
-      return;
-    }
-
-    if (paymentBtn) {
-      const id = paymentBtn.dataset.id;
-      const registration = registrationState.registrations.find(item => `${item.id}` === `${id}`);
-      openPaymentModal(registration || null);
       return;
     }
 
@@ -2476,7 +2105,6 @@
 
   modalEl.addEventListener('hidden.bs.modal', () => {
     setAudioSectionVisible(false);
-    setPaymentSectionVisible(false);
     updateRegistrationTotalAmountInfo(null);
     if (elements.participantsCountAddon) {
       elements.participantsCountAddon.classList.add('d-none');
@@ -2499,11 +2127,6 @@
     audioModalDiscardRequested = false;
     audioRegistration = null;
     resetAudioState();
-  });
-
-  paymentModalEl.addEventListener('hidden.bs.modal', () => {
-    paymentRegistration = null;
-    resetPaymentState();
   });
 
   membersModalEl.addEventListener('hidden.bs.modal', () => {

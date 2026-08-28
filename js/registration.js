@@ -5398,10 +5398,6 @@ function initOrganizerRegistrationsTab() {
     music: (id) => `/api/registrations/choreographies/${id}/music`,
     musicDownload: (id) => `/api/registrations/choreographies/${id}/music/download`,
     musicValidate: (id) => `/api/registrations/choreographies/${id}/music/validate`,
-    payment: (id) => `/api/registrations/choreographies/${id}/payment`,
-    paymentView: (id) => `/api/registrations/choreographies/${id}/payment/view`,
-    paymentDownload: (id) => `/api/registrations/choreographies/${id}/payment/download`,
-    paymentValidate: (id) => `/api/registrations/choreographies/${id}/payment/validate`,
     validate: (id) => `/api/registrations/choreographies/${id}/validate`,
     reject: (id) => `/api/registrations/choreographies/${id}/reject`
   };
@@ -5444,14 +5440,6 @@ function initOrganizerRegistrationsTab() {
     downloadBtn: document.getElementById('registrationAudioDownloadBtn'),
     validateBtn: document.getElementById('registrationAudioValidateBtn')
   };
-  const paymentElements = {
-    section: document.getElementById('registrationPaymentSection'),
-    name: document.getElementById('registrationPaymentName'),
-    size: document.getElementById('registrationPaymentSize'),
-    viewBtn: document.getElementById('registrationPaymentViewBtn'),
-    downloadBtn: document.getElementById('registrationPaymentDownloadBtn'),
-    validateBtn: document.getElementById('registrationPaymentValidateBtn')
-  };
   const registrationModal = new bootstrap.Modal(modalEl);
   const membersModal = new bootstrap.Modal(membersModalEl);
   const validateModal = new bootstrap.Modal(validateModalEl);
@@ -5479,7 +5467,6 @@ function initOrganizerRegistrationsTab() {
   let rejectTarget = null;
   let detailRegistration = null;
   let registrationsTooltipInstances = [];
-  const paymentValidateBtnLabel = paymentElements.validateBtn ? paymentElements.validateBtn.textContent : '';
 
   const populateSelect = (selectEl, items) => {
     if (!selectEl) return;
@@ -5633,18 +5620,6 @@ function initOrganizerRegistrationsTab() {
       : `${API_BASE_URL}${registrationEndpoints.musicDownload(registrationId)}`;
   };
 
-  const getPaymentUrl = (registrationId) => {
-    return buildActionUrl(registrationEndpoints.payment(registrationId));
-  };
-
-  const getPaymentViewUrl = (registrationId) => {
-    return buildActionUrl(registrationEndpoints.paymentView(registrationId));
-  };
-
-  const getPaymentDownloadUrl = (registrationId) => {
-    return buildActionUrl(registrationEndpoints.paymentDownload(registrationId));
-  };
-
   const buildActionUrl = (endpoint) => {
     const eventIdValue = getEventIdValue();
     return eventIdValue
@@ -5655,11 +5630,6 @@ function initOrganizerRegistrationsTab() {
   const setAudioSectionVisible = (visible) => {
     if (!audioElements.section) return;
     audioElements.section.classList.toggle('d-none', !visible);
-  };
-
-  const setPaymentSectionVisible = (visible) => {
-    if (!paymentElements.section) return;
-    paymentElements.section.classList.toggle('d-none', !visible);
   };
 
   const setAudioViewMode = (isViewOnly) => {
@@ -5720,90 +5690,11 @@ function initOrganizerRegistrationsTab() {
       : `${formatDuration(maxDuration)} (+${getEvent().musicExtraTime || 0} sec extra)`;
   };
 
-  const extractPaymentInfo = (data) => {
-    if (!data || typeof data !== 'object') {
-      return { status: '', name: '', size: null, hasFile: false };
-    }
-
-    const status = typeof data.status === 'string' ? data.status : '';
-    const name = typeof data.original_name === 'string' ? data.original_name : '';
-    const size = normalizeNumber(data.size);
-    const hasFile = Boolean(name || data.file_url);
-
-    return { status, name, size, hasFile };
-  };
-
-  const resetPaymentInfo = () => {
-    if (paymentElements.name) paymentElements.name.textContent = '-';
-    if (paymentElements.size) paymentElements.size.textContent = '-';
-    if (paymentElements.viewBtn) {
-      paymentElements.viewBtn.disabled = true;
-      paymentElements.viewBtn.onclick = null;
-    }
-    if (paymentElements.downloadBtn) {
-      paymentElements.downloadBtn.disabled = true;
-      paymentElements.downloadBtn.onclick = null;
-    }
-    if (paymentElements.validateBtn) {
-      paymentElements.validateBtn.disabled = true;
-      paymentElements.validateBtn.textContent = paymentValidateBtnLabel;
-    }
-  };
-
-  const updatePaymentActionButtonState = (registration, paymentInfo = null) => {
-    const hasPayment = isRegistrationFlagEnabled(registration?.has_payment) || Boolean(paymentInfo?.hasFile);
-    const isValidated = isRegistrationFlagEnabled(registration?.payment_validated);
-    const hasFile = Boolean(paymentInfo?.hasFile);
-
-    if (paymentElements.viewBtn) {
-      paymentElements.viewBtn.disabled = !registration?.id || !hasFile;
-    }
-    if (paymentElements.downloadBtn) {
-      paymentElements.downloadBtn.disabled = !registration?.id || !hasFile;
-    }
-    if (paymentElements.validateBtn) {
-      paymentElements.validateBtn.disabled = !registration?.id || !hasPayment || isValidated;
-    }
-  };
-
-  const setPaymentInfo = (data, registration = null) => {
-    const paymentInfo = extractPaymentInfo(data);
-    if (paymentElements.name) {
-      paymentElements.name.textContent = paymentInfo.name || '-';
-    }
-    if (paymentElements.size) {
-      paymentElements.size.textContent = paymentInfo.size != null ? formatBytes(paymentInfo.size) : '-';
-    }
-    updatePaymentActionButtonState(registration || data, paymentInfo);
-  };
-
   const updateAudioValidateButtonState = (registration) => {
     if (!audioElements.validateBtn) return;
     const hasMusic = isRegistrationFlagEnabled(registration?.has_music);
     const isValidated = isRegistrationFlagEnabled(registration?.music_validated);
     audioElements.validateBtn.disabled = !registration?.id || !hasMusic || isValidated;
-  };
-
-  const downloadBlob = (blob, filename) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename || 'audio';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  const getFilenameFromHeader = (headerValue) => {
-    if (!headerValue) return '';
-    const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(headerValue);
-    if (!match || !match[1]) return '';
-    try {
-      return decodeURIComponent(match[1].replace(/\"/g, '').trim());
-    } catch (err) {
-      return match[1].replace(/\"/g, '').trim();
-    }
   };
 
   const openActionUrl = (url, options = {}) => {
@@ -5847,26 +5738,6 @@ function initOrganizerRegistrationsTab() {
     }
   };
 
-  const handlePaymentDownloadClick = async (event, registrationId) => {
-    event.preventDefault();
-    if (!registrationId) return;
-    const url = getPaymentDownloadUrl(registrationId);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        const data = await safeJson(res);
-        const message = data?.error || t('registration_payment_download_error', 'Error al descargar el justificante.');
-        throw new Error(message);
-      }
-      const blob = await res.blob();
-      const headerFilename = getFilenameFromHeader(res.headers.get('content-disposition'));
-      const fallbackName = paymentElements.name?.textContent || '';
-      downloadBlob(blob, headerFilename || fallbackName || 'payment.pdf');
-    } catch (err) {
-      showMessageModal(err.message || t('registration_payment_download_error', 'Error al descargar el justificante.'), t('error_title', 'Error'));
-    }
-  };
-
   const setAudioInfo = (info, registrationId) => {
     if (audioElements.name) audioElements.name.textContent = info?.original_name || '-';
     if (audioElements.duration) {
@@ -5905,53 +5776,6 @@ function initOrganizerRegistrationsTab() {
       setAudioInfo(data, registrationId);
     } catch (err) {
       showMessageModal(err.message || t('registration_audio_load_error', 'Error loading audio.'), t('error_title', 'Error'));
-    }
-  };
-
-  const setPaymentActions = (registrationId, paymentInfo) => {
-    if (paymentElements.viewBtn) {
-      paymentElements.viewBtn.onclick = (event) => {
-        event.preventDefault();
-        if (paymentElements.viewBtn.disabled) return;
-        openActionUrl(getPaymentViewUrl(registrationId), { newTab: true });
-      };
-    }
-    if (paymentElements.downloadBtn) {
-      paymentElements.downloadBtn.onclick = (event) => {
-        if (paymentElements.downloadBtn.disabled) {
-          event.preventDefault();
-          return;
-        }
-        handlePaymentDownloadClick(event, registrationId);
-      };
-    }
-    updatePaymentActionButtonState(detailRegistration || { id: registrationId }, paymentInfo);
-  };
-
-  const fetchRegistrationPaymentInfo = async (registrationId) => {
-    if (!registrationId) return;
-    try {
-      const url = getPaymentUrl(registrationId);
-      const res = await fetch(url);
-      if (!res.ok) {
-        if (res.status === 404) {
-          updatePaymentActionButtonState(detailRegistration, extractPaymentInfo(detailRegistration || {}));
-          return;
-        }
-        const data = await safeJson(res);
-        const message = data?.error || t('registration_payment_load_error', 'Error al cargar el pago.');
-        throw new Error(message);
-      }
-      const data = await safeJson(res);
-      if (!data) {
-        updatePaymentActionButtonState(detailRegistration, extractPaymentInfo(null));
-        return;
-      }
-      const paymentInfo = extractPaymentInfo(data);
-      setPaymentInfo(data, detailRegistration);
-      setPaymentActions(registrationId, paymentInfo);
-    } catch (err) {
-      showMessageModal(err.message || t('registration_payment_load_error', 'Error al cargar el pago.'), t('error_title', 'Error'));
     }
   };
 
@@ -6447,36 +6271,6 @@ function initOrganizerRegistrationsTab() {
     }
   };
 
-  const validatePaymentUpload = async () => {
-    const registrationId = detailRegistration?.id || modalElements.id?.value || '';
-    if (!registrationId || !paymentElements.validateBtn) return;
-
-    const originalText = paymentElements.validateBtn.textContent;
-    paymentElements.validateBtn.disabled = true;
-    paymentElements.validateBtn.textContent = t('saving', 'Guardando...');
-
-    try {
-      const url = buildActionUrl(registrationEndpoints.paymentValidate(registrationId));
-      const res = await fetch(url, { method: 'POST' });
-      if (!res.ok) {
-        const data = await safeJson(res);
-        const message = data?.error || t('registration_payment_validate_error', 'Error al validar el pago.');
-        throw new Error(message);
-      }
-
-      await loadRegistrations();
-      const refreshedRegistration = registrationState.organizerRegistrations.find(item => `${item.id}` === `${registrationId}`) || detailRegistration;
-      await fillRegistrationDetailsModal(refreshedRegistration);
-    } catch (err) {
-      showMessageModal(err.message || t('registration_payment_validate_error', 'Error al validar el pago.'), t('error_title', 'Error'));
-    } finally {
-      if (paymentElements.validateBtn) {
-        paymentElements.validateBtn.textContent = originalText;
-        updatePaymentActionButtonState(detailRegistration, extractPaymentInfo(detailRegistration || {}));
-      }
-    }
-  };
-
   const openRegistrationDetails = async (registration) => {
     if (!registration || !form) return;
 
@@ -6781,10 +6575,6 @@ function initOrganizerRegistrationsTab() {
   if (audioElements.validateBtn) {
     audioElements.validateBtn.addEventListener('click', validateMusicUpload);
   }
-  if (paymentElements.validateBtn) {
-    paymentElements.validateBtn.addEventListener('click', validatePaymentUpload);
-  }
-
   modalEl.addEventListener('hidden.bs.modal', () => {
     if (modalEl.dataset.viewOnly !== 'true') return;
     setModalViewMode(false);
@@ -6796,8 +6586,6 @@ function initOrganizerRegistrationsTab() {
     if (modalElements.observations) {
       modalElements.observations.value = '';
     }
-    setPaymentSectionVisible(false);
-    resetPaymentInfo();
     updateAudioValidateButtonState(null);
     detailRegistration = null;
     delete modalEl.dataset.viewOnly;
