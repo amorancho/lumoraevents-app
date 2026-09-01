@@ -574,6 +574,10 @@ function getRegistrationSidebarTitle() {
   return t('registration_sidebar_section', 'Registration');
 }
 
+function isPortdanceFest26Event() {
+  return Number(getEvent()?.id) === 34;
+}
+
 function getRegistrationCalendarDate(value) {
   if (!value) return null;
 
@@ -659,6 +663,15 @@ function buildRegistrationSidebarHeroMarkup() {
   const statusInfo = getRegistrationSidebarStatusInfo();
   const eventRange = formatRegistrationSidebarRange(eventObj?.start, eventObj?.end);
   const registrationRange = formatRegistrationSidebarRange(eventObj?.registrationStart, eventObj?.registrationEnd);
+  const paymentInstructionsMarkup = isPortdanceFest26Event()
+    ? `
+      <div class="registration-sidebar-meta-row mt-2">
+        <button type="button" class="btn btn-link btn-sm p-0 text-start" data-bs-toggle="modal" data-bs-target="#portdanceFest26PaymentInstructionsModal">
+          <i class="bi bi-info-circle me-1"></i><span>${t('registration_payment_instructions', 'PAYMENT INSTRUCTIONS')}</span>
+        </button>
+      </div>
+    `
+    : '';
 
   return `
     <div class="registration-sidebar-meta">
@@ -682,6 +695,7 @@ function buildRegistrationSidebarHeroMarkup() {
         </div>
         <div class="registration-sidebar-meta-value">${registrationRange}</div>
       </div>
+      ${paymentInstructionsMarkup}
     </div>
   `;
 }

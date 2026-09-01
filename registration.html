@@ -1453,6 +1453,11 @@
                 </div>
 
                 <div class="mt-3">
+                  <div class="mb-3 d-none" id="portdanceFest26PaymentInstructions">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#portdanceFest26PaymentInstructionsModal">
+                      <i class="bi bi-info-circle me-1"></i><span data-i18n="registration_payment_instructions">INSTRUCCIONES DE PAGO</span>
+                    </button>
+                  </div>
                   <div class="mb-2 d-none" id="registrationPaymentsSharedOrganizerFilter">
                     <div class="registration-payments-shared-filter-bar">
                       <select
@@ -2177,6 +2182,28 @@
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="portdanceFest26PaymentInstructionsModal" tabindex="-1" aria-labelledby="portdanceFest26PaymentInstructionsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="portdanceFest26PaymentInstructionsModalTitle" data-i18n="registration_payment_instructions">INSTRUCCIONES DE PAGO</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>O pagamento deverá ser efectuado por transferência bancária:</p>
+          <p class="mb-0">
+            Nome do titular da conta: Portdance - Unipessoal, Lda<br>
+            IBAN: PT50 0010 0000 4274 4880 0069 4<br>
+            BIC/SWIFT: BBPIPTPL
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>

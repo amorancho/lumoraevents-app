@@ -423,5 +423,6 @@
   "registration_competitions_rule_fee_per_group": "Fee per group",
   "registration_competitions_rule_price_per_person": "Price/person",
   "registration_competitions_free_registration": "Registration is free",
-  "registration_payment_total_to_pay": "Total to pay"
+  "registration_payment_total_to_pay": "Total to pay",
+  "registration_payment_instructions": "PAYMENT INSTRUCTIONS"
 }

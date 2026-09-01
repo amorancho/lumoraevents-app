@@ -11,6 +11,12 @@ function initPaymentsTab(role) {
 
   const isOrganizer = role === 'organizer';
   const paymentListEndpoint = '/api/registrations/payments';
+  const paymentInstructionsEl = document.getElementById('portdanceFest26PaymentInstructions');
+  const isPortdanceFest26Event = Number(getEvent?.()?.id) === 34;
+
+  if (paymentInstructionsEl) {
+    paymentInstructionsEl.classList.toggle('d-none', !isPortdanceFest26Event);
+  }
 
   const summaryElements = {
     feeValue: document.getElementById('registrationPaymentsFeeValue'),
