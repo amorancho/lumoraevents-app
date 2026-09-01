@@ -5565,6 +5565,17 @@ function initOrganizerRegistrationsTab() {
     return directAmount ?? 0;
   };
 
+  const getRegistrationPrice = (registration) => {
+    const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+    const category = categoryById.get(`${categoryId}`) || null;
+    return normalizeNumber(
+      category?.registration_price
+      ?? registration?.reg_category?.registration_price
+      ?? registration?.category?.registration_price
+      ?? registration?.registration_price
+    );
+  };
+
   const safeJson = async (res) => {
     try {
       return await res.json();
@@ -6368,7 +6379,7 @@ function initOrganizerRegistrationsTab() {
       const totalAmountCell = document.createElement('td');
       totalAmountCell.className = 'text-center';
       const totalAmount = getRegistrationTotalAmount(registration);
-      if (totalAmount === 0) {
+      if (getRegistrationPrice(registration) === 0) {
         const freeBadge = document.createElement('span');
         freeBadge.className = 'badge bg-success';
         freeBadge.textContent = 'FREE';
