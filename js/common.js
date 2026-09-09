@@ -23,17 +23,31 @@ const originalFetch = window.fetch;
 window.fetch = function (url, options = {}) {
   const lang = localStorage.getItem('lang') || 'es';
 
-  // obtenemos el role del usuario
-  const user = getUserFromToken();
-  const role = user ? user.role : 'guest';
+  const requestUrl = new URL(
+    typeof url === 'string' ? url : url.url,
+    window.location.origin
+  );
+
+  const isPublicApi =
+    requestUrl.pathname.startsWith('/public/');
 
   options = options || {};
-  options.headers = {
+
+  const headers = {
     ...options.headers,
-    'Accept-Language': lang,
-    'X-User-Role': role,
-    'X-User-Id': user ? user.id : ''
+    'Accept-Language': lang
   };
+
+  if (!isPublicApi) {
+    const user = getUserFromToken();
+    const role = user ? user.role : 'guest';
+
+    headers['X-User-Role'] = role;
+    headers['X-User-Id'] = user ? user.id : '';
+  }
+
+  options.headers = headers;
+
   return originalFetch(url, options);
 };
 
