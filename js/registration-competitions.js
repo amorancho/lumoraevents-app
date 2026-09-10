@@ -211,33 +211,11 @@
   };
 
   const getRegistrationTotalAmount = (registration) => {
-    const category = categoryById.get(`${getRegistrationCategoryId(registration)}`) || null;
-    const categoryPrice = normalizeNumber(
-      category?.registration_price
-      ?? registration?.reg_category?.registration_price
-      ?? registration?.category?.registration_price
-      ?? registration?.registration_price
-    );
-    if (categoryPrice !== null) {
-      return categoryPrice * getRegistrationParticipantsCount(registration);
-    }
-
-    const directAmount = normalizeNumber(
-      registration?.total_amount
-      ?? registration?.totalAmount
-      ?? registration?.amount_total
-    );
-    return directAmount ?? 0;
+    return normalizeNumber(registration?.total_amount) ?? 0;
   };
 
   const getRegistrationPrice = (registration) => {
-    const category = categoryById.get(`${getRegistrationCategoryId(registration)}`) || null;
-    return normalizeNumber(
-      category?.registration_price
-      ?? registration?.reg_category?.registration_price
-      ?? registration?.category?.registration_price
-      ?? registration?.registration_price
-    );
+    return normalizeNumber(registration?.registration_price);
   };
 
   const isIndividualCategory = (category) => {

@@ -302,7 +302,8 @@ function initPaymentsTab(role) {
     const categoryById = getCategoryById();
     const finance = buildRegistrationFinanceMetrics(registrations, {
       categoryById,
-      validatedOnly: true
+      validatedOnly: true,
+      useStoredTotalAmount: true
     });
     const registeredParticipantsCount = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
     const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
