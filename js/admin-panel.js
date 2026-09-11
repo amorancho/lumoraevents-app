@@ -1,8 +1,9 @@
 ﻿var title='Administración LumoraEvents';
 const allowedRoles=['admin'];
 let clients=[],events=[],directoryEvents=[],directoryMasters=[],directoryStyles=[],selectedEventId=null,currentEventDetail=null,keepCreateMode=false;
-let clientModal,clearEventDataModal,categoryEditorModal,directoryEventModal,directoryCatalogModal;
+let clientModal,clearEventDataModal,categoryEditorModal,directoryEventModal,directoryCatalogModal,directoryVisitsModal;
 let directoryEventsLoaded=false,directoryCatalogsLoaded=false,directoryStylesLoaded=false,directoryMastersLoaded=false;
+let directoryVisits=[],directoryVisitsCharts={},directoryVisitsRequestController=null;
 let categoryEditorDraft=[];
 const directoryEventTypeOptions=['FESTIVAL','GALA SHOW','WORKSHOPS','MASTERCLASSES'];
 const directoryCatalogConfig={
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   renderAdminLayout();
   ensureDirectoryEventModal();
   ensureDirectoryCatalogModal();
+  ensureDirectoryVisitsModal();
   initDirectoryEventTypeSelect();
   initDirectoryDanceStyleSelect();
   initDirectoryMasterSelect();
@@ -87,6 +89,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   categoryEditorModal=new bootstrap.Modal(document.getElementById('categoryEditorModal'));
   directoryEventModal=new bootstrap.Modal(document.getElementById('directoryEventModal'));
   directoryCatalogModal=new bootstrap.Modal(document.getElementById('directoryCatalogModal'));
+  directoryVisitsModal=new bootstrap.Modal(document.getElementById('directoryVisitsModal'));
   setEventCategories([]);
   await loadClients();
   await loadEvents();
@@ -223,6 +226,9 @@ function renderAdminLayout(){
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
           <h3 class="h5 mb-0"><i class="bi bi-calendar-event me-2"></i>Eventos</h3>
           <div class="d-flex align-items-center gap-2">
+            <button type="button" id="openDirectoryVisitsBtn" class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-graph-up me-1"></i> Visitas
+            </button>
             <button id="createDirectoryEventBtn" class="btn btn-primary btn-sm">
               <i class="bi bi-plus-lg me-1"></i> Nuevo evento
             </button>
@@ -546,6 +552,157 @@ function ensureDirectoryCatalogModal(){
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
             <button type="button" class="btn btn-primary" id="saveDirectoryCatalogBtn">Crear</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(wrapper.firstElementChild);
+}
+
+function ensureDirectoryVisitsModal(){
+  if(document.getElementById('directoryVisitsModal')) return;
+  const wrapper=document.createElement('div');
+  wrapper.innerHTML=`
+    <div class="modal fade" id="directoryVisitsModal" tabindex="-1" aria-labelledby="directoryVisitsModalTitle" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div>
+              <h5 class="modal-title" id="directoryVisitsModalTitle"><i class="bi bi-graph-up-arrow me-2"></i>Analítica de visitas</h5>
+              <div id="directoryVisitsPeriod" class="small text-body-secondary mt-1"></div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body p-0">
+            <div id="directoryVisitsLoadingState" class="text-center py-5">
+              <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+              <p class="text-body-secondary mt-3 mb-0">Cargando visitas...</p>
+            </div>
+            <div id="directoryVisitsErrorState" class="alert alert-danger m-4 d-none" role="alert"></div>
+            <div id="directoryVisitsEmptyState" class="text-center py-5 d-none">
+              <i class="bi bi-bar-chart text-muted" style="font-size:3rem;"></i>
+              <h6 class="text-muted mt-3 mb-0">No hay datos de visitas</h6>
+            </div>
+            <div id="directoryVisitsContent" class="d-none">
+              <ul class="nav nav-tabs directory-visits-tabs px-3 pt-3" role="tablist" aria-label="Visualizaciones de visitas">
+                <li class="nav-item" role="presentation">
+                  <button type="button" id="directoryVisitsOverviewTab" class="nav-link active" data-bs-toggle="tab" data-bs-target="#directoryVisitsOverviewPane" data-directory-visits-tab="overview" role="tab" aria-controls="directoryVisitsOverviewPane" aria-selected="true">
+                    <i class="bi bi-speedometer2 me-1"></i>Resumen
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button type="button" id="directoryVisitsRankingTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#directoryVisitsRankingPane" data-directory-visits-tab="ranking" role="tab" aria-controls="directoryVisitsRankingPane" aria-selected="false">
+                    <i class="bi bi-trophy me-1"></i>Ranking
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button type="button" id="directoryVisitsEvolutionTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#directoryVisitsEvolutionPane" data-directory-visits-tab="evolution" role="tab" aria-controls="directoryVisitsEvolutionPane" aria-selected="false">
+                    <i class="bi bi-graph-up me-1"></i>Evolución
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button type="button" id="directoryVisitsComparisonTab" class="nav-link" data-bs-toggle="tab" data-bs-target="#directoryVisitsComparisonPane" data-directory-visits-tab="comparison" role="tab" aria-controls="directoryVisitsComparisonPane" aria-selected="false">
+                    <i class="bi bi-bar-chart-steps me-1"></i>Comparativa
+                  </button>
+                </li>
+              </ul>
+
+              <div class="tab-content p-3 p-lg-4">
+                <div id="directoryVisitsOverviewPane" class="tab-pane fade show active" role="tabpanel" aria-labelledby="directoryVisitsOverviewTab" tabindex="0">
+                  <div class="row g-3 mb-4">
+                    <div class="col-6 col-lg-3">
+                      <div class="card h-100 border-0 bg-primary bg-opacity-10 directory-visits-kpi">
+                        <div class="card-body">
+                          <div class="small text-body-secondary mb-2"><i class="bi bi-eye me-1"></i>Visitas totales</div>
+                          <div id="directoryVisitsKpiTotal" class="fw-bold text-primary directory-visits-kpi-value">0</div>
+                          <div class="small text-body-secondary mt-2">En todo el período</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                      <div class="card h-100 border-0 bg-success bg-opacity-10 directory-visits-kpi">
+                        <div class="card-body">
+                          <div class="small text-body-secondary mb-2"><i class="bi bi-calendar-event me-1"></i>Eventos</div>
+                          <div id="directoryVisitsKpiEvents" class="fw-bold text-success directory-visits-kpi-value">0</div>
+                          <div class="small text-body-secondary mt-2">Con datos registrados</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                      <div class="card h-100 border-0 bg-info bg-opacity-10 directory-visits-kpi">
+                        <div class="card-body">
+                          <div class="small text-body-secondary mb-2"><i class="bi bi-calculator me-1"></i>Media diaria</div>
+                          <div id="directoryVisitsKpiAverage" class="fw-bold text-info-emphasis directory-visits-kpi-value">0</div>
+                          <div class="small text-body-secondary mt-2">Visitas por día</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                      <div class="card h-100 border-0 bg-warning bg-opacity-10 directory-visits-kpi">
+                        <div class="card-body">
+                          <div class="small text-body-secondary mb-2"><i class="bi bi-lightning-charge me-1"></i>Mejor día</div>
+                          <div id="directoryVisitsKpiPeak" class="fw-bold text-warning-emphasis directory-visits-kpi-value">0</div>
+                          <div id="directoryVisitsKpiPeakDate" class="small text-body-secondary mt-2">—</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="row g-4 align-items-stretch">
+                    <div class="col-12 col-lg-7">
+                      <div class="card h-100 shadow-sm border-0">
+                        <div class="card-header bg-body-tertiary"><h6 class="mb-0">Distribución de visitas</h6></div>
+                        <div class="card-body"><div id="directoryVisitsOverviewChart" class="directory-visits-chart" role="img" aria-label="Distribución de visitas por evento"></div></div>
+                      </div>
+                    </div>
+                    <div class="col-12 col-lg-5">
+                      <div class="card h-100 shadow-sm border-0">
+                        <div class="card-header bg-body-tertiary"><h6 class="mb-0">Eventos líderes</h6></div>
+                        <div id="directoryVisitsTopEvents" class="list-group list-group-flush"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="directoryVisitsRankingPane" class="tab-pane fade" role="tabpanel" aria-labelledby="directoryVisitsRankingTab" tabindex="0">
+                  <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div><h6 class="mb-1">Visitas acumuladas por evento</h6><div class="small text-body-secondary">Ordenadas de mayor a menor en todo el período.</div></div>
+                    <span id="directoryVisitsRankingSummary" class="badge text-bg-primary"></span>
+                  </div>
+                  <div id="directoryVisitsRankingChart" class="directory-visits-chart" role="img" aria-label="Ranking de visitas por evento"></div>
+                </div>
+
+                <div id="directoryVisitsEvolutionPane" class="tab-pane fade" role="tabpanel" aria-labelledby="directoryVisitsEvolutionTab" tabindex="0">
+                  <div class="row g-3 align-items-end mb-3">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" for="directoryVisitsEvolutionFilter">Evento</label>
+                      <select id="directoryVisitsEvolutionFilter" class="form-select" disabled><option value="">Todos los eventos</option></select>
+                    </div>
+                    <div class="col-12 col-md-6 text-md-end">
+                      <div id="directoryVisitsEvolutionSummary" class="small text-body-secondary" aria-live="polite"></div>
+                    </div>
+                  </div>
+                  <div id="directoryVisitsEvolutionChart" class="directory-visits-chart" role="img" aria-label="Evolución diaria de visitas"></div>
+                </div>
+
+                <div id="directoryVisitsComparisonPane" class="tab-pane fade" role="tabpanel" aria-labelledby="directoryVisitsComparisonTab" tabindex="0">
+                  <div class="row g-3 align-items-end mb-3">
+                    <div class="col-12 col-lg-8">
+                      <label class="form-label" for="directoryVisitsCompareFilter">Eventos a comparar</label>
+                      <select id="directoryVisitsCompareFilter" class="form-select" multiple disabled></select>
+                      <div class="form-text">Selecciona hasta 8 eventos. Se muestran los 5 con más visitas inicialmente.</div>
+                    </div>
+                    <div class="col-12 col-lg-4 text-lg-end">
+                      <div id="directoryVisitsComparisonSummary" class="small text-body-secondary" aria-live="polite"></div>
+                    </div>
+                  </div>
+                  <div id="directoryVisitsComparisonEmpty" class="text-center text-body-secondary py-5 d-none">Selecciona al menos un evento para comparar.</div>
+                  <div id="directoryVisitsComparisonChart" class="directory-visits-chart" role="img" aria-label="Comparativa diaria de visitas entre eventos"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
           </div>
         </div>
       </div>
@@ -934,6 +1091,7 @@ function bindStaticEvents(){
   document.getElementById('auth-btn')?.addEventListener('click',logout);
   document.getElementById('createNewEventBtn')?.addEventListener('click',openCreateEventMode);
   document.getElementById('createNewClientBtn')?.addEventListener('click',openCreateClientModal);
+  document.getElementById('openDirectoryVisitsBtn')?.addEventListener('click',openDirectoryVisitsModal);
   document.getElementById('createDirectoryEventBtn')?.addEventListener('click',openCreateDirectoryEventModal);
   document.getElementById('saveEventBtn')?.addEventListener('click',saveEvent);
   document.getElementById('saveClientBtn')?.addEventListener('click',saveClient);
@@ -964,6 +1122,11 @@ function bindStaticEvents(){
   });
   ['eventStatusFilter','eventVisibleFilter','eventTrialFilter'].forEach((id)=>document.getElementById(id)?.addEventListener('change',()=>renderEvents()));
   document.getElementById('directoryNameFilter')?.addEventListener('input',renderDirectoryEvents);
+  document.getElementById('directoryVisitsEvolutionFilter')?.addEventListener('change',renderDirectoryVisitsEvolution);
+  if(typeof TomSelect!=='function') document.getElementById('directoryVisitsCompareFilter')?.addEventListener('change',renderDirectoryVisitsComparison);
+  document.querySelectorAll('[data-directory-visits-tab]').forEach((tab)=>{
+    tab.addEventListener('shown.bs.tab',()=>renderDirectoryVisitsView(tab.dataset.directoryVisitsTab));
+  });
   [
     'directoryCountryFilter',
     'directoryDateFromFilter',
@@ -981,6 +1144,11 @@ function bindStaticEvents(){
   document.getElementById('directoryCatalogModal')?.addEventListener('shown.bs.modal',()=>{
     const form=document.getElementById('directoryCatalogForm');
     if(form?.dataset.action==='create') document.getElementById('directoryCatalogName')?.focus();
+  });
+  document.getElementById('directoryVisitsModal')?.addEventListener('hidden.bs.modal',()=>{
+    directoryVisitsRequestController?.abort();
+    directoryVisitsRequestController=null;
+    destroyDirectoryVisitsCharts();
   });
   ['visible','trial'].forEach((id)=>document.getElementById(id)?.addEventListener('change',syncEventPanelBadgesFromForm));
   document.getElementById('has_registrations')?.addEventListener('change',syncRegistrationsTabState);
@@ -1584,6 +1752,468 @@ async function loadDirectoryEvents(){
   }finally{
     loadingState?.classList.add('d-none');
   }
+}
+
+function openDirectoryVisitsModal(){
+  directoryVisitsModal?.show();
+  loadDirectoryVisits();
+}
+
+function normalizeDirectoryVisit(row){
+  const date=formatDirectoryDate(row?.date);
+  const dateParts=date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!dateParts) return null;
+  const parsedDate=new Date(Date.UTC(Number(dateParts[1]),Number(dateParts[2])-1,Number(dateParts[3])));
+  if(parsedDate.toISOString().slice(0,10)!==date) return null;
+  const name=String(row?.name??'').trim()||`Evento ${row?.directory_event_id??''}`.trim();
+  const visits=Number(row?.visits);
+  if(!name||!Number.isFinite(visits)) return null;
+  return {
+    date,
+    directory_event_id:row?.directory_event_id,
+    name,
+    visits:Math.max(0,visits)
+  };
+}
+
+async function loadDirectoryVisits(){
+  directoryVisitsRequestController?.abort();
+  const controller=new AbortController();
+  directoryVisitsRequestController=controller;
+  directoryVisits=[];
+  destroyDirectoryVisitsCharts();
+
+  const loadingState=document.getElementById('directoryVisitsLoadingState');
+  const errorState=document.getElementById('directoryVisitsErrorState');
+  const emptyState=document.getElementById('directoryVisitsEmptyState');
+  const content=document.getElementById('directoryVisitsContent');
+  const period=document.getElementById('directoryVisitsPeriod');
+  resetDirectoryVisitsFilters();
+  loadingState?.classList.remove('d-none');
+  errorState?.classList.add('d-none');
+  emptyState?.classList.add('d-none');
+  content?.classList.add('d-none');
+  if(period) period.textContent='';
+
+  try{
+    const response=await fetch(`${API_BASE_URL}/api/directory/events/visits`,{signal:controller.signal});
+    if(!response.ok) throw new Error(await getDirectoryResponseError(response,'Error al cargar las visitas'));
+    const data=await response.json();
+    directoryVisits=(Array.isArray(data)?data:[])
+      .map(normalizeDirectoryVisit)
+      .filter(Boolean);
+    if(!directoryVisits.length){
+      emptyState?.classList.remove('d-none');
+      return;
+    }
+    populateDirectoryVisitsFilters();
+    renderDirectoryVisitsPeriod();
+    content?.classList.remove('d-none');
+    const activeTab=document.querySelector('[data-directory-visits-tab].active')?.dataset.directoryVisitsTab||'overview';
+    renderDirectoryVisitsView(activeTab);
+  }catch(error){
+    if(error.name==='AbortError') return;
+    console.error('Error cargando las visitas de Bellydance:',error);
+    if(errorState){
+      errorState.textContent=error.message||'Error al cargar las visitas';
+      errorState.classList.remove('d-none');
+    }
+  }finally{
+    if(directoryVisitsRequestController===controller){
+      directoryVisitsRequestController=null;
+      loadingState?.classList.add('d-none');
+    }
+  }
+}
+
+function resetDirectoryVisitsFilters(){
+  const evolutionFilter=document.getElementById('directoryVisitsEvolutionFilter');
+  evolutionFilter?.replaceChildren(new Option('Todos los eventos',''));
+  if(evolutionFilter) evolutionFilter.disabled=true;
+  const compareFilter=document.getElementById('directoryVisitsCompareFilter');
+  if(compareFilter?.tomselect){
+    compareFilter.tomselect.clear(true);
+    compareFilter.tomselect.clearOptions();
+    compareFilter.tomselect.disable();
+  }else if(compareFilter){
+    compareFilter.replaceChildren();
+    compareFilter.disabled=true;
+  }
+}
+
+function populateDirectoryVisitsFilters(){
+  const ranking=getDirectoryVisitRanking();
+  const names=ranking.map((entry)=>entry.name);
+  const evolutionFilter=document.getElementById('directoryVisitsEvolutionFilter');
+  evolutionFilter?.replaceChildren(
+    new Option('Todos los eventos',''),
+    ...names.map((name)=>new Option(name,name))
+  );
+  if(evolutionFilter) evolutionFilter.disabled=names.length===0;
+
+  const compareFilter=document.getElementById('directoryVisitsCompareFilter');
+  if(!compareFilter) return;
+  const defaultNames=names.slice(0,5);
+  if(compareFilter.tomselect){
+    compareFilter.tomselect.clear(true);
+    compareFilter.tomselect.clearOptions();
+    compareFilter.tomselect.addOptions(names.map((name)=>({value:name,text:name})));
+    compareFilter.tomselect.setValue(defaultNames,true);
+    compareFilter.tomselect.enable();
+    compareFilter.tomselect.refreshOptions(false);
+    return;
+  }
+
+  compareFilter.replaceChildren(...names.map((name)=>new Option(name,name,false,defaultNames.includes(name))));
+  compareFilter.disabled=names.length===0;
+  if(typeof TomSelect==='function'){
+    new TomSelect(compareFilter,{
+      plugins:['remove_button'],
+      maxItems:8,
+      closeAfterSelect:false,
+      placeholder:'Selecciona eventos',
+      onChange(){renderDirectoryVisitsComparison();}
+    });
+  }
+}
+
+function buildDirectoryVisitDateRange(visits){
+  const availableDates=[...new Set(visits.map((visit)=>visit.date))].sort();
+  if(!availableDates.length) return [];
+  const currentDate=new Date(`${availableDates[0]}T00:00:00Z`);
+  const lastDate=new Date(`${availableDates[availableDates.length-1]}T00:00:00Z`);
+  const dateRange=[];
+  while(currentDate<=lastDate){
+    dateRange.push(currentDate.toISOString().slice(0,10));
+    currentDate.setUTCDate(currentDate.getUTCDate()+1);
+  }
+  return dateRange;
+}
+
+function formatDirectoryVisitDisplayDate(date){
+  const [year,month,day]=String(date).split('-');
+  return day&&month&&year?`${day}/${month}/${year}`:String(date);
+}
+
+function formatDirectoryVisitNumber(value,maximumFractionDigits=0){
+  return Number(value).toLocaleString('es-ES',{maximumFractionDigits});
+}
+
+function getDirectoryVisitRanking(visits=directoryVisits){
+  const totals=new Map();
+  visits.forEach((visit)=>totals.set(visit.name,(totals.get(visit.name)||0)+visit.visits));
+  return [...totals.entries()]
+    .map(([name,total])=>({name,total}))
+    .sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
+}
+
+function getDirectoryVisitDailyTotals(visits,dateRange){
+  const totals=new Map();
+  visits.forEach((visit)=>totals.set(visit.date,(totals.get(visit.date)||0)+visit.visits));
+  return dateRange.map((date)=>totals.get(date)||0);
+}
+
+function getDirectoryVisitNameDateTotals(visits){
+  const totals=new Map();
+  visits.forEach((visit)=>{
+    const key=`${visit.name}\u0000${visit.date}`;
+    totals.set(key,(totals.get(key)||0)+visit.visits);
+  });
+  return totals;
+}
+
+function getDirectoryVisitsXAxis(dateRange){
+  return {
+    type:'category',
+    categories:dateRange,
+    tickAmount:Math.min(10,Math.max(1,dateRange.length-1)),
+    labels:{
+      hideOverlappingLabels:true,
+      formatter:(value)=>formatDirectoryVisitDisplayDate(value)
+    }
+  };
+}
+
+function getDirectoryVisitsChartBaseOptions(){
+  return {
+    chart:{
+      height:400,
+      parentHeightOffset:0,
+      foreColor:getComputedStyle(document.body).color,
+      toolbar:{show:true},
+      zoom:{enabled:false},
+      animations:{speed:350}
+    },
+    dataLabels:{enabled:false},
+    grid:{borderColor:'rgba(108, 117, 125, 0.2)'},
+    noData:{text:'No hay datos de visitas'}
+  };
+}
+
+function destroyDirectoryVisitsChart(key){
+  if(!directoryVisitsCharts[key]) return;
+  directoryVisitsCharts[key].destroy();
+  delete directoryVisitsCharts[key];
+}
+
+function destroyDirectoryVisitsCharts(){
+  Object.keys(directoryVisitsCharts).forEach(destroyDirectoryVisitsChart);
+}
+
+function createDirectoryVisitsChart(key,element,options){
+  destroyDirectoryVisitsChart(key);
+  if(!element) return;
+  if(typeof ApexCharts!=='function'){
+    const errorState=document.getElementById('directoryVisitsErrorState');
+    if(errorState){
+      errorState.textContent='No se ha podido cargar la librería de gráficas.';
+      errorState.classList.remove('d-none');
+    }
+    return;
+  }
+  const chart=new ApexCharts(element,options);
+  directoryVisitsCharts[key]=chart;
+  Promise.resolve(chart.render()).catch((error)=>{
+    if(directoryVisitsCharts[key]!==chart) return;
+    console.error(`Error renderizando la gráfica de visitas (${key}):`,error);
+    destroyDirectoryVisitsChart(key);
+    const errorState=document.getElementById('directoryVisitsErrorState');
+    if(errorState){
+      errorState.textContent='No se ha podido mostrar una de las gráficas de visitas.';
+      errorState.classList.remove('d-none');
+    }
+  });
+}
+
+function renderDirectoryVisitsPeriod(){
+  const period=document.getElementById('directoryVisitsPeriod');
+  const dateRange=buildDirectoryVisitDateRange(directoryVisits);
+  if(!period||!dateRange.length) return;
+  if(dateRange.length===1){
+    period.textContent=`${formatDirectoryVisitDisplayDate(dateRange[0])} · 1 día`;
+    return;
+  }
+  period.textContent=`Del ${formatDirectoryVisitDisplayDate(dateRange[0])} al ${formatDirectoryVisitDisplayDate(dateRange[dateRange.length-1])} · ${dateRange.length} días`;
+}
+
+function renderDirectoryVisitsView(view){
+  if(!directoryVisits.length) return;
+  if(view==='ranking') renderDirectoryVisitsRanking();
+  else if(view==='evolution') renderDirectoryVisitsEvolution();
+  else if(view==='comparison') renderDirectoryVisitsComparison();
+  else renderDirectoryVisitsOverview();
+}
+
+function renderDirectoryVisitsOverview(){
+  const ranking=getDirectoryVisitRanking();
+  const dateRange=buildDirectoryVisitDateRange(directoryVisits);
+  const dailyTotals=getDirectoryVisitDailyTotals(directoryVisits,dateRange);
+  const totalVisits=ranking.reduce((total,entry)=>total+entry.total,0);
+  const peakValue=Math.max(...dailyTotals);
+  const peakIndex=dailyTotals.indexOf(peakValue);
+  const average=dateRange.length?totalVisits/dateRange.length:0;
+  const setText=(id,value)=>{const element=document.getElementById(id);if(element) element.textContent=value;};
+  setText('directoryVisitsKpiTotal',formatDirectoryVisitNumber(totalVisits));
+  setText('directoryVisitsKpiEvents',formatDirectoryVisitNumber(ranking.length));
+  setText('directoryVisitsKpiAverage',formatDirectoryVisitNumber(average,1));
+  setText('directoryVisitsKpiPeak',formatDirectoryVisitNumber(peakValue));
+  setText('directoryVisitsKpiPeakDate',peakIndex>=0?formatDirectoryVisitDisplayDate(dateRange[peakIndex]):'—');
+  renderDirectoryVisitsTopEvents(ranking,totalVisits);
+
+  const topEntries=ranking.slice(0,7);
+  const otherTotal=ranking.slice(7).reduce((total,entry)=>total+entry.total,0);
+  const labels=topEntries.map((entry)=>entry.name);
+  const series=topEntries.map((entry)=>entry.total);
+  if(otherTotal>0){
+    labels.push('Otros eventos');
+    series.push(otherTotal);
+  }
+  const chartElement=document.getElementById('directoryVisitsOverviewChart');
+  destroyDirectoryVisitsChart('overview');
+  chartElement?.replaceChildren();
+  if(totalVisits===0){
+    const message=document.createElement('div');
+    message.className='d-flex align-items-center justify-content-center h-100 text-body-secondary';
+    message.textContent='Todavía no hay visitas acumuladas.';
+    chartElement?.appendChild(message);
+    return;
+  }
+  const baseOptions=getDirectoryVisitsChartBaseOptions();
+  createDirectoryVisitsChart('overview',chartElement,{
+    ...baseOptions,
+    chart:{...baseOptions.chart,type:'donut',toolbar:{show:false}},
+    series,
+    labels,
+    legend:{position:'bottom',fontSize:'13px'},
+    plotOptions:{
+      pie:{donut:{size:'62%',labels:{show:true,total:{show:true,label:'Total',formatter:()=>formatDirectoryVisitNumber(totalVisits)}}}}
+    },
+    tooltip:{y:{formatter:(value)=>`${formatDirectoryVisitNumber(value)} visitas`}},
+    responsive:[{breakpoint:576,options:{chart:{height:340},legend:{position:'bottom'}}}]
+  });
+}
+
+function renderDirectoryVisitsTopEvents(ranking,totalVisits){
+  const container=document.getElementById('directoryVisitsTopEvents');
+  if(!container) return;
+  const fragment=document.createDocumentFragment();
+  ranking.slice(0,5).forEach((entry,index)=>{
+    const percentage=totalVisits?entry.total/totalVisits*100:0;
+    const item=document.createElement('div');
+    item.className='list-group-item py-3';
+    const heading=document.createElement('div');
+    heading.className='d-flex align-items-center gap-2 mb-2';
+    const position=document.createElement('span');
+    position.className='badge rounded-pill text-bg-primary';
+    position.textContent=String(index+1);
+    const name=document.createElement('span');
+    name.className='fw-semibold text-truncate flex-grow-1';
+    name.title=entry.name;
+    name.textContent=entry.name;
+    const total=document.createElement('span');
+    total.className='fw-bold';
+    total.textContent=formatDirectoryVisitNumber(entry.total);
+    heading.append(position,name,total);
+    const progress=document.createElement('div');
+    progress.className='progress';
+    progress.style.height='0.4rem';
+    const bar=document.createElement('div');
+    bar.className='progress-bar';
+    bar.style.width=`${percentage}%`;
+    bar.setAttribute('role','progressbar');
+    bar.setAttribute('aria-label',`${entry.name}: ${formatDirectoryVisitNumber(percentage,1)} %`);
+    progress.appendChild(bar);
+    const share=document.createElement('div');
+    share.className='small text-body-secondary mt-1 text-end';
+    share.textContent=`${formatDirectoryVisitNumber(percentage,1)} % del total`;
+    item.append(heading,progress,share);
+    fragment.appendChild(item);
+  });
+  if(ranking.length>5){
+    const remainder=document.createElement('div');
+    remainder.className='list-group-item small text-body-secondary text-center py-3';
+    remainder.textContent=`${ranking.length-5} eventos más en la pestaña Ranking`;
+    fragment.appendChild(remainder);
+  }
+  container.replaceChildren(fragment);
+}
+
+function renderDirectoryVisitsRanking(){
+  const ranking=getDirectoryVisitRanking();
+  const totalVisits=ranking.reduce((total,entry)=>total+entry.total,0);
+  const summary=document.getElementById('directoryVisitsRankingSummary');
+  if(summary) summary.textContent=`${ranking.length} eventos · ${formatDirectoryVisitNumber(totalVisits)} visitas`;
+  const chartElement=document.getElementById('directoryVisitsRankingChart');
+  const chartHeight=Math.max(400,ranking.length*42+100);
+  if(chartElement) chartElement.style.height=`${chartHeight}px`;
+  const baseOptions=getDirectoryVisitsChartBaseOptions();
+  createDirectoryVisitsChart('ranking',chartElement,{
+    ...baseOptions,
+    chart:{...baseOptions.chart,type:'bar',height:chartHeight},
+    series:[{name:'Visitas',data:ranking.map((entry)=>entry.total)}],
+    colors:['#0d6efd'],
+    plotOptions:{bar:{horizontal:true,borderRadius:4,barHeight:'68%',dataLabels:{position:'center'}}},
+    dataLabels:{enabled:true,formatter:(value)=>formatDirectoryVisitNumber(value),style:{colors:['#fff'],fontWeight:700}},
+    xaxis:{categories:ranking.map((entry)=>entry.name),title:{text:'Visitas'}},
+    yaxis:{labels:{maxWidth:280}},
+    tooltip:{y:{formatter:(value)=>`${formatDirectoryVisitNumber(value)} visitas`}},
+    legend:{show:false}
+  });
+}
+
+function getDirectoryVisitMovingAverage(values,windowSize=7){
+  return values.map((_,index)=>{
+    const start=Math.max(0,index-windowSize+1);
+    const windowValues=values.slice(start,index+1);
+    return Number((windowValues.reduce((total,value)=>total+value,0)/windowValues.length).toFixed(2));
+  });
+}
+
+function renderDirectoryVisitsEvolution(){
+  const selectedName=document.getElementById('directoryVisitsEvolutionFilter')?.value||'';
+  const filteredVisits=selectedName?directoryVisits.filter((visit)=>visit.name===selectedName):directoryVisits;
+  const dateRange=buildDirectoryVisitDateRange(filteredVisits);
+  const dailyTotals=getDirectoryVisitDailyTotals(filteredVisits,dateRange);
+  if(!dateRange.length) return;
+  const totalVisits=dailyTotals.reduce((total,value)=>total+value,0);
+  const average=totalVisits/dateRange.length;
+  const peakValue=Math.max(...dailyTotals);
+  const peakIndex=dailyTotals.indexOf(peakValue);
+  const summary=document.getElementById('directoryVisitsEvolutionSummary');
+  if(summary){
+    summary.textContent=`${formatDirectoryVisitNumber(totalVisits)} visitas · ${formatDirectoryVisitNumber(average,1)}/día · máximo de ${formatDirectoryVisitNumber(peakValue)} el ${formatDirectoryVisitDisplayDate(dateRange[peakIndex])}`;
+  }
+  const baseOptions=getDirectoryVisitsChartBaseOptions();
+  createDirectoryVisitsChart('evolution',document.getElementById('directoryVisitsEvolutionChart'),{
+    ...baseOptions,
+    chart:{...baseOptions.chart,type:'line'},
+    series:[
+      {name:'Visitas',data:dailyTotals},
+      {name:'Media móvil (7 días)',data:getDirectoryVisitMovingAverage(dailyTotals)}
+    ],
+    colors:['#0d6efd','#fd7e14'],
+    stroke:{curve:'smooth',width:[3,2],dashArray:[0,6]},
+    markers:{size:[4,0],strokeWidth:0},
+    legend:{position:'top',horizontalAlign:'left'},
+    xaxis:getDirectoryVisitsXAxis(dateRange),
+    yaxis:{min:0,forceNiceScale:true,title:{text:'Visitas'},labels:{formatter:(value)=>formatDirectoryVisitNumber(value)}},
+    tooltip:{
+      shared:true,
+      intersect:false,
+      x:{formatter:(value,{dataPointIndex})=>formatDirectoryVisitDisplayDate(dateRange[dataPointIndex]||value)},
+      y:{formatter:(value,{seriesIndex})=>`${formatDirectoryVisitNumber(value,seriesIndex===1?1:0)} visitas`}
+    }
+  });
+}
+
+function getSelectedDirectoryVisitComparisonNames(){
+  const filter=document.getElementById('directoryVisitsCompareFilter');
+  if(!filter) return [];
+  const value=filter.tomselect?filter.tomselect.getValue():[...filter.selectedOptions].map((option)=>option.value);
+  return (Array.isArray(value)?value:[value]).filter(Boolean).slice(0,8);
+}
+
+function renderDirectoryVisitsComparison(){
+  const selectedNames=getSelectedDirectoryVisitComparisonNames();
+  const chartElement=document.getElementById('directoryVisitsComparisonChart');
+  const emptyState=document.getElementById('directoryVisitsComparisonEmpty');
+  const summary=document.getElementById('directoryVisitsComparisonSummary');
+  destroyDirectoryVisitsChart('comparison');
+  if(!selectedNames.length){
+    chartElement?.classList.add('d-none');
+    emptyState?.classList.remove('d-none');
+    if(summary) summary.textContent='';
+    return;
+  }
+
+  const selectedSet=new Set(selectedNames);
+  const filteredVisits=directoryVisits.filter((visit)=>selectedSet.has(visit.name));
+  const dateRange=buildDirectoryVisitDateRange(filteredVisits);
+  const totals=getDirectoryVisitNameDateTotals(filteredVisits);
+  const series=selectedNames.map((name)=>({
+    name,
+    data:dateRange.map((date)=>totals.get(`${name}\u0000${date}`)||0)
+  }));
+  const totalVisits=filteredVisits.reduce((total,visit)=>total+visit.visits,0);
+  if(summary) summary.textContent=`${selectedNames.length} eventos · ${formatDirectoryVisitNumber(totalVisits)} visitas`;
+  chartElement?.classList.remove('d-none');
+  emptyState?.classList.add('d-none');
+  const baseOptions=getDirectoryVisitsChartBaseOptions();
+  createDirectoryVisitsChart('comparison',chartElement,{
+    ...baseOptions,
+    chart:{...baseOptions.chart,type:'bar',stacked:true},
+    series,
+    plotOptions:{bar:{columnWidth:'68%',borderRadius:2}},
+    legend:{position:'top',horizontalAlign:'left'},
+    xaxis:getDirectoryVisitsXAxis(dateRange),
+    yaxis:{min:0,forceNiceScale:true,title:{text:'Visitas'},labels:{formatter:(value)=>formatDirectoryVisitNumber(value)}},
+    tooltip:{
+      shared:true,
+      intersect:false,
+      x:{formatter:(value,{dataPointIndex})=>formatDirectoryVisitDisplayDate(dateRange[dataPointIndex]||value)},
+      y:{formatter:(value)=>`${formatDirectoryVisitNumber(value)} visitas`}
+    }
+  });
 }
 
 function populateDirectoryEventFilters(){

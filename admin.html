@@ -58,6 +58,24 @@
     .admin-category-editor-remove:hover {
       opacity: 0.75;
     }
+    .directory-visits-chart {
+      min-height: 25rem;
+    }
+    .directory-visits-tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+    .directory-visits-tabs .nav-link {
+      white-space: nowrap;
+    }
+    .directory-visits-kpi {
+      min-height: 8.5rem;
+    }
+    .directory-visits-kpi-value {
+      font-size: clamp(1.6rem, 3vw, 2.25rem);
+      line-height: 1.1;
+    }
   </style>
 </head>
 
@@ -947,6 +965,7 @@
  
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
   <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/common.js"></script>
