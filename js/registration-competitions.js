@@ -211,23 +211,11 @@
   };
 
   const getRegistrationTotalAmount = (registration) => {
-    const category = categoryById.get(`${getRegistrationCategoryId(registration)}`) || null;
-    const categoryPrice = normalizeNumber(
-      category?.registration_price
-      ?? registration?.reg_category?.registration_price
-      ?? registration?.category?.registration_price
-      ?? registration?.registration_price
-    );
-    if (categoryPrice !== null) {
-      return categoryPrice * getRegistrationParticipantsCount(registration);
-    }
+    return normalizeNumber(registration?.total_amount) ?? 0;
+  };
 
-    const directAmount = normalizeNumber(
-      registration?.total_amount
-      ?? registration?.totalAmount
-      ?? registration?.amount_total
-    );
-    return directAmount ?? 0;
+  const getRegistrationPrice = (registration) => {
+    return normalizeNumber(registration?.registration_price);
   };
 
   const isIndividualCategory = (category) => {
@@ -1480,7 +1468,7 @@
       const totalAmountCell = document.createElement('td');
       totalAmountCell.className = 'text-center';
       const totalAmount = getRegistrationTotalAmount(registration);
-      if (totalAmount === 0) {
+      if (getRegistrationPrice(registration) === 0) {
         const freeBadge = document.createElement('span');
         freeBadge.className = 'badge bg-success';
         freeBadge.textContent = 'FREE';

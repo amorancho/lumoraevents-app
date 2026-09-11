@@ -574,6 +574,10 @@ function getRegistrationSidebarTitle() {
   return t('registration_sidebar_section', 'Registration');
 }
 
+function isPortdanceFest26Event() {
+  return Number(getEvent()?.id) === 34;
+}
+
 function getRegistrationCalendarDate(value) {
   if (!value) return null;
 
@@ -659,6 +663,15 @@ function buildRegistrationSidebarHeroMarkup() {
   const statusInfo = getRegistrationSidebarStatusInfo();
   const eventRange = formatRegistrationSidebarRange(eventObj?.start, eventObj?.end);
   const registrationRange = formatRegistrationSidebarRange(eventObj?.registrationStart, eventObj?.registrationEnd);
+  const paymentInstructionsMarkup = isPortdanceFest26Event()
+    ? `
+      <div class="registration-sidebar-meta-row mt-2">
+        <button type="button" class="btn btn-link btn-sm p-0 text-start" data-bs-toggle="modal" data-bs-target="#portdanceFest26PaymentInstructionsModal">
+          <i class="bi bi-info-circle me-1"></i><span>${t('registration_payment_instructions', 'PAYMENT INSTRUCTIONS')}</span>
+        </button>
+      </div>
+    `
+    : '';
 
   return `
     <div class="registration-sidebar-meta">
@@ -682,6 +695,7 @@ function buildRegistrationSidebarHeroMarkup() {
         </div>
         <div class="registration-sidebar-meta-value">${registrationRange}</div>
       </div>
+      ${paymentInstructionsMarkup}
     </div>
   `;
 }
@@ -3818,6 +3832,10 @@ function getRegistrationParticipantsTotal(registration) {
 }
 
 function getRegistrationTotalAmountValue(registration, options = {}) {
+  if (options.useStoredTotalAmount) {
+    return normalizeRegistrationNumber(registration?.total_amount) ?? 0;
+  }
+
   let category = null;
   if (options.categoryById instanceof Map) {
     category = options.categoryById.get(`${getRegistrationCategoryIdValue(registration)}`) || null;
@@ -4538,6 +4556,7 @@ function initRegistrationCategoriesTab() {
   const addBtn = document.getElementById('registrationCategoryAddBtn');
   const modalEl = document.getElementById('registrationCategoryModal');
   const deleteModalEl = document.getElementById('registrationCategoryDeleteModal');
+  const pricesModalEl = document.getElementById('registrationCategoryPricesModal');
 
   if (!tableBody || !modalEl || !deleteModalEl) {
     return;
@@ -4564,10 +4583,14 @@ function initRegistrationCategoriesTab() {
 
   const categoryModal = new bootstrap.Modal(modalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
+  const pricesModal = pricesModalEl ? new bootstrap.Modal(pricesModalEl) : null;
   const maxOutOfRangeTooltip = elements.maxOutOfRangeInfo
     ? bootstrap.Tooltip.getOrCreateInstance(elements.maxOutOfRangeInfo)
     : null;
   let categoryToDelete = null;
+  let categoryForPrices = null;
+  let categoryPrices = [];
+  let categoryPricesChanged = false;
   let categoriesTooltipInstances = [];
   const requiredFields = [
     elements.name,
@@ -4729,6 +4752,131 @@ function initRegistrationCategoriesTab() {
     }).format(cents / 100);
   };
 
+  const getCategoryPricesElements = () => ({
+    categoryName: document.getElementById('registrationCategoryPricesCategoryName'),
+    form: document.getElementById('registrationCategoryPriceForm'),
+    id: document.getElementById('registrationCategoryPriceId'),
+    startDate: document.getElementById('registrationCategoryPriceStartDate'),
+    endDate: document.getElementById('registrationCategoryPriceEndDate'),
+    price: document.getElementById('registrationCategoryPriceValue'),
+    saveBtn: document.getElementById('registrationCategoryPriceSaveBtn'),
+    table: document.getElementById('registrationCategoryPricesTable'),
+    empty: document.getElementById('registrationCategoryPricesEmpty')
+  });
+
+  const getCategoryPriceDate = (value) => `${value ?? ''}`.slice(0, 10);
+
+  const getCategoryPriceApiError = async (response, fallbackMessage) => {
+    try {
+      const data = await response.json();
+      return data?.error || data?.message || fallbackMessage;
+    } catch (err) {
+      return fallbackMessage;
+    }
+  };
+
+  const resetCategoryPriceForm = () => {
+    const priceElements = getCategoryPricesElements();
+    priceElements.form?.reset();
+    if (priceElements.id) priceElements.id.value = '';
+    priceElements.form?.classList.remove('was-validated');
+    if (priceElements.saveBtn) priceElements.saveBtn.textContent = t('registration_category_prices_add', 'Add price');
+  };
+
+  const renderCategoryPrices = () => {
+    const priceElements = getCategoryPricesElements();
+    if (!priceElements.table) return;
+    priceElements.table.innerHTML = '';
+    const editTitle = t('edit', 'Edit');
+    const deleteTitle = t('delete', 'Delete');
+    categoryPrices.forEach((price) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td>${getCategoryPriceDate(price.start_date) || '-'}</td><td>${getCategoryPriceDate(price.end_date) || '-'}</td><td class="text-end">${formatCurrencyDisplay(price.price)}</td>`;
+      const actions = document.createElement('td');
+      actions.className = 'text-end';
+      actions.innerHTML = `<div class="btn-group btn-group-sm"><button type="button" class="btn btn-outline-primary btn-registration-category-price-edit" data-id="${price.id}" title="${editTitle}" aria-label="${editTitle}"><i class="bi bi-pencil"></i></button><button type="button" class="btn btn-outline-danger btn-registration-category-price-delete" data-id="${price.id}" title="${deleteTitle}" aria-label="${deleteTitle}"><i class="bi bi-trash"></i></button></div>`;
+      row.appendChild(actions);
+      priceElements.table.appendChild(row);
+    });
+    priceElements.empty?.classList.toggle('d-none', categoryPrices.length > 0);
+  };
+
+  const loadCategoryPrices = async () => {
+    if (!categoryForPrices?.id) return;
+    const params = new URLSearchParams();
+    if (getEvent()?.id) params.set('event_id', getEvent().id);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${API_BASE_URL}/api/registrations/categories/${categoryForPrices.id}/prices${query}`);
+    if (!res.ok) {
+      throw new Error(await getCategoryPriceApiError(res, t('registration_category_prices_load_error', 'Error loading category prices.')));
+    }
+    const data = await res.json();
+    categoryPrices = Array.isArray(data) ? data : (data?.prices || data?.data || []);
+    renderCategoryPrices();
+  };
+
+  const openCategoryPricesModal = async (category) => {
+    if (!pricesModal) return;
+    categoryForPrices = category;
+    categoryPricesChanged = false;
+    const priceElements = getCategoryPricesElements();
+    if (priceElements.categoryName) priceElements.categoryName.textContent = category.name || '';
+    resetCategoryPriceForm();
+    categoryPrices = [];
+    renderCategoryPrices();
+    pricesModal.show();
+    try { await loadCategoryPrices(); } catch (err) {
+      showMessageModal(err.message || t('registration_category_prices_load_error', 'Error loading category prices.'), t('error_title', 'Error'));
+    }
+  };
+
+  const saveCategoryPrice = async (event) => {
+    event.preventDefault();
+    const priceElements = getCategoryPricesElements();
+    priceElements.endDate?.setCustomValidity('');
+    if (!categoryForPrices?.id || !priceElements.form?.checkValidity()) {
+      priceElements.form?.classList.add('was-validated');
+      return;
+    }
+    if (priceElements.startDate.value > priceElements.endDate.value) {
+      priceElements.endDate.setCustomValidity(t('registration_category_prices_invalid_dates', 'End date must be after the start date.'));
+      priceElements.form.classList.add('was-validated');
+      priceElements.endDate.focus();
+      return;
+    }
+    const priceId = priceElements.id?.value;
+    const payload = { event_id: getEvent()?.id, reg_category_id: categoryForPrices.id, start_date: priceElements.startDate.value, end_date: priceElements.endDate.value, price: parseCurrencyValueToCents(priceElements.price.value) };
+    if (!payload.event_id) delete payload.event_id;
+    if (priceElements.saveBtn) priceElements.saveBtn.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/registrations/category-prices${priceId ? `/${priceId}` : ''}`, { method: priceId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!res.ok) {
+        throw new Error(await getCategoryPriceApiError(res, t('registration_category_prices_save_error', 'Error saving category price.')));
+      }
+      categoryPricesChanged = true;
+      resetCategoryPriceForm();
+      await loadCategoryPrices();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_category_prices_save_error', 'Error saving category price.'), t('error_title', 'Error'));
+    } finally {
+      if (priceElements.saveBtn) priceElements.saveBtn.disabled = false;
+    }
+  };
+
+  const deleteCategoryPrice = async (priceId) => {
+    if (!priceId || !window.confirm(t('registration_category_prices_delete_question', 'Delete this category price?'))) return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/registrations/category-prices/${priceId}`, { method: 'DELETE' });
+      if (!res.ok) {
+        throw new Error(await getCategoryPriceApiError(res, t('registration_category_prices_delete_error', 'Error deleting category price.')));
+      }
+      categoryPricesChanged = true;
+      await loadCategoryPrices();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_category_prices_delete_error', 'Error deleting category price.'), t('error_title', 'Error'));
+    }
+  };
+
   const setFormValues = (category = {}) => {
     if (elements.id) elements.id.value = category?.id ?? '';
     if (elements.name) elements.name.value = category?.name ?? '';
@@ -4787,6 +4935,7 @@ function initRegistrationCategoriesTab() {
     if (emptyEl) emptyEl.classList.add('d-none');
 
     const editTitle = t('edit', 'Edit');
+    const pricesTitle = t('registration_category_prices_manage', 'Manage prices');
     const deleteTitle = t('delete', 'Delete');
 
     categories.forEach(category => {
@@ -4829,16 +4978,30 @@ function initRegistrationCategoriesTab() {
 
       const priceCell = document.createElement('td');
       priceCell.className = 'text-center';
-      if (Number(category.registration_price) === 0) {
-        const freeBadge = document.createElement('span');
-        freeBadge.className = 'badge bg-success';
-        freeBadge.textContent = 'FREE';
-        priceCell.appendChild(freeBadge);
+      const hasPriceByDate = category.reg_price_by_date !== null
+        && category.reg_price_by_date !== undefined
+        && category.reg_price_by_date !== '';
+      const currentPrice = hasPriceByDate
+        ? category.reg_price_by_date
+        : category.registration_price;
+      const priceWrap = document.createElement('div');
+      priceWrap.className = 'd-inline-flex flex-column align-items-center gap-1';
+      const priceSourceBadge = document.createElement('span');
+      priceSourceBadge.className = hasPriceByDate
+        ? 'badge bg-info-subtle text-info-emphasis'
+        : 'badge bg-secondary-subtle text-secondary-emphasis';
+      priceSourceBadge.textContent = hasPriceByDate ? 'BY_DATE' : 'GENERIC';
+      const priceValue = document.createElement('span');
+      if (Number(currentPrice) === 0) {
+        priceValue.className = 'badge bg-success';
+        priceValue.textContent = 'FREE';
       } else {
-        priceCell.textContent = category.registration_price != null
-          ? formatCurrencyDisplay(category.registration_price)
+        priceValue.textContent = currentPrice !== null && currentPrice !== undefined && currentPrice !== ''
+          ? formatCurrencyDisplay(currentPrice)
           : '-';
       }
+      priceWrap.append(priceSourceBadge, priceValue);
+      priceCell.appendChild(priceWrap);
       row.appendChild(priceCell);
 
       const feeCell = document.createElement('td');
@@ -4878,6 +5041,14 @@ function initRegistrationCategoriesTab() {
       editBtn.setAttribute('aria-label', editTitle);
       editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
 
+      const pricesBtn = document.createElement('button');
+      pricesBtn.type = 'button';
+      pricesBtn.className = 'btn btn-outline-success btn-sm btn-registration-category-prices';
+      pricesBtn.dataset.id = category.id;
+      pricesBtn.title = pricesTitle;
+      pricesBtn.setAttribute('aria-label', pricesTitle);
+      pricesBtn.innerHTML = '<i class="bi bi-cash-stack"></i>';
+
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
       deleteBtn.className = 'btn btn-outline-danger btn-sm btn-registration-category-delete';
@@ -4887,6 +5058,7 @@ function initRegistrationCategoriesTab() {
       deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
 
       actionGroup.appendChild(editBtn);
+      actionGroup.appendChild(pricesBtn);
       actionGroup.appendChild(deleteBtn);
       actionsCell.appendChild(actionGroup);
       row.appendChild(actionsCell);
@@ -4911,9 +5083,9 @@ function initRegistrationCategoriesTab() {
     if (countEl) countEl.textContent = '0';
   };
 
-  const loadCategories = async () => {
+  const loadCategories = async ({ force = false } = {}) => {
     try {
-      await fetchRegistrationCategories();
+      await fetchRegistrationCategories({ force });
       notifyRegistrationConfigUpdate();
       renderCategories();
     } catch (err) {
@@ -5060,6 +5232,7 @@ function initRegistrationCategoriesTab() {
 
   tableBody.addEventListener('click', (event) => {
     const editBtn = event.target.closest('.btn-registration-category-edit');
+    const pricesBtn = event.target.closest('.btn-registration-category-prices');
     const deleteBtn = event.target.closest('.btn-registration-category-delete');
 
     if (editBtn) {
@@ -5067,6 +5240,12 @@ function initRegistrationCategoriesTab() {
       if (category) {
         openCategoryModal('edit', category);
       }
+      return;
+    }
+
+    if (pricesBtn) {
+      const category = registrationState.registrationCategories.find(item => `${item.id}` === `${pricesBtn.dataset.id}`);
+      if (category) openCategoryPricesModal(category);
       return;
     }
 
@@ -5080,6 +5259,36 @@ function initRegistrationCategoriesTab() {
       elements.deleteMessage.textContent = message;
     }
     deleteModal.show();
+  });
+
+  getCategoryPricesElements().form?.addEventListener('submit', saveCategoryPrice);
+  getCategoryPricesElements().table?.addEventListener('click', (event) => {
+    const editBtn = event.target.closest('.btn-registration-category-price-edit');
+    const deleteBtn = event.target.closest('.btn-registration-category-price-delete');
+    const price = categoryPrices.find((item) => `${item.id}` === `${(editBtn || deleteBtn)?.dataset.id}`);
+    if (!price) return;
+    if (editBtn) {
+      const priceElements = getCategoryPricesElements();
+      if (priceElements.id) priceElements.id.value = price.id;
+      if (priceElements.startDate) priceElements.startDate.value = getCategoryPriceDate(price.start_date);
+      if (priceElements.endDate) priceElements.endDate.value = getCategoryPriceDate(price.end_date);
+      if (priceElements.price) priceElements.price.value = formatCentsToCurrencyValue(price.price);
+      if (priceElements.saveBtn) priceElements.saveBtn.textContent = t('registration_category_prices_save', 'Save price');
+      priceElements.startDate?.focus();
+      return;
+    }
+    deleteCategoryPrice(price.id);
+  });
+
+  pricesModalEl?.addEventListener('hidden.bs.modal', () => {
+    const shouldReloadCategories = categoryPricesChanged;
+    categoryForPrices = null;
+    categoryPrices = [];
+    categoryPricesChanged = false;
+    resetCategoryPriceForm();
+    if (shouldReloadCategories) {
+      loadCategories({ force: true });
+    }
   });
 
   modalEl.addEventListener('hidden.bs.modal', () => {
@@ -5545,24 +5754,11 @@ function initOrganizerRegistrationsTab() {
   };
 
   const getRegistrationTotalAmount = (registration) => {
-    const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
-    const category = categoryById.get(`${categoryId}`) || null;
-    const categoryPrice = normalizeNumber(
-      category?.registration_price
-      ?? registration?.reg_category?.registration_price
-      ?? registration?.category?.registration_price
-      ?? registration?.registration_price
-    );
-    if (categoryPrice !== null) {
-      return categoryPrice * getParticipantsCount(registration);
-    }
+    return normalizeNumber(registration?.total_amount) ?? 0;
+  };
 
-    const directAmount = normalizeNumber(
-      registration?.total_amount
-      ?? registration?.totalAmount
-      ?? registration?.amount_total
-    );
-    return directAmount ?? 0;
+  const getRegistrationPrice = (registration) => {
+    return normalizeNumber(registration?.registration_price);
   };
 
   const safeJson = async (res) => {
@@ -6368,7 +6564,7 @@ function initOrganizerRegistrationsTab() {
       const totalAmountCell = document.createElement('td');
       totalAmountCell.className = 'text-center';
       const totalAmount = getRegistrationTotalAmount(registration);
-      if (totalAmount === 0) {
+      if (getRegistrationPrice(registration) === 0) {
         const freeBadge = document.createElement('span');
         freeBadge.className = 'badge bg-success';
         freeBadge.textContent = 'FREE';

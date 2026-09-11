@@ -102,6 +102,11 @@ const createUtcDate = (parts) => new Date(Date.UTC(parts.year, parts.month - 1, 
 const formatMonthOnly = (parts) =>
   new Intl.DateTimeFormat(getCurrentLocale(), { month: 'long', timeZone: 'UTC' }).format(createUtcDate(parts));
 
+const formatShortMonth = (parts) =>
+  new Intl.DateTimeFormat(getCurrentLocale(), { month: 'short', timeZone: 'UTC' }).format(createUtcDate(parts));
+
+const formatShortCardDate = (parts) => `${parts.day} ${formatShortMonth(parts)}`;
+
 const formatMonthYear = (parts) =>
   new Intl.DateTimeFormat(getCurrentLocale(), { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(createUtcDate(parts));
 
@@ -136,11 +141,25 @@ const formatEventDateRange = (start, end) => {
     return '';
   }
 
-  if (!end || start === end) {
-    return formatFecha(start);
+  const startParts = parseIsoDateParts(start);
+  const endParts = parseIsoDateParts(end);
+  if (!end || !endParts) {
+    return startParts ? formatShortCardDate(startParts) : formatFecha(start);
   }
 
-  return `${formatFecha(start)} / ${formatFecha(end)}`;
+  if (!startParts) {
+    return `${formatFecha(start)} / ${formatFecha(end)}`;
+  }
+
+  if (startParts.normalized === endParts.normalized) {
+    return formatShortCardDate(startParts);
+  }
+
+  if (startParts && endParts && startParts.year === endParts.year && startParts.month === endParts.month) {
+    return `${startParts.day}-${endParts.day} ${formatShortMonth(endParts)}`;
+  }
+
+  return `${formatShortCardDate(startParts)} / ${formatShortCardDate(endParts)}`;
 };
 
 const normalizeEventStatus = (rawStatus) => {
@@ -700,7 +719,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${showRegistrationPeriod ? `
               <p class="text-muted text-center d-flex align-items-center justify-content-center gap-2 small">
                 <i class="bi bi-pencil-square text-success"></i>
-                <span><span data-i18n="registration_period">Registration</span>: ${formatFecha(event.registration_start)} / ${formatFecha(event.registration_end)}</span>
+                <span><span data-i18n="registration_period">Registration</span>: ${formatEventDateRange(event.registration_start, event.registration_end)}</span>
               </p>
             ` : ''}
             <div class="mt-auto">
