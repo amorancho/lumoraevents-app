@@ -2,6 +2,7 @@
     "title": "Event Schedule",
     "category": "Category",
     "style": "Style",
+    "scenario": "Stage",
     "time": "Time",
     "status": "Status",
     "update": "Refresh",

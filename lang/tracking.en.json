@@ -2,6 +2,7 @@
   "title": "Competition Tracking",
   "category": "Category",
   "style": "Style",
+  "scenario_not_defined": "Stage not defined",
   "select_category": "Select a category",
   "style_optional": "Style (optional)",
   "all_styles": "All styles",

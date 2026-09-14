@@ -189,6 +189,9 @@
               <select class="form-select form-select-sm competitions-filter" id="styleFilter">
                 <option value="" data-i18n="all_styles">All Styles</option>
               </select>
+              <select class="form-select form-select-sm competitions-filter d-none" id="scenarioFilter">
+                <option value="" data-i18n="all_scenarios">All Stages</option>
+              </select>
               <div class="form-check form-check-inline m-0 competitions-filter-check">
                 <input class="form-check-input" type="checkbox" id="emptyParticipantsFilter">
                 <label class="form-check-label small" for="emptyParticipantsFilter" data-i18n="filter_without_participants">Comp. sin Part.</label>
@@ -212,6 +215,7 @@
                 <th scope="col" style="width: 15%;" data-i18n="col_style">Style</th>
                 <th scope="col" style="width: 15%;" data-i18n="col_estimated_start_time">Estimated Start Time</th>
                 <th scope="col" style="width: 10%;" data-i18n="max_times_label">Maximum Time</th>
+                <th scope="col" style="width: 10%;" id="competitionScenarioHeader" class="d-none" data-i18n="col_scenario">Stage</th>
                 <th scope="col" style="width: 10%;" data-i18n="col_status">Status</th>
                 <th scope="col" style="width: 25%;" data-i18n="col_judges">Judges</th>
                 <th scope="col" style="width: 8%;" id="criteriaColumnHeader" class="text-center" data-i18n="col_criteria">Alertas</th>
@@ -337,6 +341,10 @@
                   <span class="input-group-text">mm:ss</span>
                 </div>
               </div>
+            </div>
+            <div id="editScenarioSection" class="mb-3 d-none">
+              <label for="editScenario" class="form-label" data-i18n="col_scenario">Escenario</label>
+              <input type="text" class="form-control" id="editScenario" maxlength="255">
             </div>
             <div id="scheduleConfigNotice" class="small d-none mt-0 mb-3 text-warning">
               La hora de esta competición está configurada automáticamente.
@@ -721,6 +729,11 @@
               </div>
               <div id="createCompsStylesList" class="list-group max-times-selection-list"></div>
             </div>
+          </div>
+
+          <div id="createScenarioSection" class="mt-3 d-none">
+            <label for="createScenario" class="form-label" data-i18n="col_scenario">Escenario</label>
+            <input type="text" class="form-control" id="createScenario" maxlength="255">
           </div>
 
           <div id="createCompsSelectionSummary" class="small text-muted mt-3"></div>

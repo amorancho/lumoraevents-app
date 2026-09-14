@@ -2,6 +2,7 @@
   "title": "Acompanhamento de Competições",
   "category": "Categoria",
   "style": "Estilo",
+  "scenario_not_defined": "Palco não definido",
   "select_category": "Selecionar uma categoria",
   "style_optional": "Estilo (opcional)",
   "all_styles": "Todos os estilos",

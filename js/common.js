@@ -248,7 +248,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         judgesCanChangeVotes: data.judges_can_change_votes === 1,
         registrationFeeCost: data.registration_fee_cost || 0,
         showGender: data.show_gender === 1,
-        hasAudienceVoting: data.has_audience_voting === 1
+        hasAudienceVoting: data.has_audience_voting === 1,
+        hasMultipleScenarios: data.has_multiple_scenarios === 1,
       };
 
     }

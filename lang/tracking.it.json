@@ -2,6 +2,7 @@
   "title": "Monitoraggio delle Competizioni",
   "category": "Categoria",
   "style": "Stile",
+  "scenario_not_defined": "Palco non definito",
   "select_category": "Seleziona una categoria",
   "style_optional": "Stile (opzionale)",
   "all_styles": "Tutti gli stili",

@@ -113,6 +113,30 @@ function shouldShowSidebarAllowChangesButton() {
   return Boolean(getEvent()?.judgesCanChangeVotes);
 }
 
+function shouldShowTrackingScenario() {
+  return Boolean(getEvent()?.hasMultipleScenarios);
+}
+
+function getTrackingCompetitionScenario(comp) {
+  const directScenario = String(comp?.scenario ?? '').trim();
+  if (directScenario) return directScenario;
+
+  const competitionId = comp?.id ?? comp?.competition_id;
+  const categoryId = comp?.category_id ?? comp?.category?.id ?? '';
+  const styleId = comp?.style_id ?? comp?.style?.id ?? '';
+  const sidebarCompetition = (trackingUiState.sidebarCompetitions || []).find((item) => {
+    const itemId = item?.id ?? item?.competition_id;
+    if (competitionId !== undefined && competitionId !== null && String(itemId) === String(competitionId)) {
+      return true;
+    }
+    const itemCategoryId = item?.category_id ?? item?.category?.id ?? '';
+    const itemStyleId = item?.style_id ?? item?.style?.id ?? '';
+    return String(itemCategoryId) === String(categoryId) && String(itemStyleId) === String(styleId);
+  });
+
+  return String(sidebarCompetition?.scenario ?? '').trim();
+}
+
 function getSidebarAllowChangesButtonClass(allowChanges) {
   return allowChanges ? 'btn-outline-success' : 'btn-outline-secondary';
 }
@@ -2675,6 +2699,9 @@ function syncSelectedCompetitionSidebarState(competitions, categoryId, styleId) 
   if (!sidebarCompetition) return false;
 
   sidebarCompetition.status = normalizeSidebarCompetitionStatus(selectedCompetition?.status) || sidebarCompetition.status;
+  if (selectedCompetition?.scenario !== undefined && selectedCompetition?.scenario !== null) {
+    sidebarCompetition.scenario = selectedCompetition.scenario;
+  }
   sidebarCompetition.clasification_visible = parseClassificationVisible(selectedCompetition?.clasification_visible) ? 1 : 0;
   sidebarCompetition.allow_changes = parseJudgeFlag(selectedCompetition?.allow_changes) ? 1 : 0;
   const selectedRevision = extractCompetitionRevision(selectedCompetition);
@@ -2771,6 +2798,10 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
     const btnDisabled = getEvent().status === 'finished' ? 'disabled' : '';
     const statusBadgeClass = getCompetitionListStatusBadgeClass(comp?.status);
     const estimatedStart = comp?.estimated_start_form || t('not_defined');
+    const scenario = getTrackingCompetitionScenario(comp) || t('scenario_not_defined', 'Stage not defined');
+    const scenarioAfterTime = shouldShowTrackingScenario()
+      ? ` - ${escapeHtml(scenario)}`
+      : '';
     const visibilityButtonDisabled = !isFinished ? 'disabled' : '';
     const classificationVisibilityActionButton = isFinished
       ? `
@@ -2844,7 +2875,7 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
             </div>
             <small class="text-muted">
               <span class="badge ${statusBadgeClass} js-sidebar-status-badge">${escapeHtml(status)}</span>
-              - ${escapeHtml(estimatedStart)}
+              - ${escapeHtml(estimatedStart)}${scenarioAfterTime}
             </small>
           </button>
           <div class="d-flex flex-column align-items-end text-end gap-2 sidebar-competition-actions">
@@ -3048,6 +3079,10 @@ function renderClassificationVisibleButtonContent(isVisible) {
 
 function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificationVisible) {
   const statusBadgeClass = getCompetitionListStatusBadgeClass(comp.status);
+  const scenario = getTrackingCompetitionScenario(comp) || t('scenario_not_defined', 'Stage not defined');
+  const scenarioBadge = shouldShowTrackingScenario()
+    ? `<span class="badge text-bg-info fs-6 px-2 py-1">${escapeHtml(scenario)}</span>`
+    : '';
   const progress = computeCompetitionProgress(comp);
   const progressBarColorClass = progress.percentage >= 100 ? 'bg-success' : 'bg-warning';
   const progressTextClass = progress.percentage >= 100 ? 'text-white' : 'text-dark';
@@ -3070,6 +3105,7 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
             <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.category_name || '-')}</span>
             <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.style_name || '-')}</span>
             <span class="badge ${statusBadgeClass} fs-6 px-2 py-1">${escapeHtml(statusText || '-')}</span>
+            ${scenarioBadge}
             ${allowChangesSummaryBadge}
           </div>
           <div class="d-flex align-items-center gap-3 tracking-summary-progress">

@@ -38,6 +38,19 @@ let beforeUnloadHandlerBound = false;
 
 window.renderScheduleConfig = renderScheduleConfig;
 
+function shouldShowScheduleScenarios() {
+  return Boolean(getEvent()?.hasMultipleScenarios);
+}
+
+function escapeScheduleConfigHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   validateRoles(allowedRoles);
   await WaitEventLoaded();
@@ -304,6 +317,7 @@ function normalizeDetail(detail) {
     break_time: toNumber(detail.break_time ?? detail.breakTime),
     category_name: detail.category_name ?? detail.category,
     style_name: detail.style_name ?? detail.style,
+    scenario: detail.scenario,
     num_dancers: detail.num_dancers ?? detail.dancers,
     visible: normalizeDetailVisible(detail.visible ?? detail.is_visible ?? detail.isVisible, blockType)
   };
@@ -461,6 +475,11 @@ function renderCompetitionsList() {
   }
 
   availableCompetitions.forEach(comp => {
+    const showScenario = shouldShowScheduleScenarios();
+    const scenario = String(comp?.scenario ?? '').trim() || t('not_set', 'Not set');
+    const scenarioBadge = showScenario
+      ? `<span class="badge text-bg-info">${t('scenario', 'Stage')}: ${escapeScheduleConfigHtml(scenario)}</span>`
+      : '';
     const maxTimeSeconds = getCompetitionMaxTimeSeconds(comp);
     const hasMaxTime = Number.isFinite(maxTimeSeconds) && maxTimeSeconds > 0;
     const maxTimeBadge = hasMaxTime
@@ -473,6 +492,7 @@ function renderCompetitionsList() {
       <div class="d-flex flex-wrap align-items-center gap-2">
         <span class="fw-semibold">${comp.category_name || comp.category}</span>
         <span class="text-muted">${comp.style_name || comp.style}</span>
+        ${scenarioBadge}
         ${buildCompetitionStatusBadge(comp.status)}
         ${maxTimeBadge}
         <span class="badge bg-secondary">${comp.num_dancers ?? comp.dancers ?? 0}</span>
@@ -712,6 +732,7 @@ function renderDetails() {
     const compInfo = isBreak ? null : getCompetitionInfo(detail);
     const category = compInfo?.category_name || compInfo?.category || t('category');
     const style = compInfo?.style_name || compInfo?.style || '';
+    const scenario = String(compInfo?.scenario ?? detail?.scenario ?? '').trim() || t('not_set', 'Not set');
     const dancers = isBreak ? null : (compInfo?.num_dancers ?? compInfo?.dancers ?? detail.num_dancers ?? 0);
 
     const estimatedText = estimatedStart ? formatTime(estimatedStart) : t('not_set');
@@ -719,6 +740,9 @@ function renderDetails() {
     const title = isBreak ? (detail.break_name || t('break_label')) : `${category} ${style ? `/ ${style}` : ''}`;
     const metaItems = [];
     if (!isBreak) {
+      if (shouldShowScheduleScenarios()) {
+        metaItems.push(`${t('scenario', 'Stage')}: ${escapeScheduleConfigHtml(scenario)}`);
+      }
       metaItems.push(`${t('time_per_dancer')}: ${secondsToMmSs(detail.time_per_dancer)}`);
     } else {
       metaItems.push(`${t('break_time')}: ${detail.break_time ?? 0} ${t('minutes_short')}`);

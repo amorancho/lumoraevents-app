@@ -82,6 +82,7 @@ function getCurrentCompetitionFilters() {
   return {
     category: `${document.getElementById('categoryFilter')?.value || ''}`.trim().toLowerCase(),
     style: `${document.getElementById('styleFilter')?.value || ''}`.trim().toLowerCase(),
+    scenario: `${document.getElementById('scenarioFilter')?.value || ''}`.trim().toLowerCase(),
     withoutParticipants: Boolean(document.getElementById('emptyParticipantsFilter')?.checked)
   };
 }
@@ -89,9 +90,11 @@ function getCurrentCompetitionFilters() {
 function competitionMatchesFilters(competition, filters = getCurrentCompetitionFilters()) {
   const category = `${competition?.category_name || ''}`.trim().toLowerCase();
   const style = `${competition?.style_name || ''}`.trim().toLowerCase();
+  const scenario = `${competition?.scenario || ''}`.trim().toLowerCase();
   const numDancers = Number(competition?.num_dancers) || 0;
   return (!filters.category || category === filters.category)
     && (!filters.style || style === filters.style)
+    && (!filters.scenario || scenario === filters.scenario)
     && (!filters.withoutParticipants || numDancers === 0);
 }
 
@@ -902,11 +905,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   setupHeadJudgeFieldVisibility();
   setupReserveJudgeFieldVisibility();
+  setupCompetitionScenarioVisibility();
   updateSubstituteJudgeHeadNoticeVisibility();
   updateTopActionButtonsVisibility();
 
   const categoryFilter = document.getElementById('categoryFilter');
   const styleFilter = document.getElementById('styleFilter');
+  const scenarioFilter = document.getElementById('scenarioFilter');
   const emptyParticipantsFilter = document.getElementById('emptyParticipantsFilter');
 
   if (categoryFilter) {
@@ -914,6 +919,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   if (styleFilter) {
     styleFilter.addEventListener('change', applyCategoryFilter);
+  }
+  if (scenarioFilter) {
+    scenarioFilter.addEventListener('change', applyCategoryFilter);
   }
   if (emptyParticipantsFilter) {
     emptyParticipantsFilter.addEventListener('change', applyCategoryFilter);
@@ -939,6 +947,7 @@ async function fetchCompetitionsFromAPI() {
     const response = await fetch(`${API_BASE_URL}/api/competitions?event_id=${getEvent().id}`);
     if (!response.ok) throw new Error('Error fetching dancers');
     competitions = await response.json();
+    populateScenarioFilter();
     loadCompetitions();
   } catch (error) {
     console.error('Failed to fetch dancers:', error);
@@ -1035,10 +1044,54 @@ function updateEditCompetitionStatusBadge(status) {
   statusBadge.textContent = convertStatus[status] || status || '';
 }
 
+function shouldShowCompetitionScenario() {
+  return Boolean(getEvent()?.hasMultipleScenarios);
+}
+
+function setupCompetitionScenarioVisibility() {
+  const showScenario = shouldShowCompetitionScenario();
+  document.getElementById('competitionScenarioHeader')?.classList.toggle('d-none', !showScenario);
+  document.getElementById('editScenarioSection')?.classList.toggle('d-none', !showScenario);
+  document.getElementById('createScenarioSection')?.classList.toggle('d-none', !showScenario);
+  const scenarioFilter = document.getElementById('scenarioFilter');
+  scenarioFilter?.classList.toggle('d-none', !showScenario);
+  if (!showScenario && scenarioFilter) {
+    scenarioFilter.value = '';
+  }
+}
+
+function populateScenarioFilter() {
+  const scenarioFilter = document.getElementById('scenarioFilter');
+  if (!scenarioFilter || !shouldShowCompetitionScenario()) return;
+
+  const selectedScenario = scenarioFilter.value;
+  const scenarios = Array.from(new Set(
+    (Array.isArray(competitions) ? competitions : [])
+      .map((competition) => String(competition?.scenario ?? '').trim())
+      .filter(Boolean)
+  )).sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+
+  scenarioFilter.replaceChildren();
+  const allOption = document.createElement('option');
+  allOption.value = '';
+  allOption.textContent = t('all_scenarios', 'All Stages');
+  scenarioFilter.appendChild(allOption);
+
+  scenarios.forEach((scenario) => {
+    const option = document.createElement('option');
+    option.value = scenario;
+    option.textContent = scenario;
+    scenarioFilter.appendChild(option);
+  });
+
+  scenarioFilter.value = scenarios.includes(selectedScenario) ? selectedScenario : '';
+}
+
 function loadCompetitions() {
   const competitionsTable = document.getElementById('competitionsTable');
   competitionsTable.innerHTML = ''; // Limpiar tabla
   const showCriteriaPerJudgeUi = shouldShowCriteriaPerJudgeButton();
+  const showScenario = shouldShowCompetitionScenario();
 
   competitions.forEach(comp => {
     const row = document.createElement('tr');
@@ -1048,6 +1101,10 @@ function loadCompetitions() {
     row.dataset.num_dancers = Number(comp.num_dancers) || 0;
     const maxTimeSeconds = getCompetitionMaxTimeSeconds(comp);
     const maxTimeDisplay = maxTimeSecondsToNormalized(maxTimeSeconds) || t('not_defined', 'Not defined');
+    const scenarioDisplay = String(comp?.scenario ?? '').trim() || t('not_defined', 'Not defined');
+    const scenarioCell = showScenario
+      ? `<td>${escapeTooltipHtml(scenarioDisplay)}</td>`
+      : '';
 
     let colorBg = statusColor[comp.status];
     let statusText = convertStatus[comp.status];
@@ -1126,6 +1183,7 @@ function loadCompetitions() {
       <td><span class="badge bg-secondary">${comp.style_name}</span></td>
       <td><i class="bi bi-clock me-1 text-muted"></i>${comp.estimated_start_form ?? 'Not defined'}</td>
       <td><i class="bi bi-stopwatch me-1 text-muted"></i>${maxTimeDisplay}</td>
+      ${scenarioCell}
       <td data-status><span class="badge bg-${colorBg}">${statusText}</span></td>
       <td>
         <i class="bi bi-people me-1 text-muted"></i>
@@ -1234,7 +1292,7 @@ function loadCompetitions() {
 }
 
 
-async function createCompetitionRequest(categoryId, styleId) {
+async function createCompetitionRequest(categoryId, styleId, scenario = '') {
   const payload = {
     event_id: getEvent().id,
     category_id: categoryId,
@@ -1243,6 +1301,10 @@ async function createCompetitionRequest(categoryId, styleId) {
     //startTime: '',
     //status: 'CLO'
   };
+
+  if (shouldShowCompetitionScenario()) {
+    payload.scenario = String(scenario || '').trim();
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/competitions`, {
@@ -1298,14 +1360,21 @@ function normalizeCreateCompetitionBulkResult(result) {
 
 async function createCompetitionsBulkRequest(combinations, options = {}) {
   const onlyWithDancers = Boolean(options?.onlyWithDancers);
+  const scenario = String(options?.scenario || '').trim();
   const payload = {
     event_id: getEvent().id,
     onlyWithDancers,
     status: 'CLO',
-    competitions: combinations.map((combo) => ({
-      category_id: combo.categoryId,
-      style_id: combo.styleId
-    }))
+    competitions: combinations.map((combo) => {
+      const competitionData = {
+        category_id: combo.categoryId,
+        style_id: combo.styleId
+      };
+      if (shouldShowCompetitionScenario()) {
+        competitionData.scenario = scenario;
+      }
+      return competitionData;
+    })
   };
 
   try {
@@ -1392,7 +1461,11 @@ async function addCompt() {
     addBtn.textContent = "Adding...";
 
     try {
-      const createResult = await createCompetitionRequest(valueCat, valueSty);
+      const createResult = await createCompetitionRequest(
+        valueCat,
+        valueSty,
+        document.getElementById('createScenario')?.value
+      );
 
       if (!createResult.ok) {
         inputCat.value = '';
@@ -1452,6 +1525,7 @@ async function saveCompetitionEdits(editModal) {
   const inputReserveJudge = document.getElementById('editJudgeReserve');
   const inputHeadJudge = document.getElementById('editJudgeHead');
   const inputMaxTime = document.getElementById('editMaxTime');
+  const inputScenario = document.getElementById('editScenario');
   const maxTimeRaw = (inputMaxTime?.value || '').trim();
 
   let maxTimeSeconds = null;
@@ -1487,6 +1561,10 @@ async function saveCompetitionEdits(editModal) {
     max_time: maxTimeSeconds,
     event_id: getEvent().id
   };
+
+  if (shouldShowCompetitionScenario()) {
+    competitionData.scenario = String(inputScenario?.value || '').trim();
+  }
 
   if (shouldShowHeadJudgeField()) {
     competitionData.judge_head = inputHeadJudge ? (inputHeadJudge.value || null) : null;
@@ -1535,6 +1613,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const groupCategoriesModalEl = document.getElementById('groupCategoriesModal');
     const groupCategoriesModal = groupCategoriesModalEl ? new bootstrap.Modal(groupCategoriesModalEl) : null;
     const editMaxTimeInput = document.getElementById('editMaxTime');
+    const editScenarioInput = document.getElementById('editScenario');
     const scheduleConfigWarningMessageEl = document.getElementById('scheduleConfigWarningMessage');
 
     if (bulkDeleteCompetitionsCloseTopBtn) {
@@ -1630,6 +1709,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           editMaxTimeInput.value = existingMaxTimeNormalized;
           editMaxTimeInput.classList.remove('is-invalid');
           editForm.dataset.original_max_time = existingMaxTimeNormalized;
+        }
+        if (editScenarioInput) {
+          editScenarioInput.value = String(competition?.scenario ?? '');
         }
 
         editModal.show();
@@ -2063,6 +2145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const createCompsSelectAllCategories = document.getElementById('createCompsSelectAllCategories');
     const createCompsSelectAllStyles = document.getElementById('createCompsSelectAllStyles');
     const createCompsOnlyWithDancers = document.getElementById('createCompsOnlyWithDancers');
+    const createScenarioInput = document.getElementById('createScenario');
     const createCompetitionsApplyBtn = document.getElementById('createCompetitionsApplyBtn');
     const groupCategoriesBtn = document.getElementById('groupCategoriesBtn');
     const groupCategoriesStyleSelect = document.getElementById('groupCategoriesStyleSelect');
@@ -2145,7 +2228,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           });
 
           const onlyWithDancers = Boolean(createCompsOnlyWithDancers?.checked);
-          const bulkResult = await createCompetitionsBulkRequest(combinations, { onlyWithDancers });
+          const scenario = shouldShowCompetitionScenario()
+            ? String(createScenarioInput?.value || '').trim()
+            : '';
+          const bulkResult = await createCompetitionsBulkRequest(combinations, { onlyWithDancers, scenario });
           if (!bulkResult.ok) {
             showMessageModal(
               bulkResult.message,
@@ -2618,6 +2704,7 @@ function updateCompetitionsCounter(totalCount, visibleCount, totalParticipants, 
   const hasActiveFilter = Boolean(
     (document.getElementById('categoryFilter')?.value || '') ||
     (document.getElementById('styleFilter')?.value || '') ||
+    (document.getElementById('scenarioFilter')?.value || '') ||
     document.getElementById('emptyParticipantsFilter')?.checked
   );
   if (hasActiveFilter) {
@@ -4911,6 +4998,10 @@ async function updateCompetitionJudgesAssignment(competition, judgeIds, headJudg
     max_time: getCompetitionMaxTimeSeconds(competition),
     event_id: getEvent().id
   };
+
+  if (shouldShowCompetitionScenario()) {
+    competitionData.scenario = String(competition?.scenario ?? '').trim();
+  }
 
   if (shouldShowHeadJudgeField()) {
     const normalizedHeadId = headJudgeId ? String(headJudgeId) : null;

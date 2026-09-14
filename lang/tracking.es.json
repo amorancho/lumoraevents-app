@@ -2,6 +2,7 @@
   "title": "Seguimiento de Competiciones",
   "category": "Categoría",
   "style": "Estilo",
+  "scenario_not_defined": "Escenario no definido",
   "select_category": "Selecciona una categoría",
   "style_optional": "Estilo (opcional)",
   "all_styles": "Todos los estilos",

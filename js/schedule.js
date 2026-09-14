@@ -195,23 +195,21 @@ function renderScheduleHighlight(data) {
     const todayItems = getTodayScheduleItems(data);
     if (!todayItems.length) return;
 
-    const inProgressItem = todayItems.find(item => item?.status === 'PRO');
-    let selectedItem = null;
+    const inProgressItems = todayItems.filter(item => {
+        return getScheduleItemBlockType(item) === 'COMP' && item?.status === 'PRO';
+    });
+    let selectedItems = [];
     let titleKey = '';
-    let expandParticipants = false;
     let showLiveHighlight = false;
     let previousBreakItems = [];
 
-    if (inProgressItem) {
-        selectedItem = inProgressItem;
-        titleKey = 'competition_in_progress';
-        expandParticipants = true;
+    if (inProgressItems.length) {
         showLiveHighlight = true;
     } else {
         const nextCompetitionContext = getNextCompetitionHighlightContext(todayItems);
-        selectedItem = nextCompetitionContext.item;
+        selectedItems = nextCompetitionContext.items;
         previousBreakItems = nextCompetitionContext.previousBreaks;
-        if (!selectedItem) return;
+        if (!selectedItems.length) return;
         titleKey = 'next_competition';
     }
 
@@ -245,11 +243,21 @@ function renderScheduleHighlight(data) {
     if (!showLiveHighlight && previousBreakItems.length) {
         wrapperBody.appendChild(createScheduleHighlightBreakStrip(previousBreakItems));
     }
-    wrapperBody.appendChild(createScheduleItemCard(selectedItem, {
-        uniqueKey: `highlight-${selectedItem?.id ?? 'today'}`,
-        expandParticipants,
-        highlightLive: showLiveHighlight
-    }));
+    if (showLiveHighlight) {
+        inProgressItems.forEach((item, index) => {
+            wrapperBody.appendChild(createScheduleItemCard(item, {
+                uniqueKey: `highlight-${item?.id ?? 'today'}-${index}`,
+                expandParticipants: true,
+                highlightLive: true
+            }));
+        });
+    } else {
+        selectedItems.forEach((item, index) => {
+            wrapperBody.appendChild(createScheduleItemCard(item, {
+                uniqueKey: `highlight-${item?.id ?? 'today'}-${index}`
+            }));
+        });
+    }
 
     col.appendChild(wrapper);
     row.appendChild(col);
@@ -264,6 +272,37 @@ function renderScheduleHighlight(data) {
 
 function getNextCompetitionHighlightContext(todayItems) {
     const items = Array.isArray(todayItems) ? todayItems : [];
+    const defaultContext = getNextCompetitionHighlightContextForItems(items);
+
+    if (!getEvent()?.hasMultipleScenarios) {
+        return {
+            items: defaultContext.item ? [defaultContext.item] : [],
+            previousBreaks: defaultContext.previousBreaks
+        };
+    }
+
+    const competitionsByScenario = new Map();
+    items.forEach((item) => {
+        if (getScheduleItemBlockType(item) !== 'COMP') return;
+
+        const scenario = String(item?.scenario ?? '').trim();
+        if (!competitionsByScenario.has(scenario)) {
+            competitionsByScenario.set(scenario, []);
+        }
+        competitionsByScenario.get(scenario).push(item);
+    });
+
+    const nextCompetitionItems = Array.from(competitionsByScenario.values())
+        .map((scenarioItems) => getNextCompetitionHighlightContextForItems(scenarioItems).item)
+        .filter(Boolean);
+
+    return {
+        items: nextCompetitionItems,
+        previousBreaks: defaultContext.previousBreaks
+    };
+}
+
+function getNextCompetitionHighlightContextForItems(items) {
     const lastFinishedIndex = items.reduce((lastIndex, item, index) => {
         return item?.status === 'FIN' ? index : lastIndex;
     }, -1);
@@ -370,28 +409,42 @@ function createScheduleItemCard(item, { uniqueKey, expandParticipants = false, h
 function createCompetitionScheduleItemCard(item, { uniqueKey, expandParticipants = false, highlightLive = false } = {}) {
     const card = document.createElement('div');
     const isLiveItem = highlightLive && item?.status === 'PRO';
+    const showScenario = Boolean(getEvent()?.hasMultipleScenarios);
+    const categoryStyleColumnClass = showScenario
+        ? 'col-6 col-md-2 mb-2 mb-md-0'
+        : 'col-6 col-md-3 mb-2 mb-md-0';
+    const detailColumnClass = showScenario
+        ? 'col-6 col-md-2 mb-2 mb-md-0'
+        : 'col-4 col-md-2 mb-2 mb-md-0';
+    const scenario = String(item?.scenario ?? '').trim() || '-';
     card.className = `card mb-3 border border-secondary-subtle rounded-3 shadow-none${isLiveItem ? ' schedule-item-live' : ''}`;
 
     card.innerHTML = `
         <div class="card-body">
             <div class="row text-center align-items-center">
-                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                <div class="${categoryStyleColumnClass}">
                     <p class="mb-1 fw-semibold">${t('category', 'Category')}</p>
                     <span class="badge bg-primary">${item?.category || ''}</span>
                 </div>
-                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                <div class="${categoryStyleColumnClass}">
                     <p class="mb-1 fw-semibold">${t('style', 'Style')}</p>
                     <span class="badge bg-primary">${item?.style || ''}</span>
                 </div>
-                <div class="col-4 col-md-2 mb-2 mb-md-0">
+                ${showScenario ? `
+                <div class="${detailColumnClass}">
+                    <p class="mb-1 fw-semibold">${t('scenario', 'Stage')}</p>
+                    <span>${escapeHtml(scenario)}</span>
+                </div>
+                ` : ''}
+                <div class="${detailColumnClass}">
                     <p class="mb-1 fw-semibold">${t('time', 'Time')}</p>
                     <span>${item?.time || ''}</span>
                 </div>
-                <div class="col-4 col-md-2 mb-2 mb-md-0">
+                <div class="${detailColumnClass}">
                     <p class="mb-1 fw-semibold">${t('status', 'Status')}</p>
                     ${getStatusBadge(item?.status)}
                 </div>
-                <div class="col-4 col-md-2">
+                <div class="${detailColumnClass}">
                     <p class="mb-1 fw-semibold">${t('dancers', 'Dancers')}</p>
                     <span class="badge bg-secondary">${item?.dancers ?? 0}</span>
                 </div>

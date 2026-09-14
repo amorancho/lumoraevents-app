@@ -916,7 +916,7 @@ function initRegistrationDashboard(role) {
 }
 
 const REGISTRATION_DASHBOARD_STATUS_ORDER = [
-  { code: 'CRE', label: 'registration_status_creation', fallback: 'In creation', color: '#0d6efd', dataLabelColor: '#ffffff' },
+  { code: 'CRE', label: 'registration_status_creation', fallback: 'Draft', color: '#0d6efd', dataLabelColor: '#ffffff' },
   { code: 'PEN', label: 'registration_status_pending', fallback: 'Pending validation', color: '#ffc107', dataLabelColor: '#212529' },
   { code: 'REJ', label: 'registration_status_rejected', fallback: 'Rejected', color: '#dc3545', dataLabelColor: '#ffffff' },
   { code: 'VAL', label: 'registration_status_validated', fallback: 'Validated', color: '#198754', dataLabelColor: '#ffffff' }
@@ -4162,7 +4162,7 @@ function getChoreoStatusBadgeInfo(code, count) {
 function getChoreoStatusLegendItems() {
   return [
     { dotClass: 'choreo-status-legend-tooltip-dot--dark', label: t('registration_choreo_status_legend_total', 'Number of choreos') },
-    { dotClass: 'choreo-status-legend-tooltip-dot--primary', label: t('registration_choreo_status_legend_cre', 'In creation') },
+    { dotClass: 'choreo-status-legend-tooltip-dot--primary', label: t('registration_choreo_status_legend_cre', 'Draft') },
     { dotClass: 'choreo-status-legend-tooltip-dot--warning', label: t('registration_choreo_status_legend_pen', 'Pending validation') },
     { dotClass: 'choreo-status-legend-tooltip-dot--success', label: t('registration_choreo_status_legend_val', 'Validated') },
     { dotClass: 'choreo-status-legend-tooltip-dot--danger', label: t('registration_choreo_status_legend_rej', 'Rejected') }
@@ -6093,7 +6093,7 @@ function initOrganizerRegistrationsTab() {
 
   const formatStatusInfo = (status) => {
     const statusMap = {
-      CRE: { label: t('registration_status_creation', 'En creacion'), color: 'primary' },
+      CRE: { label: t('registration_status_creation', 'Borrador'), color: 'primary' },
       PEN: { label: t('registration_status_pending', 'Pendiente validar'), color: 'warning' },
       VAL: { label: t('registration_status_validated', 'Validada'), color: 'success' },
       REJ: { label: t('registration_status_rejected', 'Rechazada'), color: 'danger' }

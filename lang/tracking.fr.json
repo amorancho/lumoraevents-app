@@ -2,6 +2,7 @@
   "title": "Suivi des Compétitions",
   "category": "Catégorie",
   "style": "Style",
+  "scenario_not_defined": "Scène non définie",
   "select_category": "Sélectionner une catégorie",
   "style_optional": "Style (optionnel)",
   "all_styles": "Tous les styles",

@@ -1335,7 +1335,7 @@
   */
   const formatStatusInfo = (status) => {
     const statusMap = {
-      CRE: { label: t('registration_status_creation', 'En creacion'), color: 'primary' },
+      CRE: { label: t('registration_status_creation', 'Borrador'), color: 'primary' },
       PEN: { label: t('registration_status_pending', 'Pendiente validar'), color: 'warning' },
       VAL: { label: t('registration_status_validated', 'Validada'), color: 'success' },
       REJ: { label: t('registration_status_rejected', 'Rechazada'), color: 'danger' }
