@@ -1105,6 +1105,7 @@ function showVotesModal(dancer, mode = "details") {
   const scoreType = getScoreType();
   const normalizedScoreType = (scoreType || 'INT').toUpperCase();
   const criteriaConfig = eventData?.criteriaConfig;
+  const isPercentageCriteriaConfig = criteriaConfig === 'WITH_POR';
   const isMaxScoreCriteria = criteriaConfig === 'PUNT_MAX';
   const scoreStep = normalizedScoreType === 'DEC' ? '0.1' : normalizedScoreType === 'MED' ? '0.5' : '1';
   const inputMode = normalizedScoreType === 'INT' ? 'numeric' : 'decimal';
@@ -1197,6 +1198,9 @@ function showVotesModal(dancer, mode = "details") {
 
   const formatTotalScore = (value) => {
     if (value === null || value === undefined) return '';
+    if (isPercentageCriteriaConfig) {
+      return Number.isFinite(value) ? value.toFixed(2) : '';
+    }
     if (hasCriteriaPercentages()) {
       return Number.isFinite(value) ? value.toFixed(1) : '';
     }
@@ -1223,8 +1227,8 @@ function showVotesModal(dancer, mode = "details") {
 
     if (hasWeights) {
       if (weightSum <= 0) return 0;
-      // redondeamos de 8.1 a 8.4, hacia abajo, y de 8.5 a 8.9 hacia arriba
-      total = Math.round((total / weightSum) * 10) / 10;
+      const roundingFactor = isPercentageCriteriaConfig ? 100 : 10;
+      total = Math.round((total / weightSum) * roundingFactor) / roundingFactor;
       return total;
     }
 
@@ -2524,7 +2528,7 @@ function formatTotalForDisplay(value, scoreType) {
 
   const eventData = typeof getEvent === 'function' ? getEvent() : null;
   if (eventData?.criteriaConfig === 'WITH_POR') {
-    return (Math.round(value * 10) / 10).toFixed(1);
+    return (Math.round(value * 100) / 100).toFixed(2);
   }
 
   return formatScoreForDisplay(value, scoreType);

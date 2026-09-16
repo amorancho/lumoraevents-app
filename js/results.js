@@ -114,6 +114,13 @@ function getVoteTotalScore(vote) {
   return vote?.judge_total_score ?? vote?.total_score ?? sumVoteCriteriaScores(vote?.criteria);
 }
 
+function formatVoteTotalScore(vote, { defaultFixedDecimals = null } = {}) {
+  const fixedDecimals = getEvent()?.criteriaConfig === 'WITH_POR'
+    ? 2
+    : defaultFixedDecimals;
+  return formatScoreValue(getVoteTotalScore(vote), { fixedDecimals });
+}
+
 function shouldShowPenaltiesColumn() {
   return Boolean(getEvent()?.has_penalties);
 }
@@ -478,6 +485,7 @@ function renderStyleCriteriaSummaryTable(styleObj) {
   const criteria = collectStyleCriteriaSummary(styleObj);
   const showPenalties = shouldShowPenaltiesColumn();
   const displayPositions = getClassificationDisplayPositions(dancers);
+  const totalScoreFixedDecimals = getEvent()?.criteriaConfig === 'WITH_POR' ? 2 : null;
 
   if (!dancers.length || !criteria.length) {
     return `<div class="alert alert-info mb-0">${escapeHtml(t('no_style_voting_details', 'No voting details available for this style.'))}</div>`;
@@ -514,7 +522,7 @@ function renderStyleCriteriaSummaryTable(styleObj) {
       <tr>
         <td class="text-center fw-semibold style-voting-sticky-col style-voting-sticky-place" style="${getPlaceColumnStyle()}">${displayPositions[index]}</td>
         <td class="style-voting-sticky-col style-voting-sticky-dancer" style="${getDancerColumnStyle()}">${renderStyleTableDancerCell(dancer)}</td>
-        <td class="text-center fw-semibold" style="${getTotalScoreColumnStyle()}">${formatScoreValue(dancer?.total_score)}</td>
+        <td class="text-center fw-semibold" style="${getTotalScoreColumnStyle()}">${formatScoreValue(dancer?.total_score, { fixedDecimals: totalScoreFixedDecimals })}</td>
         ${penaltiesCell}
         ${criteriaCells}
       </tr>
@@ -553,6 +561,7 @@ function renderStyleJudgeGroupedTable(styleObj) {
   const judgeGroups = collectStyleJudgeGroups(styleObj);
   const showPenalties = shouldShowPenaltiesColumn();
   const displayPositions = getClassificationDisplayPositions(dancers);
+  const totalScoreFixedDecimals = getEvent()?.criteriaConfig === 'WITH_POR' ? 2 : null;
 
   if (!dancers.length || !judgeGroups.length) {
     return `<div class="alert alert-info mb-0">${escapeHtml(t('no_style_voting_details', 'No voting details available for this style.'))}</div>`;
@@ -587,7 +596,7 @@ function renderStyleJudgeGroupedTable(styleObj) {
       }
 
       if (!judgeGroup.criteria.length) {
-        return `<td class="text-center">${formatScoreValue(getVoteTotalScore(vote))}</td>`;
+        return `<td class="text-center">${formatVoteTotalScore(vote)}</td>`;
       }
 
       const criteriaByKey = new Map(
@@ -607,7 +616,7 @@ function renderStyleJudgeGroupedTable(styleObj) {
       <tr>
         <td class="text-center fw-semibold style-voting-sticky-col style-voting-sticky-place" style="${getPlaceColumnStyle()}">${displayPositions[index]}</td>
         <td class="style-voting-sticky-col style-voting-sticky-dancer" style="${getDancerColumnStyle()}">${renderStyleTableDancerCell(dancer)}</td>
-        <td class="text-center fw-semibold" style="${getTotalScoreColumnStyle()}">${formatScoreValue(dancer?.total_score)}</td>
+        <td class="text-center fw-semibold" style="${getTotalScoreColumnStyle()}">${formatScoreValue(dancer?.total_score, { fixedDecimals: totalScoreFixedDecimals })}</td>
         ${penaltiesCell}
         ${judgeCells}
       </tr>
@@ -681,6 +690,7 @@ function showDancerVotingDetailsModal(styleObj, dancerData, votingModalEl, votin
   if (!styleObj || !dancerData || !votingModalEl || !votingModal || !detailsContainer) return;
 
   const clubLabel = getDancerClubLabel(dancerData);
+  const totalScoreFixedDecimals = getEvent()?.criteriaConfig === 'WITH_POR' ? 2 : 1;
   detailsContainer.innerHTML = '';
 
   const summaryCard = document.createElement('div');
@@ -703,7 +713,7 @@ function showDancerVotingDetailsModal(styleObj, dancerData, votingModalEl, votin
         <div class="col-auto text-center">
           <div class="d-flex align-items-center gap-2 justify-content-center flex-wrap">
             <span class="badge bg-success fs-4 py-2 px-3">
-              ${formatScoreValue(dancerData.total_score, { fixedDecimals: 1 })}
+              ${formatScoreValue(dancerData.total_score, { fixedDecimals: totalScoreFixedDecimals })}
             </span>
             ${shouldShowAvgPlaceBadge() ? `
               <span class="badge bg-info fs-5 py-2 px-3">
@@ -745,7 +755,7 @@ function showDancerVotingDetailsModal(styleObj, dancerData, votingModalEl, votin
       judgeCard.innerHTML = `
         <div class="card-header d-flex justify-content-between align-items-center">
           <h6 class="mb-0 text-primary">${escapeHtml(vote.judge_name || t('judge', 'Judge'))}</h6>
-          <span class="badge bg-primary fs-6">${escapeHtml(t('total', 'Total'))}: ${formatScoreValue(getVoteTotalScore(vote), { fixedDecimals: 1 })}</span>
+          <span class="badge bg-primary fs-6">${escapeHtml(t('total', 'Total'))}: ${formatVoteTotalScore(vote, { defaultFixedDecimals: 1 })}</span>
         </div>
         <div class="card-body">
           <div class="row">
@@ -1369,6 +1379,7 @@ function renderStyleClassification(style) {
   `;
 
   const displayPositions = getClassificationDisplayPositions(style.clasification);
+  const totalScoreFixedDecimals = getEvent()?.criteriaConfig === 'WITH_POR' ? 2 : 1;
 
   style.clasification.forEach((dancer, index) => {
     const medals = ['🥇', '🥈', '🥉'];
@@ -1386,7 +1397,7 @@ function renderStyleClassification(style) {
           <span>${escapeHtml(dancer.dancer_name)} ${medal}</span>
           ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
         </span>
-        <span class="badge bg-light text-dark rounded-pill">${formatScoreValue(dancer.total_score, { fixedDecimals: 1 })}</span>
+        <span class="badge bg-light text-dark rounded-pill">${formatScoreValue(dancer.total_score, { fixedDecimals: totalScoreFixedDecimals })}</span>
         ${shouldShowAvgPlaceBadge() ? `
           <span class="badge bg-info text-dark rounded-pill ms-2">${formatAvgPlace(dancer.avg_place)}</span>
         ` : ''}

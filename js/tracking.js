@@ -739,6 +739,10 @@ function formatVoteTotalScore(score) {
     return '-';
   }
 
+  if (getEvent()?.criteriaConfig === 'WITH_POR') {
+    return escapeHtml(numericValue.toFixed(2));
+  }
+
   return escapeHtml(formatResultScore(numericValue));
 }
 
@@ -4523,7 +4527,7 @@ function showModal(message) {
 
 function formatResultScore(totalScore) {
   if (getEvent().criteriaConfig === 'WITH_POR') {
-    return Number(totalScore ?? 0).toFixed(1);
+    return Number(totalScore ?? 0).toFixed(2);
   }
   return totalScore ?? 0;
 }
