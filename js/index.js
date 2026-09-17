@@ -371,6 +371,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
+  const clearEventDetailsContent = () => {
+    eventDetailsInfoListEl.innerHTML = '';
+    eventDetailsDescriptionEl.innerHTML = '';
+    eventDetailsPosterEl.innerHTML = '';
+    setEventDetailsPosterLayout(false);
+  };
+
   const showLoadingSpinner = () => {
     container.innerHTML = `
       <div class="d-flex justify-content-center w-100 my-5">
@@ -431,10 +438,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
     `;
 
+    clearEventDetailsContent();
     eventDetailsInfoListEl.innerHTML = loadingMarkup;
     eventDetailsDescriptionEl.innerHTML = loadingMarkup;
-    eventDetailsPosterEl.innerHTML = '';
-    setEventDetailsPosterLayout(false);
     applyTranslations();
   };
 
@@ -599,15 +605,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     eventDetailsDescriptionEl.innerHTML = descriptionHtml;
   };
 
-  const renderEventDetailsError = (event) => {
+  const renderEventDetailsError = () => {
+    clearEventDetailsContent();
     eventDetailsDescriptionEl.innerHTML = `
       <div class="alert alert-warning event-details-error" data-i18n="event_details_error_loading">
         Could not load event details.
       </div>
     `;
-    eventDetailsPosterEl.innerHTML = '';
-    setEventDetailsPosterLayout(false);
-    renderEventDetailsInfo(event, {});
     applyTranslations();
   };
 
@@ -646,19 +650,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
 
+    const requestId = ++activeDetailsRequestId;
+
     renderEventDetailsHeader(event);
     renderEventDetailsLoading(event);
     eventDetailsModal.show();
 
     if (!event?.id) {
-      renderEventDetailsError(event);
+      renderEventDetailsError();
       return;
     }
 
-    const requestId = ++activeDetailsRequestId;
-
     try {
-      const response = await fetch(`${API_BASE_URL}/api/events/${encodeURIComponent(event.id)}/info`);
+      const response = await fetch(`${API_BASE_URL}/api/public/events/${encodeURIComponent(event.id)}/info`);
+      if (response.status === 404) {
+        if (requestId === activeDetailsRequestId) {
+          renderEventDetailsError();
+        }
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(`Error fetching event details: ${response.status}`);
       }
@@ -678,7 +689,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       console.error('Failed to load event details:', error);
-      renderEventDetailsError(event);
+      renderEventDetailsError();
     }
   };
 
@@ -881,10 +892,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     eventDetailsModalEl.addEventListener('hidden.bs.modal', () => {
       activeDetailsRequestId += 1;
-      eventDetailsPosterEl.innerHTML = '';
-      eventDetailsDescriptionEl.innerHTML = '';
-      eventDetailsInfoListEl.innerHTML = '';
-      setEventDetailsPosterLayout(false);
+      clearEventDetailsContent();
     });
   }
 
@@ -901,7 +909,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  fetch(`${API_BASE_URL}/api/events`)
+  fetch(`${API_BASE_URL}/api/public/events`)
     .then((response) => {
       if (!response.ok) {
         throw new Error(`Error fetching events: ${response.status}`);

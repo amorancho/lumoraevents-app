@@ -29,7 +29,8 @@ window.fetch = function (url, options = {}) {
   );
 
   const isPublicApi =
-    requestUrl.pathname.startsWith('/public/');
+    requestUrl.pathname.startsWith('/public/') ||
+    requestUrl.pathname.startsWith('/api/public/');
 
   options = options || {};
 
@@ -169,7 +170,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
   try {
 
     if (eventId) {
-      const eventEndpoint = `${API_BASE_URL}/api/events/code/${encodeURIComponent(eventId)}`;
+      const eventEndpoint = `${API_BASE_URL}/api/public/events/code/${encodeURIComponent(eventId)}`;
       const res = await fetch(eventEndpoint);
       if (!res.ok) throw new Error(`Error ${res.status} al recuperar el evento`);
       const data = await res.json();

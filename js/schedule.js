@@ -106,7 +106,7 @@ async function loadSchedule() {
     setScheduleRefreshButtonLoading(true);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/events/schedule?event_id=${getEvent().id}`);
+        const response = await fetch(`${API_BASE_URL}/api/public/events/schedule?event_id=${getEvent().id}`);
         const scheduleData = await response.json();
 
         window.scheData = scheduleData;
