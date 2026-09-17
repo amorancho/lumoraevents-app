@@ -59,6 +59,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       country: document.getElementById('signupCountry').value,
       phone: document.getElementById('signupPhone').value.trim(),
       representative: document.getElementById('signupRepresentative').value.trim(),
+      document: document.getElementById('signupDocument').value.trim(),
       event_id: getEvent()?.id
     };
 

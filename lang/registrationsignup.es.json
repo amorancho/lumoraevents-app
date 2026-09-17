@@ -11,6 +11,8 @@
   "field_country": "Pais",
   "field_phone": "Telefono",
   "field_representative": "Representante",
+  "field_document": "Documento fiscal (NIF, NIPC, P. IVA, Nº TVA, VAT No, etc)",
+  "field_document_help": "Informar si se desea factura para las inscripciones.",
   "cancel": "Cancelar",
   "signup_submit": "Crear cuenta",
   "saving": "Guardando...",

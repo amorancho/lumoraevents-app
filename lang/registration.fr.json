@@ -251,6 +251,8 @@
   "field_country": "Pays",
   "field_phone": "Téléphone",
   "field_representative": "Représentant",
+  "field_document": "Numero fiscal (NIF, NIPC, P. IVA, Nº TVA, VAT No, etc)",
+  "field_document_help": "Indiquez-le si vous souhaitez une facture pour les inscriptions.",
   "field_password": "Mot de passe",
   "gender_male": "Homme",
   "gender_female": "Femme",

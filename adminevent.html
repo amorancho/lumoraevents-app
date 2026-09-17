@@ -12,7 +12,12 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <style>
-    #eventInfoDescriptionEditor {
+    #eventInfoModal .event-info-rich-text-field + .event-info-rich-text-field {
+      margin-top: 1.5rem;
+    }
+
+    #eventInfoModal .ql-container.ql-snow {
+      height: auto;
       min-height: 240px;
     }
 
@@ -479,9 +484,16 @@
                 inputmode="url"
               >
             </div>
-            <div class="col-12">
+            <div class="col-12 event-info-rich-text-field">
               <label class="form-label" data-i18n="event_info_description">Descripcion</label>
               <div id="eventInfoDescriptionEditor"></div>
+              <div class="form-text" data-i18n="event_info_description_help">
+                Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.
+              </div>
+            </div>
+            <div class="col-12 event-info-rich-text-field">
+              <label class="form-label" data-i18n="event_info_payment_instructions">Instrucciones de pago</label>
+              <div id="eventInfoPaymentInstructionsEditor"></div>
               <div class="form-text" data-i18n="event_info_description_help">
                 Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.
               </div>

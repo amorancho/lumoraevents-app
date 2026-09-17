@@ -126,6 +126,7 @@
   "event_info_poster": "URL del poster",
   "event_info_poster_placeholder": "https://.../poster.jpg",
   "event_info_description": "Descripcion",
+  "event_info_payment_instructions": "Instrucciones de pago",
   "event_info_description_help": "Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.",
   "event_info_save": "Guardar",
   "event_info_unsaved_confirm": "Hay cambios sin guardar. Quieres salir sin guardar?",

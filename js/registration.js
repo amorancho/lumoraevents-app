@@ -122,6 +122,9 @@ const registrationNavigationState = {
   role: 'guest',
   activeKey: ''
 };
+const REGISTRATION_PAYMENT_INSTRUCTIONS_ALLOWED_TAGS = ['p', 'br', 'strong', 'em', 'u', 's', 'ol', 'ul', 'li', 'a', 'h2', 'h3', 'blockquote'];
+const REGISTRATION_PAYMENT_INSTRUCTIONS_ALLOWED_ATTRIBUTES = ['href', 'target', 'rel'];
+const REGISTRATION_PAYMENT_INSTRUCTIONS_ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
 
 function getRegistrationEventKey(eventId = getEvent()?.id) {
   return eventId != null && eventId !== '' ? `${eventId}` : '__all__';
@@ -525,6 +528,7 @@ function getRegistrationRole(user = getUserFromToken()) {
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
   await ensureTranslationsReady();
+  await loadRegistrationPaymentInstructions();
   const user = getUserFromToken();
   const role = getRegistrationRole(user);
   setupRegistrationNavigation(role);
@@ -543,6 +547,63 @@ document.addEventListener('DOMContentLoaded', async () => {
     initEventSyncTab();
   }
 });
+
+async function loadRegistrationPaymentInstructions() {
+  const contentEl = document.getElementById('registrationPaymentInstructionsContent');
+  const eventId = getEvent()?.id;
+  if (!contentEl || !eventId) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/info`);
+    if (!response.ok) {
+      throw new Error(`Unable to load event information (${response.status}).`);
+    }
+
+    const eventInfo = await response.json();
+    contentEl.innerHTML = sanitizeRegistrationPaymentInstructionsHtml(eventInfo?.payment_instructions);
+  } catch (error) {
+    console.error('Error loading payment instructions:', error);
+    contentEl.replaceChildren();
+  }
+}
+
+function sanitizeRegistrationPaymentInstructionsHtml(rawHtml) {
+  if (!window.DOMPurify) return '';
+
+  const sanitized = window.DOMPurify.sanitize(String(rawHtml || ''), {
+    ALLOWED_TAGS: REGISTRATION_PAYMENT_INSTRUCTIONS_ALLOWED_TAGS,
+    ALLOWED_ATTR: REGISTRATION_PAYMENT_INSTRUCTIONS_ALLOWED_ATTRIBUTES,
+    ALLOW_DATA_ATTR: false,
+    FORBID_ATTR: ['style'],
+    KEEP_CONTENT: true
+  });
+
+  const container = document.createElement('div');
+  container.innerHTML = sanitized;
+  container.querySelectorAll('a').forEach((link) => {
+    const href = String(link.getAttribute('href') || '').trim();
+    if (!isSafeRegistrationPaymentInstructionsLink(href)) {
+      link.replaceWith(document.createTextNode(link.textContent || ''));
+      return;
+    }
+
+    link.setAttribute('target', '_blank');
+    link.setAttribute('rel', 'noopener noreferrer');
+  });
+
+  return container.innerHTML.trim();
+}
+
+function isSafeRegistrationPaymentInstructionsLink(href) {
+  if (!href) return false;
+
+  try {
+    const url = new URL(href, window.location.origin);
+    return REGISTRATION_PAYMENT_INSTRUCTIONS_ALLOWED_PROTOCOLS.has(url.protocol);
+  } catch {
+    return false;
+  }
+}
 
 function setupRegistrationNavigation(role) {
   registrationNavigationState.role = role;
@@ -2308,6 +2369,7 @@ function initSchoolTab() {
     country: document.getElementById('schoolCountry'),
     phone: document.getElementById('schoolPhone'),
     representative: document.getElementById('schoolRepresentative'),
+    document: document.getElementById('schoolDocument'),
     password: document.getElementById('schoolPassword'),
     togglePassword: document.getElementById('toggleSchoolPassword'),
     saveBtn: document.getElementById('schoolSaveBtn'),
@@ -2367,6 +2429,7 @@ function initSchoolTab() {
       if (elements.city) elements.city.value = schoolRecord.city || '';
       if (elements.phone) elements.phone.value = schoolRecord.phone || '';
       if (elements.representative) elements.representative.value = schoolRecord.representative || '';
+      if (elements.document) elements.document.value = schoolRecord.document || '';
       if (elements.password) elements.password.value = schoolRecord.password || '';
 
       if (elements.country) {
@@ -2405,6 +2468,7 @@ function initSchoolTab() {
       country: elements.country.value,
       phone: elements.phone.value.trim(),
       representative: elements.representative.value.trim(),
+      document: elements.document.value.trim(),
       password: elements.password.value.trim()
     };
 
@@ -3936,7 +4000,8 @@ function initSchoolsTab() {
     city: document.getElementById('schoolDetailCity'),
     country: document.getElementById('schoolDetailCountry'),
     phone: document.getElementById('schoolDetailPhone'),
-    representative: document.getElementById('schoolDetailRepresentative')
+    representative: document.getElementById('schoolDetailRepresentative'),
+    document: document.getElementById('schoolDetailDocument')
   };
   let schoolsTooltipInstances = [];
 
@@ -4067,6 +4132,7 @@ function initSchoolsTab() {
     }
     if (detailElements.phone) detailElements.phone.value = school?.phone || '';
     if (detailElements.representative) detailElements.representative.value = school?.representative || '';
+    if (detailElements.document) detailElements.document.value = school?.document || '';
     detailModal.show();
   };
 

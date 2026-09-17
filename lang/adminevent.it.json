@@ -127,6 +127,7 @@
   "event_info_poster": "URL del poster",
   "event_info_poster_placeholder": "https://.../poster.jpg",
   "event_info_description": "Descrizione",
+  "event_info_payment_instructions": "Istruzioni di pagamento",
   "event_info_description_help": "Vengono salvati solo formati sicuri: titoli, paragrafi, grassetto, corsivo, sottolineato, liste e link.",
   "event_info_save": "Salva",
   "event_info_unsaved_confirm": "Ci sono modifiche non salvate. Vuoi uscire senza salvare?",

@@ -18,6 +18,17 @@
       margin-bottom: 0;
       padding-left: 1rem;
     }
+    #registrationPaymentInstructionsContent p,
+    #registrationPaymentInstructionsContent ol,
+    #registrationPaymentInstructionsContent ul,
+    #registrationPaymentInstructionsContent blockquote {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    #registrationPaymentInstructionsContent ol,
+    #registrationPaymentInstructionsContent ul {
+      padding-left: 1.5em;
+    }
     .choreo-status-legend-tooltip {
       text-align: left;
     }
@@ -990,6 +1001,11 @@
                       <div class="col-12 col-md-6">
                         <label class="form-label" for="schoolRepresentative" data-i18n="field_representative">Representante</label>
                         <input type="text" class="form-control" id="schoolRepresentative" required>
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label" for="schoolDocument" data-i18n="field_document">Documento fiscal</label>
+                        <input type="text" class="form-control" id="schoolDocument">
+                        <div class="form-text" data-i18n="field_document_help">Informar si se desea factura para las inscripciones.</div>
                       </div>
                       <div class="col-12 col-md-6">
                         <label class="form-label" for="schoolUsername" data-i18n="field_username">Usuario</label>
@@ -2211,19 +2227,14 @@
   </div>
 
   <div class="modal fade" id="portdanceFest26PaymentInstructionsModal" tabindex="-1" aria-labelledby="portdanceFest26PaymentInstructionsModalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="portdanceFest26PaymentInstructionsModalTitle" data-i18n="registration_payment_instructions">INSTRUCCIONES DE PAGO</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p>O pagamento deverá ser efectuado por transferência bancária:</p>
-          <p class="mb-0">
-            Nome do titular da conta: Portdance - Unipessoal, Lda<br>
-            IBAN: PT50 0010 0000 4274 4880 0069 4<br>
-            BIC/SWIFT: BBPIPTPL
-          </p>
+          <div id="registrationPaymentInstructionsContent"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
@@ -2578,6 +2589,10 @@
                 <label class="form-label" for="schoolDetailRepresentative" data-i18n="field_representative">Representante</label>
                 <input type="text" class="form-control bg-light" id="schoolDetailRepresentative" readonly>
               </div>
+              <div class="col-12">
+                <label class="form-label" for="schoolDetailDocument" data-i18n="field_document">Documento fiscal</label>
+                <input type="text" class="form-control bg-light" id="schoolDetailDocument" readonly>
+              </div>
             </div>
           </form>
         </div>
@@ -2617,6 +2632,7 @@
   <script src="js/footer.js"></script>
   <script src="js/common.js"></script>
   <script src="utils/countries.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
   <script src="js/registration.js"></script>
   <script src="js/registration-competitions.js"></script>
   <script src="js/registration-payments.js"></script>

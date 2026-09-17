@@ -11,6 +11,8 @@
   "field_country": "Country",
   "field_phone": "Phone",
   "field_representative": "Representative",
+  "field_document": "Fiscal document (NIF, NIPC, P. IVA, Nº TVA, VAT No, etc)",
+  "field_document_help": "Provide it if you would like an invoice for registrations.",
   "cancel": "Cancel",
   "signup_submit": "Create account",
   "saving": "Saving...",

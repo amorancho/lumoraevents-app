@@ -105,7 +105,8 @@ const EVENT_INFO_DEFAULT_DATA = Object.freeze({
   organizer: null,
   bases_document: null,
   poster: null,
-  event_description: null
+  event_description: null,
+  payment_instructions: null
 });
 const EVENT_INFO_ALLOWED_TAGS = ['p', 'br', 'strong', 'em', 'u', 's', 'ol', 'ul', 'li', 'a', 'h2', 'h3', 'blockquote'];
 const EVENT_INFO_ALLOWED_ATTRIBUTES = ['href', 'target', 'rel'];
@@ -113,6 +114,7 @@ const EVENT_INFO_ALLOWED_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel
 const eventInfoState = {
   modal: null,
   editor: null,
+  paymentInstructionsEditor: null,
   countrySelect: null,
   initialSnapshot: '',
   skipCloseGuard: false,
@@ -415,6 +417,25 @@ function setButtonLoading(button, isLoading, loadingText = t('loading')) {
   button.disabled = false;
 }
 
+function createEventInfoEditor(selector) {
+  const editor = new Quill(selector, {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ header: [2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['link'],
+        ['clean']
+      ]
+    },
+    formats: ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'bullet', 'link']
+  });
+
+  editor.root.setAttribute('spellcheck', 'true');
+  return editor;
+}
+
 function initEventInfoModal() {
   const modalEl = document.getElementById('eventInfoModal');
   const formEl = document.getElementById('eventInfoForm');
@@ -433,24 +454,9 @@ function initEventInfoModal() {
   }
 
   const modal = new bootstrap.Modal(modalEl);
-  const editor = new Quill('#eventInfoDescriptionEditor', {
-    theme: 'snow',
-    modules: {
-      toolbar: [
-        [{ header: [2, 3, false] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ list: 'ordered' }, { list: 'bullet' }],
-        ['link'],
-        ['clean']
-      ]
-    },
-    formats: ['header', 'bold', 'italic', 'underline', 'strike', 'list', 'bullet', 'link']
-  });
-
-  editor.root.setAttribute('spellcheck', 'true');
-
   eventInfoState.modal = modal;
-  eventInfoState.editor = editor;
+  eventInfoState.editor = createEventInfoEditor('#eventInfoDescriptionEditor');
+  eventInfoState.paymentInstructionsEditor = createEventInfoEditor('#eventInfoPaymentInstructionsEditor');
   initEventInfoCountrySelect(countryField);
 
   openBtn.addEventListener('click', async () => {
@@ -571,6 +577,9 @@ function setEventInfoBusyState(isBusy) {
   if (eventInfoState.editor) {
     eventInfoState.editor.enable(!isBusy);
   }
+  if (eventInfoState.paymentInstructionsEditor) {
+    eventInfoState.paymentInstructionsEditor.enable(!isBusy);
+  }
 }
 
 async function fetchEventInfoData(eventId) {
@@ -627,6 +636,7 @@ function populateEventInfoForm(data) {
 
   setEventInfoCountryValue(normalized.country);
   setEventInfoEditorHtml(normalized.event_description);
+  setEventInfoEditorHtml(normalized.payment_instructions, eventInfoState.paymentInstructionsEditor);
 }
 
 function normalizeEventInfoData(data) {
@@ -641,7 +651,8 @@ function normalizeEventInfoData(data) {
     organizer: String(data?.organizer ?? ''),
     bases_document: String(data?.bases_document ?? ''),
     poster: String(data?.poster ?? ''),
-    event_description: sanitizeEventInfoHtml(String(data?.event_description ?? ''))
+    event_description: sanitizeEventInfoHtml(String(data?.event_description ?? '')),
+    payment_instructions: sanitizeEventInfoHtml(String(data?.payment_instructions ?? ''))
   };
 }
 
@@ -657,7 +668,8 @@ function buildEventInfoPayload(eventId) {
     organizer: normalizeOptionalField(document.getElementById('eventInfoOrganizer')?.value),
     bases_document: normalizeOptionalField(document.getElementById('eventInfoBases')?.value),
     poster: normalizeOptionalField(document.getElementById('eventInfoPoster')?.value),
-    event_description: normalizeOptionalField(getEventInfoEditorHtml())
+    event_description: normalizeOptionalField(getEventInfoEditorHtml()),
+    payment_instructions: normalizeOptionalField(getEventInfoEditorHtml(eventInfoState.paymentInstructionsEditor))
   };
 }
 
@@ -736,8 +748,7 @@ function setEventInfoCountryValue(value) {
   }
 }
 
-function setEventInfoEditorHtml(html) {
-  const editor = eventInfoState.editor;
+function setEventInfoEditorHtml(html, editor = eventInfoState.editor) {
   if (!editor) return;
 
   const sanitizedHtml = sanitizeEventInfoHtml(html);
@@ -749,8 +760,8 @@ function setEventInfoEditorHtml(html) {
   editor.setContents(editor.clipboard.convert(sanitizedHtml), 'silent');
 }
 
-function getEventInfoEditorHtml() {
-  const rawHtml = eventInfoState.editor?.root?.innerHTML || '';
+function getEventInfoEditorHtml(editor = eventInfoState.editor) {
+  const rawHtml = editor?.root?.innerHTML || '';
   return sanitizeEventInfoHtml(rawHtml);
 }
 
