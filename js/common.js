@@ -95,7 +95,7 @@ function getEventIdFromUrl() {
   }
 
 
-  if (!['index', 'admin', 'public-vote'].includes(pageName)) {
+  if (!['index', 'admin'].includes(pageName)) {
     window.location.href = 'index.html';
   }
   return null;
@@ -168,12 +168,8 @@ function setPageTitleAndLang(title, lang) {
 eventReadyPromise = new Promise(async (resolve, reject) => {
   try {
 
-    const publicAudiencePage = ['public-votes', 'public-vote'].includes(pageName);
-    const validPublicEventId = Number.isInteger(Number(eventId)) && Number(eventId) > 0;
-    if (eventId && (!publicAudiencePage || validPublicEventId)) {
-      const eventEndpoint = publicAudiencePage
-        ? `${API_BASE_URL}/api/events/${encodeURIComponent(eventId)}`
-        : `${API_BASE_URL}/api/events/code/${encodeURIComponent(eventId)}`;
+    if (eventId) {
+      const eventEndpoint = `${API_BASE_URL}/api/events/code/${encodeURIComponent(eventId)}`;
       const res = await fetch(eventEndpoint);
       if (!res.ok) throw new Error(`Error ${res.status} al recuperar el evento`);
       const data = await res.json();
@@ -282,7 +278,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Esperamos a que los datos del evento estén listos
   try {
     await eventReadyPromise;
-    if (!['index', 'admin', 'public-votes', 'public-vote'].includes(pageName)) {
+    if (!['index', 'admin'].includes(pageName)) {
       generateHeader(() => {
         setPageTitleAndLang(t('title'), getCurrentAppLanguage());
         applyTranslations();
@@ -894,34 +890,6 @@ async function WaitEventLoaded() {
   }
 }
 
-function setPublicPageEventContext(publicEvent = {}, options = {}) {
-  const fallbackName = options.fallbackName || t('title', 'LumoraEvents');
-  const eventCode = publicEvent.code || null;
-  eventObj = {
-    id: publicEvent.id || null,
-    code: eventCode,
-    name: publicEvent.name || fallbackName,
-    start: publicEvent.start || null,
-    end: publicEvent.end || null,
-    eventLogo: publicEvent.eventLogo || publicEvent.eventlogo || publicEvent.logo || null,
-    eventUrl: publicEvent.eventUrl || publicEvent.eventurl || publicEvent.url || '',
-    visible: true,
-    trial: false,
-    status: 'ongoing',
-    homeUrl: options.homeUrl || publicEvent.homeUrl || (eventCode ? `home.html?eventId=${encodeURIComponent(eventCode)}` : 'index.html'),
-    language: publicEvent.language || getCurrentAppLanguage(),
-    showFlags: true,
-    hasAudienceVoting: publicEvent.hasAudienceVoting === true || Number(publicEvent.has_audience_voting) === 1
-  };
-
-  generateHeader(() => {
-    setPageTitleAndLang(t('title', fallbackName), getCurrentAppLanguage());
-    applyTranslations();
-  });
-  generateFooter();
-  return eventObj;
-}
-
 function ensureAudienceVotingEnabled() {
   const currentEvent = getEvent();
   if (currentEvent?.hasAudienceVoting === true) return true;
@@ -942,7 +910,6 @@ window.copyTableToClipboardAsTsv = copyTableToClipboardAsTsv;
 window.isAdminUser = isAdminUser;
 window.isFinishedEventReadOnly = isFinishedEventReadOnly;
 window.bindTableTsvExportButton = bindTableTsvExportButton;
-window.setPublicPageEventContext = setPublicPageEventContext;
 window.ensureAudienceVotingEnabled = ensureAudienceVotingEnabled;
 
 

@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateElementProperty("scheduleUrl", "href", `?eventId=${eventId}`, false);
     updateElementProperty("resultsUrl", "href", `?eventId=${eventId}`, false);
     updateElementProperty("statisticsUrl", "href", `?eventId=${eventId}`, false);
-    updateElementProperty("audienceVoteUrl", "href", `?eventId=${encodeURIComponent(currentEvent.id)}`, false);
+    updateElementProperty("audienceVoteUrl", "href", `?eventId=${encodeURIComponent(currentEvent.code || eventId)}`, false);
 
     const principalContainer = document.getElementById("principalContainer");
     const hiddenMessage = document.getElementById("eventHiddenMessage");

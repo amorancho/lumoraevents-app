@@ -12,7 +12,6 @@ const publicVoteState = {
   clockSyncedAt: 0,
   countdownRefreshRequested: false,
   eventLanguageApplied: false,
-  chromeReady: false,
   eventPermissionChecked: false,
   feedback: null,
   confirmModal: null
@@ -28,13 +27,9 @@ class PublicVoteError extends Error {
 document.addEventListener('DOMContentLoaded', async () => {
   await ensureTranslationsReady();
 
-  if (eventId) {
-    await WaitEventLoaded();
-    const currentEvent = getEvent();
-    if (!ensureAudienceVotingEnabled()) return;
-    setPublicPageEventContext(currentEvent, { fallbackName: t('title', 'Audience voting') });
-    publicVoteState.chromeReady = true;
-  }
+  await WaitEventLoaded();
+  const currentEvent = getEvent();
+  if (!currentEvent || !ensureAudienceVotingEnabled()) return;
 
   publicVoteState.confirmModal = new bootstrap.Modal(document.getElementById('confirmPublicVoteModal'));
   bindPublicVoteEvents();
@@ -42,8 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   publicVoteState.code = (new URLSearchParams(window.location.search).get('code') || '').trim();
   configurePublicVotesBackLink();
   if (!publicVoteState.code) {
-    setPublicPageEventContext({}, { fallbackName: t('title', 'Audience voting'), homeUrl: 'index.html' });
-    publicVoteState.chromeReady = true;
     showPublicVoteError(t('missing_code', 'The voting code is missing.'), false);
     return;
   }
@@ -72,40 +65,38 @@ function bindPublicVoteEvents() {
 
 function configurePublicVotesBackLink() {
   if (!publicVoteState.code) return;
-  const sourceEventId = getPublicVoteSourceEventId();
-
-  const normalizedEventId = Number(sourceEventId);
-  if (!Number.isInteger(normalizedEventId) || normalizedEventId <= 0) return;
+  const sourceEventCode = getPublicVoteSourceEventCode();
+  if (!sourceEventCode) return;
 
   const button = document.getElementById('backToPublicVotesBtn');
-  button.href = `public-votes.html?eventId=${encodeURIComponent(normalizedEventId)}`;
+  button.href = `public-votes.html?eventId=${encodeURIComponent(sourceEventCode)}`;
   document.getElementById('backToPublicVotesContainer').classList.remove('d-none');
 }
 
-function getPublicVoteSourceEventId() {
-  const urlEventId = new URLSearchParams(window.location.search).get('eventId');
-  if (urlEventId) return urlEventId;
+function getPublicVoteSourceEventCode() {
+  const urlEventCode = (new URLSearchParams(window.location.search).get('eventId') || '').trim();
+  if (urlEventCode) return urlEventCode;
 
-  let sourceEventId = null;
+  let sourceEventCode = '';
 
   try {
     const referrer = document.referrer ? new URL(document.referrer) : null;
     if (referrer?.origin === window.location.origin && referrer.pathname.endsWith('/public-votes.html')) {
-      sourceEventId = referrer.searchParams.get('eventId');
+      sourceEventCode = (referrer.searchParams.get('eventId') || '').trim();
     }
   } catch (_error) {
-    sourceEventId = null;
+    sourceEventCode = '';
   }
 
-  if (!sourceEventId) {
+  if (!sourceEventCode) {
     try {
-      sourceEventId = sessionStorage.getItem(`publicAudienceVoteEventId:${publicVoteState.code}`);
+      sourceEventCode = (sessionStorage.getItem(`publicAudienceVoteEventCode:${publicVoteState.code}`) || '').trim();
     } catch (_error) {
-      sourceEventId = null;
+      sourceEventCode = '';
     }
   }
 
-  return sourceEventId;
+  return sourceEventCode;
 }
 
 async function publicVoteRequest(path, options = {}) {
@@ -164,11 +155,6 @@ async function loadPublicVoteSession({ initial = false, forceRender = false } = 
       }
     }
 
-    if (!publicVoteState.chromeReady) {
-      setPublicPageEventContext(payload.event || {}, { fallbackName: t('title', 'Audience voting'), homeUrl: 'index.html' });
-      publicVoteState.chromeReady = true;
-    }
-
     const signature = getPublicVoteRenderSignature(payload);
     if (forceRender || signature !== publicVoteState.renderSignature) {
       publicVoteState.renderSignature = signature;
@@ -178,10 +164,6 @@ async function loadPublicVoteSession({ initial = false, forceRender = false } = 
   } catch (error) {
     const fatal = error instanceof PublicVoteError && error.status === 404;
     if (initial || fatal || !publicVoteState.data) {
-      if (!publicVoteState.chromeReady) {
-        setPublicPageEventContext({}, { fallbackName: t('title', 'Audience voting'), homeUrl: 'index.html' });
-        publicVoteState.chromeReady = true;
-      }
       showPublicVoteError(error.message, !fatal);
     } else {
       schedulePublicVotePoll();
@@ -193,7 +175,8 @@ async function loadPublicVoteSession({ initial = false, forceRender = false } = 
 }
 
 async function initializePublicVoteEventPermission(payload) {
-  let sourceEventId = payload?.event?.id || payload?.session?.event_id || null;
+  let sourceEventId = Number(payload?.event?.id || payload?.session?.event_id || 0);
+  const sourceEventCode = String(payload?.event?.code || getPublicVoteSourceEventCode() || '').trim();
 
   const competitionId = payload?.competitions?.[0]?.id;
   if (!sourceEventId && competitionId) {
@@ -204,32 +187,23 @@ async function initializePublicVoteEventPermission(payload) {
     }
   }
 
-  sourceEventId ||= getPublicVoteSourceEventId();
-
-  const normalizedEventId = Number(sourceEventId);
-  if (!Number.isInteger(normalizedEventId) || normalizedEventId <= 0) {
-    setPublicPageEventContext(payload?.event || {}, { fallbackName: t('title', 'Audience voting'), homeUrl: 'index.html' });
-    publicVoteState.chromeReady = true;
-    publicVoteState.eventPermissionChecked = true;
-    return ensureAudienceVotingEnabled();
+  const currentEvent = getEvent();
+  if (!currentEvent) {
+    throw new PublicVoteError(t('request_error', 'The request could not be completed.'), 404);
   }
 
-  let currentEvent = getEvent();
-  if (Number(currentEvent?.id) !== normalizedEventId) {
-    const eventResponse = await fetch(`${API_BASE_URL}/api/events/${encodeURIComponent(normalizedEventId)}`);
-    if (!eventResponse.ok) {
-      throw new PublicVoteError(t('request_error', 'The request could not be completed.'), eventResponse.status);
-    }
-
-    currentEvent = await eventResponse.json();
+  if (sourceEventCode && String(currentEvent.code || '') !== sourceEventCode) {
+    throw new PublicVoteError(t('request_error', 'The request could not be completed.'), 403);
   }
 
-  setPublicPageEventContext(currentEvent, { fallbackName: t('title', 'Audience voting') });
-  publicVoteState.chromeReady = true;
+  if (sourceEventId && Number(currentEvent?.id) !== Number(sourceEventId)) {
+    throw new PublicVoteError(t('request_error', 'The request could not be completed.'), 403);
+  }
+
   publicVoteState.eventPermissionChecked = true;
 
   try {
-    sessionStorage.setItem(`publicAudienceVoteEventId:${publicVoteState.code}`, String(normalizedEventId));
+    sessionStorage.setItem(`publicAudienceVoteEventCode:${publicVoteState.code}`, currentEvent.code);
   } catch (_error) {
     // El permiso ya está validado aunque el navegador no permita sessionStorage.
   }

@@ -166,6 +166,10 @@ function getAudienceVoteEventId() {
   return Number(getEvent().id);
 }
 
+function getAudienceVoteEventCode() {
+  return String(getEvent().code || '').trim();
+}
+
 function getAudienceVoteListPath() {
   return `/api/audience-vote-sessions?event_id=${encodeURIComponent(getAudienceVoteEventId())}`;
 }
@@ -183,7 +187,7 @@ function getAudienceVotePublicUrl(publicCode) {
   url.search = '';
   url.hash = '';
   url.searchParams.set('code', publicCode || '');
-  url.searchParams.set('eventId', getAudienceVoteEventId());
+  url.searchParams.set('eventId', getAudienceVoteEventCode());
   return url.toString();
 }
 

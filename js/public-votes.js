@@ -1,5 +1,6 @@
 const publicVotesState = {
   eventId: null,
+  eventCode: '',
   sessions: [],
   signature: '',
   pollTimer: null,
@@ -12,19 +13,19 @@ const publicVotesState = {
 document.addEventListener('DOMContentLoaded', async () => {
   await ensureTranslationsReady();
 
-  const rawEventId = new URLSearchParams(window.location.search).get('eventId');
-  const parsedEventId = Number(rawEventId);
-  if (!Number.isInteger(parsedEventId) || parsedEventId <= 0) {
-    setPublicPageEventContext({}, { fallbackName: t('title', 'Audience voting'), homeUrl: 'index.html' });
+  const rawEventCode = (new URLSearchParams(window.location.search).get('eventId') || '').trim();
+  if (!rawEventCode) {
     showPublicVotesError(t('invalid_event', 'The event identifier is missing or invalid.'), false);
     return;
   }
 
-  publicVotesState.eventId = parsedEventId;
+  publicVotesState.eventCode = rawEventCode;
   await WaitEventLoaded();
   const currentEvent = getEvent();
+  if (!currentEvent?.id) return;
+  publicVotesState.eventId = currentEvent.id;
+  publicVotesState.eventCode = currentEvent.code || rawEventCode;
   if (!ensureAudienceVotingEnabled()) return;
-  setPublicPageEventContext(currentEvent, { fallbackName: t('title', 'Audience voting') });
   document.getElementById('retryPublicVotesBtn').addEventListener('click', () => loadPublicVotes({ initial: true }));
   publicVotesState.countdownTimer = window.setInterval(updatePublicVotesCountdowns, 1000);
   await loadPublicVotes({ initial: true });
@@ -65,7 +66,7 @@ async function loadPublicVotes({ initial = false } = {}) {
     const sessions = await fetchPublicVotes();
     if (publicVotesState.destroyed) return;
     publicVotesState.sessions = sessions;
-    rememberPublicVoteEventIds(sessions);
+    rememberPublicVoteEventCodes(sessions);
     publicVotesState.hasLoaded = true;
     hidePublicVotesError();
 
@@ -88,13 +89,13 @@ async function loadPublicVotes({ initial = false } = {}) {
   }
 }
 
-function rememberPublicVoteEventIds(sessions) {
+function rememberPublicVoteEventCodes(sessions) {
   try {
     sessions.forEach(session => {
-      if (!session?.public_code || !publicVotesState.eventId) return;
+      if (!session?.public_code || !publicVotesState.eventCode) return;
       sessionStorage.setItem(
-        `publicAudienceVoteEventId:${session.public_code}`,
-        String(publicVotesState.eventId)
+        `publicAudienceVoteEventCode:${session.public_code}`,
+        publicVotesState.eventCode
       );
     });
   } catch (_error) {
@@ -178,7 +179,7 @@ function renderPublicVoteCompetitions(competitions = []) {
 }
 
 function buildPublicVoteSessionUrl(publicCode) {
-  return `public-vote.html?code=${encodeURIComponent(publicCode || '')}&eventId=${encodeURIComponent(publicVotesState.eventId || '')}`;
+  return `public-vote.html?code=${encodeURIComponent(publicCode || '')}&eventId=${encodeURIComponent(publicVotesState.eventCode)}`;
 }
 
 function updatePublicVotesCountdowns() {
