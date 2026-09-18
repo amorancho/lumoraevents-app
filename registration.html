@@ -594,6 +594,393 @@
       border-color: #0d6efd;
       background-color: rgba(13, 110, 253, 0.08);
     }
+    .participants-filter-panel {
+      display: contents;
+    }
+    .participants-school-filter {
+      order: 1;
+    }
+    .participants-name-filter {
+      order: 2;
+    }
+    .participants-filter-clear {
+      order: 3;
+    }
+    .participants-export {
+      order: 4;
+    }
+    .participants-mobile-filter-toggle,
+    .participants-filter-apply,
+    .participants-mobile-search-icon,
+    .participants-mobile-name-clear,
+    .participants-mobile-active-filters {
+      display: none;
+    }
+    .participants-mobile-list {
+      display: none;
+    }
+    @media (max-width: 767.98px) {
+      #registrationSidebarToggle {
+        margin-bottom: 0.75rem !important;
+      }
+      #registrationSidebarToggle > .btn {
+        padding: 0.4rem 0.65rem;
+        font-size: 0.875rem;
+      }
+      #participants > .card {
+        border: 0;
+        background: transparent;
+        box-shadow: none !important;
+      }
+      #participants > .card > .card-body {
+        padding: 0 !important;
+      }
+      #participants .participants-desktop-table {
+        display: none;
+      }
+      #participants .participants-mobile-list {
+        display: grid;
+        gap: 0.65rem;
+      }
+      #participants .participants-controls {
+        gap: 0.7rem !important;
+        margin-bottom: 0.75rem !important;
+      }
+      #participants .participants-primary-actions {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem !important;
+      }
+      #participants .participants-primary-actions:empty {
+        display: none !important;
+      }
+      #participants .participants-primary-actions .btn {
+        min-width: 0;
+        padding: 0.55rem 0.6rem;
+        font-size: 0.84rem;
+        white-space: nowrap;
+      }
+      #participants .participants-primary-actions .btn i {
+        margin-right: 0.35rem !important;
+      }
+      #participants .participants-filters {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 0.5rem !important;
+        margin: 0;
+      }
+      #participants .participants-filters > *,
+      #participants .participants-filter-panel > * {
+        width: auto;
+        max-width: none;
+        padding-right: 0;
+        padding-left: 0;
+      }
+      #participants .participants-name-filter {
+        order: 1;
+        grid-column: auto;
+        grid-row: 1;
+      }
+      #participants .participants-name-filter > .form-label {
+        display: none;
+      }
+      #participants .participants-name-search .form-control {
+        min-height: 2.5rem;
+        padding-right: 2.25rem;
+        padding-left: 2.25rem;
+      }
+      #participants .participants-mobile-search-icon {
+        position: absolute;
+        top: 50%;
+        left: 0.75rem;
+        z-index: 2;
+        display: block;
+        color: var(--bs-secondary-color);
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
+      #participants .participants-mobile-name-clear:not(.d-none) {
+        position: absolute;
+        top: 50%;
+        right: 0.35rem;
+        z-index: 2;
+        display: inline-flex;
+        width: 1.8rem;
+        height: 1.8rem;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border: 0;
+        border-radius: 50%;
+        background: transparent;
+        color: var(--bs-secondary-color);
+        transform: translateY(-50%);
+      }
+      #participants .participants-mobile-filter-toggle {
+        order: 2;
+        grid-row: 1;
+      }
+      #participants .participants-controls--organizer .participants-mobile-filter-toggle {
+        display: block;
+      }
+      #participants .participants-mobile-filter-toggle .btn,
+      #participants .participants-export .btn {
+        min-height: 2.5rem;
+      }
+      #participants .participants-export {
+        order: 3;
+        grid-row: 1;
+      }
+      #participants .participants-export .btn {
+        display: inline-flex;
+        width: 2.5rem;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font-size: 1rem;
+      }
+      #participants .participants-export-label {
+        display: none;
+      }
+      #participants .participants-filter-panel {
+        order: 4;
+        display: none;
+      }
+      #participants .participants-filters.mobile-filters-open .participants-filter-panel {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem;
+        padding: 0.75rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.8rem;
+        background: var(--bs-tertiary-bg);
+      }
+      #participants .participants-filter-panel .participants-school-filter {
+        order: 1;
+        grid-column: 1 / -1;
+      }
+      #participants .participants-filter-panel .form-label {
+        margin-bottom: 0.35rem;
+        font-size: 0.78rem;
+        font-weight: 650;
+      }
+      #participants .participants-filter-clear,
+      #participants .participants-filter-apply {
+        grid-column: auto;
+      }
+      #participants .participants-filter-clear {
+        order: 2;
+      }
+      #participants .participants-filter-apply {
+        order: 3;
+      }
+      #participants .participants-filters.mobile-filters-open .participants-filter-apply {
+        display: block;
+      }
+      #participants .participants-filter-panel .btn {
+        min-height: 2.4rem;
+        padding: 0.4rem 0.55rem;
+        font-size: 0.82rem;
+      }
+      #participants .participants-mobile-active-filters.has-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+      #participants .participants-mobile-filter-chip {
+        display: inline-flex;
+        min-width: 0;
+        max-width: 100%;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.55rem;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(var(--bs-primary-rgb), 0.1);
+        color: var(--bs-primary-text-emphasis);
+        font-size: 0.75rem;
+        font-weight: 650;
+      }
+      #participants .participants-mobile-filter-chip span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #participants .participants-summary {
+        justify-content: flex-start;
+        gap: 0.45rem 0.9rem !important;
+        margin-left: 0 !important;
+        padding: 0.05rem 0;
+        font-size: 0.82rem;
+      }
+      #participants .participants-summary > div {
+        gap: 0.4rem !important;
+      }
+      #participants .participants-summary .badge {
+        padding: 0.35em 0.55em;
+      }
+      #participants .participants-summary > div + div::before {
+        margin-right: 0.45rem;
+        color: var(--bs-border-color);
+        content: '•';
+      }
+      .participant-mobile-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(var(--bs-primary-rgb), 0.14);
+        border-radius: 1rem;
+        background: var(--bs-body-bg);
+        box-shadow: 0 0.35rem 1.2rem rgba(15, 23, 42, 0.08);
+      }
+      .participant-mobile-card::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 0.25rem;
+        content: '';
+        background: linear-gradient(90deg, var(--bs-primary), #6f42c1);
+      }
+      .participant-mobile-card__header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.8rem;
+        justify-content: space-between;
+        padding: 0.9rem 0.85rem 0.7rem;
+      }
+      .participant-mobile-card__identity {
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+      .participant-mobile-card__name {
+        margin: 0;
+        overflow-wrap: anywhere;
+        color: var(--bs-emphasis-color);
+        font-size: 1rem;
+        font-weight: 750;
+        line-height: 1.25;
+      }
+      .participant-mobile-card__school {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-top: 0.25rem;
+        color: var(--bs-secondary-color);
+        font-size: 0.78rem;
+      }
+      .participant-mobile-card__country {
+        display: inline-flex;
+        max-width: 42%;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.35rem 0.55rem;
+        border-radius: 999px;
+        background: rgba(var(--bs-primary-rgb), 0.09);
+        color: var(--bs-primary-text-emphasis);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+      .participant-mobile-card__country span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .participant-mobile-card__details {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        padding: 0 0.85rem 0.7rem;
+      }
+      .participant-mobile-card__detail {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.5rem 0.6rem;
+        border-radius: 0.75rem;
+        background: var(--bs-tertiary-bg);
+      }
+      .participant-mobile-card__detail-icon {
+        color: var(--bs-primary);
+        font-size: 1rem;
+      }
+      .participant-mobile-card__detail-copy {
+        min-width: 0;
+      }
+      .participant-mobile-card__detail-label {
+        display: block;
+        margin-bottom: 0.05rem;
+        color: var(--bs-secondary-color);
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        line-height: 1.15;
+        text-transform: uppercase;
+      }
+      .participant-mobile-card__detail-value {
+        display: block;
+        overflow: hidden;
+        color: var(--bs-emphasis-color);
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .participant-mobile-card__registrations {
+        padding: 0.65rem 0.85rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+        background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.035), transparent);
+      }
+      .participant-mobile-card__section-title {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        margin-bottom: 0.4rem;
+        color: var(--bs-secondary-color);
+        font-size: 0.7rem;
+        font-weight: 750;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
+      }
+      .participant-mobile-card__registration-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+      }
+      .participant-mobile-card__registration {
+        display: inline-flex;
+        max-width: 100%;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.4rem 0.6rem;
+        border-radius: 999px;
+        background: rgba(var(--bs-primary-rgb), 0.11);
+        color: var(--bs-primary-text-emphasis);
+        font-size: 0.75rem;
+        font-weight: 650;
+        line-height: 1.2;
+        overflow-wrap: anywhere;
+      }
+      .participant-mobile-card__registration--empty {
+        background: var(--bs-secondary-bg);
+        color: var(--bs-secondary-color);
+      }
+      .participant-mobile-card__actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.6rem;
+        padding: 0.65rem 0.85rem 0.8rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+      .participant-mobile-card__actions .btn {
+        min-height: 2.55rem;
+        border-radius: 0.7rem;
+        font-weight: 650;
+      }
+    }
     @media (max-width: 991.98px) {
       .registration-dashboard-panel-wide {
         grid-column: span 1;
@@ -1038,8 +1425,8 @@
             <div class="tab-pane fade" id="participants" role="tabpanel">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
-                  <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
-                    <div class="d-flex flex-wrap gap-2">
+                  <div class="participants-controls d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
+                    <div class="participants-primary-actions d-flex flex-wrap gap-2">
                       <button type="button" class="btn btn-primary" id="addParticipantBtn">
                         <i class="bi bi-person-plus me-2"></i>
                         <span data-i18n="registration_participants_add">Alta participantes</span>
@@ -1049,27 +1436,47 @@
                         <span data-i18n="registration_participants_import">Importar participantes</span>
                       </button>
                     </div>
-                    <form id="participantsFilters" class="row g-3 align-items-end flex-grow-1">
-                      <div class="col-12 col-md-6 col-lg-3">
-                        <label class="form-label" for="participantsFilterSchool" data-i18n="participants_filter_school">Escuela</label>
-                        <select id="participantsFilterSchool" class="form-select">
-                          <option value=""></option>
-                        </select>
-                      </div>
-                      <div class="col-12 col-md-6 col-lg-4">
+                    <form id="participantsFilters" class="participants-filters row g-3 align-items-end flex-grow-1">
+                      <div class="participants-name-filter col-12 col-md-6 col-lg-4">
                         <label class="form-label" for="participantsFilterName" data-i18n="participants_filter_name">Nombre</label>
-                        <input type="text" class="form-control" id="participantsFilterName" data-i18n-placeholder="participants_filter_name_placeholder" placeholder="Buscar...">
+                        <div class="participants-name-search position-relative">
+                          <i class="bi bi-search participants-mobile-search-icon" aria-hidden="true"></i>
+                          <input type="text" class="form-control" id="participantsFilterName" data-i18n-placeholder="participants_filter_name_placeholder" placeholder="Buscar...">
+                          <button type="button" class="participants-mobile-name-clear d-none" id="participantsMobileNameClear" aria-label="Limpiar búsqueda" title="Limpiar búsqueda" data-i18n-aria-label="clear_filters" data-i18n-title="clear_filters">
+                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                          </button>
+                        </div>
                       </div>
-                      <div class="col-12 col-md-6 col-lg-3">
-                        <button type="button" class="btn btn-outline-secondary w-100" id="participantsFilterClear" data-i18n="clear_filters">Limpiar</button>
+                      <div class="participants-mobile-filter-toggle">
+                        <button type="button" class="btn btn-outline-secondary" id="participantsMobileFilterToggle" aria-expanded="false" aria-controls="participantsMobileFilterPanel">
+                          <i class="bi bi-funnel me-1" aria-hidden="true"></i>
+                          <span data-i18n="filters">Filtros</span>
+                          <span class="badge text-bg-primary ms-1 d-none" id="participantsMobileFilterCount">0</span>
+                        </button>
                       </div>
-                      <div class="col-12 col-md-auto d-flex align-items-end">
-                        <button type="button" class="btn btn-outline-success btn-sm text-nowrap" id="participantsCopyTsvBtn">
-                          <i class="bi bi-file-earmark-excel me-2"></i>Export
+                      <div class="participants-filter-panel" id="participantsMobileFilterPanel">
+                        <div class="participants-school-filter col-12 col-md-6 col-lg-3">
+                          <label class="form-label" for="participantsFilterSchool" data-i18n="participants_filter_school">Escuela</label>
+                          <select id="participantsFilterSchool" class="form-select">
+                            <option value=""></option>
+                          </select>
+                        </div>
+                        <div class="participants-filter-clear col-12 col-md-6 col-lg-3">
+                          <button type="button" class="btn btn-outline-secondary w-100" id="participantsFilterClear" data-i18n="clear_filters">Limpiar filtros</button>
+                        </div>
+                        <div class="participants-filter-apply">
+                          <button type="button" class="btn btn-primary w-100" id="participantsMobileFilterApply" data-i18n="apply_filters">Aplicar</button>
+                        </div>
+                      </div>
+                      <div class="participants-export col-12 col-md-auto d-flex align-items-end">
+                        <button type="button" class="btn btn-outline-success btn-sm text-nowrap" id="participantsCopyTsvBtn" aria-label="Exportar" title="Exportar" data-i18n-aria-label="export" data-i18n-title="export">
+                          <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                          <span class="participants-export-label ms-2" data-i18n="export">Exportar</span>
                         </button>
                       </div>
                     </form>
-                    <div class="d-flex align-items-center gap-3 ms-lg-auto flex-wrap">
+                    <div id="participantsMobileActiveFilters" class="participants-mobile-active-filters"></div>
+                    <div class="participants-summary d-flex align-items-center gap-3 ms-lg-auto flex-wrap">
                       <div class="d-flex align-items-center gap-2" id="participantsFeeSummary">
                         <span class="text-muted" data-i18n="registration_categories_fee_cost">Cuota inscripcion</span>
                         <span class="badge bg-secondary-subtle text-secondary-emphasis" id="participantsFeeCost">0.00 EUR</span>
@@ -1081,7 +1488,7 @@
                     </div>
                   </div>
 
-                  <div class="table-responsive">
+                  <div class="table-responsive participants-desktop-table">
                     <table class="table table-hover align-middle">
                       <thead class="table-light">
                         <tr>
@@ -1109,6 +1516,8 @@
                       <tbody id="participantsTable"></tbody>
                     </table>
                   </div>
+
+                  <div id="participantsMobileCards" class="participants-mobile-list" aria-live="polite"></div>
 
                   <div id="participantsEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_participants_empty">
                     No hay participantes creados.
@@ -1671,7 +2080,7 @@
             </div>
           </form>
         </div>
-        <div class="modal-footer flex-column flex-md-row gap-2">
+        <div class="modal-footer flex-row flex-wrap gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-outline-primary" id="participantSaveAddBtn" data-i18n="registration_participants_save_add">Guardar y crear otro</button>
           <button type="button" class="btn btn-primary" id="participantSaveBtn" data-i18n="registration_participants_save_close">Guardar y cerrar</button>
@@ -1798,7 +2207,7 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer flex-column flex-md-row gap-2">
+        <div class="modal-footer flex-row flex-wrap gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-outline-primary" id="previewImportParticipantsBtn" data-i18n="registration_participants_import_preview">Previsualizar</button>
           <button type="button" class="btn btn-primary" id="confirmImportParticipantsBtn" data-i18n="registration_participants_import_confirm" disabled>Importar vÃ¡lidos</button>
@@ -2042,7 +2451,7 @@
             </div>
           </form>
         </div>
-        <div class="modal-footer flex-column flex-md-row gap-2">
+        <div class="modal-footer flex-row flex-wrap gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
           <button type="button" class="btn btn-primary" id="registrationSaveBtn" data-i18n="save_choreo">Guardar coreografia</button>
         </div>
@@ -2431,7 +2840,7 @@
             </div>
           </form>
         </div>
-        <div class="modal-footer flex-column flex-md-row gap-2">
+        <div class="modal-footer flex-row flex-wrap gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-primary" id="registrationMembersSaveBtn" data-i18n="registration_competitions_members_save">
             Guardar miembros

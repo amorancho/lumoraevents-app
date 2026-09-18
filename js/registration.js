@@ -2505,6 +2505,7 @@ function initSchoolTab() {
 
 function initParticipantsTab(role) {
   const tableBody = document.getElementById('participantsTable');
+  const mobileCards = document.getElementById('participantsMobileCards');
   const countEl = document.getElementById('participantsCount');
   const feeSummaryEl = document.getElementById('participantsFeeSummary');
   const feeCostEl = document.getElementById('participantsFeeCost');
@@ -2512,17 +2513,24 @@ function initParticipantsTab(role) {
   const addBtn = document.getElementById('addParticipantBtn');
   const importOpenBtn = document.getElementById('importParticipantsOpenBtn');
   const copyTsvBtn = document.getElementById('participantsCopyTsvBtn');
+  const controlsEl = document.querySelector('#participants .participants-controls');
+  const primaryActionsEl = document.querySelector('#participants .participants-primary-actions');
   const actionsHeader = document.querySelector('th[data-i18n="registration_participants_actions"]');
   const filtersForm = document.getElementById('participantsFilters');
   const filterSchool = document.getElementById('participantsFilterSchool');
   const filterName = document.getElementById('participantsFilterName');
   const filterClear = document.getElementById('participantsFilterClear');
+  const mobileFilterToggle = document.getElementById('participantsMobileFilterToggle');
+  const mobileFilterApply = document.getElementById('participantsMobileFilterApply');
+  const mobileFilterCount = document.getElementById('participantsMobileFilterCount');
+  const mobileNameClear = document.getElementById('participantsMobileNameClear');
+  const mobileActiveFilters = document.getElementById('participantsMobileActiveFilters');
   const modalEl = document.getElementById('participantModal');
   const importModalEl = document.getElementById('importParticipantsModal');
   const deleteModalEl = document.getElementById('deleteParticipantModal');
   const duplicateModalEl = document.getElementById('duplicateParticipantModal');
 
-  if (!tableBody || !modalEl || !deleteModalEl) {
+  if (!tableBody || !mobileCards || !modalEl || !deleteModalEl) {
     return;
   }
 
@@ -2535,6 +2543,7 @@ function initParticipantsTab(role) {
   const allowEdit = role === 'school';
   const showSchoolColumn = role === 'organizer';
   const shouldShowGender = Boolean(getEvent()?.showGender);
+  controlsEl?.classList.toggle('participants-controls--organizer', showSchoolColumn);
   const ageHeaderInfoBtn = document.getElementById('participantsAgeInfoBtn');
   const registrationsHeader = document.querySelector('th[data-i18n="registration_participants_registrations"]');
   const participantTable = tableBody.closest('table');
@@ -2545,6 +2554,7 @@ function initParticipantsTab(role) {
   if (!allowEdit) {
     if (addBtn) addBtn.classList.add('d-none');
     if (importOpenBtn) importOpenBtn.classList.add('d-none');
+    if (primaryActionsEl) primaryActionsEl.classList.add('d-none');
     if (actionsHeader) actionsHeader.classList.add('d-none');
   }
   if (allowEdit && !showSchoolColumn && actionsHeader && registrationsHeader) {
@@ -3165,14 +3175,60 @@ function initParticipantsTab(role) {
     participantModal.show();
   };
 
+  const setMobileFilterPanelOpen = (isOpen) => {
+    if (!filtersForm || !mobileFilterToggle) return;
+    filtersForm.classList.toggle('mobile-filters-open', isOpen);
+    mobileFilterToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    mobileFilterToggle.classList.toggle('btn-secondary', isOpen);
+    mobileFilterToggle.classList.toggle('btn-outline-secondary', !isOpen);
+  };
+
+  const updateMobileParticipantsControls = () => {
+    const hasNameFilter = Boolean(filterName?.value.trim());
+    mobileNameClear?.classList.toggle('d-none', !hasNameFilter);
+
+    if (!mobileActiveFilters || !showSchoolColumn) return;
+    mobileActiveFilters.innerHTML = '';
+
+    const schoolValue = filterSchool?.value || '';
+    const selectedSchool = filterSchool?.selectedOptions?.[0]?.textContent?.trim() || '';
+    const activeFilterCount = schoolValue ? 1 : 0;
+
+    if (mobileFilterCount) {
+      mobileFilterCount.textContent = `${activeFilterCount}`;
+      mobileFilterCount.classList.toggle('d-none', activeFilterCount === 0);
+    }
+
+    if (schoolValue) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'participants-mobile-filter-chip';
+      chip.dataset.filter = 'school';
+
+      const chipText = document.createElement('span');
+      chipText.textContent = `${t('participants_filter_school', 'Escuela')}: ${selectedSchool || '-'}`;
+      const chipClose = document.createElement('i');
+      chipClose.className = 'bi bi-x-lg';
+      chipClose.setAttribute('aria-hidden', 'true');
+
+      chip.appendChild(chipText);
+      chip.appendChild(chipClose);
+      mobileActiveFilters.appendChild(chip);
+    }
+
+    mobileActiveFilters.classList.toggle('has-filters', activeFilterCount > 0);
+  };
+
   const renderParticipants = () => {
     tableBody.innerHTML = '';
+    mobileCards.innerHTML = '';
     const participantsAgeReferenceDate = getRegistrationAgeReferenceDate();
 
     const participants = Array.isArray(registrationState.participants)
       ? registrationState.participants
       : [];
     const filtered = applyParticipantFilters(participants);
+    updateMobileParticipantsControls();
 
     if (countEl) {
       countEl.textContent = `${filtered.length}`;
@@ -3191,6 +3247,38 @@ function initParticipantsTab(role) {
     };
     const editTitle = t('edit', 'Edit');
     const deleteTitle = t('delete', 'Delete');
+    const birthLabel = t('registration_participants_birth', 'Fecha nacimiento');
+    const ageLabel = t('registration_participants_age', 'Edad');
+    const countryLabel = t('registration_participants_country', 'Pais');
+    const schoolLabel = t('registration_participants_school', 'Escuela');
+    const registrationsLabel = t('registration_participants_registrations', 'Inscripciones');
+
+    const createMobileDetail = (icon, label, value) => {
+      const detail = document.createElement('div');
+      detail.className = 'participant-mobile-card__detail';
+
+      const iconEl = document.createElement('i');
+      iconEl.className = `bi ${icon} participant-mobile-card__detail-icon`;
+      iconEl.setAttribute('aria-hidden', 'true');
+
+      const copy = document.createElement('div');
+      copy.className = 'participant-mobile-card__detail-copy';
+
+      const labelEl = document.createElement('span');
+      labelEl.className = 'participant-mobile-card__detail-label';
+      labelEl.textContent = label;
+
+      const valueEl = document.createElement('span');
+      valueEl.className = 'participant-mobile-card__detail-value';
+      valueEl.textContent = value || '-';
+      valueEl.title = value || '-';
+
+      copy.appendChild(labelEl);
+      copy.appendChild(valueEl);
+      detail.appendChild(iconEl);
+      detail.appendChild(copy);
+      return detail;
+    };
 
     filtered.forEach(participant => {
       const row = document.createElement('tr');
@@ -3278,11 +3366,139 @@ function initParticipantsTab(role) {
       }
 
       tableBody.appendChild(row);
+
+      const mobileCard = document.createElement('article');
+      mobileCard.className = 'participant-mobile-card';
+      mobileCard.dataset.id = participant.id;
+
+      const mobileHeader = document.createElement('div');
+      mobileHeader.className = 'participant-mobile-card__header';
+
+      const identity = document.createElement('div');
+      identity.className = 'participant-mobile-card__identity';
+      const participantName = document.createElement('h3');
+      participantName.className = 'participant-mobile-card__name';
+      participantName.textContent = participant.name || '-';
+      identity.appendChild(participantName);
+
+      if (showSchoolColumn) {
+        const school = document.createElement('div');
+        school.className = 'participant-mobile-card__school';
+        const schoolIcon = document.createElement('i');
+        schoolIcon.className = 'bi bi-building';
+        schoolIcon.setAttribute('aria-hidden', 'true');
+        const schoolText = document.createElement('span');
+        schoolText.textContent = participant.school_name || participant.school?.name || participant.school || '-';
+        schoolText.title = `${schoolLabel}: ${schoolText.textContent}`;
+        school.appendChild(schoolIcon);
+        school.appendChild(schoolText);
+        identity.appendChild(school);
+      }
+
+      const countryPill = document.createElement('span');
+      countryPill.className = 'participant-mobile-card__country';
+      countryPill.title = countryLabel;
+      const countryIcon = document.createElement('i');
+      countryIcon.className = 'bi bi-globe-americas';
+      countryIcon.setAttribute('aria-hidden', 'true');
+      const countryText = document.createElement('span');
+      countryText.textContent = getCountryName(participant.country, countryMap) || '-';
+      countryPill.appendChild(countryIcon);
+      countryPill.appendChild(countryText);
+
+      mobileHeader.appendChild(identity);
+      mobileHeader.appendChild(countryPill);
+      mobileCard.appendChild(mobileHeader);
+
+      const details = document.createElement('div');
+      details.className = 'participant-mobile-card__details';
+      details.appendChild(createMobileDetail('bi-calendar3', birthLabel, dobValue || '-'));
+      details.appendChild(createMobileDetail(
+        'bi-cake2',
+        ageLabel,
+        `${calculateAge(dobValue, participantsAgeReferenceDate)}`
+      ));
+      mobileCard.appendChild(details);
+
+      const mobileRegistrations = document.createElement('div');
+      mobileRegistrations.className = 'participant-mobile-card__registrations';
+      const mobileRegistrationsTitle = document.createElement('div');
+      mobileRegistrationsTitle.className = 'participant-mobile-card__section-title';
+      const trophyIcon = document.createElement('i');
+      trophyIcon.className = 'bi bi-trophy';
+      trophyIcon.setAttribute('aria-hidden', 'true');
+      const mobileRegistrationsLabel = document.createElement('span');
+      mobileRegistrationsLabel.textContent = registrationsLabel;
+      mobileRegistrationsTitle.appendChild(trophyIcon);
+      mobileRegistrationsTitle.appendChild(mobileRegistrationsLabel);
+
+      const mobileRegistrationList = document.createElement('div');
+      mobileRegistrationList.className = 'participant-mobile-card__registration-list';
+      const mobileRegistrationValues = getParticipantRegistrations(participant);
+      if (mobileRegistrationValues.length) {
+        mobileRegistrationValues.forEach((registrationLabel) => {
+          const registrationBadge = document.createElement('span');
+          registrationBadge.className = 'participant-mobile-card__registration';
+          const checkIcon = document.createElement('i');
+          checkIcon.className = 'bi bi-check-circle-fill';
+          checkIcon.setAttribute('aria-hidden', 'true');
+          const registrationText = document.createElement('span');
+          registrationText.textContent = registrationLabel;
+          registrationBadge.appendChild(checkIcon);
+          registrationBadge.appendChild(registrationText);
+          mobileRegistrationList.appendChild(registrationBadge);
+        });
+      } else {
+        const emptyBadge = document.createElement('span');
+        emptyBadge.className = 'participant-mobile-card__registration participant-mobile-card__registration--empty';
+        const emptyIcon = document.createElement('i');
+        emptyIcon.className = 'bi bi-dash-circle';
+        emptyIcon.setAttribute('aria-hidden', 'true');
+        const emptyText = document.createElement('span');
+        emptyText.textContent = t('registration_participants_no_registration', 'NO INSCRIPCION');
+        emptyBadge.appendChild(emptyIcon);
+        emptyBadge.appendChild(emptyText);
+        mobileRegistrationList.appendChild(emptyBadge);
+      }
+
+      mobileRegistrations.appendChild(mobileRegistrationsTitle);
+      mobileRegistrations.appendChild(mobileRegistrationList);
+      mobileCard.appendChild(mobileRegistrations);
+
+      if (allowEdit) {
+        const mobileActions = document.createElement('div');
+        mobileActions.className = 'participant-mobile-card__actions';
+
+        const mobileEditBtn = document.createElement('button');
+        mobileEditBtn.type = 'button';
+        mobileEditBtn.className = 'btn btn-outline-primary btn-edit-participant';
+        mobileEditBtn.dataset.id = participant.id;
+        mobileEditBtn.innerHTML = '<i class="bi bi-pencil me-2"></i>';
+        const mobileEditText = document.createElement('span');
+        mobileEditText.textContent = editTitle;
+        mobileEditBtn.appendChild(mobileEditText);
+
+        const mobileDeleteBtn = document.createElement('button');
+        mobileDeleteBtn.type = 'button';
+        mobileDeleteBtn.className = 'btn btn-outline-danger btn-delete-participant';
+        mobileDeleteBtn.dataset.id = participant.id;
+        mobileDeleteBtn.innerHTML = '<i class="bi bi-trash me-2"></i>';
+        const mobileDeleteText = document.createElement('span');
+        mobileDeleteText.textContent = deleteTitle;
+        mobileDeleteBtn.appendChild(mobileDeleteText);
+
+        mobileActions.appendChild(mobileEditBtn);
+        mobileActions.appendChild(mobileDeleteBtn);
+        mobileCard.appendChild(mobileActions);
+      }
+
+      mobileCards.appendChild(mobileCard);
     });
   };
 
   const showParticipantsError = (message) => {
     tableBody.innerHTML = '';
+    mobileCards.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
     cell.colSpan = 5 + (shouldShowGender ? 1 : 0) + (showSchoolColumn ? 1 : 0) + (allowEdit ? 1 : 0);
@@ -3290,6 +3506,11 @@ function initParticipantsTab(role) {
     cell.textContent = message;
     row.appendChild(cell);
     tableBody.appendChild(row);
+    const mobileError = document.createElement('div');
+    mobileError.className = 'alert alert-danger mb-0';
+    mobileError.setAttribute('role', 'alert');
+    mobileError.textContent = message;
+    mobileCards.appendChild(mobileError);
     if (countEl) countEl.textContent = '0';
     if (emptyEl) emptyEl.classList.add('d-none');
   };
@@ -3567,7 +3788,7 @@ function initParticipantsTab(role) {
     elements.saveAddBtn.addEventListener('click', () => saveParticipant(false));
   }
 
-  tableBody.addEventListener('click', (event) => {
+  const handleParticipantAction = (event) => {
     if (!allowEdit) return;
     const editBtn = event.target.closest('.btn-edit-participant');
     const deleteBtn = event.target.closest('.btn-delete-participant');
@@ -3591,7 +3812,10 @@ function initParticipantsTab(role) {
       }
       deleteModal.show();
     }
-  });
+  };
+
+  tableBody.addEventListener('click', handleParticipantAction);
+  mobileCards.addEventListener('click', handleParticipantAction);
 
   if (elements.confirmDeleteBtn && allowEdit) {
     elements.confirmDeleteBtn.addEventListener('click', deleteParticipant);
@@ -3633,6 +3857,36 @@ function initParticipantsTab(role) {
       event.preventDefault();
     });
   }
+  if (mobileFilterToggle) {
+    mobileFilterToggle.addEventListener('click', () => {
+      const isOpen = filtersForm?.classList.contains('mobile-filters-open');
+      setMobileFilterPanelOpen(!isOpen);
+    });
+  }
+  if (mobileFilterApply) {
+    mobileFilterApply.addEventListener('click', () => {
+      setMobileFilterPanelOpen(false);
+    });
+  }
+  if (mobileNameClear) {
+    mobileNameClear.addEventListener('click', () => {
+      if (filterName) {
+        filterName.value = '';
+        filterName.focus();
+      }
+      renderParticipants();
+    });
+  }
+  if (mobileActiveFilters) {
+    mobileActiveFilters.addEventListener('click', (event) => {
+      const chip = event.target.closest('.participants-mobile-filter-chip');
+      if (!chip) return;
+      if (chip.dataset.filter === 'school' && filterSchool) {
+        filterSchool.value = '';
+      }
+      renderParticipants();
+    });
+  }
   if (filterName) {
     filterName.addEventListener('input', renderParticipants);
   }
@@ -3643,6 +3897,7 @@ function initParticipantsTab(role) {
     filterClear.addEventListener('click', () => {
       if (filterName) filterName.value = '';
       if (filterSchool) filterSchool.value = '';
+      setMobileFilterPanelOpen(false);
       renderParticipants();
     });
   }
