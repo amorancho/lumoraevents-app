@@ -92,13 +92,15 @@ function initJudgeManagement() {
     if (button) {
       
       const editForm = document.getElementById('editForm');
-      editForm.dataset.id = button.closest('tr').dataset.id;
+      const judgeItem = button.closest('tr, article');
+      if (!judgeItem) return;
+      editForm.dataset.id = judgeItem.dataset.id;
       editForm.dataset.action = 'edit';
 
-      const tr = button.closest('tr');
-      const id = tr.dataset.id;
-      const master = eventHasMasters() && tr.dataset.master === '1';
+      const id = judgeItem.dataset.id;
+      const master = eventHasMasters() && judgeItem.dataset.master === '1';
       const judge = judges.find(d => d.id == id);
+      if (!judge) return;
 
       document.getElementById('judgeName').value = judge.name;
       document.getElementById('judgeEmail').value = judge.email;
@@ -118,9 +120,11 @@ function initJudgeManagement() {
 
     } else if (event.target.closest('.btn-delete-judge')) {
       const button = event.target.closest('.btn-delete-judge');
-      const tr = button.closest('tr');
-      const id = tr.dataset.id;
+      const judgeItem = button.closest('tr, article');
+      if (!judgeItem) return;
+      const id = judgeItem.dataset.id;
       const judge = judges.find(d => d.id == id);
+      if (!judge) return;
 
       const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
       document.getElementById('deleteModalMessage').innerHTML = `${t('delete_question')} <strong>${judge.name}</strong>?`;
@@ -361,9 +365,102 @@ async function loadJudges() {
   }
 }
 
+function createJudgeMobileMetric(iconClass, label, value) {
+  const metric = document.createElement('div');
+  metric.className = 'judge-mobile-card__metric';
+
+  const icon = document.createElement('i');
+  icon.className = `bi ${iconClass}`;
+  icon.setAttribute('aria-hidden', 'true');
+
+  const copy = document.createElement('div');
+  copy.className = 'judge-mobile-card__metric-copy';
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'judge-mobile-card__metric-label';
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement('span');
+  valueEl.className = 'judge-mobile-card__metric-value';
+  valueEl.textContent = value || '-';
+
+  copy.append(labelEl, valueEl);
+  metric.append(icon, copy);
+  return metric;
+}
+
+function createJudgeMobileAction({ buttonClass, iconClass, label, variant, disabled }) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `btn btn-outline-${variant} ${buttonClass} judge-mobile-card__action`;
+  button.disabled = disabled;
+  button.title = label;
+  button.setAttribute('aria-label', label);
+
+  const icon = document.createElement('i');
+  icon.className = `bi ${iconClass} me-1`;
+  icon.setAttribute('aria-hidden', 'true');
+  button.append(icon, document.createTextNode(label));
+  return button;
+}
+
+function createJudgeMobileCard(judge, { showMaster, welcome, disabled }) {
+  const card = document.createElement('article');
+  card.className = 'judge-mobile-card';
+  card.dataset.id = judge.id;
+  card.dataset.master = judge.ismaster;
+
+  const header = document.createElement('div');
+  header.className = 'judge-mobile-card__header';
+
+  const identity = document.createElement('div');
+  identity.className = 'judge-mobile-card__identity';
+
+  const name = document.createElement('h3');
+  name.className = 'judge-mobile-card__name';
+  name.textContent = judge.name || '-';
+
+  identity.appendChild(name);
+
+  const welcomeBadge = document.createElement('span');
+  welcomeBadge.className = `badge ${welcome.badgeClass} judge-mobile-card__welcome`;
+  welcomeBadge.textContent = welcome.badgeLabel;
+  if (welcome.badgeTooltip) {
+    welcomeBadge.setAttribute('data-bs-toggle', 'tooltip');
+    welcomeBadge.setAttribute('data-bs-placement', 'top');
+    welcomeBadge.title = welcome.badgeTooltip;
+  }
+
+  header.append(identity, welcomeBadge);
+
+  const metrics = document.createElement('div');
+  metrics.className = 'judge-mobile-card__metrics';
+  metrics.appendChild(createJudgeMobileMetric('bi-envelope', t('col_email', 'Email'), judge.email || '-'));
+  metrics.appendChild(createJudgeMobileMetric('bi-person-badge', t('col_username', 'Username'), judge.username || '-'));
+  if (showMaster) {
+    metrics.appendChild(createJudgeMobileMetric(
+      Number(judge.ismaster) === 1 ? 'bi-star-fill' : 'bi-star',
+      t('col_master', 'Master'),
+      Number(judge.ismaster) === 1 ? t('yes', 'Yes') : t('no', 'No')
+    ));
+  }
+
+  const footer = document.createElement('div');
+  footer.className = 'judge-mobile-card__footer';
+  footer.append(
+    createJudgeMobileAction({ buttonClass: 'btn-edit-judge', iconClass: 'bi-pencil', label: t('edit', 'Edit'), variant: 'primary', disabled }),
+    createJudgeMobileAction({ buttonClass: 'btn-delete-judge', iconClass: 'bi-trash', label: t('delete', 'Delete'), variant: 'danger', disabled })
+  );
+
+  card.append(header, metrics, footer);
+  return card;
+}
+
 function renderJudges() {
   const judgesTable = document.getElementById('judgesTable');
+  const mobileCards = document.getElementById('judgesMobileCards');
   judgesTable.innerHTML = '';
+  if (mobileCards) mobileCards.innerHTML = '';
   const showMaster = eventHasMasters();
 
   judges.forEach(judge => {
@@ -372,10 +469,8 @@ function renderJudges() {
     row.dataset.id = judge.id;
     row.dataset.master = judge.ismaster;
 
-    let btnDisabled = '';
-    if (isFinishedEventReadOnly()) {
-      btnDisabled = 'disabled';
-    }
+    const isReadOnly = isFinishedEventReadOnly();
+    const btnDisabled = isReadOnly ? 'disabled' : '';
 
     const { badgeClass, badgeLabel, badgeTooltip } = getWelcomeEmailBadge(judge);
     const badgeTooltipAttr = badgeTooltip ? `data-bs-toggle="tooltip" data-bs-placement="top" title="${badgeTooltip}"` : '';
@@ -408,6 +503,14 @@ function renderJudges() {
       </td>
     `;
     judgesTable.appendChild(row);
+
+    if (mobileCards) {
+      mobileCards.appendChild(createJudgeMobileCard(judge, {
+        showMaster,
+        welcome: { badgeClass, badgeLabel, badgeTooltip },
+        disabled: isReadOnly
+      }));
+    }
   });
 
   // actualizar contador
@@ -422,7 +525,7 @@ function renderJudges() {
     document.getElementById('emptyState').classList.add('d-none');
   }
 
-  document.querySelectorAll('#judgesTable [data-bs-toggle="tooltip"]').forEach(el => {
+  document.querySelectorAll('#judgesTable [data-bs-toggle="tooltip"], #judgesMobileCards [data-bs-toggle="tooltip"]').forEach(el => {
     new bootstrap.Tooltip(el);
   });
 }

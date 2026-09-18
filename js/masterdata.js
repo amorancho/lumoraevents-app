@@ -347,6 +347,7 @@ function bindSchoolsEvents() {
     const resendStatsBtn = document.getElementById('resendSchoolStatsBtn');
     const saveBtn = document.getElementById('saveSchoolBtn');
     const tableBody = document.getElementById('clubsTable');
+    const mobileCards = document.getElementById('clubsMobileCards');
     const modalEl = document.getElementById('schoolModal');
     const form = document.getElementById('schoolForm');
 
@@ -360,10 +361,10 @@ function bindSchoolsEvents() {
         openSchoolModal({ modal: schoolModalInstance, action: 'create' });
     });
 
-    tableBody.addEventListener('click', async (event) => {
+    const handleSchoolAction = async (event) => {
         const editBtn = event.target.closest('.btn-edit-school');
         if (editBtn) {
-            const id = editBtn.closest('tr')?.dataset?.id;
+            const id = editBtn.closest('tr, article')?.dataset?.id;
             const school = clubsList.find((item) => String(item.id) === String(id));
             if (!school) return;
             openSchoolModal({ modal: schoolModalInstance, action: 'edit', school });
@@ -373,7 +374,7 @@ function bindSchoolsEvents() {
         const deleteBtn = event.target.closest('.btn-delete-school');
         if (!deleteBtn) return;
 
-        const id = deleteBtn.closest('tr')?.dataset?.id;
+        const id = deleteBtn.closest('tr, article')?.dataset?.id;
         const school = clubsList.find((item) => String(item.id) === String(id));
         if (!school) return;
 
@@ -381,6 +382,10 @@ function bindSchoolsEvents() {
         if (!confirmed) return;
 
         await deleteSchool(id);
+    };
+
+    [tableBody, mobileCards].filter(Boolean).forEach((container) => {
+        container.addEventListener('click', handleSchoolAction);
     });
 
     saveBtn.addEventListener('click', async () => {
@@ -407,6 +412,7 @@ function bindPenaltiesEvents() {
     const createBtn = document.getElementById('createNewPenaltyBtn');
     const saveBtn = document.getElementById('savePenaltyBtn');
     const tableBody = document.getElementById('penaltiesTable');
+    const mobileCards = document.getElementById('penaltiesMobileCards');
     const modalEl = document.getElementById('penaltyModal');
     const form = document.getElementById('penaltyForm');
 
@@ -420,10 +426,10 @@ function bindPenaltiesEvents() {
         openPenaltyModal({ modal: penaltyModal, action: 'create' });
     });
 
-    tableBody.addEventListener('click', async (event) => {
+    const handlePenaltyAction = async (event) => {
         const editBtn = event.target.closest('.btn-edit-penalty');
         if (editBtn) {
-            const id = editBtn.closest('tr')?.dataset?.id;
+            const id = editBtn.closest('tr, article')?.dataset?.id;
             const penalty = penaltiesList.find((item) => String(item.id) === String(id));
             if (!penalty) return;
             openPenaltyModal({ modal: penaltyModal, action: 'edit', penalty });
@@ -433,7 +439,7 @@ function bindPenaltiesEvents() {
         const deleteBtn = event.target.closest('.btn-delete-penalty');
         if (!deleteBtn) return;
 
-        const id = deleteBtn.closest('tr')?.dataset?.id;
+        const id = deleteBtn.closest('tr, article')?.dataset?.id;
         const penalty = penaltiesList.find((item) => String(item.id) === String(id));
         if (!penalty) return;
 
@@ -441,6 +447,10 @@ function bindPenaltiesEvents() {
         if (!confirmed) return;
 
         await deletePenalty(id);
+    };
+
+    [tableBody, mobileCards].filter(Boolean).forEach((container) => {
+        container.addEventListener('click', handlePenaltyAction);
     });
 
     saveBtn.addEventListener('click', async () => {
@@ -623,10 +633,110 @@ async function loadPenaltiesTable() {
     }
 }
 
+function createMasterdataMobileMetric(iconClass, label, value) {
+    const metric = document.createElement('div');
+    metric.className = 'masterdata-mobile-card__metric';
+
+    const icon = document.createElement('i');
+    icon.className = `bi ${iconClass}`;
+    icon.setAttribute('aria-hidden', 'true');
+
+    const copy = document.createElement('div');
+    copy.className = 'masterdata-mobile-card__metric-copy';
+
+    const labelEl = document.createElement('span');
+    labelEl.className = 'masterdata-mobile-card__metric-label';
+    labelEl.textContent = label;
+
+    const valueEl = document.createElement('span');
+    valueEl.className = 'masterdata-mobile-card__metric-value';
+    valueEl.textContent = value ?? '-';
+
+    copy.append(labelEl, valueEl);
+    metric.append(icon, copy);
+    return metric;
+}
+
+function createMasterdataMobileAction({ buttonClass, iconClass, label, variant, disabled }) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `btn btn-outline-${variant} ${buttonClass} masterdata-mobile-card__action`;
+    button.disabled = disabled;
+    button.title = label;
+    button.setAttribute('aria-label', label);
+
+    const icon = document.createElement('i');
+    icon.className = `bi ${iconClass} me-1`;
+    icon.setAttribute('aria-hidden', 'true');
+
+    button.append(icon, document.createTextNode(label));
+    return button;
+}
+
+function createMasterdataMobileCard({ id, name, subtitle, status, metrics, actions }) {
+    const card = document.createElement('article');
+    card.className = 'masterdata-mobile-card';
+    card.dataset.id = id;
+
+    const header = document.createElement('div');
+    header.className = 'masterdata-mobile-card__header';
+
+    const identity = document.createElement('div');
+    identity.className = 'masterdata-mobile-card__identity';
+
+    const nameEl = document.createElement('h3');
+    nameEl.className = 'masterdata-mobile-card__name';
+    nameEl.textContent = name || '-';
+    identity.appendChild(nameEl);
+
+    if (subtitle) {
+        const subtitleEl = document.createElement('div');
+        subtitleEl.className = `masterdata-mobile-card__subtitle${subtitle.className ? ` ${subtitle.className}` : ''}`;
+        const icon = document.createElement('i');
+        icon.className = `bi ${subtitle.icon}`;
+        icon.setAttribute('aria-hidden', 'true');
+        subtitleEl.append(icon, document.createTextNode(subtitle.text));
+        if (subtitle.badge) {
+            const badge = document.createElement('span');
+            badge.className = `badge ${subtitle.badge.className}`;
+            badge.textContent = subtitle.badge.label;
+            subtitleEl.appendChild(badge);
+        }
+        identity.appendChild(subtitleEl);
+    }
+
+    header.appendChild(identity);
+
+    if (status) {
+        const statusEl = document.createElement('span');
+        statusEl.className = `badge ${status.className} masterdata-mobile-card__status`;
+        statusEl.textContent = status.label;
+        if (status.tooltip) {
+            statusEl.setAttribute('data-bs-toggle', 'tooltip');
+            statusEl.setAttribute('data-bs-placement', 'top');
+            statusEl.title = status.tooltip;
+        }
+        header.appendChild(statusEl);
+    }
+
+    const metricsEl = document.createElement('div');
+    metricsEl.className = 'masterdata-mobile-card__metrics';
+    metrics.forEach((metric) => metricsEl.appendChild(createMasterdataMobileMetric(metric.icon, metric.label, metric.value)));
+
+    const footer = document.createElement('div');
+    footer.className = 'masterdata-mobile-card__footer';
+    actions.forEach((action) => footer.appendChild(createMasterdataMobileAction(action)));
+
+    card.append(header, metricsEl, footer);
+    return card;
+}
+
 function renderPenaltiesTable() {
     const tableBody = document.getElementById('penaltiesTable');
     if (!tableBody) return;
     tableBody.innerHTML = '';
+    const mobileCards = document.getElementById('penaltiesMobileCards');
+    if (mobileCards) mobileCards.innerHTML = '';
 
     penaltiesList.forEach((penalty) => {
         const row = document.createElement('tr');
@@ -680,6 +790,30 @@ function renderPenaltiesTable() {
         row.appendChild(actionsCell);
 
         tableBody.appendChild(row);
+
+        if (mobileCards) {
+            mobileCards.appendChild(createMasterdataMobileCard({
+                id: penalty.id,
+                name: penalty?.name || '-',
+                subtitle: {
+                    icon: enabledForJudges ? 'bi-person-check' : 'bi-people',
+                    text: t('penalty_for_judges', 'For judges'),
+                    className: 'masterdata-mobile-card__subtitle--highlight',
+                    badge: {
+                        className: enabledForJudges ? 'bg-success' : 'bg-secondary',
+                        label: enabledForJudges ? t('yes', 'Yes') : t('no', 'No')
+                    }
+                },
+                metrics: [
+                    { icon: 'bi-dash-circle', label: t('penalty_min', 'Min penalty'), value: penalty?.min_penalty ?? '-' },
+                    { icon: 'bi-plus-circle', label: t('penalty_max', 'Max penalty'), value: penalty?.max_penalty ?? '-' }
+                ],
+                actions: [
+                    { buttonClass: 'btn-edit-penalty', iconClass: 'bi-pencil', label: t('edit', 'Edit'), variant: 'primary', disabled: isFinished },
+                    { buttonClass: 'btn-delete-penalty', iconClass: 'bi-trash', label: t('delete', 'Delete'), variant: 'danger', disabled: isFinished }
+                ]
+            }));
+        }
     });
 
     const countEl = document.getElementById('count-penalties');
@@ -858,6 +992,8 @@ function renderSchoolsTable() {
     const tableBody = document.getElementById('clubsTable');
     if (!tableBody) return;
     tableBody.innerHTML = '';
+    const mobileCards = document.getElementById('clubsMobileCards');
+    if (mobileCards) mobileCards.innerHTML = '';
 
     clubsList.forEach((school) => {
         const row = document.createElement('tr');
@@ -928,6 +1064,30 @@ function renderSchoolsTable() {
         row.appendChild(actionsCell);
 
         tableBody.appendChild(row);
+
+        if (mobileCards) {
+            mobileCards.appendChild(createMasterdataMobileCard({
+                id: school.id,
+                name: schoolName,
+                subtitle: {
+                    icon: 'bi-geo-alt',
+                    text: schoolLocation
+                },
+                status: {
+                    className: badgeClass,
+                    label: badgeLabel,
+                    tooltip: badgeTooltip
+                },
+                metrics: [
+                    { icon: 'bi-envelope', label: t('field_email', 'Email'), value: schoolEmail },
+                    { icon: 'bi-people', label: t('schools_num_participants', 'Participants'), value: schoolParticipants }
+                ],
+                actions: [
+                    { buttonClass: 'btn-edit-school', iconClass: 'bi-pencil', label: t('edit', 'Edit'), variant: 'primary', disabled: isFinished },
+                    { buttonClass: 'btn-delete-school', iconClass: 'bi-trash', label: t('delete', 'Delete'), variant: 'danger', disabled: isFinished }
+                ]
+            }));
+        }
     });
 
     const countEl = document.getElementById('count-clubs');
@@ -940,7 +1100,7 @@ function renderSchoolsTable() {
         emptyState.classList.toggle('d-none', clubsList.length > 0);
     }
 
-    document.querySelectorAll('#clubsTable [data-bs-toggle="tooltip"]').forEach(el => {
+    document.querySelectorAll('#clubsTable [data-bs-toggle="tooltip"], #clubsMobileCards [data-bs-toggle="tooltip"]').forEach(el => {
         new bootstrap.Tooltip(el);
     });
 }

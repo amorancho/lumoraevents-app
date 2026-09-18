@@ -560,6 +560,10 @@ document.addEventListener('DOMContentLoaded', async function () {
   const importManualStyleInput = document.getElementById('importManualStyleInput');
   const openBulkDeleteDancersBtn = document.getElementById('openBulkDeleteDancersBtn');
   const exportDancersBtn = document.getElementById('exportDancersBtn');
+  const mobileFilterToggle = document.getElementById('dancersMobileFilterToggle');
+  const mobileFilterApply = document.getElementById('dancersMobileFilterApply');
+  const mobileFilterClear = document.getElementById('dancersMobileFilterClear');
+  const mobileActiveFilters = document.getElementById('dancersMobileActiveFilters');
   const bulkDeleteModalElement = document.getElementById('bulkDeleteDancersModal');
   const bulkDeleteDancersDeleteBtn = document.getElementById('bulkDeleteDancersDeleteBtn');
   const bulkDeleteDancersCloseTopBtn = document.getElementById('bulkDeleteDancersCloseTopBtn');
@@ -622,6 +626,29 @@ document.addEventListener('DOMContentLoaded', async function () {
     applyFilter();
   });
 
+  mobileFilterToggle?.addEventListener('click', () => {
+    const isOpen = document.querySelector('.dancers-card-header')?.classList.contains('mobile-filters-open');
+    setDancersMobileFilterPanelOpen(!isOpen);
+  });
+  mobileFilterApply?.addEventListener('click', () => {
+    setDancersMobileFilterPanelOpen(false);
+  });
+  mobileFilterClear?.addEventListener('click', () => {
+    filterCategory.value = '';
+    if (filterClub) filterClub.value = '';
+    filterStyle.value = '';
+    applyFilter();
+  });
+  mobileActiveFilters?.addEventListener('click', (event) => {
+    const chip = event.target.closest('.dancers-mobile-filter-chip');
+    if (!chip) return;
+    const selectByFilter = { club: filterClub, category: filterCategory, style: filterStyle };
+    const select = selectByFilter[chip.dataset.filter];
+    if (!select) return;
+    select.value = '';
+    applyFilter();
+  });
+
   editModalElement.addEventListener('shown.bs.modal', () => {
     if (document.getElementById('editForm').dataset.action === 'create') {
       document.getElementById('dancerName').focus();
@@ -659,11 +686,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     if (button) {
 
       const editForm = document.getElementById('editForm');
-      editForm.dataset.id = button.closest('tr').dataset.id;
+      const item = button.closest('tr, article');
+      if (!item) return;
+      editForm.dataset.id = item.dataset.id;
       editForm.dataset.action = 'edit';
 
-      const tr = button.closest('tr');
-      const id = tr.dataset.id;
+      const id = item.dataset.id;
 
       const dancer = dancers.find(d => d.id == id);
 
@@ -691,8 +719,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     } else if (event.target.closest('.btn-delete-dancer')) {
       const button = event.target.closest('.btn-delete-dancer');
-      const tr = button.closest('tr');
-      const id = tr.dataset.id;
+      const item = button.closest('tr, article');
+      if (!item) return;
+      const id = item.dataset.id;
       const dancer = dancers.find(d => d.id == id);
       if (!dancer) return;
 
@@ -870,7 +899,9 @@ function loadDancers() {
   const showClubs = shouldShowDancerClubs();
   const showMasters = shouldShowDancerMasters();
   const dancersTable = document.getElementById('dancersTable');
+  const dancersMobileCards = document.getElementById('dancersMobileCards');
   dancersTable.innerHTML = ''; // Clear existing rows
+  if (dancersMobileCards) dancersMobileCards.innerHTML = '';
   dancers.forEach(dancer => {
 
     let btnDisabled = '';
@@ -920,6 +951,47 @@ function loadDancers() {
       </td>
     `;
     dancersTable.appendChild(row);
+
+    if (dancersMobileCards) {
+      const card = document.createElement('article');
+      card.className = 'dancer-mobile-card';
+      card.dataset.id = row.dataset.id;
+      card.dataset.club_id = row.dataset.club_id;
+      card.dataset.style_ids = row.dataset.style_ids;
+      const mobileDetails = [
+        showClubs && clubName ? `<div class="dancer-mobile-card__detail"><i class="bi bi-building" aria-hidden="true"></i><span>${clubName}</span></div>` : '',
+        showMasters && dancer.master_name ? `<div class="dancer-mobile-card__detail"><i class="bi bi-people" aria-hidden="true"></i><span>${dancer.master_name}</span></div>` : ''
+      ].filter(Boolean).join('');
+      card.innerHTML = `
+        <div class="dancer-mobile-card__body">
+          <div class="dancer-mobile-card__header">
+            <div class="dancer-mobile-card__name">${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'vertical-align: middle;' })}${dancer.name}</div>
+            ${showFlags && dancer.nationality ? `<span class="badge text-bg-light border">${dancer.nationality}</span>` : ''}
+          </div>
+          <div class="dancer-mobile-card__classification">
+            <div class="dancer-mobile-card__classification-item">
+              <i class="bi bi-tag" aria-hidden="true"></i>
+              <div class="dancer-mobile-card__classification-copy">
+                <span class="dancer-mobile-card__classification-label">${t('col_category', 'Category')}</span>
+                <strong class="dancer-mobile-card__classification-value">${dancer.category_name || ''}</strong>
+              </div>
+            </div>
+            <div class="dancer-mobile-card__classification-item dancer-mobile-card__classification-item--styles">
+              <i class="bi bi-stars" aria-hidden="true"></i>
+              <div class="dancer-mobile-card__classification-copy">
+                <span class="dancer-mobile-card__classification-label">${t('col_styles', 'Styles')}</span>
+                <div class="dancer-mobile-card__styles">${stylesSpans}</div>
+              </div>
+            </div>
+          </div>
+          ${mobileDetails ? `<div class="dancer-mobile-card__details">${mobileDetails}</div>` : ''}
+        </div>
+        <div class="dancer-mobile-card__actions">
+          <button type="button" class="btn btn-outline-primary dancer-mobile-card__action btn-edit-dancer" title="${t('edit_dancer', 'Edit Dancer')}" ${btnDisabled}><i class="bi bi-pencil" aria-hidden="true"></i><span>${t('edit_dancer', 'Edit Dancer')}</span></button>
+          <button type="button" class="btn btn-outline-danger dancer-mobile-card__action btn-delete-dancer" title="${t('delete', 'Delete')}" ${btnDisabled}><i class="bi bi-trash" aria-hidden="true"></i><span>${t('delete', 'Delete')}</span></button>
+        </div>`;
+      dancersMobileCards.appendChild(card);
+    }
   });
 
   applyFilter();
@@ -1012,6 +1084,45 @@ async function loadStyles() {
     availableStyles = [];
     console.error('Failed to load styles:', err);
   }
+}
+
+function setDancersMobileFilterPanelOpen(isOpen) {
+  const header = document.querySelector('.dancers-card-header');
+  const toggle = document.getElementById('dancersMobileFilterToggle');
+  header?.classList.toggle('mobile-filters-open', isOpen);
+  toggle?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  toggle?.classList.toggle('btn-secondary', isOpen);
+  toggle?.classList.toggle('btn-outline-secondary', !isOpen);
+}
+
+function updateDancersMobileFilters() {
+  const activeFilters = document.getElementById('dancersMobileActiveFilters');
+  const count = document.getElementById('dancersMobileFilterCount');
+  if (!activeFilters) return;
+
+  activeFilters.innerHTML = '';
+  const filterDefinitions = [
+    { key: 'club', select: shouldShowDancerClubs() ? document.getElementById('clubFilter') : null, label: t('col_club', 'Club / School') },
+    { key: 'category', select: document.getElementById('categoryFilter'), label: t('col_category', 'Category') },
+    { key: 'style', select: document.getElementById('styleFilter'), label: t('col_styles', 'Styles') }
+  ];
+  const selectedFilters = filterDefinitions.filter(({ select }) => Boolean(select?.value));
+
+  if (count) {
+    count.textContent = `${selectedFilters.length}`;
+    count.classList.toggle('d-none', selectedFilters.length === 0);
+  }
+
+  selectedFilters.forEach(({ key, select, label }) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'dancers-mobile-filter-chip';
+    chip.dataset.filter = key;
+    chip.innerHTML = `<span>${label}: ${select.selectedOptions?.[0]?.textContent?.trim() || '-'}</span><i class="bi bi-x-lg" aria-hidden="true"></i>`;
+    activeFilters.appendChild(chip);
+  });
+
+  activeFilters.classList.toggle('has-filters', selectedFilters.length > 0);
 }
 
 async function loadMasters() {
@@ -1138,9 +1249,13 @@ function applyFilter() {
   rows.forEach((row) => {
     row.classList.toggle('d-none', !visibleIds.has(String(row.dataset.id)));
   });
+  document.querySelectorAll('#dancersMobileCards article').forEach((card) => {
+    card.classList.toggle('d-none', !visibleIds.has(String(card.dataset.id)));
+  });
 
   // Mostrar o no el empty state
   updateDancersCounter(rows.length, visibleIds.size);
+  updateDancersMobileFilters();
   updateBulkDeleteButtonState(visibleIds.size);
   document.getElementById('emptyState').classList.toggle('d-none', visibleIds.size > 0);
 }

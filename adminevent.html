@@ -35,6 +35,27 @@
       opacity: 0.65;
       pointer-events: none;
     }
+
+    @media (max-width: 575.98px) {
+      .event-card-header {
+        align-items: stretch !important;
+      }
+
+      .event-header-actions {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        width: 100%;
+        margin-left: 0 !important;
+      }
+
+      .event-header-actions #toggleEventStatusBtn {
+        grid-column: 1 / -1;
+      }
+
+      .event-header-actions .btn {
+        min-width: 0;
+      }
+    }
   </style>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
@@ -55,11 +76,11 @@
         <div class="row g-4" id="dataEvent">
       <div class="col-12">
         <div class="card shadow-sm border-0">
-          <div class="card-header bg-primary text-white fw-semibold d-flex flex-wrap justify-content-between align-items-center">
+          <div class="card-header event-card-header bg-primary text-white fw-semibold d-flex flex-wrap justify-content-between align-items-center">
             <div class="me-2" data-i18n="card_title">
               <i class="bi bi-gear me-2"></i>Event Information
             </div>
-            <div class="d-flex align-items-center gap-2 ms-auto" style="min-width: 0;">
+            <div class="event-header-actions d-flex align-items-center gap-2 ms-auto" style="min-width: 0;">
               <button type="button" class="btn btn-warning btn-sm fw-semibold text-nowrap" id="toggleEventStatusBtn" data-i18n="event_status_finish_btn">
                 Marcar evento como finalizado
               </button>
@@ -99,22 +120,22 @@
               </div>
 
               <!-- Fechas -->
-              <div class="col-md-4">
+              <div class="col-6 col-md-4">
                 <label for="start" class="form-label" data-i18n="prop_start">Start Date</label>
                 <input type="date" class="form-control" id="start">
               </div>
-              <div class="col-md-4">
+              <div class="col-6 col-md-4">
                 <label for="end" class="form-label" data-i18n="prop_end">End Date</label>
                 <input type="date" class="form-control" id="end">
               </div>
-              <div class="col-md-2">
+              <div class="col-6 col-md-2">
                 <label for="status" class="form-label" data-i18n="prop_status">Status</label>
                 <select id="status" class="form-select" disabled>
                   <option value="OPE" data-i18n="status_open">Open</option>
                   <option value="FIN" data-i18n="status_finished">Finished</option>
                 </select>
               </div>
-              <div class="col-md-2">
+              <div class="col-6 col-md-2">
                 <label for="language" class="form-label" data-i18n="prop_lang">Language</label>
                 <select id="language" class="form-select">
                   <option value="en">EN</option>
@@ -132,19 +153,19 @@
               </div>
               <div class="card-body">
                 <div class="row g-3">
-                  <div class="col-md-3">
+                  <div class="col-6 col-md-3">
                       <label for="registration_start" class="form-label" data-i18n="registration_start_label">Inicio inscripciones</label>
                       <input type="date" class="form-control" id="registration_start">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-6 col-md-3">
                       <label for="registration_end" class="form-label" data-i18n="registration_end_label">Fin inscripciones</label>
                       <input type="date" class="form-control" id="registration_end">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-6 col-md-3">
                       <label for="music_extra_time" class="form-label" data-i18n="music_extra_time_label">Tiempo extra música (seg.)</label>
                       <input type="number" class="form-control" id="music_extra_time" min="0">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-6 col-md-3">
                       <label for="registration_fee_cost" class="form-label" data-i18n="registration_fee_cost_label">Cuota inscripcion</label>
                       <div class="input-group">
                         <input type="number" class="form-control" id="registration_fee_cost" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
