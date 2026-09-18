@@ -131,7 +131,7 @@ async function loadPublicVoteSession({ initial = false, forceRender = false } = 
   if (initial && !publicVoteState.data) setPublicVoteLoading(true);
 
   try {
-    const { payload } = await publicVoteRequest(`/public/audience-votes/${encodeURIComponent(publicVoteState.code)}`);
+    const { payload } = await publicVoteRequest(`/api/public/audience-votes/${encodeURIComponent(publicVoteState.code)}`);
     if (publicVoteState.destroyed) return;
 
     if (!publicVoteState.eventPermissionChecked) {
@@ -175,17 +175,8 @@ async function loadPublicVoteSession({ initial = false, forceRender = false } = 
 }
 
 async function initializePublicVoteEventPermission(payload) {
-  let sourceEventId = Number(payload?.event?.id || payload?.session?.event_id || 0);
+  const sourceEventId = Number(payload?.event?.id || 0);
   const sourceEventCode = String(payload?.event?.code || getPublicVoteSourceEventCode() || '').trim();
-
-  const competitionId = payload?.competitions?.[0]?.id;
-  if (!sourceEventId && competitionId) {
-    const competitionResponse = await fetch(`${API_BASE_URL}/api/competitions/${encodeURIComponent(competitionId)}`);
-    if (competitionResponse.ok) {
-      const competition = await competitionResponse.json();
-      sourceEventId = competition?.event_id;
-    }
-  }
 
   const currentEvent = getEvent();
   if (!currentEvent) {
@@ -440,7 +431,7 @@ async function submitPublicVote() {
   setPublicVoteControlsDisabled(true);
 
   try {
-    const { payload, status } = await publicVoteRequest(`/public/audience-votes/${encodeURIComponent(publicVoteState.code)}/vote`, {
+    const { payload, status } = await publicVoteRequest(`/api/public/audience-votes/${encodeURIComponent(publicVoteState.code)}/vote`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ candidate_id: Number(candidate.id) })
