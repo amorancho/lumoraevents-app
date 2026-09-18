@@ -4222,15 +4222,21 @@ function buildRegistrationFinanceMetrics(registrations, options = {}) {
 function initSchoolsTab() {
   const filterForm = document.getElementById('schoolsFilters');
   const tableBody = document.getElementById('schoolsTable');
+  const mobileCards = document.getElementById('schoolsMobileCards');
   const emptyEl = document.getElementById('schoolsEmpty');
   const countEl = document.getElementById('schoolsCount');
   const filterName = document.getElementById('schoolsFilterName');
   const filterCountry = document.getElementById('schoolsFilterCountry');
   const filterClear = document.getElementById('schoolsFilterClear');
   const copyTsvBtn = document.getElementById('schoolsCopyTsvBtn');
+  const mobileFilterToggle = document.getElementById('schoolsMobileFilterToggle');
+  const mobileFilterApply = document.getElementById('schoolsMobileFilterApply');
+  const mobileFilterCount = document.getElementById('schoolsMobileFilterCount');
+  const mobileNameClear = document.getElementById('schoolsMobileNameClear');
+  const mobileActiveFilters = document.getElementById('schoolsMobileActiveFilters');
   const modalEl = document.getElementById('schoolDetailsModal');
 
-  if (!filterForm || !tableBody || !filterName || !filterCountry || !modalEl) {
+  if (!filterForm || !tableBody || !mobileCards || !filterName || !filterCountry || !modalEl) {
     return;
   }
 
@@ -4260,6 +4266,190 @@ function initSchoolsTab() {
   };
   let schoolsTooltipInstances = [];
 
+  const setMobileSchoolsFilterPanelOpen = (isOpen) => {
+    filterForm.classList.toggle('mobile-filters-open', isOpen);
+    if (mobileFilterToggle) {
+      mobileFilterToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      mobileFilterToggle.classList.toggle('btn-secondary', isOpen);
+      mobileFilterToggle.classList.toggle('btn-outline-secondary', !isOpen);
+    }
+  };
+
+  const updateMobileSchoolsControls = () => {
+    mobileNameClear?.classList.toggle('d-none', !filterName.value.trim());
+    if (!mobileActiveFilters) return;
+    mobileActiveFilters.innerHTML = '';
+
+    const countryValue = filterCountry.value;
+    if (mobileFilterCount) {
+      mobileFilterCount.textContent = countryValue ? '1' : '0';
+      mobileFilterCount.classList.toggle('d-none', !countryValue);
+    }
+
+    if (countryValue) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'schools-mobile-filter-chip';
+      chip.dataset.filter = 'country';
+      const text = document.createElement('span');
+      text.textContent = `${t('schools_filter_country', 'Pais')}: ${filterCountry.selectedOptions?.[0]?.textContent?.trim() || '-'}`;
+      const close = document.createElement('i');
+      close.className = 'bi bi-x-lg';
+      close.setAttribute('aria-hidden', 'true');
+      chip.appendChild(text);
+      chip.appendChild(close);
+      mobileActiveFilters.appendChild(chip);
+    }
+
+    mobileActiveFilters.classList.toggle('has-filters', Boolean(countryValue));
+  };
+
+  const createSchoolMobileCard = (school, detailLabel) => {
+    const card = document.createElement('article');
+    card.className = 'school-mobile-card';
+    card.dataset.id = school.id || '';
+
+    const header = document.createElement('div');
+    header.className = 'school-mobile-card__header';
+    const identity = document.createElement('div');
+    identity.className = 'school-mobile-card__identity';
+    const name = document.createElement('h3');
+    name.className = 'school-mobile-card__name';
+    name.textContent = school?.name || school?.school_name || '-';
+    identity.appendChild(name);
+
+    const representative = document.createElement('div');
+    representative.className = 'school-mobile-card__representative';
+    const representativeIcon = document.createElement('i');
+    representativeIcon.className = 'bi bi-person-badge';
+    representativeIcon.setAttribute('aria-hidden', 'true');
+    const representativeText = document.createElement('span');
+    representativeText.textContent = school?.representative || '-';
+    representativeText.title = `${t('schools_table_representative', 'Representante')}: ${representativeText.textContent}`;
+    representative.appendChild(representativeIcon);
+    representative.appendChild(representativeText);
+    identity.appendChild(representative);
+
+    const country = document.createElement('span');
+    country.className = 'school-mobile-card__country';
+    const countryIcon = document.createElement('i');
+    countryIcon.className = 'bi bi-globe-americas';
+    countryIcon.setAttribute('aria-hidden', 'true');
+    const countryText = document.createElement('span');
+    countryText.textContent = getCountryName(school?.country, countryMap) || '-';
+    country.appendChild(countryIcon);
+    country.appendChild(countryText);
+    header.appendChild(identity);
+    header.appendChild(country);
+    card.appendChild(header);
+
+    const choreoCounts = {
+      CRE: Number(school.choreos_cre) || 0,
+      PEN: Number(school.choreos_pen) || 0,
+      VAL: Number(school.choreos_val) || 0,
+      REJ: Number(school.choreos_rej) || 0
+    };
+    const computedChoreos = Object.values(choreoCounts).reduce((sum, count) => sum + count, 0);
+    const hasTotalChoreos = school.num_choreos !== null
+      && school.num_choreos !== undefined
+      && `${school.num_choreos}`.trim() !== '';
+    const totalChoreos = hasTotalChoreos && Number.isFinite(Number(school.num_choreos))
+      ? Number(school.num_choreos)
+      : computedChoreos;
+
+    const metrics = document.createElement('div');
+    metrics.className = 'school-mobile-card__metrics';
+    const createMetric = (iconClass, label, value) => {
+      const metric = document.createElement('div');
+      metric.className = 'school-mobile-card__metric';
+      const icon = document.createElement('i');
+      icon.className = `bi ${iconClass}`;
+      icon.setAttribute('aria-hidden', 'true');
+      const copy = document.createElement('div');
+      const labelEl = document.createElement('span');
+      labelEl.className = 'school-mobile-card__metric-label';
+      labelEl.textContent = label;
+      const valueEl = document.createElement('span');
+      valueEl.className = 'school-mobile-card__metric-value';
+      valueEl.textContent = `${value}`;
+      copy.appendChild(labelEl);
+      copy.appendChild(valueEl);
+      metric.appendChild(icon);
+      metric.appendChild(copy);
+      return metric;
+    };
+    metrics.appendChild(createMetric(
+      'bi-people',
+      t('schools_table_participants', 'Participantes'),
+      school.num_participants ?? 0
+    ));
+    metrics.appendChild(createMetric(
+      'bi-stars',
+      t('registration_choreo_status_legend_total', 'Inscripciones'),
+      totalChoreos
+    ));
+    card.appendChild(metrics);
+
+    const choreographies = document.createElement('div');
+    choreographies.className = 'school-mobile-card__choreographies';
+    const choreographiesTitle = document.createElement('div');
+    choreographiesTitle.className = 'school-mobile-card__section-title';
+    const choreographiesIcon = document.createElement('i');
+    choreographiesIcon.className = 'bi bi-bar-chart';
+    choreographiesIcon.setAttribute('aria-hidden', 'true');
+    const choreographiesLabel = document.createElement('span');
+    choreographiesLabel.textContent = t('schools_table_choreos_status', 'Estados de las coreos');
+    choreographiesTitle.appendChild(choreographiesIcon);
+    choreographiesTitle.appendChild(choreographiesLabel);
+    const choreoBadges = document.createElement('div');
+    choreoBadges.className = 'school-mobile-card__choreo-badges';
+    const choreoStatusLabels = {
+      CRE: t('registration_choreo_status_legend_cre', 'Borrador'),
+      PEN: t('registration_choreo_status_legend_pen', 'Pendiente de validación'),
+      VAL: t('registration_choreo_status_legend_val', 'Validada'),
+      REJ: t('registration_choreo_status_legend_rej', 'Rechazada')
+    };
+    Object.entries(choreoCounts).forEach(([code, count]) => {
+      const badge = document.createElement('span');
+      const badgeInfo = getChoreoStatusBadgeInfo(code, count);
+      badge.className = `badge ${badgeInfo.className}`;
+      badge.textContent = `${choreoStatusLabels[code]}: ${count}`;
+      choreoBadges.appendChild(badge);
+    });
+    choreographies.appendChild(choreographiesTitle);
+    choreographies.appendChild(choreoBadges);
+    card.appendChild(choreographies);
+
+    const footer = document.createElement('div');
+    footer.className = 'school-mobile-card__footer';
+    const sync = document.createElement('div');
+    sync.className = 'school-mobile-card__sync';
+    const syncIcon = document.createElement('i');
+    syncIcon.className = 'bi bi-arrow-repeat';
+    syncIcon.setAttribute('aria-hidden', 'true');
+    const syncInfo = getSyncroStatusBadgeInfo(school.syncro_status);
+    const syncBadge = document.createElement('span');
+    syncBadge.className = `badge ${syncInfo.className}`;
+    syncBadge.textContent = syncInfo.label;
+    syncBadge.title = syncInfo.label;
+    sync.appendChild(syncIcon);
+    sync.appendChild(syncBadge);
+
+    const detailBtn = document.createElement('button');
+    detailBtn.type = 'button';
+    detailBtn.className = 'btn btn-outline-primary school-mobile-card__detail btn-school-detail';
+    detailBtn.dataset.id = school.id;
+    detailBtn.innerHTML = '<i class="bi bi-search me-1" aria-hidden="true"></i>';
+    const detailText = document.createElement('span');
+    detailText.textContent = detailLabel;
+    detailBtn.appendChild(detailText);
+    footer.appendChild(sync);
+    footer.appendChild(detailBtn);
+    card.appendChild(footer);
+
+    return card;
+  };
+
   const applyFilters = () => {
     const nameValue = filterName.value.trim().toLowerCase();
     const countryValue = filterCountry.value;
@@ -4280,6 +4470,8 @@ function initSchoolsTab() {
   const renderSchools = (schools) => {
     schoolsTooltipInstances = disposeTooltipInstances(schoolsTooltipInstances);
     tableBody.innerHTML = '';
+    mobileCards.innerHTML = '';
+    updateMobileSchoolsControls();
 
     if (!schools.length) {
       if (emptyEl) emptyEl.classList.remove('d-none');
@@ -4348,14 +4540,19 @@ function initSchoolsTab() {
       row.appendChild(actionsCell);
 
       tableBody.appendChild(row);
+      mobileCards.appendChild(createSchoolMobileCard(school, detailLabel));
     });
 
-    schoolsTooltipInstances = initTooltipInstances(tableBody);
+    schoolsTooltipInstances = [
+      ...initTooltipInstances(tableBody),
+      ...initTooltipInstances(mobileCards)
+    ];
   };
 
   const showSchoolsError = (message) => {
     schoolsTooltipInstances = disposeTooltipInstances(schoolsTooltipInstances);
     tableBody.innerHTML = '';
+    mobileCards.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
     cell.colSpan = 7;
@@ -4363,8 +4560,13 @@ function initSchoolsTab() {
     cell.textContent = message;
     row.appendChild(cell);
     tableBody.appendChild(row);
+    const mobileError = document.createElement('div');
+    mobileError.className = 'alert alert-danger mb-0';
+    mobileError.textContent = message;
+    mobileCards.appendChild(mobileError);
     if (emptyEl) emptyEl.classList.add('d-none');
     if (countEl) countEl.textContent = '0';
+    updateMobileSchoolsControls();
   };
 
   const loadSchools = async () => {
@@ -4397,29 +4599,61 @@ function initSchoolsTab() {
     filterClear.addEventListener('click', () => {
       filterName.value = '';
       filterCountry.value = '';
+      setMobileSchoolsFilterPanelOpen(false);
       applyFilters();
     });
   }
+
+  mobileFilterToggle?.addEventListener('click', () => {
+    setMobileSchoolsFilterPanelOpen(!filterForm.classList.contains('mobile-filters-open'));
+  });
+  mobileFilterApply?.addEventListener('click', () => {
+    setMobileSchoolsFilterPanelOpen(false);
+  });
+  mobileNameClear?.addEventListener('click', () => {
+    filterName.value = '';
+    filterName.focus();
+    applyFilters();
+  });
+  mobileActiveFilters?.addEventListener('click', (event) => {
+    const chip = event.target.closest('.schools-mobile-filter-chip');
+    if (!chip) return;
+    if (chip.dataset.filter === 'country') {
+      filterCountry.value = '';
+    }
+    applyFilters();
+  });
 
   if (copyTsvBtn) {
     bindTableTsvExportButton(copyTsvBtn, tableBody);
   }
 
-  tableBody.addEventListener('click', (event) => {
+  const handleSchoolDetailClick = (event) => {
     const detailBtn = event.target.closest('.btn-school-detail');
     if (!detailBtn) return;
     const school = registrationState.schools.find(item => `${item.id}` === `${detailBtn.dataset.id}`);
     if (school) {
       openSchoolDetails(school);
     }
-  });
+  };
+  tableBody.addEventListener('click', handleSchoolDetailClick);
+  mobileCards.addEventListener('click', handleSchoolDetailClick);
 
   filterForm.addEventListener('submit', (event) => {
     event.preventDefault();
   });
 
+  const schoolsLanguageObserver = new MutationObserver(() => {
+    applyFilters();
+  });
+  schoolsLanguageObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['lang']
+  });
+
   window.addEventListener('beforeunload', () => {
     schoolsTooltipInstances = disposeTooltipInstances(schoolsTooltipInstances);
+    schoolsLanguageObserver.disconnect();
   });
 
   loadSchools();
