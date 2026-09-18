@@ -15,45 +15,152 @@
       --event-details-surface: #f6f9fc;
     }
 
-    .language-selector .dropdown-toggle {
-      min-width: 4.5rem;
-      padding: 0.46rem 0.7rem;
-      border: 1px solid rgba(255, 255, 255, 0.24);
-      border-radius: 0.8rem;
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-      transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    .index-app-header {
+      --index-app-control-width: 2.55rem;
+      --index-app-control-height: 2.1rem;
+      min-height: 58px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: #212529;
+      box-shadow: inset 0 -2px 0 rgba(58, 183, 149, 0.65);
     }
 
-    .language-selector .dropdown-toggle:hover,
-    .language-selector .dropdown-toggle:focus {
-      background: rgba(255, 255, 255, 0.16);
+    .index-app-header-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      min-height: 58px;
+      align-items: center;
+      width: 100%;
+      padding: 0 0.75rem;
+    }
+
+    .index-app-brand,
+    .index-app-actions {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+    }
+
+    .index-app-brand {
+      justify-content: flex-start;
+    }
+
+    .index-app-actions {
+      justify-content: flex-end;
+      gap: 0.4rem;
+    }
+
+    .index-app-header .language-selector {
+      width: var(--index-app-control-width);
+      height: var(--index-app-control-height);
+      flex: 0 0 var(--index-app-control-width);
+    }
+
+    .index-app-logo {
+      display: block;
+      object-fit: contain;
+    }
+
+    .index-app-logo--full {
+      display: none;
+    }
+
+    .index-app-logo--mark {
+      width: 36px;
+      height: 36px;
+    }
+
+    .index-app-title {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 650;
+      line-height: 1;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .index-app-title:hover,
+    .index-app-title:focus {
+      color: #fff;
+    }
+
+    .index-admin-btn {
+      display: inline-flex;
+      width: var(--index-app-control-width);
+      height: var(--index-app-control-height);
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 1px solid rgba(255, 210, 77, 0.55);
+      border-radius: 0.6rem;
+      box-shadow: none;
+      transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .index-admin-btn:hover,
+    .index-admin-btn:focus-visible {
+      border-color: #ffe69c;
+      background: #ffda6a;
+      transform: translateY(-1px);
+    }
+
+    .index-admin-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .index-app-header .language-selector .dropdown-toggle {
+      display: inline-flex;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      padding: 0.25rem;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 0.7rem;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      box-shadow: none;
+      transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .index-app-header .language-selector .dropdown-toggle:hover,
+    .index-app-header .language-selector .dropdown-toggle:focus {
       border-color: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.16);
       color: #fff;
       transform: translateY(-1px);
     }
 
-    .language-selector .dropdown-toggle:focus {
-      box-shadow: 0 0 0 0.22rem rgba(255, 255, 255, 0.16);
+    .index-app-header .language-selector .dropdown-toggle:focus {
+      box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.14);
     }
 
-    .language-selector .dropdown-toggle::after {
-      margin-left: 0.5rem;
-      vertical-align: 0.14em;
+    .index-app-header .language-selector .dropdown-toggle::after {
+      margin-left: 0.2rem;
+      vertical-align: 0.1em;
     }
 
     .language-selector-code {
       display: inline-block;
-      min-width: 1.35rem;
-      font-size: 0.78rem;
+      min-width: 1.2rem;
+      font-size: 0.72rem;
       font-weight: 800;
-      letter-spacing: 0.09em;
+      letter-spacing: 0.08em;
       line-height: 1;
       text-align: center;
     }
 
-    .language-selector .dropdown-menu {
+    .index-app-header .language-selector .dropdown-menu {
       min-width: 8.25rem;
       padding: 0.4rem;
       margin-top: 0.55rem;
@@ -62,7 +169,7 @@
       box-shadow: 0 16px 34px rgba(10, 32, 60, 0.2);
     }
 
-    .language-selector .dropdown-item {
+    .index-app-header .language-selector .dropdown-item {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -75,11 +182,70 @@
       transition: background-color 0.18s ease, color 0.18s ease;
     }
 
-    .language-selector .dropdown-item:hover,
-    .language-selector .dropdown-item:focus,
-    .language-selector .dropdown-item.is-active {
+    .index-app-header .language-selector .dropdown-item:hover,
+    .index-app-header .language-selector .dropdown-item:focus,
+    .index-app-header .language-selector .dropdown-item.is-active {
       background: #eaf2fc;
       color: #1f5aa6;
+    }
+
+    @media (min-width: 768px) {
+      .index-app-header,
+      .index-app-header-inner {
+        min-height: 64px;
+      }
+
+      .index-app-header {
+      --index-app-control-width: 3.3rem;
+      --index-app-control-height: 2.15rem;
+      }
+
+      .index-app-header-inner {
+        padding: 0 1.5rem;
+      }
+
+      .index-app-logo--full {
+        display: block;
+        width: auto;
+        height: 36px;
+        max-width: 205px;
+      }
+
+      .index-app-logo--mark {
+        display: none;
+      }
+
+      .index-app-title {
+        padding: 0.42rem 0.9rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        font-size: 1.18rem;
+      }
+
+      .index-admin-btn {
+        width: auto;
+        min-width: var(--index-app-control-width);
+        height: var(--index-app-control-height);
+        gap: 0.3rem;
+        padding: 0.3rem 0.5rem;
+      }
+
+      .index-admin-label {
+        position: static;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+      }
+
+      .index-app-header .language-selector .dropdown-toggle {
+        width: auto;
+        min-width: 100%;
+        height: 100%;
+        padding: 0.25rem 0.4rem;
+      }
     }
 
     .event-details-modal .modal-content {
@@ -503,26 +669,22 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
   
-  <header class="container-fluid bg-dark text-white shadow-sm">
-    
-    <div class="row align-items-center py-3 text-center text-lg-start">
-      <!-- Logo -->
-      <div class="col-12 col-lg-4 d-flex justify-content-center justify-content-lg-start align-items-center mb-2 mb-lg-0 ps-lg-4">
-        <img src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1781521973/copy_of_new_logo_lumoraevents_small_kwnjrc.png" alt="Logo LumoraEvents" class="me-2" style="height: 40px;" id="lumoraevents-logo">
+  <header class="index-app-header text-white">
+    <div class="index-app-header-inner">
+      <div class="index-app-brand">
+        <img class="index-app-logo index-app-logo--full" src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1781521973/copy_of_new_logo_lumoraevents_small_kwnjrc.png" alt="LumoraEvents">
+        <img class="index-app-logo index-app-logo--mark" src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1789748600/isotipo-lumoraevents_ylusci.png" alt="LumoraEvents">
       </div>
 
-      <!-- Event name -->
-      <div class="col-12 col-lg-4 d-flex justify-content-center mb-2 mb-lg-0">
-        <div class="bg-secondary bg-opacity-25 rounded-pill px-4 py-2 d-inline-block">
-          <a href="" id="event-name" class="fs-4 fs-lg-3 fw-semibold text-decoration-none text-white text-center d-block">
-            <span data-i18n="home_title"></span>
-          </a>
-        </div>
-      </div>
+      <a href="" id="event-name" class="index-app-title">
+        <span data-i18n="home_title"></span>
+      </a>
 
-      <!-- User info -->
-      <div class="col-12 col-lg-4 d-flex justify-content-center justify-content-lg-end align-items-center pe-lg-4">
-        <button id="admin-btn" type="button" class="btn btn-sm btn-warning me-2 d-none">Admin</button>
+      <div class="index-app-actions">
+        <button id="admin-btn" type="button" class="index-admin-btn btn btn-warning d-none" aria-label="Admin" title="Admin">
+          <i class="bi bi-shield-lock" aria-hidden="true"></i>
+          <span class="index-admin-label">Admin</span>
+        </button>
         <div class="dropdown language-selector">
           <button class="btn btn-sm dropdown-toggle" type="button" id="languageDropdown"
             data-bs-toggle="dropdown" aria-expanded="false" aria-label="Cambiar idioma" title="Cambiar idioma">
@@ -558,8 +720,6 @@
         </div>
       </div>
     </div>
-
-
   </header>
 
   <div class="container mt-4">
