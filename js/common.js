@@ -52,7 +52,7 @@ window.fetch = function (url, options = {}) {
   return originalFetch(url, options);
 };
 
-const translationsReady = loadTranslations(initialLang, pageName);
+const translationsReady = pageName === 'admin' ? Promise.resolve() : loadTranslations(initialLang, pageName);
 window.translationsReady = translationsReady;
 
 async function ensureTranslationsReady() {
@@ -273,8 +273,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.insertAdjacentHTML('beforeend', modalHtml);
   document.documentElement.setAttribute('lang', getCurrentAppLanguage());
 
-  await ensureTranslationsReady();
-  applyTranslations();
+  if (pageName !== 'admin') {
+    await ensureTranslationsReady();
+    applyTranslations();
+  }
 
   // Esperamos a que los datos del evento estén listos
   try {

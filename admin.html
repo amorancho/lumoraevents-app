@@ -11,6 +11,141 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <style>
+    .index-app-header {
+      --index-app-control-width: 2.55rem;
+      --index-app-control-height: 2.1rem;
+      min-height: 58px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      background: #212529;
+      box-shadow: inset 0 -2px 0 rgba(58, 183, 149, 0.65);
+    }
+    .index-app-header-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      min-height: 58px;
+      align-items: center;
+      width: 100%;
+      padding: 0 0.75rem;
+    }
+    .index-app-brand,
+    .index-app-actions {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+    }
+    .index-app-brand { justify-content: flex-start; }
+    .index-app-actions {
+      justify-content: flex-end;
+      gap: 0.4rem;
+    }
+    .index-app-logo {
+      display: block;
+      object-fit: contain;
+    }
+    .index-app-logo--full { display: none; }
+    .index-app-logo--mark {
+      width: 36px;
+      height: 36px;
+    }
+    .index-app-title {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 650;
+      line-height: 1;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .index-app-title:hover,
+    .index-app-title:focus { color: #fff; }
+    .index-admin-btn,
+    .index-auth-btn {
+      display: inline-flex;
+      width: var(--index-app-control-width);
+      height: var(--index-app-control-height);
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border-radius: 0.6rem;
+      box-shadow: none;
+      transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+    .index-admin-btn {
+      border: 1px solid rgba(255, 210, 77, 0.55);
+    }
+    .index-auth-btn {
+      border: 1px solid rgba(255, 255, 255, 0.32);
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+    .index-admin-btn:hover,
+    .index-admin-btn:focus-visible {
+      border-color: #ffe69c;
+      background: #ffda6a;
+      transform: translateY(-1px);
+    }
+    .index-auth-btn:hover,
+    .index-auth-btn:focus-visible {
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .index-admin-label,
+    .index-auth-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    @media (min-width: 768px) {
+      .index-app-header,
+      .index-app-header-inner { min-height: 64px; }
+      .index-app-header {
+        --index-app-control-width: 3.3rem;
+        --index-app-control-height: 2.15rem;
+      }
+      .index-app-header-inner { padding: 0 1.5rem; }
+      .index-app-logo--full {
+        display: block;
+        width: auto;
+        height: 36px;
+        max-width: 205px;
+      }
+      .index-app-logo--mark { display: none; }
+      .index-app-title {
+        padding: 0.42rem 0.9rem;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        font-size: 1.18rem;
+      }
+      .index-admin-btn,
+      .index-auth-btn {
+        width: auto;
+        min-width: var(--index-app-control-width);
+        height: var(--index-app-control-height);
+        gap: 0.3rem;
+        padding: 0.3rem 0.5rem;
+      }
+      .index-admin-label,
+      .index-auth-label {
+        position: static;
+        width: auto;
+        height: auto;
+        overflow: visible;
+        clip: auto;
+        white-space: normal;
+      }
+    }
+
     .admin-event-list {
       max-height: calc(100vh - 22rem);
       overflow-y: auto;
@@ -81,72 +216,28 @@
 
 <body class="d-flex flex-column min-vh-100">
 
-  <header class="container-fluid bg-dark text-white shadow-sm">
-    
-    <div class="row align-items-center py-3 text-center text-lg-start">
-      <!-- Logo -->
-      <div class="col-12 col-lg-4 d-flex justify-content-center justify-content-lg-start align-items-center mb-2 mb-lg-0 ps-lg-4">
+  <header class="index-app-header text-white">
+    <div class="index-app-header-inner">
+      <div class="index-app-brand">
         <a href="index.html">
-          <img src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1781521973/copy_of_new_logo_lumoraevents_small_kwnjrc.png" alt="Logo LumoraEvents" class="me-2" style="height: 40px;" id="lumoraevents-logo">
+          <img class="index-app-logo index-app-logo--full" src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1781521973/copy_of_new_logo_lumoraevents_small_kwnjrc.png" alt="LumoraEvents" id="lumoraevents-logo">
+          <img class="index-app-logo index-app-logo--mark" src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1789748600/isotipo-lumoraevents_ylusci.png" alt="LumoraEvents">
         </a>
       </div>
 
-      <!-- Event name -->
-      <div class="col-12 col-lg-4 d-flex justify-content-center mb-2 mb-lg-0">
-        <div class="bg-secondary bg-opacity-25 rounded-pill px-4 py-2 d-inline-block">
-          <a href="" id="event-name" class="fs-4 fs-lg-3 fw-semibold text-decoration-none text-white text-center d-block">
-            <span data-i18n="home_title"></span>
-          </a>
-        </div>
-      </div>
+      <a href="" id="event-name" class="index-app-title">Panel de Administración</a>
 
-      <!-- User info -->
-      <div class="col-12 col-lg-4 d-flex justify-content-center justify-content-lg-end align-items-center pe-lg-4">
-        <div class="col-12 col-lg-4 d-flex justify-content-center justify-content-lg-end align-items-center pe-lg-4">
-          <button id="auth-btn" class="btn btn-sm btn-outline-light">Logout</button>
-          <button id="admin-btn" type="button" class="btn btn-sm btn-warning ms-2 d-none">Admin</button>
-        </div>
-        <div class="dropdown">
-          <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-2" type="button" id="languageDropdown" 
-            data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
-            <img src="https://flagcdn.com/24x18/es.png" alt="Español" width="24" height="18" id="current-flag">
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-            <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('es')">
-                <img src="https://flagcdn.com/24x18/es.png" alt="Español" width="24" height="18">
-                Español
-              </button>
-            </li>
-            <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('en')">
-                <img src="https://flagcdn.com/24x18/gb.png" alt="English" width="24" height="18">
-                English
-              </button>
-            </li>
-            <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('it')">
-                <img src="https://flagcdn.com/24x18/it.png" alt="Italiano" width="24" height="18">
-                Italiano
-              </button>
-            </li>
-            <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('pt')">
-                <img src="https://flagcdn.com/24x18/pt.png" alt="Português" width="24" height="18">
-                Português
-              </button>
-            </li>
-            <li>
-              <button class="dropdown-item d-flex align-items-center gap-2" onclick="changeLanguage('fr')">
-                <img src="https://flagcdn.com/24x18/fr.png" alt="Français" width="24" height="18">
-                Français
-              </button>
-            </li>          </ul>
-        </div>
+      <div class="index-app-actions">
+        <button id="auth-btn" type="button" class="index-auth-btn btn" aria-label="Logout" title="Logout">
+          <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+          <span class="index-auth-label">Logout</span>
+        </button>
+        <button id="admin-btn" type="button" class="index-admin-btn btn btn-warning d-none" aria-label="Admin" title="Admin">
+          <i class="bi bi-shield-lock" aria-hidden="true"></i>
+          <span class="index-admin-label">Admin</span>
+        </button>
       </div>
     </div>
-
-
   </header>
   
   <div id="mainContainer" class="container-fluid container-container-fluid py-4 px-5">     
@@ -378,7 +469,7 @@
 
               <div class="col-md-5 d-flex align-items-end">
                 <div class="w-100">
-                  <label for="name" class="form-label" data-i18n="prop_event_name">Event Name</label>
+                  <label for="name" class="form-label">Event Name</label>
                   <div class="input-group">
                     <input type="text" class="form-control" id="name">
 
@@ -619,7 +710,7 @@
                   <div class="col-md-3">
                     <div class="form-check form-switch mb-2">
                       <input class="form-check-input" type="checkbox" id="hide_school_info">
-                      <label class="form-check-label" for="hide_school_info" data-i18n="hide_school_info">Ocultar info Clubs</label>
+                      <label class="form-check-label" for="hide_school_info">Ocultar info Clubs</label>
                     </div>
                   </div>
                 </div>
@@ -706,28 +797,28 @@
                   <div class="col-md-3">
                     <div class="form-check form-switch mb-2">
                       <input class="form-check-input" type="checkbox" id="registration_finance">
-                      <label class="form-check-label" for="registration_finance" data-i18n="registration_finance_label">Finanzas inscripcion</label>
+                      <label class="form-check-label" for="registration_finance">Finanzas inscripcion</label>
                     </div>
                   </div>
 
                   <div class="col-md-3">
                     <div class="form-check form-switch mb-2">
                       <input class="form-check-input" type="checkbox" id="registration_not_new_school">
-                      <label class="form-check-label" for="registration_not_new_school" data-i18n="registration_not_new_school_label">Notificar Nueva Escuela</label>
+                      <label class="form-check-label" for="registration_not_new_school">Notificar Nueva Escuela</label>
                     </div>
                   </div>
 
                   <div class="col-md-3">
                     <div class="form-check form-switch mb-2">
                       <input class="form-check-input" type="checkbox" id="registration_not_new_group">
-                      <label class="form-check-label" for="registration_not_new_group" data-i18n="registration_not_new_group_label">Notificar Nueva Inscripción</label>
+                      <label class="form-check-label" for="registration_not_new_group">Notificar Nueva Inscripción</label>
                     </div>
                   </div>
 
                   <div class="col-md-3">
                     <div class="form-check form-switch mb-2">
                       <input class="form-check-input" type="checkbox" id="show_gender">
-                      <label class="form-check-label" for="show_gender" data-i18n="show_gender_label">Mostrar Género</label>
+                      <label class="form-check-label" for="show_gender">Mostrar Género</label>
                     </div>
                   </div>
 
@@ -745,10 +836,10 @@
               </div>
 
               <div class="col-md-3">
-                <label for="category_class_type" class="form-label" data-i18n="prop_class_type">Tipo Clasificación Categoría</label>
+                <label for="category_class_type" class="form-label">Tipo Clasificación Categoría</label>
                 <select id="category_class_type" class="form-select">
-                  <option value="NO" data-i18n="no_cat_class">Sin Clasificación</option>
-                  <option value="NUM_MEDALS" data-i18n="num_medals">Por Número Medallas Estilos</option>
+                  <option value="NO">Sin Clasificación</option>
+                  <option value="NUM_MEDALS">Por Número Medallas Estilos</option>
                 </select>
               </div>
 
@@ -819,7 +910,7 @@
               </div>
 
               <div class="col-md-3">
-                <label class="form-label" data-i18n="welcome_sended">Fecha Envío Bienvenida</label>
+                <label class="form-label">Fecha Envío Bienvenida</label>
                 <input type="text" class="form-control bg-light" id="WelcomeSendDate" readonly>
               </div>
 
@@ -834,8 +925,7 @@
                   id="sendWelcome"
                   data-bs-toggle="tooltip"
                   data-bs-placement="bottom"
-                  title="Enviar email de bienvenida a Organizador"
-                  data-i18n="welcome_send">
+                  title="Enviar email de bienvenida a Organizador">
                   Enviar Bienvenida
                 </button>
               </div>

@@ -72,7 +72,6 @@ function parseCurrencyValueToCents(value){
 
 document.addEventListener('DOMContentLoaded',async()=>{
   validateRoles(allowedRoles);
-  await ensureTranslationsReady();
   renderAdminLayout();
   ensureDirectoryEventModal();
   ensureDirectoryCatalogModal();
@@ -131,7 +130,7 @@ function renderAdminLayout(){
                 <div id="eventsListEmptyState" class="text-center py-5 px-3 d-none"><i class="bi bi-calendar-x text-muted" style="font-size:3rem;"></i><h5 class="text-muted mt-3">No hay eventos</h5><p class="text-muted mb-0">Crea un evento o ajusta los filtros.</p></div>
               </div>
             </div>
-            <div class="col-12 col-xl-9">
+            <div class="col-12 col-xl-9 admin-event-details-panel" id="eventDetailsPanel">
               <div class="card border-0 shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-3">
                   <div><h3 class="h4 mb-1" id="eventPanelTitle">Selecciona un evento</h3><div class="text-body-secondary small" id="eventPanelSubtitle">Haz clic en un evento del listado para cargar su información.</div></div>
@@ -1165,7 +1164,7 @@ function handleDocumentClick(ev){
   const bellydanceTabBtn=ev.target.closest('[data-bellydance-tab]');
   if(bellydanceTabBtn){setActiveBellydanceTab(bellydanceTabBtn.dataset.bellydanceTab);return;}
   const eventItem=ev.target.closest('.event-list-item');
-  if(eventItem){loadEventDetail(eventItem.dataset.eventId);return;}
+  if(eventItem){loadEventDetail(eventItem.dataset.eventId,{scrollToPanelOnMobile:true});return;}
   const editClientBtn=ev.target.closest('.btn-edit-client');
   if(editClientBtn){const client=clients.find((item)=>String(item.id)===String(editClientBtn.closest('tr')?.dataset.id));if(client) openEditClientModal(client);return;}
   const deleteClientBtn=ev.target.closest('.btn-delete-client');
@@ -1281,7 +1280,15 @@ async function fetchEventDetail(id){
   throw lastError||new Error('No se ha podido recuperar el evento');
 }
 
-async function loadEventDetail(eventId){
+function scrollToEventPanelOnMobile(){
+  if(!window.matchMedia('(max-width: 1199.98px)').matches) return;
+  const panel=document.getElementById('eventDetailsPanel');
+  if(!panel) return;
+  const behavior=window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth';
+  requestAnimationFrame(()=>panel.scrollIntoView({behavior,block:'start'}));
+}
+
+async function loadEventDetail(eventId,{scrollToPanelOnMobile=false}={}){
   try{
     const detail=await fetchEventDetail(eventId);
     const listEvent=events.find((event)=>String(event.id)===String(eventId))||{};
@@ -1290,6 +1297,7 @@ async function loadEventDetail(eventId){
     keepCreateMode=false;
     populateEventForm(currentEventDetail);
     renderEventsSelection();
+    if(scrollToPanelOnMobile) scrollToEventPanelOnMobile();
   }catch(error){
     console.error('Error cargando detalle del evento:',error);
     showMessageModal('No se ha podido cargar el detalle del evento.','Error');
