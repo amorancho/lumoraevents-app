@@ -38,6 +38,7 @@ function initPaymentsTab(role) {
 
   const paymentElements = {
     tableBody: document.getElementById('registrationPaymentsTable'),
+    mobileCards: document.getElementById('registrationPaymentsMobileCards'),
     emptyEl: document.getElementById('registrationPaymentsEmpty'),
     organizerCountEl: document.getElementById('registrationPaymentsCount'),
     schoolCountEl: document.getElementById('registrationPaymentsCountSchool'),
@@ -54,6 +55,7 @@ function initPaymentsTab(role) {
 
   const invoiceElements = {
     tableBody: document.getElementById('registrationInvoicesTable'),
+    mobileCards: document.getElementById('registrationInvoicesMobileCards'),
     emptyEl: document.getElementById('registrationInvoicesEmpty'),
     countEl: document.getElementById('registrationInvoicesCount'),
     schoolHeader: document.getElementById('registrationInvoicesSchoolHeader'),
@@ -108,7 +110,8 @@ function initPaymentsTab(role) {
     ? new bootstrap.Modal(rejectModalEl)
     : null;
 
-  if (!paymentElements.tableBody || !paymentElements.emptyEl || !invoiceElements.tableBody || !invoiceElements.emptyEl) {
+  if (!paymentElements.tableBody || !paymentElements.mobileCards || !paymentElements.emptyEl
+    || !invoiceElements.tableBody || !invoiceElements.mobileCards || !invoiceElements.emptyEl) {
     return;
   }
 
@@ -913,6 +916,185 @@ function initPaymentsTab(role) {
     return button;
   };
 
+  const createMobileDocumentAction = (options) => {
+    const button = createRowActionButton(options);
+    button.classList.add('registration-document-mobile-card__action');
+    button.querySelector('i')?.setAttribute('aria-hidden', 'true');
+    const label = document.createElement('span');
+    label.textContent = button.title;
+    button.appendChild(label);
+    return button;
+  };
+
+  const getDocumentActionOptions = (documentType) => {
+    if (documentType === 'INV') {
+      const actions = [{
+        action: 'view',
+        titleKey: 'registration_invoice_view',
+        titleFallback: 'View invoice',
+        className: 'btn-outline-primary',
+        icon: 'bi-eye'
+      }];
+      if (isOrganizer) {
+        actions.push(
+          {
+            action: 'edit-amount',
+            titleKey: 'registration_payments_edit_amount',
+            titleFallback: 'Edit amount',
+            className: 'btn-outline-secondary',
+            icon: 'bi-pencil-square'
+          },
+          {
+            action: 'download',
+            titleKey: 'registration_invoice_download',
+            titleFallback: 'Download invoice',
+            className: 'btn-outline-dark',
+            icon: 'bi-download'
+          },
+          {
+            action: 'delete',
+            titleKey: 'registration_invoice_remove',
+            titleFallback: 'Delete invoice',
+            className: 'btn-outline-danger',
+            icon: 'bi-trash'
+          }
+        );
+      }
+      return actions;
+    }
+
+    const actions = [];
+    if (isOrganizer) {
+      actions.push(
+        {
+          action: 'edit-amount',
+          titleKey: 'registration_payments_edit_amount',
+          titleFallback: 'Edit amount',
+          className: 'btn-outline-secondary',
+          icon: 'bi-pencil-square'
+        },
+        {
+          action: 'validate',
+          titleKey: 'registration_payment_validate',
+          titleFallback: 'Validate payment',
+          className: 'btn-outline-success',
+          icon: 'bi-check2-circle'
+        },
+        {
+          action: 'reject',
+          titleKey: 'org_registrations_action_reject',
+          titleFallback: 'Reject',
+          className: 'btn-outline-danger',
+          icon: 'bi-x-circle'
+        }
+      );
+    }
+    actions.push(
+      {
+        action: 'view',
+        titleKey: 'registration_payment_view_receipt',
+        titleFallback: 'View receipt',
+        className: 'btn-outline-primary',
+        icon: 'bi-eye'
+      },
+      {
+        action: 'download',
+        titleKey: 'registration_payment_download',
+        titleFallback: 'Download receipt',
+        className: 'btn-outline-dark',
+        icon: 'bi-download'
+      },
+      {
+        action: 'delete',
+        titleKey: 'registration_payment_remove',
+        titleFallback: 'Delete receipt',
+        className: 'btn-outline-danger',
+        icon: 'bi-trash'
+      }
+    );
+    return actions;
+  };
+
+  const createDocumentMobileCard = (documentRow, documentType) => {
+    const isInvoice = documentType === 'INV';
+    const card = document.createElement('article');
+    card.className = `registration-document-mobile-card${isInvoice ? ' registration-document-mobile-card--invoice' : ''}`;
+    card.dataset.id = documentRow.id;
+
+    const header = document.createElement('div');
+    header.className = 'registration-document-mobile-card__header';
+    const identity = document.createElement('div');
+    identity.className = 'registration-document-mobile-card__identity';
+    const icon = document.createElement('span');
+    icon.className = 'registration-document-mobile-card__icon';
+    icon.innerHTML = `<i class="bi ${isInvoice ? 'bi-receipt' : 'bi-credit-card'}" aria-hidden="true"></i>`;
+    const identityCopy = document.createElement('div');
+    identityCopy.className = 'registration-document-mobile-card__identity-copy';
+    const title = document.createElement('h3');
+    title.className = 'registration-document-mobile-card__title';
+    title.textContent = isOrganizer
+      ? (documentRow.school_name || '-')
+      : t(isInvoice ? 'registration_invoice_card_title' : 'registration_payment_card_title', isInvoice ? 'Invoice' : 'Payment');
+    const date = document.createElement('div');
+    date.className = 'registration-document-mobile-card__date';
+    date.innerHTML = '<i class="bi bi-calendar3" aria-hidden="true"></i>';
+    const dateText = document.createElement('span');
+    dateText.textContent = formatPaymentCreatedAt(documentRow.created_at);
+    date.appendChild(dateText);
+    identityCopy.append(title, date);
+    identity.append(icon, identityCopy);
+    header.appendChild(identity);
+
+    if (!isInvoice) {
+      const statusInfo = getPaymentStatusInfo(documentRow);
+      const status = document.createElement('span');
+      status.className = `registration-document-mobile-card__status badge ${statusInfo.className}`;
+      status.textContent = statusInfo.label;
+      header.appendChild(status);
+    }
+    card.appendChild(header);
+
+    const amount = document.createElement('div');
+    amount.className = 'registration-document-mobile-card__amount';
+    const amountIcon = document.createElement('i');
+    amountIcon.className = 'registration-document-mobile-card__amount-icon bi bi-cash-coin';
+    amountIcon.setAttribute('aria-hidden', 'true');
+    const amountLabel = document.createElement('span');
+    amountLabel.className = 'registration-document-mobile-card__amount-label';
+    amountLabel.textContent = t('registration_competitions_table_total_amount', 'Total amount');
+    const amountValue = document.createElement('span');
+    amountValue.className = 'registration-document-mobile-card__amount-value';
+    amountValue.textContent = formatRegistrationCurrency(documentRow.amount);
+    amount.append(amountIcon, amountLabel, amountValue);
+    card.appendChild(amount);
+
+    const rejectReason = `${documentRow?.reject_reason ?? ''}`.trim();
+    if (!isInvoice && rejectReason) {
+      const rejection = document.createElement('div');
+      rejection.className = 'registration-document-mobile-card__rejection';
+      const rejectionLabel = document.createElement('span');
+      rejectionLabel.className = 'registration-document-mobile-card__rejection-label';
+      rejectionLabel.textContent = t('registration_competitions_reject_reason_label', 'Rejection reason');
+      const rejectionText = document.createElement('p');
+      rejectionText.className = 'registration-document-mobile-card__rejection-text';
+      rejectionText.textContent = rejectReason;
+      rejection.append(rejectionLabel, rejectionText);
+      card.appendChild(rejection);
+    }
+
+    const actionOptions = getDocumentActionOptions(documentType);
+    const actions = document.createElement('div');
+    actions.className = 'registration-document-mobile-card__actions';
+    if (actionOptions.length === 1) {
+      actions.classList.add('registration-document-mobile-card__actions--single');
+    } else if (actionOptions.length === 4) {
+      actions.classList.add('registration-document-mobile-card__actions--four');
+    }
+    actionOptions.forEach((options) => actions.appendChild(createMobileDocumentAction(options)));
+    card.appendChild(actions);
+    return card;
+  };
+
   const renderPaymentsTable = () => {
     const rows = getFilteredPaymentRows();
 
@@ -924,6 +1106,7 @@ function initPaymentsTab(role) {
     }
 
     paymentElements.tableBody.innerHTML = '';
+    paymentElements.mobileCards.innerHTML = '';
     if (!rows.length) {
       paymentElements.emptyEl.classList.remove('d-none');
       return;
@@ -1021,6 +1204,7 @@ function initPaymentsTab(role) {
       actionsCell.appendChild(actionGroup);
       row.appendChild(actionsCell);
       paymentElements.tableBody.appendChild(row);
+      paymentElements.mobileCards.appendChild(createDocumentMobileCard(payment, 'PAY'));
     });
   };
 
@@ -1032,6 +1216,7 @@ function initPaymentsTab(role) {
     }
 
     invoiceElements.tableBody.innerHTML = '';
+    invoiceElements.mobileCards.innerHTML = '';
     if (!rows.length) {
       invoiceElements.emptyEl.classList.remove('d-none');
       return;
@@ -1102,6 +1287,7 @@ function initPaymentsTab(role) {
       actionsCell.appendChild(actionGroup);
       row.appendChild(actionsCell);
       invoiceElements.tableBody.appendChild(row);
+      invoiceElements.mobileCards.appendChild(createDocumentMobileCard(invoice, 'INV'));
     });
   };
 
@@ -1739,7 +1925,7 @@ function initPaymentsTab(role) {
     renderPaymentsTable();
   });
 
-  paymentElements.tableBody.addEventListener('click', async (event) => {
+  const handlePaymentAction = async (event) => {
     const actionButton = event.target.closest('button[data-payment-action]');
     if (!actionButton) {
       return;
@@ -1747,7 +1933,7 @@ function initPaymentsTab(role) {
 
     event.preventDefault();
 
-    const row = actionButton.closest('tr');
+    const row = actionButton.closest('[data-id]');
     const paymentId = row?.dataset?.id;
     const action = actionButton.dataset.paymentAction;
 
@@ -1801,9 +1987,12 @@ function initPaymentsTab(role) {
         );
       }
     }
-  });
+  };
 
-  invoiceElements.tableBody.addEventListener('click', async (event) => {
+  paymentElements.tableBody.addEventListener('click', handlePaymentAction);
+  paymentElements.mobileCards.addEventListener('click', handlePaymentAction);
+
+  const handleInvoiceAction = async (event) => {
     const actionButton = event.target.closest('button[data-payment-action]');
     if (!actionButton) {
       return;
@@ -1811,7 +2000,7 @@ function initPaymentsTab(role) {
 
     event.preventDefault();
 
-    const row = actionButton.closest('tr');
+    const row = actionButton.closest('[data-id]');
     const paymentId = row?.dataset?.id;
     const action = actionButton.dataset.paymentAction;
 
@@ -1841,7 +2030,10 @@ function initPaymentsTab(role) {
         );
       }
     }
-  });
+  };
+
+  invoiceElements.tableBody.addEventListener('click', handleInvoiceAction);
+  invoiceElements.mobileCards.addEventListener('click', handleInvoiceAction);
 
   window.addEventListener('registration:participants-updated', () => {
     renderSummary();

@@ -68,6 +68,8 @@
   "registration_payments_validated": "Pagos validados",
   "registration_payments_total_invoiced": "Total facturado",
   "registration_payments_empty": "No hay pagos disponibles.",
+  "registration_payment_card_title": "Pago",
+  "registration_invoice_card_title": "Factura",
   "registration_payments_created_at": "Fecha de creacion",
   "registration_payments_filter_all_schools": "Todas las escuelas",
   "registration_payments_filter_all_statuses": "Todos los estados",

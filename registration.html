@@ -665,6 +665,10 @@
     .registration-disciplines-add-icon {
       display: none;
     }
+    .registration-payments-mobile-list,
+    .registration-invoices-mobile-list {
+      display: none;
+    }
     @media (max-width: 767.98px) {
       #registrationSidebarToggle {
         margin-bottom: 0.75rem !important;
@@ -2046,6 +2050,326 @@
         border-radius: 0.65rem;
         background: var(--bs-body-bg);
       }
+      #payments .registration-dashboard-shell {
+        gap: 0.85rem;
+      }
+      #payments .registration-dashboard-finance-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.55rem;
+      }
+      #payments .registration-payments-summary-card:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+      }
+      #payments .registration-payments-summary-card .card-body {
+        gap: 0.45rem;
+        padding: 0.7rem 0.75rem;
+      }
+      #payments .registration-payments-summary-card .card-body > .d-flex {
+        gap: 0.4rem !important;
+      }
+      #payments .registration-payments-summary-card .registration-dashboard-kpi-icon {
+        width: 1.9rem;
+        height: 1.9rem;
+        border-radius: 0.55rem;
+        font-size: 0.8rem;
+      }
+      #payments .registration-payments-summary-card .registration-dashboard-kpi-label {
+        font-size: 0.61rem;
+        letter-spacing: 0.045em;
+      }
+      #payments .registration-payments-summary-card .registration-dashboard-kpi-meta {
+        font-size: 0.58rem;
+      }
+      #payments .registration-payments-summary-card .registration-dashboard-kpi-value {
+        overflow: hidden;
+        font-size: 1rem;
+        line-height: 1.1;
+        text-overflow: ellipsis;
+      }
+      #payments .registration-payments-lists {
+        margin-top: 0 !important;
+      }
+      #payments #portdanceFest26PaymentInstructions .btn {
+        width: 100%;
+        min-height: 2.5rem;
+      }
+      #payments .registration-payments-shared-filter-bar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.5rem;
+      }
+      #payments .registration-payments-shared-filter-select {
+        width: 100%;
+        min-width: 0;
+        min-height: 2.5rem;
+      }
+      #payments #registrationPaymentsSharedFilterClear {
+        min-height: 2.5rem;
+        font-size: 0.76rem;
+      }
+      #payments .registration-payments-subtabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.35rem;
+        border-bottom: 0;
+      }
+      #payments .registration-payments-subtabs .nav-item {
+        min-width: 0;
+      }
+      #payments .registration-payments-subtabs .nav-link {
+        width: 100%;
+        min-height: 2.5rem;
+        padding: 0.5rem 0.65rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.7rem;
+        background: var(--bs-tertiary-bg);
+        color: var(--bs-secondary-color);
+        font-size: 0.82rem;
+        font-weight: 700;
+      }
+      #payments .registration-payments-subtabs .nav-link.active {
+        border-color: rgba(var(--bs-primary-rgb), 0.28);
+        background: rgba(var(--bs-primary-rgb), 0.1);
+        color: var(--bs-primary-text-emphasis);
+      }
+      #payments .registration-payments-tab-content {
+        margin-top: 0.65rem;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+      }
+      #payments .registration-payments-controls,
+      #payments .registration-invoices-controls {
+        gap: 0.55rem !important;
+        margin-bottom: 0.7rem !important;
+      }
+      #payments .registration-payments-organizer-filters {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 0.5rem;
+        margin: 0;
+      }
+      #payments .registration-payments-organizer-filters > * {
+        width: auto;
+        max-width: none;
+        padding: 0;
+      }
+      #payments .registration-payments-status-filter .form-label {
+        display: none;
+      }
+      #payments .registration-payments-status-filter .form-select,
+      #payments .registration-payments-filter-clear .btn,
+      #payments .registration-payments-export .btn {
+        min-height: 2.5rem;
+      }
+      #payments .registration-payments-filter-clear .btn {
+        width: auto !important;
+        padding-right: 0.65rem;
+        padding-left: 0.65rem;
+        font-size: 0.75rem;
+      }
+      #payments .registration-payments-export .btn,
+      #payments #registrationPaymentsCopyTsvBtnSchool,
+      #payments #registrationInvoicesCopyTsvBtn,
+      #payments #registrationInvoicesCopyTsvBtnSchool {
+        display: inline-flex;
+        width: 2.5rem;
+        min-height: 2.5rem;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font-size: 1rem;
+      }
+      #payments .registration-payments-export-label {
+        display: none;
+      }
+      #payments .registration-payments-count {
+        justify-content: flex-start !important;
+        font-size: 0.8rem;
+      }
+      #payments .registration-payments-school-actions:not(.d-none),
+      #payments .registration-invoices-actions:not(.d-none) {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.5rem !important;
+      }
+      #payments .registration-payments-school-actions > .btn,
+      #payments .registration-invoices-actions > .btn {
+        min-height: 2.5rem;
+      }
+      #payments .registration-payments-school-summary,
+      #payments .registration-invoices-summary {
+        gap: 0.55rem !important;
+        margin-left: 0 !important;
+        font-size: 0.78rem;
+      }
+      #payments .registration-payments-desktop-table,
+      #payments .registration-invoices-desktop-table {
+        display: none;
+      }
+      #payments .registration-payments-mobile-list,
+      #payments .registration-invoices-mobile-list {
+        display: grid;
+        gap: 0.65rem;
+      }
+      .registration-document-mobile-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(var(--bs-primary-rgb), 0.14);
+        border-radius: 1rem;
+        background: var(--bs-body-bg);
+        box-shadow: 0 0.35rem 1.2rem rgba(15, 23, 42, 0.08);
+      }
+      .registration-document-mobile-card::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 0.25rem;
+        content: '';
+        background: linear-gradient(90deg, var(--bs-primary), #6f42c1);
+      }
+      .registration-document-mobile-card--invoice::before {
+        background: linear-gradient(90deg, var(--bs-info), var(--bs-primary));
+      }
+      .registration-document-mobile-card__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.7rem;
+        padding: 0.9rem 0.85rem 0.65rem;
+      }
+      .registration-document-mobile-card__identity {
+        display: flex;
+        min-width: 0;
+        flex: 1 1 auto;
+        align-items: center;
+        gap: 0.6rem;
+      }
+      .registration-document-mobile-card__icon {
+        display: inline-flex;
+        width: 2.15rem;
+        height: 2.15rem;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.65rem;
+        background: rgba(var(--bs-primary-rgb), 0.1);
+        color: var(--bs-primary);
+      }
+      .registration-document-mobile-card--invoice .registration-document-mobile-card__icon {
+        background: rgba(var(--bs-info-rgb), 0.14);
+        color: var(--bs-info-text-emphasis);
+      }
+      .registration-document-mobile-card__identity-copy {
+        min-width: 0;
+      }
+      .registration-document-mobile-card__title {
+        margin: 0;
+        overflow: hidden;
+        color: var(--bs-emphasis-color);
+        font-size: 0.95rem;
+        font-weight: 750;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .registration-document-mobile-card__date {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        margin-top: 0.25rem;
+        color: var(--bs-secondary-color);
+        font-size: 0.7rem;
+      }
+      .registration-document-mobile-card__status {
+        flex: 0 0 auto;
+        max-width: 42%;
+        white-space: normal;
+      }
+      .registration-document-mobile-card__amount {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.55rem;
+        padding: 0.65rem 0.85rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+        background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.075), rgba(var(--bs-success-rgb), 0.035));
+      }
+      .registration-document-mobile-card__amount-icon {
+        color: var(--bs-success);
+        font-size: 1.1rem;
+      }
+      .registration-document-mobile-card__amount-label {
+        color: var(--bs-secondary-color);
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .registration-document-mobile-card__amount-value {
+        color: var(--bs-emphasis-color);
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+      }
+      .registration-document-mobile-card__rejection {
+        padding: 0.6rem 0.85rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+        background: rgba(var(--bs-danger-rgb), 0.045);
+      }
+      .registration-document-mobile-card__rejection-label {
+        display: block;
+        margin-bottom: 0.2rem;
+        color: var(--bs-danger-text-emphasis);
+        font-size: 0.64rem;
+        font-weight: 700;
+        letter-spacing: 0.035em;
+        text-transform: uppercase;
+      }
+      .registration-document-mobile-card__rejection-text {
+        margin: 0;
+        overflow-wrap: anywhere;
+        color: var(--bs-body-color);
+        font-size: 0.76rem;
+        line-height: 1.35;
+      }
+      .registration-document-mobile-card__actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.35rem;
+        padding: 0.65rem 0.7rem 0.75rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+      .registration-document-mobile-card__actions--single {
+        grid-template-columns: 1fr;
+      }
+      .registration-document-mobile-card__actions--four {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .registration-document-mobile-card__action {
+        display: inline-flex;
+        min-width: 0;
+        min-height: 3rem;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        padding: 0.35rem 0.2rem;
+        border-radius: 0.65rem;
+        font-size: 0.64rem;
+        line-height: 1.05;
+      }
+      .registration-document-mobile-card__action i {
+        font-size: 1rem;
+      }
+      .registration-document-mobile-card__action span {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
     }
     @media (max-width: 991.98px) {
       .registration-dashboard-panel-wide {
@@ -2991,7 +3315,7 @@
                   </div>
                 </div>
 
-                <div class="mt-3">
+                <div class="registration-payments-lists mt-3">
                   <div class="mb-3 d-none" id="portdanceFest26PaymentInstructions">
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#portdanceFest26PaymentInstructionsModal">
                       <i class="bi bi-info-circle me-1"></i><span data-i18n="registration_payment_instructions">INSTRUCCIONES DE PAGO</span>
@@ -3006,9 +3330,10 @@
                       >
                         <option value="" data-i18n="registration_payments_filter_all_schools">Todas las escuelas</option>
                       </select>
+                      <button type="button" class="btn btn-outline-secondary btn-sm" id="registrationPaymentsSharedFilterClear" data-i18n="clear_filters">Limpiar filtros</button>
                     </div>
                   </div>
-                  <ul class="nav nav-tabs" id="registrationPaymentsSubtabs" role="tablist">
+                  <ul class="registration-payments-subtabs nav nav-tabs" id="registrationPaymentsSubtabs" role="tablist">
                     <li class="nav-item" role="presentation">
                       <button class="nav-link active" id="registrationPaymentsSubtabPayments" data-bs-toggle="tab" data-bs-target="#registrationPaymentsPanelPayments" type="button" role="tab" aria-controls="registrationPaymentsPanelPayments" aria-selected="true" data-i18n="registration_tab_payments">Pagos</button>
                     </li>
@@ -3016,36 +3341,38 @@
                       <button class="nav-link" id="registrationPaymentsSubtabInvoices" data-bs-toggle="tab" data-bs-target="#registrationPaymentsPanelInvoices" type="button" role="tab" aria-controls="registrationPaymentsPanelInvoices" aria-selected="false" data-i18n="registration_tab_invoices">Facturas</button>
                     </li>
                   </ul>
-                  <div class="tab-content border border-top-0 rounded-bottom bg-white p-4">
+                  <div class="registration-payments-tab-content tab-content border border-top-0 rounded-bottom bg-white p-4">
                     <div class="tab-pane fade show active" id="registrationPaymentsPanelPayments" role="tabpanel" aria-labelledby="registrationPaymentsSubtabPayments">
-                      <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
-                        <form id="registrationPaymentsOrganizerHeader" class="row g-3 align-items-end flex-grow-1 d-none">
-                          <div class="col-12 col-md-6 col-lg-2">
+                      <div class="registration-payments-controls d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
+                        <form id="registrationPaymentsOrganizerHeader" class="registration-payments-organizer-filters row g-3 align-items-end flex-grow-1 d-none">
+                          <div class="registration-payments-status-filter col-12 col-md-6 col-lg-2">
                             <label class="form-label" for="registrationPaymentsStatusFilter" data-i18n="org_registrations_filter_status">Estado</label>
                             <select class="form-select" id="registrationPaymentsStatusFilter">
                               <option value="" data-i18n="registration_payments_filter_all_statuses">Todos los estados</option>
                             </select>
                           </div>
-                          <div class="col-12 col-md-6 col-lg-2">
+                          <div class="registration-payments-filter-clear col-12 col-md-6 col-lg-2">
                             <button type="button" class="btn btn-outline-secondary w-100" id="registrationPaymentsFilterClear" data-i18n="clear_filters">Limpiar</button>
                           </div>
-                          <div class="col-12 col-md-auto d-flex align-items-end">
-                            <button type="button" class="btn btn-outline-success btn-sm text-nowrap" id="registrationPaymentsCopyTsvBtn">
-                              <i class="bi bi-file-earmark-excel me-2"></i>Export
+                          <div class="registration-payments-export col-12 col-md-auto d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-success btn-sm text-nowrap" id="registrationPaymentsCopyTsvBtn" aria-label="Exportar" title="Exportar" data-i18n-aria-label="export" data-i18n-title="export">
+                              <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                              <span class="registration-payments-export-label ms-2" data-i18n="export">Exportar</span>
                             </button>
                           </div>
                         </form>
-                        <div class="d-flex align-items-center justify-content-lg-end gap-2 d-none" id="registrationPaymentsOrganizerCountWrap">
+                        <div class="registration-payments-count d-flex align-items-center justify-content-lg-end gap-2 d-none" id="registrationPaymentsOrganizerCountWrap">
                           <span class="text-muted" data-i18n="registration_payments_total">Total pagos</span>
                           <span class="badge bg-secondary" id="registrationPaymentsCount">0</span>
                         </div>
-                        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap w-100 d-none" id="registrationPaymentsSchoolActions">
+                        <div class="registration-payments-school-actions d-flex align-items-center justify-content-between gap-3 flex-wrap w-100 d-none" id="registrationPaymentsSchoolActions">
                           <button type="button" class="btn btn-primary btn-sm d-none" id="registrationPaymentsAddBtn" data-i18n="registration_payments_add">
                             Añadir pago
                           </button>
-                          <div class="d-flex align-items-center gap-3 flex-wrap ms-lg-auto">
-                            <button type="button" class="btn btn-outline-success btn-sm" id="registrationPaymentsCopyTsvBtnSchool">
-                              <i class="bi bi-file-earmark-excel me-2"></i>Export
+                          <div class="registration-payments-school-summary d-flex align-items-center gap-3 flex-wrap ms-lg-auto">
+                            <button type="button" class="btn btn-outline-success btn-sm" id="registrationPaymentsCopyTsvBtnSchool" aria-label="Exportar" title="Exportar" data-i18n-aria-label="export" data-i18n-title="export">
+                              <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                              <span class="registration-payments-export-label ms-2" data-i18n="export">Exportar</span>
                             </button>
                             <div class="d-flex align-items-center gap-2">
                               <span class="text-muted" data-i18n="registration_payments_total">Total pagos</span>
@@ -3055,7 +3382,7 @@
                         </div>
                       </div>
 
-                      <div class="table-responsive">
+                      <div class="registration-payments-desktop-table table-responsive">
                         <table class="table table-hover align-middle">
                           <thead class="table-light">
                             <tr>
@@ -3071,23 +3398,27 @@
                         </table>
                       </div>
 
+                      <div id="registrationPaymentsMobileCards" class="registration-payments-mobile-list" aria-live="polite"></div>
+
                       <div id="registrationPaymentsEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_payments_empty">
                         No hay pagos disponibles.
                       </div>
                     </div>
                     <div class="tab-pane fade" id="registrationPaymentsPanelInvoices" role="tabpanel" aria-labelledby="registrationPaymentsSubtabInvoices">
-                      <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
+                      <div class="registration-invoices-controls d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
                         <form id="registrationInvoicesOrganizerHeader" class="d-none"></form>
-                        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap w-100 d-none" id="registrationInvoicesActions">
+                        <div class="registration-invoices-actions d-flex align-items-center justify-content-between gap-3 flex-wrap w-100 d-none" id="registrationInvoicesActions">
                           <button type="button" class="btn btn-primary btn-sm d-none" id="registrationInvoicesAddBtn" data-i18n="registration_invoices_add">
                             Añadir factura
                           </button>
-                          <div class="d-flex align-items-center gap-3 flex-wrap ms-lg-auto">
-                            <button type="button" class="btn btn-outline-success btn-sm d-none" id="registrationInvoicesCopyTsvBtn">
-                              <i class="bi bi-file-earmark-excel me-2"></i>Export
+                          <div class="registration-invoices-summary d-flex align-items-center gap-3 flex-wrap ms-lg-auto">
+                            <button type="button" class="btn btn-outline-success btn-sm d-none" id="registrationInvoicesCopyTsvBtn" aria-label="Exportar" title="Exportar" data-i18n-aria-label="export" data-i18n-title="export">
+                              <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                              <span class="registration-payments-export-label ms-2" data-i18n="export">Exportar</span>
                             </button>
-                            <button type="button" class="btn btn-outline-success btn-sm" id="registrationInvoicesCopyTsvBtnSchool">
-                              <i class="bi bi-file-earmark-excel me-2"></i>Export
+                            <button type="button" class="btn btn-outline-success btn-sm" id="registrationInvoicesCopyTsvBtnSchool" aria-label="Exportar" title="Exportar" data-i18n-aria-label="export" data-i18n-title="export">
+                              <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+                              <span class="registration-payments-export-label ms-2" data-i18n="export">Exportar</span>
                             </button>
                             <div class="d-flex align-items-center gap-2">
                               <span class="text-muted" data-i18n="registration_invoices_total">Total facturas</span>
@@ -3097,7 +3428,7 @@
                         </div>
                       </div>
 
-                      <div class="table-responsive">
+                      <div class="registration-invoices-desktop-table table-responsive">
                         <table class="table table-hover align-middle">
                           <thead class="table-light">
                             <tr>
@@ -3110,6 +3441,8 @@
                           <tbody id="registrationInvoicesTable"></tbody>
                         </table>
                       </div>
+
+                      <div id="registrationInvoicesMobileCards" class="registration-invoices-mobile-list" aria-live="polite"></div>
 
                       <div id="registrationInvoicesEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_invoices_empty">
                         No hay facturas disponibles.
