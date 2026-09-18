@@ -66,7 +66,7 @@ async function handleStatsSubmit(event) {
 
 async function fetchStats(code) {
   const query = eventId ? `?event_id=${eventId}` : '';
-  const res = await fetch(`${API_BASE_URL}/api/dancers/${encodeURIComponent(code)}/stats${query}`);
+  const res = await fetch(`${API_BASE_URL}/api/public/${encodeURIComponent(code)}/stats${query}`);
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
