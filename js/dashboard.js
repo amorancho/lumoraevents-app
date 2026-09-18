@@ -190,7 +190,7 @@ function renderDashboardEntityCounts(currentEvent, countMap) {
 
   entities.forEach((entity) => {
     const item = document.createElement('div');
-    item.className = 'col-12 col-md-6 col-lg-4 col-xl';
+    item.className = 'col-6 col-md-6 col-lg-4 col-xl';
 
     const body = document.createElement('div');
     body.className = 'dashboard-stat-box';
