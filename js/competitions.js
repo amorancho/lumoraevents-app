@@ -103,6 +103,48 @@ function getFilteredCompetitions() {
   return (Array.isArray(competitions) ? competitions : []).filter((competition) => competitionMatchesFilters(competition, filters));
 }
 
+function setCompetitionsMobileFilterPanelOpen(isOpen) {
+  const header = document.querySelector('.competitions-card-header');
+  const toggle = document.getElementById('competitionsMobileFilterToggle');
+  header?.classList.toggle('mobile-filters-open', isOpen);
+  toggle?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  toggle?.classList.toggle('btn-secondary', isOpen);
+  toggle?.classList.toggle('btn-outline-secondary', !isOpen);
+}
+
+function updateCompetitionsMobileFilters() {
+  const activeFilters = document.getElementById('competitionsMobileActiveFilters');
+  const count = document.getElementById('competitionsMobileFilterCount');
+  if (!activeFilters) return;
+
+  activeFilters.innerHTML = '';
+  const filterDefinitions = [
+    { key: 'category', select: document.getElementById('categoryFilter'), label: t('col_category', 'Category') },
+    { key: 'style', select: document.getElementById('styleFilter'), label: t('col_style', 'Style') },
+    { key: 'scenario', select: document.getElementById('scenarioFilter'), label: t('col_scenario', 'Stage') }
+  ];
+  const selectedFilters = filterDefinitions.filter(({ select }) => Boolean(select?.value));
+  if (document.getElementById('emptyParticipantsFilter')?.checked) {
+    selectedFilters.push({ key: 'withoutParticipants', label: t('filter_without_participants', 'Without participants') });
+  }
+
+  if (count) {
+    count.textContent = `${selectedFilters.length}`;
+    count.classList.toggle('d-none', selectedFilters.length === 0);
+  }
+
+  selectedFilters.forEach(({ key, select, label }) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'competitions-mobile-filter-chip';
+    chip.dataset.filter = key;
+    const value = select?.selectedOptions?.[0]?.textContent?.trim() || label;
+    chip.innerHTML = `<span>${label}: ${value}</span><i class="bi bi-x-lg" aria-hidden="true"></i>`;
+    activeFilters.appendChild(chip);
+  });
+  activeFilters.classList.toggle('has-filters', selectedFilters.length > 0);
+}
+
 function normalizeCompetitionSelectionId(value) {
   return String(value ?? '').trim();
 }
@@ -913,6 +955,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const styleFilter = document.getElementById('styleFilter');
   const scenarioFilter = document.getElementById('scenarioFilter');
   const emptyParticipantsFilter = document.getElementById('emptyParticipantsFilter');
+  const mobileFilterToggle = document.getElementById('competitionsMobileFilterToggle');
+  const mobileFilterApply = document.getElementById('competitionsMobileFilterApply');
+  const mobileFilterClear = document.getElementById('competitionsMobileFilterClear');
+  const mobileActiveFilters = document.getElementById('competitionsMobileActiveFilters');
 
   if (categoryFilter) {
     categoryFilter.addEventListener('change', applyCategoryFilter);
@@ -926,6 +972,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (emptyParticipantsFilter) {
     emptyParticipantsFilter.addEventListener('change', applyCategoryFilter);
   }
+  mobileFilterToggle?.addEventListener('click', () => {
+    const isOpen = document.querySelector('.competitions-card-header')?.classList.contains('mobile-filters-open');
+    setCompetitionsMobileFilterPanelOpen(!isOpen);
+  });
+  mobileFilterApply?.addEventListener('click', () => setCompetitionsMobileFilterPanelOpen(false));
+  mobileFilterClear?.addEventListener('click', () => {
+    if (categoryFilter) categoryFilter.value = '';
+    if (styleFilter) styleFilter.value = '';
+    if (scenarioFilter) scenarioFilter.value = '';
+    if (emptyParticipantsFilter) emptyParticipantsFilter.checked = false;
+    applyCategoryFilter();
+  });
+  mobileActiveFilters?.addEventListener('click', (event) => {
+    const chip = event.target.closest('.competitions-mobile-filter-chip');
+    if (!chip) return;
+    const selectByFilter = { category: categoryFilter, style: styleFilter, scenario: scenarioFilter };
+    if (chip.dataset.filter === 'withoutParticipants' && emptyParticipantsFilter) {
+      emptyParticipantsFilter.checked = false;
+    } else if (selectByFilter[chip.dataset.filter]) {
+      selectByFilter[chip.dataset.filter].value = '';
+    }
+    applyCategoryFilter();
+  });
 
   loadCategories();
   loadStyles();
@@ -1089,7 +1158,9 @@ function populateScenarioFilter() {
 
 function loadCompetitions() {
   const competitionsTable = document.getElementById('competitionsTable');
+  const competitionsMobileCards = document.getElementById('competitionsMobileCards');
   competitionsTable.innerHTML = ''; // Limpiar tabla
+  if (competitionsMobileCards) competitionsMobileCards.innerHTML = '';
   const showCriteriaPerJudgeUi = shouldShowCriteriaPerJudgeButton();
   const showScenario = shouldShowCompetitionScenario();
 
@@ -1223,6 +1294,60 @@ function loadCompetitions() {
     `;
 
     competitionsTable.appendChild(row);
+
+    if (competitionsMobileCards) {
+      const card = document.createElement('article');
+      card.className = 'competition-mobile-card';
+      card.dataset.id = comp.id;
+      card.dataset.cat_id = comp.category_id;
+      card.dataset.style_id = comp.style_id;
+      card.dataset.num_dancers = Number(comp.num_dancers) || 0;
+      const mobileStatusAction = isFinished
+        ? `<button type="button" class="btn btn-outline-secondary competition-mobile-card__action" disabled><i class="bi bi-check-circle"></i><span>Finished</span></button>`
+        : `<button type="button" class="btn btn-outline-${isOpen ? 'warning' : 'success'} competition-mobile-card__action btn-toggle-status" data-action="${isOpen ? 'close' : 'open'}" ${btnDisabled}><i class="bi ${isOpen ? 'bi-lock' : 'bi-unlock'}"></i><span>${isOpen ? t('close_competition') : t('open_competition')}</span></button>`;
+      const mobileCriteriaAction = showCriteriaPerJudgeUi
+        ? `<button type="button" class="btn btn-outline-info competition-mobile-card__action btn-view-criteria-config" ${btnDisabled}><i class="bi bi-ui-checks-grid"></i><span>${t('criteria_view_action', 'View configured criteria')}</span></button>`
+        : '';
+      const judgesNames = Array.isArray(comp.judges) && comp.judges.length
+        ? comp.judges.map((judge) => {
+          const flags = [];
+          if (isJudgeFlagEnabled(judge.reserve)) flags.push(`<span class="badge bg-secondary ms-1">R</span>`);
+          if (isJudgeFlagEnabled(judge.head)) flags.push(`<span class="badge bg-dark ms-1">H</span>`);
+          return `${judge.name}${flags.length ? ` ${flags.join(' ')}` : ''}`;
+        }).join(', ')
+        : t('not_defined', 'Not defined');
+      const mobileAlerts = hasOpenErrors
+        ? `<i class="bi bi-exclamation-triangle-fill text-warning" aria-hidden="true"></i><span>${t('alerts_status_has_errors', 'Open alerts')}</span>`
+        : `<i class="bi bi-patch-check-fill text-success" aria-hidden="true"></i><span>${t('alerts_status_ok', 'No alerts')}</span>`;
+      const mobileActionCount = showCriteriaPerJudgeUi ? 5 : 4;
+      card.innerHTML = `
+        <div class="competition-mobile-card__body">
+          <div class="competition-mobile-card__header">
+            <div class="competition-mobile-card__name">${comp.category_name || ''} · ${comp.style_name || ''}</div>
+            <span class="badge bg-${colorBg} competition-mobile-card__status">${statusText || ''}</span>
+          </div>
+          <div class="competition-mobile-card__classification">
+            <div class="competition-mobile-card__classification-item"><i class="bi bi-tag" aria-hidden="true"></i><div class="competition-mobile-card__classification-copy"><span class="competition-mobile-card__classification-label">${t('col_category', 'Category')}</span><strong class="competition-mobile-card__classification-value">${comp.category_name || ''}</strong></div></div>
+            <div class="competition-mobile-card__classification-item competition-mobile-card__classification-item--style"><i class="bi bi-stars" aria-hidden="true"></i><div class="competition-mobile-card__classification-copy"><span class="competition-mobile-card__classification-label">${t('col_style', 'Style')}</span><strong class="competition-mobile-card__classification-value">${comp.style_name || ''}</strong></div></div>
+          </div>
+          <div class="competition-mobile-card__details">
+            <div class="competition-mobile-card__detail"><span class="competition-mobile-card__detail-label">${t('col_estimated_start_time', 'Estimated start')}</span><span class="competition-mobile-card__detail-value">${comp.estimated_start_form ?? t('not_defined', 'Not defined')}</span></div>
+            <div class="competition-mobile-card__detail"><span class="competition-mobile-card__detail-label">${t('max_times_label', 'Maximum time')}</span><span class="competition-mobile-card__detail-value">${maxTimeDisplay}</span></div>
+            ${showScenario ? `<div class="competition-mobile-card__detail competition-mobile-card__detail--scenario"><span class="competition-mobile-card__detail-label">${t('col_scenario', 'Stage')}</span><span class="competition-mobile-card__detail-value">${scenarioDisplay}</span></div>` : ''}
+            <div class="competition-mobile-card__detail"><span class="competition-mobile-card__detail-label">${t('col_num_dancers', 'Dancers')}</span><span class="competition-mobile-card__detail-value">${comp.num_dancers || 0}</span></div>
+            <div class="competition-mobile-card__detail competition-mobile-card__detail--alerts"><span class="competition-mobile-card__detail-label">${t('col_criteria', 'Alerts')}</span><span class="competition-mobile-card__detail-value">${mobileAlerts}</span></div>
+          </div>
+          <div class="competition-mobile-card__judges"><div class="competition-mobile-card__judges-label"><i class="bi bi-people" aria-hidden="true"></i>${t('col_judges', 'Judges')}</div><div class="competition-mobile-card__judges-list">${judgesNames}</div></div>
+        </div>
+        <div class="competition-mobile-card__actions" style="--competition-action-count: ${mobileActionCount}">
+          ${mobileStatusAction}
+          ${mobileCriteriaAction}
+          <button type="button" class="btn btn-outline-secondary competition-mobile-card__action btn-dancers-order" ${btnDisabled}><i class="bi bi-list-ol"></i><span>${t('dancers_order_modal_title')}</span></button>
+          <button type="button" class="btn btn-outline-primary competition-mobile-card__action btn-edit-competition" ${btnDisabled}><i class="bi bi-pencil"></i><span>${t('edit')}</span></button>
+          <button type="button" class="btn btn-outline-danger competition-mobile-card__action btn-delete-competition" ${btnDisabled}><i class="bi bi-trash"></i><span>${t('delete')}</span></button>
+        </div>`;
+      competitionsMobileCards.appendChild(card);
+    }
   });
 
   applyCategoryFilter();
@@ -1231,9 +1356,10 @@ function loadCompetitions() {
   const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
   tooltipTriggerList.map(el => new bootstrap.Tooltip(el));
 
-  competitionsTable.querySelectorAll('.btn-toggle-status').forEach(btn => {
+  document.querySelectorAll('#competitionsTable .btn-toggle-status, #competitionsMobileCards .btn-toggle-status').forEach(btn => {
     btn.addEventListener('click', async e => {
-      const row = e.target.closest('tr');
+      const row = e.target.closest('tr, article');
+      if (!row) return;
       const compId = row.dataset.id;
       const action = btn.dataset.action; // ahora usamos data-action
 
@@ -1266,6 +1392,11 @@ function loadCompetitions() {
         const compIndex = competitions.findIndex(c => c.id == compId);
         if (compIndex !== -1) {
           competitions[compIndex].status = newStatus;
+        }
+
+        if (row.matches('article')) {
+          loadCompetitions();
+          return;
         }
 
         const statusTd = row.querySelector('td[data-status]');
@@ -1655,13 +1786,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (button) {
 
-        const tr = button.closest('tr');
+        const tr = button.closest('tr, article');
+        if (!tr) return;
 
         const competitionId = tr.dataset.id;
         const competition = competitions.find(c => c.id == competitionId);
 
         const editForm = document.getElementById('editForm');
-        editForm.dataset.id = button.closest('tr').dataset.id;
+        editForm.dataset.id = tr.dataset.id;
         editForm.dataset.cat_id = competition.category_id;
         editForm.dataset.style_id = competition.style_id;
 
@@ -1717,7 +1849,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         editModal.show();
       } else if (event.target.closest('.btn-view-criteria-config')) {
         const button = event.target.closest('.btn-view-criteria-config');
-        const tr = button?.closest('tr');
+        const tr = button?.closest('tr, article');
         const competitionId = tr?.dataset?.id;
         if (!competitionId || !competitionCriteriaConfigModal) return;
         openCompetitionCriteriaConfigModal(competitionId, competitionCriteriaConfigModal);
@@ -1725,7 +1857,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const button = event.target.closest('.btn-delete-competition');
 
-        const tr = button.closest('tr');
+        const tr = button.closest('tr, article');
+        if (!tr) return;
         const competitionId = tr.dataset.id;
         const competition = competitions.find(c => c.id == competitionId);
 
@@ -1792,7 +1925,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       const btn = event.target.closest('.btn-dancers-order');
       if (!btn) return;
 
-      const compId = btn.closest('tr').dataset.id;
+      const item = btn.closest('tr, article');
+      if (!item) return;
+      const compId = item.dataset.id;
 
       const list = document.getElementById('sortableDancers');
       list.innerHTML = '';
@@ -2768,6 +2903,9 @@ function applyCategoryFilter() {
   rows.forEach((row) => {
     row.classList.toggle('d-none', !visibleIds.has(String(row.dataset.id)));
   });
+  document.querySelectorAll('#competitionsMobileCards article').forEach((card) => {
+    card.classList.toggle('d-none', !visibleIds.has(String(card.dataset.id)));
+  });
 
   const totalParticipants = (Array.isArray(competitions) ? competitions : []).reduce((sum, competition) => {
     return sum + (Number(competition?.num_dancers) || 0);
@@ -2777,6 +2915,7 @@ function applyCategoryFilter() {
   }, 0);
 
   updateCompetitionsCounter(rows.length, visibleCompetitions.length, totalParticipants, visibleParticipants);
+  updateCompetitionsMobileFilters();
   updateBulkDeleteCompetitionsButtonState(visibleCompetitions.length);
   document.getElementById('emptyState')?.classList.toggle('d-none', visibleCompetitions.length > 0);
 }

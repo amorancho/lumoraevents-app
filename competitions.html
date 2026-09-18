@@ -71,6 +71,22 @@
     .competitions-card-header-controls .competitions-bulk-delete-btn {
       width: 100%;
     }
+    .competitions-mobile-filter-toggle,
+    .competitions-mobile-filter-apply,
+    .competitions-mobile-active-filters,
+    .competitions-mobile-list {
+      display: none;
+    }
+    .competitions-filter-panel,
+    .competitions-header-actions {
+      display: contents;
+    }
+    .competitions-top-actions-toggle .bi-chevron-down {
+      transition: transform 0.2s ease;
+    }
+    .competitions-top-actions-toggle[aria-expanded="true"] .bi-chevron-down {
+      transform: rotate(180deg);
+    }
     .alerts-tooltip .tooltip-inner {
       text-align: left;
     }
@@ -114,6 +130,127 @@
         flex: 0 0 auto;
       }
     }
+    @media (max-width: 767.98px) {
+      .competitions-card-header {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        gap: 0.5rem !important;
+      }
+      .competitions-card-header-title {
+        grid-column: 1 / -1;
+      }
+      .competitions-card-header-controls {
+        display: contents;
+      }
+      .competitions-mobile-filter-toggle {
+        display: block;
+        grid-column: 1;
+      }
+      .competitions-mobile-filter-toggle .btn,
+      .competitions-card-header-controls .competitions-bulk-delete-btn {
+        min-height: 2.5rem;
+      }
+      .competitions-count {
+        align-self: center;
+        justify-self: center;
+        font-size: 0.68rem;
+      }
+      .competitions-header-actions {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+      .competitions-header-actions .competitions-bulk-delete-btn {
+        width: 100%;
+      }
+      .competitions-filter-panel {
+        display: none;
+      }
+      .competitions-card-header.mobile-filters-open .competitions-filter-panel {
+        display: grid;
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+      .competitions-card-header.mobile-filters-open .competitions-filter-panel .competitions-filter,
+      .competitions-card-header.mobile-filters-open .competitions-filter-check,
+      .competitions-card-header.mobile-filters-open .competitions-mobile-filter-apply {
+        display: block;
+        width: 100%;
+      }
+      .competitions-filter-check {
+        padding: 0.6rem 0.75rem;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.5rem;
+      }
+      .competitions-card-header.mobile-filters-open .competitions-mobile-filter-apply {
+        grid-column: 1 / -1;
+      }
+      .competitions-mobile-active-filters.has-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-bottom: 0.65rem;
+      }
+      .competitions-mobile-filter-chip {
+        display: inline-flex;
+        max-width: 100%;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.35rem 0.55rem;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(var(--bs-primary-rgb), 0.1);
+        color: var(--bs-primary-text-emphasis);
+        font-size: 0.72rem;
+        font-weight: 650;
+      }
+      .competitions-mobile-filter-chip span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .competitions-desktop-table { display: none; }
+      .competitions-mobile-list { display: grid; gap: 0.75rem; padding: 0.25rem; }
+      .competition-mobile-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.8rem;
+        background: var(--bs-body-bg);
+        box-shadow: 0 0.15rem 0.4rem rgba(0, 0, 0, 0.06);
+      }
+      .competition-mobile-card::before {
+        position: absolute; inset: 0 0 auto; height: 0.25rem;
+        background: linear-gradient(90deg, var(--bs-primary), #6f42c1); content: '';
+      }
+      .competition-mobile-card__body { padding: 1rem 1rem 0.75rem; }
+      .competition-mobile-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
+      .competition-mobile-card__name { min-width: 0; font-size: 1rem; font-weight: 750; line-height: 1.25; }
+      .competition-mobile-card__status { flex: 0 0 auto; }
+      .competition-mobile-card__classification { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-top: 0.8rem; }
+      .competition-mobile-card__classification-item { display: flex; min-width: 0; align-items: flex-start; gap: 0.5rem; padding: 0.55rem 0.6rem; border: 1px solid rgba(var(--bs-primary-rgb), 0.14); border-radius: 0.72rem; background: rgba(var(--bs-primary-rgb), 0.07); }
+      .competition-mobile-card__classification-item--style { border-color: rgba(111, 66, 193, 0.16); background: rgba(111, 66, 193, 0.08); }
+      .competition-mobile-card__classification-item > i { flex: 0 0 auto; color: var(--bs-primary); font-size: 1rem; }
+      .competition-mobile-card__classification-item--style > i { color: #6f42c1; }
+      .competition-mobile-card__classification-copy { min-width: 0; }
+      .competition-mobile-card__classification-label { display: block; margin-bottom: 0.08rem; color: var(--bs-secondary-color); font-size: 0.61rem; font-weight: 700; letter-spacing: 0.035em; line-height: 1.1; text-transform: uppercase; }
+      .competition-mobile-card__classification-value { display: block; color: var(--bs-emphasis-color); font-size: 0.83rem; font-weight: 750; line-height: 1.2; overflow-wrap: anywhere; }
+      .competition-mobile-card__details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; margin-top: 0.75rem; }
+      .competition-mobile-card__detail { min-width: 0; padding: 0.48rem 0.6rem; border-radius: 0.7rem; background: var(--bs-tertiary-bg); font-size: 0.76rem; }
+      .competition-mobile-card__detail-label { display: block; color: var(--bs-secondary-color); font-size: 0.61rem; font-weight: 700; text-transform: uppercase; }
+      .competition-mobile-card__detail-value { display: block; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+      .competition-mobile-card__detail--scenario { grid-column: 1 / -1; }
+      .competition-mobile-card__detail--alerts .competition-mobile-card__detail-value { display: flex; align-items: center; gap: 0.35rem; white-space: normal; }
+      .competition-mobile-card__judges { margin-top: 0.75rem; padding: 0.65rem 0.7rem; border: 1px solid rgba(var(--bs-primary-rgb), 0.16); border-radius: 0.72rem; background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.08), rgba(var(--bs-primary-rgb), 0.025)); }
+      .competition-mobile-card__judges-label { display: flex; align-items: center; gap: 0.35rem; margin-bottom: 0.35rem; color: var(--bs-primary); font-size: 0.64rem; font-weight: 750; letter-spacing: 0.035em; text-transform: uppercase; }
+      .competition-mobile-card__judges-list { color: var(--bs-emphasis-color); font-size: 0.84rem; font-weight: 650; line-height: 1.4; }
+      .competition-mobile-card__actions { display: grid; grid-template-columns: repeat(var(--competition-action-count, 4), minmax(0, 1fr)); gap: 0.35rem; padding: 0.65rem 0.75rem 0.75rem; border-top: 1px solid var(--bs-border-color); background: var(--bs-tertiary-bg); }
+      .competition-mobile-card__action { display: inline-flex; min-width: 0; min-height: 3rem; flex-direction: column; align-items: center; justify-content: center; gap: 0.2rem; padding: 0.35rem 0.2rem; border-radius: 0.65rem; font-size: 0.68rem; font-weight: 650; line-height: 1.05; }
+      .competition-mobile-card__action i { font-size: 1rem; }
+      .competition-mobile-card__action span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    }
   </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
@@ -131,36 +268,41 @@
       <div class="col-12">
         <div class="card mb-3">
           <div class="card-body bg-light">
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-2" id="competitionsActionsRow">
-              <div class="col">
-                <button type="button" class="btn btn-primary w-100" id="createCompetitionsBtn" data-i18n="create_competitions_button">
-                  Crear Competiciones
-                </button>
-              </div>
-              <div class="col">
-                <button type="button" class="btn btn-primary w-100" id="maxTimesAssignmentBtn" data-i18n="max_times_button">
-                  Asignar Tiempos Máximos
-                </button>
-              </div>
-              <div class="col">
-                <button type="button" class="btn btn-primary w-100" id="judgesAssignmentBtn" data-i18n="judges_assignment">
-                  AsignaciÃ³n Jueces
-                </button>
-              </div>
-              <div class="col d-none" id="criteriaPerJudgeAssignmentCol">
-                <button type="button" class="btn btn-primary w-100" id="criteriaPerJudgeAssignmentBtn" data-i18n="criteria_per_judge_assignment_button">
-                  AsinaciÃ³n criterios por juez
-                </button>
-              </div>
-              <div class="col d-none" id="substituteJudgeCol">
-                <button type="button" class="btn btn-primary w-100" id="substituteJudgeBtn" data-i18n="substitute_judge_button">
-                  Substituir Juez
-                </button>
-              </div>
-              <div class="col">
-                <button type="button" class="btn btn-primary w-100" id="groupCategoriesBtn" data-i18n="group_categories_button">
-                  Agrupar Categorías
-                </button>
+            <button type="button" class="btn btn-outline-primary w-100 d-md-none competitions-top-actions-toggle" data-bs-toggle="collapse" data-bs-target="#competitionsActionsPanel" aria-expanded="false" aria-controls="competitionsActionsPanel">
+              <i class="bi bi-sliders me-2" aria-hidden="true"></i><span data-i18n="col_actions">Acciones</span><i class="bi bi-chevron-down ms-2" aria-hidden="true"></i>
+            </button>
+            <div class="collapse d-md-block" id="competitionsActionsPanel">
+              <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-2 mt-1 mt-md-0" id="competitionsActionsRow">
+                <div class="col">
+                  <button type="button" class="btn btn-primary w-100" id="createCompetitionsBtn" data-i18n="create_competitions_button">
+                    Crear Competiciones
+                  </button>
+                </div>
+                <div class="col">
+                  <button type="button" class="btn btn-primary w-100" id="maxTimesAssignmentBtn" data-i18n="max_times_button">
+                    Asignar Tiempos Máximos
+                  </button>
+                </div>
+                <div class="col">
+                  <button type="button" class="btn btn-primary w-100" id="judgesAssignmentBtn" data-i18n="judges_assignment">
+                    AsignaciÃ³n Jueces
+                  </button>
+                </div>
+                <div class="col d-none" id="criteriaPerJudgeAssignmentCol">
+                  <button type="button" class="btn btn-primary w-100" id="criteriaPerJudgeAssignmentBtn" data-i18n="criteria_per_judge_assignment_button">
+                    AsinaciÃ³n criterios por juez
+                  </button>
+                </div>
+                <div class="col d-none" id="substituteJudgeCol">
+                  <button type="button" class="btn btn-primary w-100" id="substituteJudgeBtn" data-i18n="substitute_judge_button">
+                    Substituir Juez
+                  </button>
+                </div>
+                <div class="col">
+                  <button type="button" class="btn btn-primary w-100" id="groupCategoriesBtn" data-i18n="group_categories_button">
+                    Agrupar Categorías
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -183,31 +325,44 @@
             <h5 class="mb-0 d-flex align-items-center competitions-card-header-title" data-i18n="competitions">
               <i class="bi bi-list-ul me-2"></i>Competitions</h5>
             <div class="competitions-card-header-controls">              
-              <select class="form-select form-select-sm competitions-filter" id="categoryFilter">
-                <option value="" data-i18n="all_categories">All Categories</option>
-              </select>
-              <select class="form-select form-select-sm competitions-filter" id="styleFilter">
-                <option value="" data-i18n="all_styles">All Styles</option>
-              </select>
-              <select class="form-select form-select-sm competitions-filter d-none" id="scenarioFilter">
-                <option value="" data-i18n="all_scenarios">All Stages</option>
-              </select>
-              <div class="form-check form-check-inline m-0 competitions-filter-check">
-                <input class="form-check-input" type="checkbox" id="emptyParticipantsFilter">
-                <label class="form-check-label small" for="emptyParticipantsFilter" data-i18n="filter_without_participants">Comp. sin Part.</label>
+              <div class="competitions-mobile-filter-toggle">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="competitionsMobileFilterToggle" aria-expanded="false" aria-controls="competitionsMobileFilterPanel">
+                  <i class="bi bi-funnel me-1" aria-hidden="true"></i><span data-i18n="filters">Filters</span>
+                  <span class="badge text-bg-primary ms-1 d-none" id="competitionsMobileFilterCount">0</span>
+                </button>
+              </div>
+              <div class="competitions-filter-panel" id="competitionsMobileFilterPanel">
+                <select class="form-select form-select-sm competitions-filter" id="categoryFilter">
+                  <option value="" data-i18n="all_categories">All Categories</option>
+                </select>
+                <select class="form-select form-select-sm competitions-filter" id="styleFilter">
+                  <option value="" data-i18n="all_styles">All Styles</option>
+                </select>
+                <select class="form-select form-select-sm competitions-filter d-none" id="scenarioFilter">
+                  <option value="" data-i18n="all_scenarios">All Stages</option>
+                </select>
+                <div class="form-check form-check-inline m-0 competitions-filter-check">
+                  <input class="form-check-input" type="checkbox" id="emptyParticipantsFilter">
+                  <label class="form-check-label small" for="emptyParticipantsFilter" data-i18n="filter_without_participants">Comp. sin Part.</label>
+                </div>
+                <button type="button" class="btn btn-outline-secondary btn-sm competitions-mobile-filter-apply" id="competitionsMobileFilterClear" data-i18n="clear_filters">Clear filters</button>
+                <button type="button" class="btn btn-primary btn-sm competitions-mobile-filter-apply" id="competitionsMobileFilterApply" data-i18n="apply_filters">Apply</button>
               </div>
               <span id="count-competitions" class="badge bg-secondary rounded-pill competitions-count">0 Comp.</span>
               <span id="count-participants" class="badge bg-secondary rounded-pill competitions-count">0 Part.</span>
-              <button id="openBulkDeleteCompetitionsBtn" type="button" class="btn btn-outline-danger btn-sm competitions-bulk-delete-btn" data-i18n="bulk_delete_competitions_button">
-                Delete Competitions
-              </button>
-              <button id="exportCompetitionsBtn" type="button" class="btn btn-outline-success btn-sm competitions-bulk-delete-btn">
-                <i class="bi bi-file-earmark-excel me-2"></i>Export
-              </button>
+              <div class="competitions-header-actions">
+                <button id="openBulkDeleteCompetitionsBtn" type="button" class="btn btn-outline-danger btn-sm competitions-bulk-delete-btn" data-i18n="bulk_delete_competitions_button">
+                  Delete Competitions
+                </button>
+                <button id="exportCompetitionsBtn" type="button" class="btn btn-outline-success btn-sm competitions-bulk-delete-btn">
+                  <i class="bi bi-file-earmark-excel me-2"></i>Export
+                </button>
+              </div>
             </div>
           </div>
       <div class="card-body p-2">
-        <div class="table-responsive">
+        <div id="competitionsMobileActiveFilters" class="competitions-mobile-active-filters"></div>
+        <div class="table-responsive competitions-desktop-table">
           <table class="table table-hover mb-0">
             <thead class="table">
               <tr>
@@ -229,6 +384,7 @@
             </tbody>
           </table>
         </div>
+        <div id="competitionsMobileCards" class="competitions-mobile-list" aria-live="polite"></div>
           
           <!-- Mensaje cuando no hay competiciones -->
           <div id="emptyState" class="text-center py-5 d-none">
