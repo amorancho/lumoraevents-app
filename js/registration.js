@@ -5903,8 +5903,215 @@ function initRegistrationDisciplinesTab() {
   loadDisciplines();
 }
 
+function createRegistrationMobileCard(options = {}) {
+  const registration = options.registration || {};
+  const card = document.createElement('article');
+  card.className = 'registration-mobile-card';
+  card.dataset.id = registration.id || '';
+  card.dataset.status = registration.status || '';
+
+  const header = document.createElement('div');
+  header.className = 'registration-mobile-card__header';
+  const identity = document.createElement('div');
+  identity.className = 'registration-mobile-card__identity';
+  const name = document.createElement('h3');
+  name.className = 'registration-mobile-card__name';
+  name.textContent = options.name || '-';
+  identity.appendChild(name);
+
+  if (options.schoolName) {
+    const school = document.createElement('div');
+    school.className = 'registration-mobile-card__school';
+    const schoolIcon = document.createElement('i');
+    schoolIcon.className = 'bi bi-building';
+    schoolIcon.setAttribute('aria-hidden', 'true');
+    const schoolName = document.createElement('span');
+    schoolName.textContent = options.schoolName;
+    school.appendChild(schoolIcon);
+    school.appendChild(schoolName);
+    identity.appendChild(school);
+  }
+
+  const statusInfo = options.statusInfo || { label: '-', color: 'secondary' };
+  const status = document.createElement('span');
+  status.className = `badge bg-${statusInfo.color || 'secondary'} registration-mobile-card__status`;
+  status.textContent = statusInfo.label || '-';
+  status.title = statusInfo.label || '-';
+  header.appendChild(identity);
+  header.appendChild(status);
+  card.appendChild(header);
+
+  const classification = document.createElement('div');
+  classification.className = 'registration-mobile-card__classification';
+  [
+    {
+      type: 'category',
+      icon: 'bi-tag',
+      label: t('registration_competitions_table_category', 'Categoría'),
+      value: options.categoryName || '-'
+    },
+    {
+      type: 'style',
+      icon: 'bi-music-note',
+      label: t('registration_competitions_table_style', 'Disciplina/Estilo'),
+      value: options.styleName || '-'
+    }
+  ].forEach((item) => {
+    const element = document.createElement('div');
+    element.className = `registration-mobile-card__classification-item registration-mobile-card__classification-item--${item.type}`;
+    const icon = document.createElement('i');
+    icon.className = `bi ${item.icon}`;
+    icon.setAttribute('aria-hidden', 'true');
+    const copy = document.createElement('div');
+    copy.className = 'registration-mobile-card__classification-copy';
+    const label = document.createElement('span');
+    label.className = 'registration-mobile-card__classification-label';
+    label.textContent = item.label;
+    const value = document.createElement('strong');
+    value.className = 'registration-mobile-card__classification-value';
+    value.textContent = item.value;
+    value.title = item.value;
+    copy.appendChild(label);
+    copy.appendChild(value);
+    element.appendChild(icon);
+    element.appendChild(copy);
+    classification.appendChild(element);
+  });
+  card.appendChild(classification);
+
+  const metrics = document.createElement('div');
+  metrics.className = 'registration-mobile-card__metrics';
+  const createMetric = (iconClass, label, value, valueClassName = '') => {
+    const metric = document.createElement('div');
+    metric.className = 'registration-mobile-card__metric';
+    const icon = document.createElement('i');
+    icon.className = `bi ${iconClass}`;
+    icon.setAttribute('aria-hidden', 'true');
+    const copy = document.createElement('div');
+    copy.className = 'registration-mobile-card__metric-copy';
+    const labelEl = document.createElement('span');
+    labelEl.className = 'registration-mobile-card__metric-label';
+    labelEl.textContent = label;
+    const valueEl = document.createElement('span');
+    valueEl.className = `registration-mobile-card__metric-value ${valueClassName}`.trim();
+    valueEl.textContent = value;
+    valueEl.title = value;
+    copy.appendChild(labelEl);
+    copy.appendChild(valueEl);
+    metric.appendChild(icon);
+    metric.appendChild(copy);
+    return metric;
+  };
+  metrics.appendChild(createMetric(
+    'bi-people',
+    t('registration_competitions_table_participants', 'Participantes'),
+    `${options.participantsCount ?? 0}`
+  ));
+  metrics.appendChild(createMetric(
+    'bi-cash-coin',
+    t('registration_competitions_table_total_amount', 'Importe total'),
+    options.totalAmountText || '-',
+    options.isFree ? 'text-success' : ''
+  ));
+  card.appendChild(metrics);
+
+  const checks = document.createElement('div');
+  checks.className = 'registration-mobile-card__checks';
+  const createCheck = (label, iconClass, trailingNode) => {
+    const check = document.createElement('div');
+    check.className = 'registration-mobile-card__check';
+    const checkLabel = document.createElement('span');
+    checkLabel.className = 'registration-mobile-card__check-label';
+    const icon = document.createElement('i');
+    icon.className = `bi ${iconClass}`;
+    icon.setAttribute('aria-hidden', 'true');
+    const text = document.createElement('span');
+    text.textContent = label;
+    checkLabel.appendChild(icon);
+    checkLabel.appendChild(text);
+    check.appendChild(checkLabel);
+    check.appendChild(trailingNode);
+    return check;
+  };
+  const createInfoBadge = (info) => {
+    const badge = document.createElement('span');
+    badge.className = `badge ${info?.className || 'bg-secondary-subtle text-secondary-emphasis'}`;
+    badge.textContent = info?.label || '-';
+    badge.title = info?.label || '-';
+    return badge;
+  };
+
+  checks.appendChild(createCheck(
+    t('registration_competitions_table_music', 'Música'),
+    'bi-music-note-beamed',
+    createInfoBadge(options.musicInfo)
+  ));
+
+  if (options.syncroInfo) {
+    checks.appendChild(createCheck(
+      t('registration_categories_syncro', 'Syncro'),
+      'bi-arrow-repeat',
+      createInfoBadge(options.syncroInfo)
+    ));
+  }
+
+  const observationsBadge = createInfoBadge({
+    label: options.hasObservations
+      ? t('registration_mobile_yes', 'Sí')
+      : t('registration_mobile_no', 'No'),
+    className: options.hasObservations
+      ? 'bg-warning-subtle text-warning-emphasis'
+      : 'bg-secondary-subtle text-secondary-emphasis'
+  });
+  observationsBadge.classList.add('registration-mobile-card__observation-status');
+  observationsBadge.title = options.hasObservations
+    ? t('registration_competitions_observations_yes', 'Con observaciones')
+    : t('registration_competitions_observations_no', 'Sin observaciones');
+  checks.appendChild(createCheck(
+    t('registration_competitions_observations', 'Observaciones'),
+    'bi-chat-left-text',
+    observationsBadge
+  ));
+
+  checks.appendChild(createCheck(
+    t('registration_competitions_table_alerts', 'Alertas'),
+    'bi-bell',
+    createRegistrationAlertsIcon(registration)
+  ));
+  card.appendChild(checks);
+
+  const actions = Array.isArray(options.actions) ? options.actions : [];
+  if (actions.length) {
+    const actionsEl = document.createElement('div');
+    actionsEl.className = 'registration-mobile-card__actions';
+    actionsEl.style.setProperty('--registration-action-count', `${actions.length}`);
+    actions.forEach((action) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `btn ${action.variant || 'btn-outline-secondary'} registration-mobile-card__action ${action.className || ''}`.trim();
+      button.dataset.id = registration.id || '';
+      if (action.action) button.dataset.action = action.action;
+      button.disabled = Boolean(action.disabled);
+      button.title = action.title || action.label || '';
+      button.setAttribute('aria-label', action.title || action.label || '');
+      const icon = document.createElement('i');
+      icon.className = `bi ${action.icon || 'bi-circle'}`;
+      icon.setAttribute('aria-hidden', 'true');
+      const label = document.createElement('span');
+      label.textContent = action.label || '';
+      button.appendChild(icon);
+      button.appendChild(label);
+      actionsEl.appendChild(button);
+    });
+    card.appendChild(actionsEl);
+  }
+
+  return card;
+}
+
 function initOrganizerRegistrationsTab() {
   const tableBody = document.getElementById('orgRegistrationsTable');
+  const mobileCards = document.getElementById('orgRegistrationsMobileCards');
   const emptyEl = document.getElementById('orgRegistrationsEmpty');
   const countEl = document.getElementById('orgRegistrationsCount');
   const filterForm = document.getElementById('orgRegistrationsFilters');
@@ -5914,12 +6121,16 @@ function initOrganizerRegistrationsTab() {
   const filterStyle = document.getElementById('orgRegistrationsFilterStyle');
   const filterClear = document.getElementById('orgRegistrationsFilterClear');
   const copyTsvBtn = document.getElementById('orgRegistrationsCopyTsvBtn');
+  const mobileFilterToggle = document.getElementById('orgRegistrationsMobileFilterToggle');
+  const mobileFilterApply = document.getElementById('orgRegistrationsMobileFilterApply');
+  const mobileFilterCount = document.getElementById('orgRegistrationsMobileFilterCount');
+  const mobileActiveFilters = document.getElementById('orgRegistrationsMobileActiveFilters');
   const modalEl = document.getElementById('registrationModal');
   const membersModalEl = document.getElementById('registrationMembersModal');
   const validateModalEl = document.getElementById('orgRegistrationValidateModal');
   const rejectModalEl = document.getElementById('orgRegistrationRejectModal');
 
-  if (!tableBody || !emptyEl || !filterForm || !filterSchool || !filterStatus || !filterCategory || !filterStyle || !modalEl || !membersModalEl || !validateModalEl || !rejectModalEl) {
+  if (!tableBody || !mobileCards || !emptyEl || !filterForm || !filterSchool || !filterStatus || !filterCategory || !filterStyle || !modalEl || !membersModalEl || !validateModalEl || !rejectModalEl) {
     return;
   }
 
@@ -6115,7 +6326,10 @@ function initOrganizerRegistrationsTab() {
 
   const initRegistrationsTooltips = () => {
     disposeRegistrationsTooltips();
-    const tooltipElements = tableBody.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipElements = [
+      ...tableBody.querySelectorAll('[data-bs-toggle="tooltip"]'),
+      ...mobileCards.querySelectorAll('[data-bs-toggle="tooltip"]')
+    ];
     registrationsTooltipInstances = Array.from(tooltipElements).map((element) =>
       new bootstrap.Tooltip(element)
     );
@@ -6802,10 +7016,55 @@ function initOrganizerRegistrationsTab() {
     registrationModal.show();
   };
 
+  const setMobileOrgFilterPanelOpen = (isOpen) => {
+    filterForm.classList.toggle('mobile-filters-open', isOpen);
+    if (mobileFilterToggle) {
+      mobileFilterToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      mobileFilterToggle.classList.toggle('btn-secondary', isOpen);
+      mobileFilterToggle.classList.toggle('btn-outline-secondary', !isOpen);
+    }
+  };
+
+  const updateMobileOrgFilters = () => {
+    if (!mobileActiveFilters) return;
+    mobileActiveFilters.innerHTML = '';
+    const filterDefinitions = [
+      { key: 'school', select: filterSchool, label: t('org_registrations_filter_school', 'Escuela') },
+      { key: 'status', select: filterStatus, label: t('org_registrations_filter_status', 'Estado') },
+      { key: 'category', select: filterCategory, label: t('org_registrations_filter_category', 'Categoria') },
+      { key: 'style', select: filterStyle, label: t('org_registrations_filter_style', 'Disciplina/Estilo') }
+    ];
+    const activeFilters = filterDefinitions.filter(({ select }) => Boolean(select?.value));
+
+    if (mobileFilterCount) {
+      mobileFilterCount.textContent = `${activeFilters.length}`;
+      mobileFilterCount.classList.toggle('d-none', activeFilters.length === 0);
+    }
+
+    activeFilters.forEach(({ key, select, label }) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'org-registrations-mobile-filter-chip';
+      chip.dataset.filter = key;
+      const text = document.createElement('span');
+      text.textContent = `${label}: ${select.selectedOptions?.[0]?.textContent?.trim() || '-'}`;
+      const close = document.createElement('i');
+      close.className = 'bi bi-x-lg';
+      close.setAttribute('aria-hidden', 'true');
+      chip.appendChild(text);
+      chip.appendChild(close);
+      mobileActiveFilters.appendChild(chip);
+    });
+
+    mobileActiveFilters.classList.toggle('has-filters', activeFilters.length > 0);
+  };
+
   const renderRegistrations = () => {
     disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
+    mobileCards.innerHTML = '';
     const registrations = applyFilters();
+    updateMobileOrgFilters();
     if (countEl) {
       countEl.textContent = `${registrations.length}`;
     }
@@ -6978,6 +7237,51 @@ function initOrganizerRegistrationsTab() {
       row.appendChild(actionsCell);
 
       tableBody.appendChild(row);
+
+      mobileCards.appendChild(createRegistrationMobileCard({
+        registration,
+        name: registration.name || registration.choreography || '-',
+        schoolName: registration.school_name || registration.school?.name || '-',
+        statusInfo,
+        categoryName,
+        styleName,
+        participantsCount: getParticipantsCount(registration),
+        totalAmountText: getRegistrationPrice(registration) === 0
+          ? 'FREE'
+          : formatCurrencyDisplay(totalAmount),
+        isFree: getRegistrationPrice(registration) === 0,
+        musicInfo,
+        syncroInfo,
+        hasObservations,
+        actions: [
+          {
+            className: 'btn-org-registration-validate',
+            variant: 'btn-outline-success',
+            icon: 'bi-check-circle',
+            label: validateLabel,
+            disabled: registration.status !== 'PEN'
+          },
+          {
+            className: 'btn-org-registration-reject',
+            variant: 'btn-outline-danger',
+            icon: 'bi-x-circle',
+            label: rejectLabel,
+            disabled: !['PEN', 'VAL'].includes(`${registration.status || ''}`)
+          },
+          {
+            className: 'btn-org-registration-members',
+            variant: 'btn-outline-secondary',
+            icon: 'bi-people',
+            label: membersLabel
+          },
+          {
+            className: 'btn-org-registration-details',
+            variant: 'btn-outline-primary',
+            icon: 'bi-search',
+            label: detailsLabel
+          }
+        ]
+      }));
     });
 
     initRegistrationsTooltips();
@@ -6985,6 +7289,7 @@ function initOrganizerRegistrationsTab() {
 
   const showRegistrationsError = (message) => {
     tableBody.innerHTML = '';
+    mobileCards.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
     cell.colSpan = 12;
@@ -6992,6 +7297,11 @@ function initOrganizerRegistrationsTab() {
     cell.textContent = message;
     row.appendChild(cell);
     tableBody.appendChild(row);
+    const mobileError = document.createElement('div');
+    mobileError.className = 'alert alert-danger mb-0';
+    mobileError.setAttribute('role', 'alert');
+    mobileError.textContent = message;
+    mobileCards.appendChild(mobileError);
     emptyEl.classList.add('d-none');
     if (countEl) {
       countEl.textContent = '0';
@@ -7015,11 +7325,31 @@ function initOrganizerRegistrationsTab() {
   filterStatus.addEventListener('change', renderRegistrations);
   filterCategory.addEventListener('change', renderRegistrations);
   filterStyle.addEventListener('change', renderRegistrations);
+  mobileFilterToggle?.addEventListener('click', () => {
+    setMobileOrgFilterPanelOpen(!filterForm.classList.contains('mobile-filters-open'));
+  });
+  mobileFilterApply?.addEventListener('click', () => {
+    setMobileOrgFilterPanelOpen(false);
+  });
+  mobileActiveFilters?.addEventListener('click', (event) => {
+    const chip = event.target.closest('.org-registrations-mobile-filter-chip');
+    if (!chip) return;
+    const selectByFilter = {
+      school: filterSchool,
+      status: filterStatus,
+      category: filterCategory,
+      style: filterStyle
+    };
+    const select = selectByFilter[chip.dataset.filter];
+    if (select) select.value = '';
+    renderRegistrations();
+  });
   filterClear.addEventListener('click', () => {
     filterSchool.value = '';
     filterStatus.value = '';
     filterCategory.value = '';
     filterStyle.value = '';
+    setMobileOrgFilterPanelOpen(false);
     renderRegistrations();
   });
 
@@ -7038,6 +7368,7 @@ function initOrganizerRegistrationsTab() {
   if (membersElements.ageInfoBtn) {
     const membersAgeLanguageObserver = new MutationObserver(() => {
       updateMembersAgeHeaderTooltip();
+      renderRegistrations();
     });
     membersAgeLanguageObserver.observe(document.documentElement, {
       attributes: true,
@@ -7045,7 +7376,7 @@ function initOrganizerRegistrationsTab() {
     });
   }
 
-  tableBody.addEventListener('click', (event) => {
+  const handleOrganizerRegistrationAction = (event) => {
     const detailsBtn = event.target.closest('.btn-org-registration-details');
     const membersBtn = event.target.closest('.btn-org-registration-members');
     const validateBtn = event.target.closest('.btn-org-registration-validate');
@@ -7076,7 +7407,10 @@ function initOrganizerRegistrationsTab() {
     if (registration) {
       openRegistrationDetails(registration);
     }
-  });
+  };
+
+  tableBody.addEventListener('click', handleOrganizerRegistrationAction);
+  mobileCards.addEventListener('click', handleOrganizerRegistrationAction);
 
   if (validationElements.validateConfirmBtn) {
     validationElements.validateConfirmBtn.addEventListener('click', submitValidation);

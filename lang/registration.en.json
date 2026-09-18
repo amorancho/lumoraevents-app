@@ -207,6 +207,8 @@
   "registration_competitions_observations_placeholder": "Registration observations",
   "registration_competitions_observations_yes": "Has observations",
   "registration_competitions_observations_no": "No observations",
+  "registration_mobile_yes": "Yes",
+  "registration_mobile_no": "No",
   "registration_alerts_has_errors": "Open alerts",
   "registration_alerts_no_errors": "No alerts",
   "registration_competitions_participant_search": "Search participant",

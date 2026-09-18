@@ -155,6 +155,8 @@
   "registration_competitions_observations_placeholder": "Observações da inscrição",
   "registration_competitions_observations_yes": "Com observações",
   "registration_competitions_observations_no": "Sem observações",
+  "registration_mobile_yes": "Sim",
+  "registration_mobile_no": "Não",
   "registration_alerts_has_errors": "Alertas abertas",
   "registration_alerts_no_errors": "Sem alertas",
   "registration_competitions_participant_search": "Pesquisar participante",

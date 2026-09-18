@@ -1,5 +1,6 @@
 ﻿function initCompetitionsTab() {
   const tableBody = document.getElementById('registrationsTable');
+  const mobileCards = document.getElementById('registrationsMobileCards');
   const countEl = document.getElementById('registrationsCount');
   const emptyEl = document.getElementById('registrationsEmpty');
   const createBtn = document.getElementById('createRegistrationBtn');
@@ -11,7 +12,7 @@
   const membersModalEl = document.getElementById('registrationMembersModal');
   const confirmModalEl = document.getElementById('confirmRegistrationModal');
 
-  if (!tableBody || !modalEl || !audioModalEl || !deleteModalEl || !membersModalEl || !confirmModalEl) {
+  if (!tableBody || !mobileCards || !modalEl || !audioModalEl || !deleteModalEl || !membersModalEl || !confirmModalEl) {
     return;
   }
 
@@ -1032,7 +1033,10 @@
 
   const initRegistrationsTooltips = () => {
     disposeRegistrationsTooltips();
-    const tooltipElements = tableBody.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipElements = [
+      ...tableBody.querySelectorAll('[data-bs-toggle="tooltip"]'),
+      ...mobileCards.querySelectorAll('[data-bs-toggle="tooltip"]')
+    ];
     registrationsTooltipInstances = Array.from(tooltipElements).map((element) =>
       new bootstrap.Tooltip(element)
     );
@@ -1389,6 +1393,7 @@
   const renderRegistrations = () => {
     disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
+    mobileCards.innerHTML = '';
     const registrations = Array.isArray(registrationState.registrations)
       ? registrationState.registrations
       : [];
@@ -1559,6 +1564,60 @@
       row.appendChild(actionsCell);
 
       tableBody.appendChild(row);
+
+      mobileCards.appendChild(createRegistrationMobileCard({
+        registration,
+        name: registration.name || '-',
+        statusInfo,
+        categoryName: registration.category_name || '-',
+        styleName: registration.style_name || '-',
+        participantsCount: getRegistrationParticipantsCount(registration),
+        totalAmountText: getRegistrationPrice(registration) === 0
+          ? 'FREE'
+          : formatCurrencyDisplay(totalAmount),
+        isFree: getRegistrationPrice(registration) === 0,
+        musicInfo,
+        hasObservations,
+        actions: [
+          {
+            className: 'btn-edit-registration',
+            variant: 'btn-outline-primary',
+            icon: 'bi-pencil',
+            label: editTitle,
+            disabled: isPending || isValidated
+          },
+          {
+            className: 'btn-registration-audio',
+            variant: 'btn-outline-info',
+            icon: 'bi-music-note-beamed',
+            label: t('registration_competitions_table_music', 'Música'),
+            title: t('registration_audio_manage', 'Gestionar música')
+          },
+          {
+            className: 'btn-members-registration',
+            variant: 'btn-outline-secondary',
+            icon: 'bi-people',
+            label: t('registration_competitions_table_participants', 'Participantes'),
+            title: t('registration_competitions_members_title', 'Gestion de miembros'),
+            disabled: isPending || isValidated
+          },
+          {
+            className: 'btn-confirm-registration',
+            variant: isPending ? 'btn-outline-warning' : 'btn-outline-success',
+            icon: isPending ? 'bi-x-circle' : 'bi-check-circle',
+            label: isPending ? t('cancel', 'Cancelar') : confirmTitle,
+            title: isPending ? cancelConfirmTitle : confirmTitle,
+            action: isPending ? 'cancel' : 'confirm',
+            disabled: isValidated
+          },
+          {
+            className: 'btn-delete-registration',
+            variant: 'btn-outline-danger',
+            icon: 'bi-trash',
+            label: deleteTitle
+          }
+        ]
+      }));
     });
 
     initRegistrationsTooltips();
@@ -1566,6 +1625,7 @@
   const showRegistrationsError = (message) => {
     disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
+    mobileCards.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
     cell.colSpan = 10;
@@ -1573,6 +1633,11 @@
     cell.textContent = message;
     row.appendChild(cell);
     tableBody.appendChild(row);
+    const mobileError = document.createElement('div');
+    mobileError.className = 'alert alert-danger mb-0';
+    mobileError.setAttribute('role', 'alert');
+    mobileError.textContent = message;
+    mobileCards.appendChild(mobileError);
     if (countEl) countEl.textContent = '0';
     if (emptyEl) emptyEl.classList.add('d-none');
   };
@@ -1995,7 +2060,7 @@
     bindTableTsvExportButton(copyTsvBtn, tableBody);
   }
 
-  tableBody.addEventListener('click', (event) => {
+  const handleSchoolRegistrationAction = (event) => {
     const editBtn = event.target.closest('.btn-edit-registration');
     const audioBtn = event.target.closest('.btn-registration-audio');
     const membersBtn = event.target.closest('.btn-members-registration');
@@ -2066,7 +2131,10 @@
       }
       deleteModal.show();
     }
-  });
+  };
+
+  tableBody.addEventListener('click', handleSchoolRegistrationAction);
+  mobileCards.addEventListener('click', handleSchoolRegistrationAction);
 
   if (elements.confirmDeleteBtn) {
     elements.confirmDeleteBtn.addEventListener('click', deleteRegistration);
@@ -2131,6 +2199,7 @@
   if (isSchoolUser && elements.membersAgeInfoBtn) {
     const membersAgeLanguageObserver = new MutationObserver(() => {
       updateMembersAgeHeaderTooltip();
+      renderRegistrations();
     });
     membersAgeLanguageObserver.observe(document.documentElement, {
       attributes: true,
