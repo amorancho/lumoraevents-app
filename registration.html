@@ -659,6 +659,12 @@
     .schools-mobile-list {
       display: none;
     }
+    .registration-categories-mobile-list {
+      display: none;
+    }
+    .registration-disciplines-add-icon {
+      display: none;
+    }
     @media (max-width: 767.98px) {
       #registrationSidebarToggle {
         margin-bottom: 0.75rem !important;
@@ -1697,6 +1703,349 @@
         font-size: 0.76rem;
         font-weight: 650;
       }
+      #registration-categories > .card,
+      #registration-disciplines .registration-disciplines-card {
+        border: 0;
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+      #registration-categories > .card > .card-body,
+      #registration-disciplines .registration-disciplines-card > .card-body {
+        padding: 0 !important;
+      }
+      #registration-categories .registration-categories-desktop-table {
+        display: none;
+      }
+      #registration-categories .registration-categories-mobile-list {
+        display: grid;
+        gap: 0.65rem;
+      }
+      #registration-categories .registration-categories-controls {
+        gap: 0.65rem !important;
+        margin-bottom: 0.75rem !important;
+      }
+      #registration-categories #registrationCategoryAddBtn {
+        width: 100%;
+        min-height: 2.65rem;
+      }
+      #registration-categories .registration-categories-summary {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.5rem 0.8rem !important;
+        margin-left: 0 !important;
+        font-size: 0.78rem;
+      }
+      #registration-categories .registration-categories-summary > div {
+        gap: 0.4rem !important;
+      }
+      .registration-category-mobile-card {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(var(--bs-primary-rgb), 0.14);
+        border-radius: 1rem;
+        background: var(--bs-body-bg);
+        box-shadow: 0 0.35rem 1.2rem rgba(15, 23, 42, 0.08);
+      }
+      .registration-category-mobile-card::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 0.25rem;
+        content: '';
+        background: linear-gradient(90deg, var(--bs-primary), #6f42c1);
+      }
+      .registration-category-mobile-card__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.95rem 0.85rem 0.7rem;
+      }
+      .registration-category-mobile-card__name {
+        min-width: 0;
+        margin: 0;
+        overflow-wrap: anywhere;
+        color: var(--bs-emphasis-color);
+        font-size: 1rem;
+        font-weight: 750;
+        line-height: 1.25;
+      }
+      .registration-category-mobile-card__sync {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 0.3rem;
+        color: var(--bs-secondary-color);
+        font-size: 0.68rem;
+      }
+      .registration-category-mobile-card__metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        padding: 0 0.85rem 0.75rem;
+      }
+      .registration-category-mobile-card__metric {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.6rem;
+        border-radius: 0.7rem;
+        background: var(--bs-tertiary-bg);
+      }
+      .registration-category-mobile-card__metric > i {
+        flex: 0 0 auto;
+        color: var(--bs-primary);
+      }
+      .registration-category-mobile-card__metric-copy {
+        min-width: 0;
+      }
+      .registration-category-mobile-card__metric-label {
+        display: block;
+        overflow: hidden;
+        color: var(--bs-secondary-color);
+        font-size: 0.61rem;
+        font-weight: 700;
+        letter-spacing: 0.035em;
+        line-height: 1.1;
+        text-overflow: ellipsis;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .registration-category-mobile-card__metric-value {
+        display: block;
+        margin-top: 0.08rem;
+        overflow: hidden;
+        color: var(--bs-emphasis-color);
+        font-size: 0.82rem;
+        font-weight: 750;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .registration-category-mobile-card__commercial {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.8rem 0.85rem 0.75rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+        background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.08), rgba(var(--bs-success-rgb), 0.035));
+      }
+      .registration-category-mobile-card__price {
+        display: flex;
+        min-width: 0;
+        width: 100%;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        text-align: center;
+      }
+      .registration-category-mobile-card__section-label {
+        display: block;
+        color: var(--bs-secondary-color);
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.035em;
+        text-transform: uppercase;
+      }
+      .registration-category-mobile-card__price-amount {
+        display: block;
+        margin-top: 0.05rem;
+        color: var(--bs-emphasis-color);
+        font-size: 1.55rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        line-height: 1.1;
+      }
+      .registration-category-mobile-card__price-source {
+        padding: 0.35em 0.55em;
+        font-size: 0.62rem;
+        letter-spacing: 0.035em;
+      }
+      .registration-category-mobile-card__fee {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.38rem 0.65rem;
+        border: 1px solid transparent;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .registration-category-mobile-card__fee--active {
+        border-color: rgba(var(--bs-success-rgb), 0.25);
+        background: rgba(var(--bs-success-rgb), 0.1);
+        color: var(--bs-success-text-emphasis);
+      }
+      .registration-category-mobile-card__fee--inactive {
+        border-color: var(--bs-border-color-translucent);
+        background: var(--bs-secondary-bg);
+        color: var(--bs-secondary-color);
+      }
+      .registration-category-mobile-card__status {
+        padding: 0.6rem 0.85rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+      .registration-category-mobile-card__status-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        margin-top: 0.35rem;
+      }
+      .registration-category-mobile-card__status-badges .badge,
+      .registration-discipline-mobile-card__statuses .badge {
+        padding: 0.42em 0.58em;
+        font-size: 0.68rem;
+        line-height: 1.15;
+        white-space: normal;
+      }
+      .registration-category-mobile-card__actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+        padding: 0.65rem 0.75rem 0.75rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+      .registration-category-mobile-card__action {
+        display: inline-flex;
+        min-width: 0;
+        min-height: 3rem;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.2rem;
+        padding: 0.35rem 0.2rem;
+        border-radius: 0.65rem;
+        font-size: 0.66rem;
+        line-height: 1.05;
+      }
+      .registration-category-mobile-card__action i {
+        font-size: 1rem;
+      }
+      .registration-category-mobile-card__action span {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #registration-disciplines .registration-disciplines-column {
+        width: 100%;
+      }
+      #registration-disciplines .registration-disciplines-header {
+        padding: 0 0.1rem;
+      }
+      #registration-disciplines .registration-disciplines-header .card-title {
+        font-size: 1rem;
+      }
+      #registration-disciplines .registration-disciplines-create {
+        margin-top: 0.75rem !important;
+        margin-bottom: 0.75rem !important;
+      }
+      #registration-disciplines .registration-disciplines-create .form-control,
+      #registration-disciplines .registration-disciplines-create .btn {
+        min-height: 2.65rem;
+      }
+      #registration-disciplines .registration-disciplines-create .btn {
+        display: inline-flex;
+        width: 2.8rem;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+      }
+      #registration-disciplines .registration-disciplines-add-icon {
+        display: inline-block;
+        font-size: 1rem;
+      }
+      #registration-disciplines .registration-disciplines-add-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+      }
+      #registration-disciplines .registration-disciplines-list {
+        display: grid;
+        gap: 0.65rem;
+      }
+      #registration-disciplines .registration-discipline-mobile-card {
+        position: relative;
+        display: block !important;
+        overflow: hidden;
+        padding: 0;
+        border: 1px solid rgba(var(--bs-primary-rgb), 0.14);
+        border-radius: 1rem !important;
+        background: var(--bs-body-bg);
+        box-shadow: 0 0.35rem 1.2rem rgba(15, 23, 42, 0.08);
+      }
+      #registration-disciplines .registration-discipline-mobile-card::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 0.25rem;
+        content: '';
+        background: linear-gradient(90deg, var(--bs-primary), #6f42c1);
+      }
+      .registration-discipline-mobile-card__header {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.95rem 0.85rem 0.7rem;
+      }
+      .registration-discipline-mobile-card__handle {
+        display: inline-flex;
+        width: 2rem;
+        height: 2rem;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.55rem;
+        background: var(--bs-tertiary-bg);
+        touch-action: none;
+      }
+      .registration-discipline-mobile-card__name {
+        min-width: 0;
+        flex: 1 1 auto;
+        overflow-wrap: anywhere;
+        color: var(--bs-emphasis-color);
+        font-size: 0.95rem;
+        font-weight: 750;
+        line-height: 1.25;
+      }
+      .registration-discipline-mobile-card__content {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between;
+        gap: 0.65rem !important;
+        margin-left: 0 !important;
+        padding: 0.65rem 0.85rem 0.75rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+        background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.035), transparent);
+      }
+      .registration-discipline-mobile-card__statuses {
+        display: flex;
+        min-width: 0;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+      .registration-discipline-mobile-card__delete {
+        display: inline-flex;
+        width: 2.5rem;
+        height: 2.5rem;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+        border: 1px solid rgba(var(--bs-danger-rgb), 0.3);
+        border-radius: 0.65rem;
+        background: var(--bs-body-bg);
+      }
     }
     @media (max-width: 991.98px) {
       .registration-dashboard-panel-wide {
@@ -2337,12 +2686,12 @@
             <div class="tab-pane fade" id="registration-categories" role="tabpanel">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
-                  <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
+                  <div class="registration-categories-controls d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
                     <button type="button" class="btn btn-primary" id="registrationCategoryAddBtn">
                       <i class="bi bi-plus-circle me-2"></i>
                       <span data-i18n="registration_categories_add">Nueva categoria</span>
                     </button>
-                    <div class="d-flex align-items-center gap-3 ms-sm-auto flex-wrap">
+                    <div class="registration-categories-summary d-flex align-items-center gap-3 ms-sm-auto flex-wrap">
                       <div class="d-flex align-items-center gap-2">
                         <span class="text-muted" data-i18n="registration_categories_fee_cost">Cuota inscripcion</span>
                         <span class="badge bg-info-subtle text-info-emphasis" id="registrationCategoriesFeeCost">0.00 EUR</span>
@@ -2354,7 +2703,7 @@
                     </div>
                   </div>
 
-                  <div class="table-responsive">
+                  <div class="table-responsive registration-categories-desktop-table">
                     <table class="table table-hover align-middle">
                       <thead class="table-light">
                         <tr>
@@ -2376,6 +2725,8 @@
                     </table>
                   </div>
 
+                  <div id="registrationCategoriesMobileCards" class="registration-categories-mobile-list" aria-live="polite"></div>
+
                   <div id="registrationCategoriesEmpty" class="text-center text-muted py-4 d-none" data-i18n="registration_categories_empty">
                     No hay categorias disponibles.
                   </div>
@@ -2383,18 +2734,21 @@
               </div>
             </div>
             <div class="tab-pane fade" id="registration-disciplines" role="tabpanel">
-              <div class="col-12 col-lg-6">
-                <div class="card shadow-sm bg-light">
+              <div class="registration-disciplines-column col-12 col-lg-6">
+                <div class="registration-disciplines-card card shadow-sm bg-light">
                   <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="registration-disciplines-header d-flex justify-content-between align-items-center">
                       <h5 class="card-title mb-0" data-i18n="registration_disciplines_title">Disciplinas/Estilos</h5>
                       <span id="count-registration-disciplines" class="badge bg-secondary rounded-pill">0</span>
                     </div>
-                    <div class="input-group mb-3 mt-4">
+                    <div class="registration-disciplines-create input-group mb-3 mt-4">
                       <input type="text" id="input-registration-disciplines" class="form-control" placeholder="Nueva disciplina/estilo" data-i18n-placeholder="registration_disciplines_new_placeholder" maxlength="40" />
-                      <button class="btn btn-primary" id="registrationDisciplinesAddBtn" type="button" data-i18n="registration_disciplines_add">Crear disciplina/estilo</button>
+                      <button class="btn btn-primary" id="registrationDisciplinesAddBtn" type="button">
+                        <i class="bi bi-plus-lg registration-disciplines-add-icon" aria-hidden="true"></i>
+                        <span class="registration-disciplines-add-label" data-i18n="registration_disciplines_add">Crear disciplina/estilo</span>
+                      </button>
                     </div>
-                    <ul class="list-group" id="list-registration-disciplines"></ul>
+                    <ul class="registration-disciplines-list list-group" id="list-registration-disciplines" aria-live="polite"></ul>
                   </div>
                 </div>
               </div>

@@ -437,6 +437,8 @@
   "save_choreo": "Enregistrer l’inscription",
   "registration_categories_price": "Prix du jour",
   "registration_categories_fee": "Fee",
+  "registration_categories_applies_fee": "Frais appliqués",
+  "registration_categories_no_fee": "Sans frais",
   "registration_categories_fee_cost": "Frais inscription",
   "registration_categories_field_price": "Prix par pax",
   "registration_categories_field_music_max_duration_invalid": "Utilisez le format mm:ss.",

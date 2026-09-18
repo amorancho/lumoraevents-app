@@ -437,6 +437,8 @@
   "save_choreo": "Guardar inscricao",
   "registration_categories_price": "Preco de hoje",
   "registration_categories_fee": "Fee",
+  "registration_categories_applies_fee": "Taxa aplicável",
+  "registration_categories_no_fee": "Sem taxa",
   "registration_categories_fee_cost": "Taxa inscricao",
   "registration_categories_field_price": "Preco por pax",
   "registration_categories_field_music_max_duration_invalid": "Use o formato mm:ss.",

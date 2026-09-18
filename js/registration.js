@@ -4810,6 +4810,31 @@ function createChoreoStatusBadges(status, options = {}) {
   return wrap;
 }
 
+function createLabeledChoreoStatusBadges(status, options = {}) {
+  const wrap = document.createElement('div');
+  wrap.className = options.className || 'd-flex flex-wrap gap-1';
+  const counts = new Map(
+    parseChoreoStatusSummary(status).map((statusItem) => [statusItem.code, statusItem.count])
+  );
+  const labels = {
+    CRE: t('registration_choreo_status_legend_cre', 'In creation'),
+    PEN: t('registration_choreo_status_legend_pen', 'Pending validation'),
+    VAL: t('registration_choreo_status_legend_val', 'Validated'),
+    REJ: t('registration_choreo_status_legend_rej', 'Rejected')
+  };
+
+  ['CRE', 'PEN', 'VAL', 'REJ'].forEach((code) => {
+    const count = counts.get(code) ?? 0;
+    const badgeInfo = getChoreoStatusBadgeInfo(code, count);
+    const badge = document.createElement('span');
+    badge.className = `badge ${badgeInfo.className}`;
+    badge.textContent = `${labels[code]}: ${count}`;
+    wrap.appendChild(badge);
+  });
+
+  return wrap;
+}
+
 function countSyncroStatuses(items, options = {}) {
   return (Array.isArray(items) ? items : []).reduce((summary, item) => {
     const status = `${item?.syncro_status || ''}`;
@@ -5105,6 +5130,7 @@ function initEventSyncTab() {
 
 function initRegistrationCategoriesTab() {
   const tableBody = document.getElementById('registrationCategoriesTable');
+  const mobileCards = document.getElementById('registrationCategoriesMobileCards');
   const emptyEl = document.getElementById('registrationCategoriesEmpty');
   const countEl = document.getElementById('registrationCategoriesCount');
   const feeCostEl = document.getElementById('registrationCategoriesFeeCost');
@@ -5113,7 +5139,7 @@ function initRegistrationCategoriesTab() {
   const deleteModalEl = document.getElementById('registrationCategoryDeleteModal');
   const pricesModalEl = document.getElementById('registrationCategoryPricesModal');
 
-  if (!tableBody || !modalEl || !deleteModalEl) {
+  if (!tableBody || !mobileCards || !modalEl || !deleteModalEl) {
     return;
   }
 
@@ -5468,9 +5494,164 @@ function initRegistrationCategoriesTab() {
     categoryModal.show();
   };
 
+  const getCategoryCurrentPrice = (category) => {
+    const hasPriceByDate = category.reg_price_by_date !== null
+      && category.reg_price_by_date !== undefined
+      && category.reg_price_by_date !== '';
+    return {
+      hasPriceByDate,
+      value: hasPriceByDate ? category.reg_price_by_date : category.registration_price
+    };
+  };
+
+  const createCategoryMobileMetric = (icon, label, value) => {
+    const metric = document.createElement('div');
+    metric.className = 'registration-category-mobile-card__metric';
+
+    const iconEl = document.createElement('i');
+    iconEl.className = `bi ${icon}`;
+    iconEl.setAttribute('aria-hidden', 'true');
+
+    const copy = document.createElement('div');
+    copy.className = 'registration-category-mobile-card__metric-copy';
+    const labelEl = document.createElement('span');
+    labelEl.className = 'registration-category-mobile-card__metric-label';
+    labelEl.textContent = label;
+    const valueEl = document.createElement('span');
+    valueEl.className = 'registration-category-mobile-card__metric-value';
+    valueEl.textContent = value;
+    copy.append(labelEl, valueEl);
+    metric.append(iconEl, copy);
+    return metric;
+  };
+
+  const createCategoryMobileAction = ({ className, id, icon, label, variant }) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `btn btn-outline-${variant} ${className} registration-category-mobile-card__action`;
+    button.dataset.id = id;
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.innerHTML = `<i class="bi ${icon}" aria-hidden="true"></i><span></span>`;
+    button.querySelector('span').textContent = label;
+    return button;
+  };
+
+  const createCategoryMobileCard = (category, { editTitle, pricesTitle, deleteTitle }) => {
+    const card = document.createElement('article');
+    card.className = 'registration-category-mobile-card';
+    card.dataset.id = category.id;
+
+    const header = document.createElement('div');
+    header.className = 'registration-category-mobile-card__header';
+    const name = document.createElement('h3');
+    name.className = 'registration-category-mobile-card__name';
+    name.textContent = category.name || '-';
+    const sync = document.createElement('div');
+    sync.className = 'registration-category-mobile-card__sync';
+    const syncLabel = document.createElement('span');
+    syncLabel.textContent = t('registration_categories_syncro', 'Syncro');
+    const syncBadge = document.createElement('span');
+    const syncInfo = getSyncroStatusBadgeInfo(category.syncro_status);
+    syncBadge.className = `badge ${syncInfo.className}`;
+    syncBadge.textContent = syncInfo.label;
+    sync.append(syncLabel, syncBadge);
+    header.append(name, sync);
+    card.appendChild(header);
+
+    const metrics = document.createElement('div');
+    metrics.className = 'registration-category-mobile-card__metrics';
+    metrics.append(
+      createCategoryMobileMetric(
+        'bi-people',
+        t('registration_dashboard_kpi_participants', 'Participants'),
+        `${category.min_par ?? '-'} – ${category.max_par ?? '-'}`
+      ),
+      createCategoryMobileMetric(
+        'bi-calendar3',
+        t('registration_participants_age', 'Age'),
+        `${category.min_years ?? '-'} – ${category.max_years ?? '-'}`
+      ),
+      createCategoryMobileMetric(
+        'bi-music-note-beamed',
+        t('registration_categories_header_music_duration', 'Music duration'),
+        formatDurationValue(category.music_max_duration) || '-'
+      ),
+      createCategoryMobileMetric(
+        'bi-person-exclamation',
+        t('registration_categories_header_max_outofrange', 'Max. out of range'),
+        `${category.max_outofrange ?? '-'}`
+      )
+    );
+    card.appendChild(metrics);
+
+    const commercial = document.createElement('div');
+    commercial.className = 'registration-category-mobile-card__commercial';
+    const price = document.createElement('div');
+    price.className = 'registration-category-mobile-card__price';
+    const priceLabel = document.createElement('span');
+    priceLabel.className = 'registration-category-mobile-card__section-label';
+    priceLabel.textContent = t('registration_categories_price', 'Price today');
+    const currentPrice = getCategoryCurrentPrice(category);
+    const sourceBadge = document.createElement('span');
+    sourceBadge.className = `registration-category-mobile-card__price-source badge ${currentPrice.hasPriceByDate
+      ? 'bg-info-subtle text-info-emphasis'
+      : 'bg-secondary-subtle text-secondary-emphasis'}`;
+    sourceBadge.textContent = currentPrice.hasPriceByDate ? 'BY_DATE' : 'GENERIC';
+    const amount = document.createElement('span');
+    amount.className = 'registration-category-mobile-card__price-amount';
+    if (Number(currentPrice.value) === 0) {
+      amount.classList.add('text-success');
+      amount.textContent = 'FREE';
+    } else {
+      amount.textContent = currentPrice.value !== null && currentPrice.value !== undefined && currentPrice.value !== ''
+        ? formatCurrencyDisplay(currentPrice.value)
+        : '-';
+    }
+    price.append(priceLabel, amount, sourceBadge);
+
+    const fee = document.createElement('div');
+    const appliesFee = Number(category.apply_fee ?? 1) === 1;
+    fee.className = `registration-category-mobile-card__fee ${appliesFee
+      ? 'registration-category-mobile-card__fee--active'
+      : 'registration-category-mobile-card__fee--inactive'}`;
+    fee.innerHTML = appliesFee
+      ? '<i class="bi bi-check-circle-fill text-success" aria-hidden="true"></i>'
+      : '<i class="bi bi-circle" aria-hidden="true"></i>';
+    const feeLabel = document.createElement('span');
+    feeLabel.textContent = appliesFee
+      ? t('registration_categories_applies_fee', 'Applies fee')
+      : t('registration_categories_no_fee', 'No fee');
+    fee.appendChild(feeLabel);
+    commercial.append(price, fee);
+    card.appendChild(commercial);
+
+    const status = document.createElement('div');
+    status.className = 'registration-category-mobile-card__status';
+    const statusLabel = document.createElement('span');
+    statusLabel.className = 'registration-category-mobile-card__section-label';
+    statusLabel.textContent = t('registration_categories_header_status', 'Registration status');
+    const statusBadges = createLabeledChoreoStatusBadges(category.choreo_status, {
+      className: 'registration-category-mobile-card__status-badges'
+    });
+    status.append(statusLabel, statusBadges);
+    card.appendChild(status);
+
+    const actions = document.createElement('div');
+    actions.className = 'registration-category-mobile-card__actions';
+    actions.append(
+      createCategoryMobileAction({ className: 'btn-registration-category-edit', id: category.id, icon: 'bi-pencil', label: editTitle, variant: 'primary' }),
+      createCategoryMobileAction({ className: 'btn-registration-category-prices', id: category.id, icon: 'bi-cash-stack', label: pricesTitle, variant: 'success' }),
+      createCategoryMobileAction({ className: 'btn-registration-category-delete', id: category.id, icon: 'bi-trash', label: deleteTitle, variant: 'danger' })
+    );
+    card.appendChild(actions);
+    return card;
+  };
+
   const renderCategories = () => {
     categoriesTooltipInstances = disposeTooltipInstances(categoriesTooltipInstances);
     tableBody.innerHTML = '';
+    mobileCards.innerHTML = '';
     const categories = Array.isArray(registrationState.registrationCategories)
       ? registrationState.registrationCategories
       : [];
@@ -5533,26 +5714,21 @@ function initRegistrationCategoriesTab() {
 
       const priceCell = document.createElement('td');
       priceCell.className = 'text-center';
-      const hasPriceByDate = category.reg_price_by_date !== null
-        && category.reg_price_by_date !== undefined
-        && category.reg_price_by_date !== '';
-      const currentPrice = hasPriceByDate
-        ? category.reg_price_by_date
-        : category.registration_price;
+      const currentPrice = getCategoryCurrentPrice(category);
       const priceWrap = document.createElement('div');
       priceWrap.className = 'd-inline-flex flex-column align-items-center gap-1';
       const priceSourceBadge = document.createElement('span');
-      priceSourceBadge.className = hasPriceByDate
+      priceSourceBadge.className = currentPrice.hasPriceByDate
         ? 'badge bg-info-subtle text-info-emphasis'
         : 'badge bg-secondary-subtle text-secondary-emphasis';
-      priceSourceBadge.textContent = hasPriceByDate ? 'BY_DATE' : 'GENERIC';
+      priceSourceBadge.textContent = currentPrice.hasPriceByDate ? 'BY_DATE' : 'GENERIC';
       const priceValue = document.createElement('span');
-      if (Number(currentPrice) === 0) {
+      if (Number(currentPrice.value) === 0) {
         priceValue.className = 'badge bg-success';
         priceValue.textContent = 'FREE';
       } else {
-        priceValue.textContent = currentPrice !== null && currentPrice !== undefined && currentPrice !== ''
-          ? formatCurrencyDisplay(currentPrice)
+        priceValue.textContent = currentPrice.value !== null && currentPrice.value !== undefined && currentPrice.value !== ''
+          ? formatCurrencyDisplay(currentPrice.value)
           : '-';
       }
       priceWrap.append(priceSourceBadge, priceValue);
@@ -5619,9 +5795,13 @@ function initRegistrationCategoriesTab() {
       row.appendChild(actionsCell);
 
       tableBody.appendChild(row);
+      mobileCards.appendChild(createCategoryMobileCard(category, { editTitle, pricesTitle, deleteTitle }));
     });
 
-    categoriesTooltipInstances = initTooltipInstances(tableBody);
+    categoriesTooltipInstances = [
+      ...initTooltipInstances(tableBody),
+      ...initTooltipInstances(mobileCards)
+    ];
   };
 
   const showCategoriesError = (message) => {
@@ -5634,6 +5814,12 @@ function initRegistrationCategoriesTab() {
     cell.textContent = message;
     row.appendChild(cell);
     tableBody.appendChild(row);
+    mobileCards.innerHTML = '';
+    const mobileError = document.createElement('div');
+    mobileError.className = 'alert alert-danger mb-0';
+    mobileError.setAttribute('role', 'alert');
+    mobileError.textContent = message;
+    mobileCards.appendChild(mobileError);
     if (emptyEl) emptyEl.classList.add('d-none');
     if (countEl) countEl.textContent = '0';
   };
@@ -5785,7 +5971,7 @@ function initRegistrationCategoriesTab() {
     elements.confirmDeleteBtn.addEventListener('click', deleteCategory);
   }
 
-  tableBody.addEventListener('click', (event) => {
+  const handleCategoryAction = (event) => {
     const editBtn = event.target.closest('.btn-registration-category-edit');
     const pricesBtn = event.target.closest('.btn-registration-category-prices');
     const deleteBtn = event.target.closest('.btn-registration-category-delete');
@@ -5814,7 +6000,10 @@ function initRegistrationCategoriesTab() {
       elements.deleteMessage.textContent = message;
     }
     deleteModal.show();
-  });
+  };
+
+  tableBody.addEventListener('click', handleCategoryAction);
+  mobileCards.addEventListener('click', handleCategoryAction);
 
   getCategoryPricesElements().form?.addEventListener('submit', saveCategoryPrice);
   getCategoryPricesElements().table?.addEventListener('click', (event) => {
@@ -5911,27 +6100,32 @@ function initRegistrationDisciplinesTab() {
 
     disciplines.forEach(discipline => {
       const li = document.createElement('li');
-      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.className = 'registration-discipline-mobile-card list-group-item d-flex justify-content-between align-items-center';
       li.dataset.id = discipline.id;
 
       const leftDiv = document.createElement('div');
-      leftDiv.className = 'd-flex align-items-center gap-2';
+      leftDiv.className = 'registration-discipline-mobile-card__header d-flex align-items-center gap-2';
 
       const dragHandle = document.createElement('i');
-      dragHandle.className = 'bi bi-grip-vertical text-muted drag-handle';
+      dragHandle.className = 'registration-discipline-mobile-card__handle bi bi-grip-vertical text-muted drag-handle';
       dragHandle.style.cursor = 'grab';
+      dragHandle.setAttribute('aria-hidden', 'true');
       leftDiv.appendChild(dragHandle);
 
       const nameSpan = document.createElement('span');
+      nameSpan.className = 'registration-discipline-mobile-card__name';
       nameSpan.textContent = discipline.name || '-';
       leftDiv.appendChild(nameSpan);
 
       li.appendChild(leftDiv);
 
       const rightDiv = document.createElement('div');
-      rightDiv.className = 'd-flex align-items-center gap-2 ms-3 flex-wrap';
+      rightDiv.className = 'registration-discipline-mobile-card__content d-flex align-items-center gap-2 ms-3 flex-wrap';
 
-      rightDiv.appendChild(createChoreoStatusBadges(discipline.choreo_status, {
+      const statuses = document.createElement('div');
+      statuses.className = 'registration-discipline-mobile-card__statuses d-flex align-items-center gap-2 flex-wrap';
+
+      statuses.appendChild(createLabeledChoreoStatusBadges(discipline.choreo_status, {
         className: 'd-flex flex-wrap justify-content-start gap-1'
       }));
 
@@ -5939,12 +6133,16 @@ function initRegistrationDisciplinesTab() {
       const syncroInfo = getSyncroStatusBadgeInfo(discipline.syncro_status);
       syncroBadge.className = `badge ${syncroInfo.className}`;
       syncroBadge.textContent = syncroInfo.label;
-      rightDiv.appendChild(syncroBadge);
+      statuses.appendChild(syncroBadge);
+      rightDiv.appendChild(statuses);
 
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
-      deleteBtn.className = 'btn btn-link text-danger p-0';
-      deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+      deleteBtn.className = 'registration-discipline-mobile-card__delete btn btn-link text-danger p-0';
+      const deleteTitle = t('delete', 'Delete');
+      deleteBtn.title = deleteTitle;
+      deleteBtn.setAttribute('aria-label', deleteTitle);
+      deleteBtn.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
       deleteBtn.addEventListener('click', () => {
         disciplineToDelete = discipline;
         if (elements.deleteMessage) {
@@ -5954,7 +6152,7 @@ function initRegistrationDisciplinesTab() {
         deleteModal.show();
       });
 
-      rightDiv.appendChild(deleteBtn);
+      leftDiv.appendChild(deleteBtn);
       li.appendChild(rightDiv);
       listEl.appendChild(li);
     });
@@ -6038,8 +6236,13 @@ function initRegistrationDisciplinesTab() {
     }
 
     addBtn.disabled = true;
-    const originalText = addBtn.textContent;
-    addBtn.textContent = t('saving', 'Guardando...');
+    const addLabel = addBtn.querySelector('.registration-disciplines-add-label');
+    const originalText = addLabel?.textContent || addBtn.textContent;
+    if (addLabel) {
+      addLabel.textContent = t('saving', 'Guardando...');
+    } else {
+      addBtn.textContent = t('saving', 'Guardando...');
+    }
 
     try {
       const payload = { name: value };
@@ -6074,7 +6277,11 @@ function initRegistrationDisciplinesTab() {
       showMessageModal(err.message || t('registration_disciplines_save_error', 'Error saving discipline.'), t('error_title', 'Error'));
     } finally {
       addBtn.disabled = false;
-      addBtn.textContent = originalText;
+      if (addLabel) {
+        addLabel.textContent = originalText;
+      } else {
+        addBtn.textContent = originalText;
+      }
       inputEl.focus();
     }
   };
