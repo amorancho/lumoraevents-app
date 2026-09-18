@@ -6,6 +6,7 @@ const competitionDetailsInFlight = new Set();
 const SIDEBAR_STATUS_FILTER_NOT_FINISHED = '__NOT_FINISHED__';
 const TRACKING_SIDEBAR_FILTERS_STORAGE_PREFIX = 'lumora.tracking.sidebarFilters';
 const LIVE_TRACKING_POLL_INTERVAL_MS = 15000;
+const trackingSidebarMobileMediaQuery = window.matchMedia('(max-width: 767.98px)');
 const classificationExportState = {
   competitions: [],
   scope: 'FULL',
@@ -2454,6 +2455,7 @@ function updateSidebarSelectedCompetition(categoryId, styleId) {
       liveIndicator.classList.toggle('d-none', !isSelected);
     }
   });
+  updateTrackingSidebarMobileHeight();
 }
 
 function normalizeSidebarCompetitionStatus(status) {
@@ -2773,6 +2775,27 @@ function rerenderSidebarPreservingScroll() {
   }
 }
 
+function updateTrackingSidebarMobileHeight() {
+  const container = document.getElementById('competitionsSidebarList');
+  if (!container) return;
+
+  if (!trackingSidebarMobileMediaQuery.matches) {
+    container.style.removeProperty('max-height');
+    return;
+  }
+
+  const items = Array.from(container.children).filter(item => item.classList.contains('list-group-item'));
+  if (items.length <= 5) {
+    container.style.maxHeight = 'none';
+    return;
+  }
+
+  const visibleHeight = items.slice(0, 5).reduce((height, item) => height + item.getBoundingClientRect().height, 0);
+  container.style.maxHeight = `${Math.ceil(visibleHeight)}px`;
+}
+
+trackingSidebarMobileMediaQuery.addEventListener?.('change', updateTrackingSidebarMobileHeight);
+
 function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetitions) {
   const container = document.getElementById('competitionsSidebarList');
   if (!container) return;
@@ -2784,6 +2807,7 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
         ${escapeHtml(t('no_competitions_found'))}
       </div>
     `;
+    updateTrackingSidebarMobileHeight();
     return;
   }
 
@@ -2899,6 +2923,8 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
       </div>
     `;
   }).join('');
+
+  updateTrackingSidebarMobileHeight();
 
   container.querySelectorAll('.js-sidebar-competition-item').forEach(item => {
     item.addEventListener('click', async () => {
@@ -3279,7 +3305,8 @@ function renderCompetitions(competitions) {
       const competitionId = comp.id ?? comp.competition_id ?? '';
       const competitionLabel = `${comp.category_name || ''}${comp.style_name ? ` - ${comp.style_name}` : ''}`.trim();
       const tableContainer = document.createElement('div');
-      tableContainer.className = 'table-responsive mx-auto mb-4';
+      tableContainer.className = 'mx-auto mb-4';
+      let mobileCardsHTML = '';
 
       let tableHTML = `
         <table class="table table-bordered align-middle text-center">
@@ -3333,6 +3360,55 @@ function renderCompetitions(competitions) {
             `
           : '';
 
+        const dancerActionsMenuHtml = `
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false" ${btnDisabled}>
+              ${t('actions')}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <button class="dropdown-item js-no-show"
+                  type="button"
+                  data-category-id="${comp.category_id}"
+                  data-style-id="${comp.style_id}"
+                  data-dancer-id="${d.dancer_id ?? d.id}"
+                  data-dancer-name="${escapeHtml(d.dancer_name || '')}" ${btnDisabled}>
+                  ${t('no_show')}
+                </button>
+              </li>
+              <li>
+                <button class="dropdown-item js-disqualify"
+                  type="button"
+                  data-category-id="${comp.category_id}"
+                  data-style-id="${comp.style_id}"
+                  data-dancer-id="${d.dancer_id ?? d.id}"
+                  data-dancer-name="${escapeHtml(d.dancer_name || '')}" ${btnDisabled}>
+                  ${t('disqualify')}
+                </button>
+              </li>
+              ${showPenaltyAction ? `
+                <li>
+                  <button class="dropdown-item js-penalty-action"
+                    type="button"
+                    data-competition-id="${competitionId}"
+                    data-category-id="${comp.category_id}"
+                    data-style-id="${comp.style_id}"
+                    data-dancer-id="${d.dancer_id ?? d.id}"
+                    data-dancer-name="${escapeHtml(d.dancer_name || '')}"
+                    data-competition-label="${escapeHtml(competitionLabel)}"
+                    data-assigned-by="O"
+                    ${btnDisabled}>
+                    ${t('penalty')}
+                  </button>
+                </li>
+              ` : ''}
+            </ul>
+          </div>
+        `;
+
         const dancerCell = `
           <div class="d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center">
@@ -3341,52 +3417,7 @@ function renderCompetitions(competitions) {
             </div>
             <div class="d-flex align-items-center gap-2">
               ${penaltiesIndicatorHtml}
-              <div class="dropdown">
-                <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false" ${btnDisabled}>
-                  ${t('actions')}
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li>
-                    <button class="dropdown-item js-no-show"
-                      type="button"
-                      data-category-id="${comp.category_id}"
-                      data-style-id="${comp.style_id}"
-                      data-dancer-id="${d.dancer_id ?? d.id}"
-                      data-dancer-name="${escapeHtml(d.dancer_name || '')}" ${btnDisabled}>
-                      ${t('no_show')}
-                    </button>
-                  </li>
-                  <li>
-                    <button class="dropdown-item js-disqualify"
-                      type="button"
-                      data-category-id="${comp.category_id}"
-                      data-style-id="${comp.style_id}"
-                      data-dancer-id="${d.dancer_id ?? d.id}"
-                      data-dancer-name="${escapeHtml(d.dancer_name || '')}" ${btnDisabled}>
-                      ${t('disqualify')}
-                    </button>
-                  </li>
-                  ${showPenaltyAction ? `
-                    <li>
-                      <button class="dropdown-item js-penalty-action"
-                        type="button"
-                        data-competition-id="${competitionId}"
-                        data-category-id="${comp.category_id}"
-                        data-style-id="${comp.style_id}"
-                        data-dancer-id="${d.dancer_id ?? d.id}"
-                        data-dancer-name="${escapeHtml(d.dancer_name || '')}"
-                        data-competition-label="${escapeHtml(competitionLabel)}"
-                        data-assigned-by="O"
-                        ${btnDisabled}>
-                        ${t('penalty')}
-                      </button>
-                    </li>
-                  ` : ''}
-                </ul>
-              </div>
+              ${dancerActionsMenuHtml}
               <span class="badge bg-info">#${d.position}</span>
             </div>
           </div>
@@ -3456,6 +3487,64 @@ function renderCompetitions(competitions) {
         }).join('');
 
         // Asignar ID a la fila combinando competición-dancer-judge (para poder localizarla en reset)
+        const mobileVoteRows = d.votes.map((v) => {
+          const judge = comp.judges.find(item => String(item?.id) === String(v?.judge?.id)) || v.judge || {};
+          const voteRowId = `${comp.id}-${d.dancer_id}-${v?.judge?.id}`;
+          const hasVoteActions = ['Completed', 'No Show', 'Disqualified'].includes(v.status);
+          const showVoteDetailsAction = v.status === 'Completed';
+          const judgeFlags = `
+            ${parseJudgeFlag(judge.reserve) ? `<span class="badge bg-secondary ms-1" title="${t('judge_in_reserve')}">R</span>` : ''}
+            ${parseJudgeFlag(judge.head) ? `<span class="badge bg-dark ms-1" title="${t('judge_is_head', 'Head Judge')}">H</span>` : ''}
+          `;
+          const voteActions = hasVoteActions
+            ? `
+              <span class="tracking-dancer-card__vote-actions">
+                ${showVoteDetailsAction ? `
+                  <button class="btn btn-outline-primary js-show-vote-details"
+                    type="button"
+                    data-category-id="${comp.category_id}"
+                    data-style-id="${comp.style_id}"
+                    data-judge-id="${v.judge.id}"
+                    data-dancer-id="${d.dancer_id}"
+                    data-row-id="${escapeHtml(voteRowId)}"
+                    data-dancer-name="${escapeHtml(d.dancer_name || '')}"
+                    data-judge-name="${escapeHtml(v.judge.name || '')}"
+                    title="${t('ver_detalles')}"
+                    aria-label="${t('ver_detalles')}">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                ` : ''}
+                <button class="btn btn-outline-danger js-reset-vote"
+                  type="button"
+                  data-category-id="${comp.category_id}"
+                  data-style-id="${comp.style_id}"
+                  data-judge-id="${v.judge.id}"
+                  data-dancer-id="${d.dancer_id}"
+                  data-row-id="${escapeHtml(voteRowId)}"
+                  data-dancer-name="${escapeHtml(d.dancer_name || '')}"
+                  data-judge-name="${escapeHtml(v.judge.name || '')}"
+                  title="${t('reiniciar_voto')}"
+                  aria-label="${t('reiniciar_voto')}" ${btnDisabled}>
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                </button>
+              </span>
+            `
+            : '';
+
+          return `
+            <div class="tracking-dancer-card__vote">
+              <div class="tracking-dancer-card__judge">
+                <i class="bi bi-person-badge me-1 text-muted" aria-hidden="true"></i>${escapeHtml(judge.name || '-')}${judgeFlags}
+              </div>
+              <div class="tracking-dancer-card__vote-result">
+                ${hasVoteActions ? renderVoteStatusIcons(v) : ''}
+                ${renderVoteStatusBadge(v?.status, 'status-badge')}
+                ${voteActions}
+              </div>
+            </div>
+          `;
+        }).join('');
+
         const parsedTotalScore = Number(d?.total_score);
         const totalScoreValue = Number.isFinite(parsedTotalScore) ? parsedTotalScore : 0;
         const totalScoreText = formatResultScore(totalScoreValue);
@@ -3471,13 +3560,57 @@ function renderCompetitions(competitions) {
           `
           : `${totalScoreText}`;
         const avgPlaceText = formatAvgPlace(d.avg_place);
+        const penalizedScoreHtml = hasPenalties
+          ? `<span class="tracking-dancer-card__score-penalized">${totalWithPenaltiesText}</span>`
+          : '';
+        mobileCardsHTML += `
+          <article class="tracking-dancer-card">
+            <div class="tracking-dancer-card__header">
+              <div class="tracking-dancer-card__identity">
+                ${dancerFlagHtml}
+                <span class="tracking-dancer-card__name">${escapeHtml(d.dancer_name || '-')}</span>
+              </div>
+              <div class="tracking-dancer-card__header-actions">
+                ${penaltiesIndicatorHtml}
+                ${dancerActionsMenuHtml}
+                <span class="badge bg-info">#${d.position}</span>
+              </div>
+            </div>
+            <div class="tracking-dancer-card__scores">
+              <div class="tracking-dancer-card__score">
+                <span class="tracking-dancer-card__score-label">${t('total')}</span>
+                ${penalizedScoreHtml}
+                <strong class="tracking-dancer-card__score-value">${totalScoreText}</strong>
+              </div>
+              ${shouldShowAvgPlaceColumn() ? `
+                <div class="tracking-dancer-card__score">
+                  <span class="tracking-dancer-card__score-label">${t('avg_place')}</span>
+                  <strong class="tracking-dancer-card__score-value">${avgPlaceText}</strong>
+                </div>
+              ` : ''}
+            </div>
+            <div class="tracking-dancer-card__votes">${mobileVoteRows}</div>
+          </article>
+        `;
         tableHTML += `<tr id="row-${comp.id}-${d.id}">${'<td>' + dancerCell + '</td>' + voteCells}        
         <td class="bg-light">${totalCellHtml}</td>
         ${shouldShowAvgPlaceColumn() ? `<td class="bg-light">${avgPlaceText}</td>` : ''}</tr>`;
       });
 
       tableHTML += '</tbody></table>';
-      tableContainer.innerHTML = tableHTML;
+      tableContainer.innerHTML = `
+        <div class="tracking-mobile-order-action">
+          <button
+            type="button"
+            class="btn btn-outline-secondary btn-sm js-change-dancers-order"
+            data-competition-id="${escapeHtml(competitionId)}"
+            ${btnDisabled}>
+            <i class="bi bi-list-ol me-1" aria-hidden="true"></i>${escapeHtml(t('change_order', 'Change order'))}
+          </button>
+        </div>
+        <div class="table-responsive tracking-desktop-votes-table">${tableHTML}</div>
+        <div class="tracking-mobile-votes-list">${mobileCardsHTML}</div>
+      `;
       container.appendChild(tableContainer);
     }
 
@@ -4269,25 +4402,25 @@ function renderPenaltyAssignmentModalContent() {
         data-max-penalty="${penalty.maxPenalty}"
         data-fixed-score="${penalty.isFixedScore ? '1' : '0'}"
       >
-        <td class="text-center align-middle">
-          <input class="form-check-input js-penalty-toggle" type="checkbox" ${isSelected ? 'checked' : ''}>
+        <td class="text-center align-middle penalty-col-apply" data-label="${escapeHtml(t('penalty_modal_apply', 'Apply'))}">
+          <input class="form-check-input js-penalty-toggle" type="checkbox" aria-label="${escapeHtml(`${t('penalty_modal_apply', 'Apply')}: ${penalty.name}`)}" ${isSelected ? 'checked' : ''}>
         </td>
         <td class="align-middle penalty-col-name">
           <div class="fw-semibold">${escapeHtml(penalty.name)}</div>
         </td>
-        <td class="text-center align-middle penalty-col-assigned-by">
+        <td class="text-center align-middle penalty-col-assigned-by" data-label="${escapeHtml(t('penalty_modal_assigned_by', 'Assigned by'))}">
           ${assignedByBadge}
         </td>
-        <td class="text-center align-middle penalty-col-for-judges" title="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}">
+        <td class="text-center align-middle penalty-col-for-judges" data-label="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}" title="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}">
           ${forJudgesIcon}
         </td>
-        <td class="text-center align-middle penalty-col-range">
+        <td class="text-center align-middle penalty-col-range" data-label="${escapeHtml(t('penalty_modal_range', 'Range'))}">
           <div class="d-inline-flex align-items-center justify-content-center gap-1 flex-wrap">
             <span class="badge text-bg-light border">${escapeHtml(rangeText)}</span>
             ${fixedBadge}
           </div>
         </td>
-        <td class="align-middle penalty-col-score">
+        <td class="align-middle penalty-col-score" data-label="${escapeHtml(t('penalty_modal_score', 'Score'))}">
           <input
             id="${inputId}"
             type="number"
@@ -4320,7 +4453,7 @@ function renderPenaltyAssignmentModalContent() {
     ? `<span class="badge text-bg-light border penalty-assignment-competition-badge">${escapeHtml(competitionLabel)}</span>`
     : ''}
     </div>
-    <div class="table-responsive">
+    <div class="table-responsive penalty-assignment-table-wrap">
       <table class="table table-sm table-bordered align-middle mb-2 penalty-assignment-table">
         <thead class="table-light">
           <tr>

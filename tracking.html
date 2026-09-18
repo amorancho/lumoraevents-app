@@ -439,6 +439,140 @@
       font-size: 0.68rem;
       line-height: 1;
     }
+    @media (max-width: 767.98px) {
+      #penaltyAssignmentModal .modal-dialog {
+        width: calc(100% - 1rem);
+        margin: 0.5rem auto;
+      }
+      #penaltyAssignmentModal .modal-content {
+        max-height: calc(100dvh - 1rem);
+      }
+      #penaltyAssignmentModal .modal-header,
+      #penaltyAssignmentModal .modal-footer {
+        flex: 0 0 auto;
+      }
+      #penaltyAssignmentModal .modal-body {
+        max-height: none;
+        padding: 0.85rem;
+        overscroll-behavior-y: contain;
+      }
+      #penaltyAssignmentModal .penalty-assignment-participant {
+        font-size: 1.05rem;
+      }
+      #penaltyAssignmentModal .penalty-assignment-table-wrap {
+        overflow: visible;
+      }
+      #penaltyAssignmentModal .penalty-assignment-table,
+      #penaltyAssignmentModal .penalty-assignment-table tbody {
+        display: block;
+        width: 100%;
+      }
+      #penaltyAssignmentModal .penalty-assignment-table {
+        min-width: 0;
+        border: 0;
+      }
+      #penaltyAssignmentModal .penalty-assignment-table thead {
+        display: none;
+      }
+      #penaltyAssignmentModal .penalty-assignment-table tbody {
+        display: grid;
+        gap: 0.7rem;
+      }
+      #penaltyAssignmentModal .js-penalty-row {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        padding: 0.8rem;
+        border: 1px solid var(--bs-border-color) !important;
+        border-radius: 0.8rem;
+        background: var(--bs-body-bg);
+        box-shadow: 0 0.15rem 0.4rem rgba(0, 0, 0, 0.05);
+      }
+      #penaltyAssignmentModal .js-penalty-row:has(.js-penalty-toggle:checked) {
+        border-color: rgba(var(--bs-primary-rgb), 0.45) !important;
+        background: rgba(var(--bs-primary-rgb), 0.035);
+      }
+      #penaltyAssignmentModal .js-penalty-row > td {
+        display: flex;
+        width: auto;
+        min-width: 0;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 0.5rem 0.6rem;
+        border: 0;
+        border-radius: 0.65rem;
+        background: var(--bs-tertiary-bg);
+        text-align: left !important;
+      }
+      #penaltyAssignmentModal .js-penalty-row > td::before {
+        display: block;
+        margin-bottom: 0.22rem;
+        color: var(--bs-secondary-color);
+        content: attr(data-label);
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.035em;
+        line-height: 1.1;
+        text-transform: uppercase;
+      }
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-name {
+        grid-column: 1 / -1;
+        min-height: 2.5rem;
+        padding: 0 5.5rem 0.55rem 0;
+        background: transparent;
+        font-size: 0.95rem;
+      }
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-name::before {
+        display: none;
+      }
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-apply {
+        position: absolute;
+        top: 0.65rem;
+        right: 0.7rem;
+        z-index: 1;
+        min-height: auto;
+        flex-direction: row-reverse;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.5rem;
+        background: rgba(var(--bs-primary-rgb), 0.08);
+      }
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-apply::before {
+        margin: 0;
+        color: var(--bs-primary-text-emphasis);
+      }
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-apply .form-check-input {
+        float: none;
+        margin: 0;
+      }
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-assigned-by,
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-for-judges,
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-range,
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-score {
+        width: auto;
+      }
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-for-judges > i {
+        font-size: 1rem;
+      }
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-range > div {
+        justify-content: flex-start !important;
+      }
+      #penaltyAssignmentModal .js-penalty-row .penalty-col-score .form-control {
+        width: 100%;
+      }
+      #penaltyAssignmentModal .modal-footer {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+      }
+      #penaltyAssignmentModal .modal-footer .btn {
+        width: 100%;
+        min-height: 2.5rem;
+        margin: 0;
+      }
+    }
     .tracking-penalties-indicator {
       display: inline-flex;
       align-items: center;
@@ -480,6 +614,12 @@
     #competitionsSidebarList {
       max-height: 72vh;
       overflow-y: auto;
+    }
+    @media (max-width: 767.98px) {
+      #competitionsSidebarList {
+        overscroll-behavior-y: contain;
+        scrollbar-gutter: stable;
+      }
     }
     .sidebar-competition-item-active {
       border-left: 4px solid var(--bs-primary);
@@ -641,6 +781,154 @@
       text-align: center;
       white-space: normal;
       word-break: break-word;
+    }
+    .tracking-mobile-order-action,
+    .tracking-mobile-votes-list {
+      display: none;
+    }
+    @media (max-width: 767.98px) {
+      #competitionsContainer .tracking-summary-top {
+        flex-wrap: wrap;
+      }
+      #competitionsContainer .tracking-summary-progress {
+        flex: 0 0 100%;
+        width: 100%;
+      }
+      #competitionsContainer .tracking-desktop-votes-table {
+        display: none;
+      }
+      #competitionsContainer .tracking-mobile-order-action {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 0.75rem;
+      }
+      #competitionsContainer .tracking-mobile-order-action .btn {
+        min-height: 2.5rem;
+        border-radius: 0.7rem;
+        font-weight: 650;
+      }
+      #competitionsContainer .tracking-mobile-votes-list {
+        display: grid;
+        gap: 0.75rem;
+      }
+      #competitionsContainer .tracking-dancer-card {
+        position: relative;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.85rem;
+        background: var(--bs-body-bg);
+        box-shadow: 0 0.15rem 0.45rem rgba(0, 0, 0, 0.06);
+      }
+      #competitionsContainer .tracking-dancer-card::before {
+        position: absolute;
+        inset: 0 0 auto;
+        height: 0.25rem;
+        border-radius: 0.85rem 0.85rem 0 0;
+        background: linear-gradient(90deg, var(--bs-primary), #6f42c1);
+        content: '';
+      }
+      #competitionsContainer .tracking-dancer-card__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.65rem;
+        padding: 1rem 0.85rem 0.7rem;
+      }
+      #competitionsContainer .tracking-dancer-card__identity {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.45rem;
+      }
+      #competitionsContainer .tracking-dancer-card__name {
+        overflow-wrap: anywhere;
+        font-size: 0.95rem;
+        font-weight: 750;
+        line-height: 1.2;
+      }
+      #competitionsContainer .tracking-dancer-card__header-actions {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      #competitionsContainer .tracking-dancer-card__scores {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.5rem;
+        padding: 0 0.85rem 0.75rem;
+      }
+      #competitionsContainer .tracking-dancer-card__score {
+        min-width: 0;
+        padding: 0.55rem 0.65rem;
+        border-radius: 0.72rem;
+        background: var(--bs-tertiary-bg);
+        text-align: center;
+      }
+      #competitionsContainer .tracking-dancer-card__score:only-child {
+        grid-column: 1 / -1;
+      }
+      #competitionsContainer .tracking-dancer-card__score-label {
+        display: block;
+        color: var(--bs-secondary-color);
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.035em;
+        text-transform: uppercase;
+      }
+      #competitionsContainer .tracking-dancer-card__score-value {
+        display: block;
+        margin-top: 0.1rem;
+        color: var(--bs-emphasis-color);
+        font-size: 1rem;
+        font-weight: 750;
+      }
+      #competitionsContainer .tracking-dancer-card__score-penalized {
+        display: block;
+        color: var(--bs-danger);
+        font-size: 0.7rem;
+        font-weight: 650;
+      }
+      #competitionsContainer .tracking-dancer-card__votes {
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+      #competitionsContainer .tracking-dancer-card__vote {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.65rem 0.85rem;
+      }
+      #competitionsContainer .tracking-dancer-card__vote + .tracking-dancer-card__vote {
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+      #competitionsContainer .tracking-dancer-card__judge {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-size: 0.8rem;
+        font-weight: 650;
+      }
+      #competitionsContainer .tracking-dancer-card__vote-result {
+        display: flex;
+        min-width: 0;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.45rem;
+      }
+      #competitionsContainer .tracking-dancer-card__vote-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+      #competitionsContainer .tracking-dancer-card__vote-actions .btn {
+        display: inline-flex;
+        width: 2rem;
+        height: 2rem;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border-radius: 0.55rem;
+      }
     }
     @media (min-width: 1400px) {
       .tracking-summary-layout {
