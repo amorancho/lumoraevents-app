@@ -12,7 +12,7 @@ const RESULTS_FILTER_MODES = new Set([
 
 const resultsFilterState = {
   mode: RESULTS_FILTER_MODE_BY_CATEGORY,
-  competitions: [],
+  categoryStyles: [],
   selectedCategoryId: '',
   selectedCategoryName: '',
   selectedStyleId: '',
@@ -800,42 +800,42 @@ function getSelectedOptionLabel(select) {
   return currentOption.textContent || '';
 }
 
-function buildUniqueFilterOptions(items, idField, nameField) {
-  const uniqueItems = new Map();
+function getCategoryStyleOptions(idField, nameField, filter = () => true) {
+  const seenIds = new Set();
 
-  (items || []).forEach((item) => {
+  return resultsFilterState.categoryStyles.filter(filter).reduce((options, item) => {
     const rawId = item?.[idField];
-    if (rawId === undefined || rawId === null || rawId === '') return;
+    if (rawId === undefined || rawId === null || rawId === '') return options;
 
     const id = String(rawId);
-    if (uniqueItems.has(id)) return;
+    if (seenIds.has(id)) return options;
 
-    uniqueItems.set(id, {
+    seenIds.add(id);
+    options.push({
       id,
       name: String(item?.[nameField] || '').trim() || `#${id}`
     });
-  });
-
-  return Array.from(uniqueItems.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return options;
+  }, []);
 }
 
 function getAvailableStylesByCategory(categoryId) {
   if (!categoryId) return [];
 
-  return buildUniqueFilterOptions(
-    resultsFilterState.competitions.filter((competition) => String(competition?.category_id) === String(categoryId)),
+  return getCategoryStyleOptions(
     'style_id',
-    'style_name'
+    'style_name',
+    (item) => String(item?.category_id) === String(categoryId)
   );
 }
 
 function getAvailableCategoriesByStyle(styleId) {
   if (!styleId) return [];
 
-  return buildUniqueFilterOptions(
-    resultsFilterState.competitions.filter((competition) => String(competition?.style_id) === String(styleId)),
+  return getCategoryStyleOptions(
     'category_id',
-    'category_name'
+    'category_name',
+    (item) => String(item?.style_id) === String(styleId)
   );
 }
 
@@ -976,14 +976,14 @@ async function fetchResultsCategories() {
   return response.json();
 }
 
-async function fetchResultsCompetitions() {
-  const response = await fetch(`${API_BASE_URL}/api/competitions?event_id=${getEvent().id}`);
+async function fetchResultsCategoryStyles() {
+  const response = await fetch(`${API_BASE_URL}/api/public/categories-styles?event_id=${getEvent().id}`);
   if (!response.ok) throw new Error('Network response was not ok');
   return response.json();
 }
 
 function restoreCategoryDrivenFilters(previousCategoryId, previousStyleId) {
-  const categories = buildUniqueFilterOptions(resultsFilterState.competitions, 'category_id', 'category_name');
+  const categories = getCategoryStyleOptions('category_id', 'category_name');
   populateCategorySelect(categories, previousCategoryId);
   syncResultsFilterStateFromControls();
 
@@ -993,7 +993,7 @@ function restoreCategoryDrivenFilters(previousCategoryId, previousStyleId) {
 }
 
 function restoreStyleDrivenFilters(previousStyleId, previousCategoryId) {
-  const styles = buildUniqueFilterOptions(resultsFilterState.competitions, 'style_id', 'style_name');
+  const styles = getCategoryStyleOptions('style_id', 'style_name');
   populateStyleSelect(styles, previousStyleId);
   syncResultsFilterStateFromControls();
 
@@ -1163,7 +1163,7 @@ async function loadCategories() {
     const previousStyleId = resultsFilterState.selectedStyleId;
 
     if (!usesStyleResultsFilter()) {
-      resultsFilterState.competitions = [];
+      resultsFilterState.categoryStyles = [];
       const categories = await fetchResultsCategories();
       const normalizedCategories = (categories || []).map((category) => ({
         id: String(category.id),
@@ -1174,7 +1174,7 @@ async function loadCategories() {
       populateStyleSelect([]);
       syncResultsFilterStateFromControls();
     } else {
-      resultsFilterState.competitions = await fetchResultsCompetitions();
+      resultsFilterState.categoryStyles = await fetchResultsCategoryStyles();
 
       if (resultsFilterState.mode === RESULTS_FILTER_MODE_BY_CATEGORY_STYLE) {
         restoreCategoryDrivenFilters(previousCategoryId, previousStyleId);
