@@ -4,6 +4,7 @@ const registrationState = {
   registrations: [],
   organizerRegistrations: [],
   paymentDocuments: [],
+  paymentInstructionsAvailable: false,
   schools: [],
   registrationConfig: {
     categories: [],
@@ -551,7 +552,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadRegistrationPaymentInstructions() {
   const contentEl = document.getElementById('registrationPaymentInstructionsContent');
   const eventId = getEvent()?.id;
-  if (!contentEl || !eventId) return;
+  if (!contentEl || !eventId) {
+    return;
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/api/events/${eventId}/info`);
@@ -560,10 +563,15 @@ async function loadRegistrationPaymentInstructions() {
     }
 
     const eventInfo = await response.json();
-    contentEl.innerHTML = sanitizeRegistrationPaymentInstructionsHtml(eventInfo?.payment_instructions);
+    const paymentInstructions = String(eventInfo?.payment_instructions ?? '').trim();
+    registrationState.paymentInstructionsAvailable = Boolean(paymentInstructions);
+    contentEl.innerHTML = sanitizeRegistrationPaymentInstructionsHtml(paymentInstructions);
   } catch (error) {
     console.error('Error loading payment instructions:', error);
+    registrationState.paymentInstructionsAvailable = false;
     contentEl.replaceChildren();
+  } finally {
+    window.dispatchEvent(new CustomEvent('registration:payment-instructions-updated'));
   }
 }
 
@@ -635,8 +643,8 @@ function getRegistrationSidebarTitle() {
   return t('registration_sidebar_section', 'Registration');
 }
 
-function isPortdanceFest26Event() {
-  return Number(getEvent()?.id) === 34;
+function hasRegistrationPaymentInstructions() {
+  return registrationState.paymentInstructionsAvailable;
 }
 
 function getRegistrationCalendarDate(value) {
@@ -724,10 +732,10 @@ function buildRegistrationSidebarHeroMarkup() {
   const statusInfo = getRegistrationSidebarStatusInfo();
   const eventRange = formatRegistrationSidebarRange(eventObj?.start, eventObj?.end);
   const registrationRange = formatRegistrationSidebarRange(eventObj?.registrationStart, eventObj?.registrationEnd);
-  const paymentInstructionsMarkup = isPortdanceFest26Event()
+  const paymentInstructionsMarkup = hasRegistrationPaymentInstructions()
     ? `
       <div class="registration-sidebar-meta-row mt-2">
-        <button type="button" class="btn btn-link btn-sm p-0 text-start" data-bs-toggle="modal" data-bs-target="#portdanceFest26PaymentInstructionsModal">
+        <button type="button" class="btn btn-link btn-sm p-0 text-start" data-bs-toggle="modal" data-bs-target="#registrationPaymentInstructionsModal">
           <i class="bi bi-info-circle me-1"></i><span>${t('registration_payment_instructions', 'PAYMENT INSTRUCTIONS')}</span>
         </button>
       </div>

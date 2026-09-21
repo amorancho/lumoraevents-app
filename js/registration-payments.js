@@ -11,12 +11,16 @@ function initPaymentsTab(role) {
 
   const isOrganizer = role === 'organizer';
   const paymentListEndpoint = '/api/registrations/payments';
-  const paymentInstructionsEl = document.getElementById('portdanceFest26PaymentInstructions');
-  const isPortdanceFest26Event = Number(getEvent?.()?.id) === 34;
+  const paymentInstructionsEl = document.getElementById('registrationPaymentInstructions');
+  const updatePaymentInstructionsVisibility = () => {
+    const hasInstructions = typeof hasRegistrationPaymentInstructions === 'function'
+      && hasRegistrationPaymentInstructions();
 
-  if (paymentInstructionsEl) {
-    paymentInstructionsEl.classList.toggle('d-none', !isPortdanceFest26Event);
-  }
+    paymentInstructionsEl?.classList.toggle('d-none', !hasInstructions);
+  };
+
+  updatePaymentInstructionsVisibility();
+  window.addEventListener('registration:payment-instructions-updated', updatePaymentInstructionsVisibility);
 
   const summaryElements = {
     feeValue: document.getElementById('registrationPaymentsFeeValue'),
