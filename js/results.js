@@ -971,7 +971,7 @@ function setResultsControlsLoadingState(isLoading) {
 }
 
 async function fetchResultsCategories() {
-  const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
+  const response = await fetch(`${API_BASE_URL}/api/public/categories?event_id=${getEvent().id}`);
   if (!response.ok) throw new Error('Network response was not ok');
   return response.json();
 }
