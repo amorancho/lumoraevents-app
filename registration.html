@@ -2779,7 +2779,7 @@
                         <label class="form-label" for="schoolRepresentative" data-i18n="field_representative">Representante</label>
                         <input type="text" class="form-control" id="schoolRepresentative" required>
                       </div>
-                      <div class="col-12">
+                      <div class="col-12 col-md-6">
                         <label class="form-label" for="schoolDocument" data-i18n="field_document">Documento fiscal</label>
                         <input type="text" class="form-control" id="schoolDocument">
                         <div class="form-text" data-i18n="field_document_help">Informar si se desea factura para las inscripciones.</div>
@@ -2788,15 +2788,6 @@
                         <label class="form-label" for="schoolUsername" data-i18n="field_username">Usuario</label>
                         <div class="input-group">
                           <input type="text" class="form-control bg-light" id="schoolUsername" readonly>
-                        </div>
-                      </div>
-                      <div class="col-12 col-md-6">
-                        <label class="form-label" for="schoolPassword" data-i18n="field_password">Password</label>
-                        <div class="input-group">
-                          <input type="password" class="form-control bg-light" id="schoolPassword" readonly>
-                          <button type="button" class="btn btn-outline-secondary" id="toggleSchoolPassword" aria-label="Mostrar password">
-                            <i class="bi bi-eye"></i>
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -4453,7 +4444,26 @@
           </form>
         </div>
         <div class="modal-footer">
+          <button type="button" class="btn btn-outline-warning me-auto" id="schoolResetPasswordBtn" data-i18n="schools_reset_password">Restablecer contraseña</button>
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="schoolResetPasswordConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" data-i18n="schools_reset_password_confirm_title">Restablecer contraseña</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0" data-i18n="schools_reset_password_confirm_message">¿Está seguro de que quiere restablecer la contraseña? La escuela recibirá un email con la nueva contraseña.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-warning" id="confirmSchoolResetPasswordBtn" data-i18n="confirm">Confirmar</button>
         </div>
       </div>
     </div>

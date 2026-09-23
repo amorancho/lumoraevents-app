@@ -2378,26 +2378,11 @@ function initSchoolTab() {
     phone: document.getElementById('schoolPhone'),
     representative: document.getElementById('schoolRepresentative'),
     document: document.getElementById('schoolDocument'),
-    password: document.getElementById('schoolPassword'),
-    togglePassword: document.getElementById('toggleSchoolPassword'),
     saveBtn: document.getElementById('schoolSaveBtn'),
     alert: document.getElementById('schoolSaveAlert')
   };
 
   if (elements.username) elements.username.setAttribute('readonly', 'readonly');
-  if (elements.password) elements.password.setAttribute('readonly', 'readonly');
-
-  if (elements.togglePassword && elements.password) {
-    elements.togglePassword.addEventListener('click', () => {
-      const isHidden = elements.password.type === 'password';
-      elements.password.type = isHidden ? 'text' : 'password';
-      const icon = elements.togglePassword.querySelector('i');
-      if (icon) {
-        icon.classList.toggle('bi-eye', !isHidden);
-        icon.classList.toggle('bi-eye-slash', isHidden);
-      }
-    });
-  }
 
   if (elements.alert) {
     const hideAlert = () => elements.alert.classList.add('d-none');
@@ -2438,7 +2423,6 @@ function initSchoolTab() {
       if (elements.phone) elements.phone.value = schoolRecord.phone || '';
       if (elements.representative) elements.representative.value = schoolRecord.representative || '';
       if (elements.document) elements.document.value = schoolRecord.document || '';
-      if (elements.password) elements.password.value = schoolRecord.password || '';
 
       if (elements.country) {
         if (countrySelect) {
@@ -2476,8 +2460,7 @@ function initSchoolTab() {
       country: elements.country.value,
       phone: elements.phone.value.trim(),
       representative: elements.representative.value.trim(),
-      document: elements.document.value.trim(),
-      password: elements.password.value.trim()
+      document: elements.document.value.trim()
     };
 
     elements.saveBtn.disabled = true;
@@ -4243,6 +4226,9 @@ function initSchoolsTab() {
   const mobileNameClear = document.getElementById('schoolsMobileNameClear');
   const mobileActiveFilters = document.getElementById('schoolsMobileActiveFilters');
   const modalEl = document.getElementById('schoolDetailsModal');
+  const resetPasswordBtn = document.getElementById('schoolResetPasswordBtn');
+  const resetPasswordModalEl = document.getElementById('schoolResetPasswordConfirmModal');
+  const confirmResetPasswordBtn = document.getElementById('confirmSchoolResetPasswordBtn');
 
   if (!filterForm || !tableBody || !mobileCards || !filterName || !filterCountry || !modalEl) {
     return;
@@ -4262,6 +4248,12 @@ function initSchoolsTab() {
   }
 
   const detailModal = new bootstrap.Modal(modalEl);
+  const resetPasswordModal = resetPasswordModalEl
+    ? new bootstrap.Modal(resetPasswordModalEl, { backdrop: 'static', keyboard: false })
+    : null;
+  const resetPasswordDismissButtons = resetPasswordModalEl
+    ? resetPasswordModalEl.querySelectorAll('[data-bs-dismiss="modal"]')
+    : [];
   const detailElements = {
     name: document.getElementById('schoolDetailName'),
     email: document.getElementById('schoolDetailEmail'),
@@ -4273,6 +4265,9 @@ function initSchoolsTab() {
     document: document.getElementById('schoolDetailDocument')
   };
   let schoolsTooltipInstances = [];
+  let selectedSchool = null;
+  let resetPasswordCompleted = false;
+  let resetPasswordFeedback = null;
 
   const setMobileSchoolsFilterPanelOpen = (isOpen) => {
     filterForm.classList.toggle('mobile-filters-open', isOpen);
@@ -4588,6 +4583,7 @@ function initSchoolsTab() {
   };
 
   const openSchoolDetails = (school) => {
+    selectedSchool = school;
     if (detailElements.name) detailElements.name.value = school?.name || school?.school_name || '';
     if (detailElements.email) detailElements.email.value = school?.email || '';
     if (detailElements.language) detailElements.language.value = school?.language || '';
@@ -4600,6 +4596,80 @@ function initSchoolsTab() {
     if (detailElements.document) detailElements.document.value = school?.document || '';
     detailModal.show();
   };
+
+  if (resetPasswordBtn && resetPasswordModal) {
+    resetPasswordBtn.addEventListener('click', () => {
+      if (!selectedSchool?.id) return;
+
+      modalEl.addEventListener('hidden.bs.modal', () => {
+        resetPasswordModal.show();
+      }, { once: true });
+      detailModal.hide();
+    });
+  }
+
+  if (confirmResetPasswordBtn && resetPasswordModal) {
+    confirmResetPasswordBtn.addEventListener('click', async () => {
+      if (!selectedSchool?.id) return;
+
+      const originalText = confirmResetPasswordBtn.textContent;
+      confirmResetPasswordBtn.disabled = true;
+      confirmResetPasswordBtn.textContent = t('schools_reset_password_sending', 'Enviando...');
+      resetPasswordDismissButtons.forEach(button => {
+        button.disabled = true;
+      });
+
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/api/schools/${encodeURIComponent(selectedSchool.id)}/send-reset-password-email`,
+          { method: 'POST' }
+        );
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          throw new Error(
+            data?.error
+            || data?.message
+            || t('schools_reset_password_error', 'No se ha podido restablecer la contraseña.')
+          );
+        }
+
+        resetPasswordFeedback = {
+          message: t('schools_reset_password_success', 'Se ha enviado a la escuela un email con la nueva contraseña.'),
+          title: t('success_title', 'Correcto'),
+          variant: 'success'
+        };
+      } catch (err) {
+        resetPasswordFeedback = {
+          message: err.message || t('schools_reset_password_error', 'No se ha podido restablecer la contraseña.'),
+          title: t('error_title', 'Error'),
+          variant: 'danger'
+        };
+      } finally {
+        resetPasswordCompleted = true;
+        confirmResetPasswordBtn.disabled = false;
+        confirmResetPasswordBtn.textContent = originalText;
+        resetPasswordDismissButtons.forEach(button => {
+          button.disabled = false;
+        });
+        resetPasswordModal.hide();
+      }
+    });
+  }
+
+  resetPasswordModalEl?.addEventListener('hidden.bs.modal', () => {
+    if (!resetPasswordCompleted) {
+      if (selectedSchool) detailModal.show();
+      return;
+    }
+
+    resetPasswordCompleted = false;
+    if (resetPasswordFeedback) {
+      const feedback = resetPasswordFeedback;
+      resetPasswordFeedback = null;
+      showMessageModal(feedback.message, feedback.title, feedback.variant);
+    }
+  });
 
   filterName.addEventListener('input', applyFilters);
   filterCountry.addEventListener('change', applyFilters);
