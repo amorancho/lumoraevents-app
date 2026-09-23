@@ -547,6 +547,23 @@
     #payments .registration-payments-summary-card--combined {
       grid-column: span 2;
     }
+    #payments .registration-payments-summary-card--combined .card-body > .d-flex {
+      flex: 1 1 auto;
+      align-items: stretch !important;
+      margin-bottom: 0 !important;
+    }
+    #payments .registration-payments-summary-card--combined .registration-payments-combined-metric {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+    }
+    #payments .registration-payments-summary-card--combined .registration-dashboard-kpi-value {
+      margin-top: auto;
+      padding-top: 0.75rem;
+    }
+    #payments .registration-payments-summary-card--combined .registration-dashboard-kpi-icon {
+      align-self: flex-start;
+    }
     #payments .registration-payments-combined-metric + .registration-payments-combined-metric {
       padding-left: 0.75rem;
       border-left: 1px solid rgba(253, 126, 20, 0.2);
