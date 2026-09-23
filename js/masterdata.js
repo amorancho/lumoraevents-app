@@ -71,7 +71,14 @@ async function loadAll() {
 
 async function loadTable(table) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/${table}?event_id=${getEvent().id}`);
+        const url = `${API_BASE_URL}/api/${table}?event_id=${getEvent().id}`;
+        const response = ["categories", "styles"].includes(table)
+            ? await lumoraApiFetch(
+                url,
+                {},
+                { auth: 'required', eventContext: 'current' }
+            )
+            : await fetch(url);
         if (!response.ok) throw new Error(`Error loading ${table}`);
         const data = await response.json();
 

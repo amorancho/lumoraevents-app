@@ -2646,7 +2646,11 @@ async function loadCategories() {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/categories?event_id=${getEvent().id}`);
+    const response = await lumoraApiFetch(
+      `${API_BASE_URL}/api/categories?event_id=${getEvent().id}`,
+      {},
+      { auth: 'required', eventContext: 'current' }
+    );
     if (!response.ok) throw new Error('Error fetching categories');
     const categories = await response.json();
     categoriesCatalog = categories.map(category => ({
@@ -2698,7 +2702,11 @@ async function loadStyles() {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/styles?event_id=${getEvent().id}`);
+    const response = await lumoraApiFetch(
+      `${API_BASE_URL}/api/styles?event_id=${getEvent().id}`,
+      {},
+      { auth: 'required', eventContext: 'current' }
+    );
     if (!response.ok) throw new Error('Error fetching styles');
     const styles = await response.json();
     stylesCatalog = styles.map(style => ({
