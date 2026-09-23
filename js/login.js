@@ -21,6 +21,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadLoginTranslations(currentLang);
   applyLoginTranslations();
 
+  const eventId = getEventIdFromUrl();
+  if (eventId) {
+    loadLoginEventName(eventId);
+  }
+
   if (legalAcceptModalEl) {
     legalAcceptModal = new bootstrap.Modal(legalAcceptModalEl, {
       backdrop: 'static',
@@ -104,6 +109,27 @@ function getEventIdFromUrl() {
 
   window.location.href = 'index.html';
   return null;
+}
+
+async function loadLoginEventName(eventId) {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/public/events/code/${encodeURIComponent(eventId)}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status} al recuperar el evento`);
+    }
+
+    const event = await response.json();
+    const eventName = document.getElementById('eventName');
+
+    if (eventName) {
+      eventName.textContent = event?.name || '';
+    }
+  } catch (error) {
+    console.error('Error cargando datos del evento:', error);
+  }
 }
 
 function getRequiredLegalDocuments(legal = {}) {

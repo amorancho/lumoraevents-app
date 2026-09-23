@@ -2,6 +2,7 @@
   "login_title": "User Login",
   "username_label": "Username",
   "password_label": "Password",
+  "login_help": "If you do not remember your username or password, contact the event organizer.",
   "login_button": "Login",
   "legal_accept_title": "Legal Acceptance Required",
   "legal_accept_description": "Review and accept the required legal documents to continue.",

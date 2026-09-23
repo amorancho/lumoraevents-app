@@ -74,6 +74,13 @@
       color: rgba(255, 255, 255, 0.6);
     }
 
+    .login-help {
+      margin-top: 8px;
+      font-size: 0.75rem;
+      line-height: 1.35;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
     .login-btn {
       width: 100%;
       padding: 12px;
@@ -123,7 +130,7 @@
 
   <div class="login-container">
     <img src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1781521973/copy_of_new_logo_lumoraevents_small_kwnjrc.png" alt="LumoraEvents Logo">
-    <h2 data-i18n="login_title">User Login</h2>
+    <h2 id="eventName" aria-live="polite"></h2>
     <form>
       <div class="form-group">
         <label for="username" data-i18n="username_label">Username</label>
@@ -132,6 +139,7 @@
       <div class="form-group">
         <label for="password" data-i18n="password_label">Password</label>
         <input type="password" id="password" placeholder="">
+        <p class="login-help" data-i18n="login_help">If you do not remember your username or password, contact the event organizer.</p>
       </div>
       <button type="submit" class="login-btn" data-i18n="login_button">Login</button>
     </form>

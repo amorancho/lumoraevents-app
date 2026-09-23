@@ -2,6 +2,7 @@
   "login_title": "Início de sessão",
   "username_label": "Nome de utilizador",
   "password_label": "Palavra-passe",
+  "login_help": "Se não se lembra do nome de utilizador ou da palavra-passe, contacte a organização do evento.",
   "login_button": "Entrar",
   "legal_accept_title": "Aceitação legal obrigatória",
   "legal_accept_description": "Leia e aceite os documentos legais obrigatórios para continuar.",

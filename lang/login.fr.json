@@ -2,6 +2,7 @@
   "login_title": "Connexion utilisateur",
   "username_label": "Nom d'utilisateur",
   "password_label": "Mot de passe",
+  "login_help": "Si vous avez oublié votre nom d'utilisateur ou votre mot de passe, contactez l'organisation de l'événement.",
   "login_button": "Se connecter",
   "legal_accept_title": "Acceptation légale requise",
   "legal_accept_description": "Consultez et acceptez les documents juridiques requis pour continuer.",
