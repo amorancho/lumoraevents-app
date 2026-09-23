@@ -63,6 +63,8 @@
   "registration_payments_action_view": "Ver",
   "registration_payments_action_download": "Descarregar",
   "registration_payments_total_fee": "Fee total",
+  "registration_payments_total_registrations": "Total de inscrições",
+  "registration_payments_grand_total": "Total",
   "registration_payments_total": "Total pagamentos",
   "registration_payments_validated": "Pagamentos validados",
   "registration_payments_total_invoiced": "Total faturado",

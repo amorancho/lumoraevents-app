@@ -27,6 +27,7 @@ function initPaymentsTab(role) {
     feeMeta: document.getElementById('registrationPaymentsFeeMeta'),
     amountValue: document.getElementById('registrationPaymentsAmountValue'),
     amountMeta: document.getElementById('registrationPaymentsAmountMeta'),
+    totalValue: document.getElementById('registrationPaymentsTotalValue'),
     paidValue: document.getElementById('registrationPaymentsPaidValue'),
     paidMeta: document.getElementById('registrationPaymentsPaidMeta'),
     invoicedValue: document.getElementById('registrationPaymentsInvoicedValue'),
@@ -328,11 +329,13 @@ function initPaymentsTab(role) {
       0
     );
     const pendingAmount = totalFee + finance.totalAmount - totalPaidAmount;
+    const totalAmount = totalFee + finance.totalAmount;
 
     return {
       finance,
       registeredParticipantsCount,
       totalFee,
+      totalAmount,
       totalPaidAmount,
       validatedPaymentsCount: validatedPayments.length,
       totalInvoicedAmount,
@@ -353,6 +356,9 @@ function initPaymentsTab(role) {
     }
     if (summaryElements.amountMeta) {
       summaryElements.amountMeta.textContent = `${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
+    }
+    if (summaryElements.totalValue) {
+      summaryElements.totalValue.textContent = formatRegistrationCurrency(metrics.totalAmount);
     }
     if (summaryElements.paidValue) {
       summaryElements.paidValue.textContent = formatRegistrationCurrency(metrics.totalPaidAmount);

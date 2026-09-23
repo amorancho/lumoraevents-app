@@ -537,6 +537,20 @@
       margin-top: auto;
       text-align: left;
     }
+    #payments .registration-payments-combined-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      flex: 1 1 auto;
+      min-width: 0;
+      gap: 0.75rem;
+    }
+    #payments .registration-payments-summary-card--combined {
+      grid-column: span 2;
+    }
+    #payments .registration-payments-combined-metric + .registration-payments-combined-metric {
+      padding-left: 0.75rem;
+      border-left: 1px solid rgba(253, 126, 20, 0.2);
+    }
     .registration-support-shell {
       max-width: 900px;
       margin: 0 auto;
@@ -2057,9 +2071,6 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 0.55rem;
       }
-      #payments .registration-payments-summary-card:last-child:nth-child(odd) {
-        grid-column: 1 / -1;
-      }
       #payments .registration-payments-summary-card .card-body {
         gap: 0.45rem;
         padding: 0.7rem 0.75rem;
@@ -3245,28 +3256,34 @@
             <div class="tab-pane fade" id="payments" role="tabpanel">
               <div class="registration-dashboard-shell">
                 <div class="registration-dashboard-finance-grid">
-                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card registration-payments-summary-card" data-finance="fee">
+                  <div class="card registration-dashboard-stat-card registration-dashboard-finance-card registration-payments-summary-card registration-payments-summary-card--combined" data-finance="fee">
                     <div class="card-body">
                       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-                        <div class="registration-dashboard-kpi-copy">
-                          <div class="registration-dashboard-kpi-label" data-i18n="registration_payments_total_fee">Total fee</div>
-                          <div class="registration-dashboard-kpi-meta" id="registrationPaymentsFeeMeta">0 Participants</div>
+                        <div class="registration-payments-combined-metrics">
+                          <div class="registration-payments-combined-metric">
+                            <div class="registration-dashboard-kpi-label" data-i18n="registration_payments_total_fee">Total fee</div>
+                            <div class="registration-dashboard-kpi-meta" id="registrationPaymentsFeeMeta">0 Participants</div>
+                            <div class="registration-dashboard-kpi-value" id="registrationPaymentsFeeValue">EUR 0.00</div>
+                          </div>
+                          <div class="registration-payments-combined-metric">
+                            <div class="registration-dashboard-kpi-label" data-i18n="registration_payments_total_registrations">Total inscripciones</div>
+                            <div class="registration-dashboard-kpi-meta" id="registrationPaymentsAmountMeta">0 Registrations</div>
+                            <div class="registration-dashboard-kpi-value" id="registrationPaymentsAmountValue">EUR 0.00</div>
+                          </div>
                         </div>
                         <span class="registration-dashboard-kpi-icon"><i class="bi bi-person-vcard"></i></span>
                       </div>
-                      <div class="registration-dashboard-kpi-value" id="registrationPaymentsFeeValue">EUR 0.00</div>
                     </div>
                   </div>
                   <div class="card registration-dashboard-stat-card registration-dashboard-finance-card registration-payments-summary-card" data-finance="total">
                     <div class="card-body">
                       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                         <div class="registration-dashboard-kpi-copy">
-                          <div class="registration-dashboard-kpi-label" data-i18n="registration_competitions_total_amount">Total importe</div>
-                          <div class="registration-dashboard-kpi-meta" id="registrationPaymentsAmountMeta">0 Registrations</div>
+                          <div class="registration-dashboard-kpi-label" data-i18n="registration_payments_grand_total">Total</div>
                         </div>
-                        <span class="registration-dashboard-kpi-icon"><i class="bi bi-cash-coin"></i></span>
+                        <span class="registration-dashboard-kpi-icon"><i class="bi bi-cash-stack"></i></span>
                       </div>
-                      <div class="registration-dashboard-kpi-value" id="registrationPaymentsAmountValue">EUR 0.00</div>
+                      <div class="registration-dashboard-kpi-value" id="registrationPaymentsTotalValue">EUR 0.00</div>
                     </div>
                   </div>
                   <div class="card registration-dashboard-stat-card registration-dashboard-finance-card registration-payments-summary-card" data-finance="paid">
