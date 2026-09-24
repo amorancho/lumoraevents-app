@@ -78,7 +78,11 @@ async function loadTable(table) {
                 {},
                 { auth: 'required', eventContext: 'current' }
             )
-            : await fetch(url);
+            : await lumoraApiFetch(
+                url,
+                {},
+                { auth: 'required', eventContext: 'current' }
+            );
         if (!response.ok) throw new Error(`Error loading ${table}`);
         const data = await response.json();
 
@@ -170,7 +174,11 @@ function renderTable(table, fullData) {
                 const confirmed = await showModal(`${t('delete')} "${item.name}" ${t('from')} <strong>${t(table)}</strong>?`);
                 if (confirmed) {
                     try {
-                        const res = await fetch(`${API_BASE_URL}/api/${table}/${item.id}`, { method: "DELETE" });
+                        const res = await lumoraApiFetch(
+                            `${API_BASE_URL}/api/${table}/${item.id}`,
+                            { method: "DELETE" },
+                            { auth: 'required', eventContext: 'current' }
+                        );
                         const data = await res.json();
 
                         if (!res.ok) {
@@ -283,15 +291,19 @@ async function saveEntryEdit(saveBtn) {
     saveBtn.textContent = t('guardando', 'Saving...');
 
     try {
-        const res = await fetch(`${API_BASE_URL}/api/${table}/${id}`, {
-            method: 'PUT',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                event_id: getEvent().id,
-                name,
-                position: position === '' ? null : Number(position)
-            })
-        });
+        const res = await lumoraApiFetch(
+            `${API_BASE_URL}/api/${table}/${id}`,
+            {
+                method: 'PUT',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    event_id: getEvent().id,
+                    name,
+                    position: position === '' ? null : Number(position)
+                })
+            },
+            { auth: 'required', eventContext: 'current' }
+        );
 
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
@@ -321,11 +333,15 @@ async function addEntry(table) {
 
     if (value !== "") {
         try {
-            const res = await fetch(`${API_BASE_URL}/api/${table}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ event_id: getEvent().id, name: value })
-            });
+            const res = await lumoraApiFetch(
+                `${API_BASE_URL}/api/${table}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ event_id: getEvent().id, name: value })
+                },
+                { auth: 'required', eventContext: 'current' }
+            );
             if (!res.ok) {
                 const error = await res.json();
                 showMessageModal(error.error || 'Unknown error', 'Error adding entry');
@@ -1263,11 +1279,15 @@ function makeSortable(table) {
             }));
 
             try {
-                const res = await fetch(`${API_BASE_URL}/api/${table}/reorder`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ items: ids })
-                });
+                const res = await lumoraApiFetch(
+                    `${API_BASE_URL}/api/${table}/reorder`,
+                    {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ items: ids })
+                    },
+                    { auth: 'required', eventContext: 'current' }
+                );
 
                 if (!res.ok) {
                     const error = await res.json();
@@ -1517,7 +1537,11 @@ function getCriteriaConfigCheckedValues(containerId) {
 
 async function loadCriteriaConfig() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/criteria/config?event_id=${getEvent().id}`);
+        const response = await lumoraApiFetch(
+            `${API_BASE_URL}/api/criteria/config?event_id=${getEvent().id}`,
+            {},
+            { auth: 'required', eventContext: 'current' }
+        );
         if (!response.ok) throw new Error('Error loading criteria config');
         criteriaConfigList = await response.json();
         renderCriteriaConfigTable();
@@ -1733,18 +1757,22 @@ async function addCriteriaConfig() {
     }
 
     try {
-        const res = await fetch(`${API_BASE_URL}/api/criteria/config`, {
-            method: 'POST',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                event_id: getEvent().id,
-                category_ids: categories.map(Number),
-                style_ids: styles.map(Number),
-                criteria_ids: criteriaIds,
-                percentage: needsPorcentage ? percentage : null,
-                max_score: needsMaxScore ? maxScore : null
-            })
-        });
+        const res = await lumoraApiFetch(
+            `${API_BASE_URL}/api/criteria/config`,
+            {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    event_id: getEvent().id,
+                    category_ids: categories.map(Number),
+                    style_ids: styles.map(Number),
+                    criteria_ids: criteriaIds,
+                    percentage: needsPorcentage ? percentage : null,
+                    max_score: needsMaxScore ? maxScore : null
+                })
+            },
+            { auth: 'required', eventContext: 'current' }
+        );
 
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
@@ -1775,11 +1803,15 @@ async function addCriteriaConfig() {
 
 async function deleteCriteriaConfig(ids) {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/criteria/config`, {
-            method: 'DELETE',
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(ids.map(Number))
-        });
+        const res = await lumoraApiFetch(
+            `${API_BASE_URL}/api/criteria/config`,
+            {
+                method: 'DELETE',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(ids.map(Number))
+            },
+            { auth: 'required', eventContext: 'current' }
+        );
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             showMessageModal(data.error || t('criteria_config_delete_error'), t('error'));
