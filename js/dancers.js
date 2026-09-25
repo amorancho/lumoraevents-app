@@ -1177,7 +1177,11 @@ async function loadClubs() {
   clubsById = new Map();
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/clubs?event_id=${getEvent().id}`);
+    const response = await lumoraApiFetch(
+      `${API_BASE_URL}/api/clubs?event_id=${getEvent().id}`,
+      {},
+      { auth: 'required', eventContext: 'current' }
+    );
     if (!response.ok) throw new Error('Error fetching clubs');
     const clubs = await response.json();
 

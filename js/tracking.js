@@ -4110,7 +4110,11 @@ function normalizeCompetitionPenalty(rawPenalty) {
 }
 
 async function fetchPenaltyDefinitionsForEvent(eventId) {
-  const response = await fetch(`${API_BASE_URL}/api/penalties?event_id=${eventId}`);
+  const response = await lumoraApiFetch(
+    `${API_BASE_URL}/api/penalties?event_id=${eventId}`,
+    {},
+    { auth: 'required', eventContext: 'current' }
+  );
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok) {

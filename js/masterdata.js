@@ -639,7 +639,11 @@ function openPenaltyModal({ modal, action, penalty = null }) {
 
 async function loadPenaltiesTable() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/penalties?event_id=${getEvent().id}`);
+        const response = await lumoraApiFetch(
+            `${API_BASE_URL}/api/penalties?event_id=${getEvent().id}`,
+            {},
+            { auth: 'required', eventContext: 'current' }
+        );
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             showMessageModal(err.error || t('penalties_load_error', 'Error loading penalties.'), t('error'));
@@ -909,17 +913,25 @@ async function savePenalty(action, penaltyId, penaltyModal, saveBtn) {
     try {
         let res;
         if (action === 'edit' && penaltyId) {
-            res = await fetch(`${API_BASE_URL}/api/penalties/${penaltyId}`, {
-                method: 'PUT',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+            res = await lumoraApiFetch(
+                `${API_BASE_URL}/api/penalties/${penaltyId}`,
+                {
+                    method: 'PUT',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                },
+                { auth: 'required', eventContext: 'current' }
+            );
         } else {
-            res = await fetch(`${API_BASE_URL}/api/penalties`, {
-                method: 'POST',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+            res = await lumoraApiFetch(
+                `${API_BASE_URL}/api/penalties`,
+                {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                },
+                { auth: 'required', eventContext: 'current' }
+            );
         }
 
         if (!res.ok) {
@@ -941,7 +953,11 @@ async function savePenalty(action, penaltyId, penaltyModal, saveBtn) {
 
 async function deletePenalty(id) {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/penalties/${id}`, { method: 'DELETE' });
+        const res = await lumoraApiFetch(
+            `${API_BASE_URL}/api/penalties/${id}`,
+            { method: 'DELETE' },
+            { auth: 'required', eventContext: 'current' }
+        );
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             showMessageModal(err.error || t('penalties_delete_error', 'Error deleting penalty.'), t('error'));
@@ -990,7 +1006,11 @@ function openSchoolModal({ modal, action, school = null }) {
 
 async function loadSchoolsTable() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/clubs?event_id=${getEvent().id}`);
+        const response = await lumoraApiFetch(
+            `${API_BASE_URL}/api/clubs?event_id=${getEvent().id}`,
+            {},
+            { auth: 'required', eventContext: 'current' }
+        );
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             showMessageModal(err.error || t('schools_load_error', 'Error loading schools.'), t('error'));
@@ -1158,17 +1178,25 @@ async function saveSchool(action, schoolId, schoolModal, saveBtn) {
     try {
         let res;
         if (action === 'edit' && schoolId) {
-            res = await fetch(`${API_BASE_URL}/api/clubs/${schoolId}`, {
-                method: 'PUT',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+            res = await lumoraApiFetch(
+                `${API_BASE_URL}/api/clubs/${schoolId}`,
+                {
+                    method: 'PUT',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                },
+                { auth: 'required', eventContext: 'current' }
+            );
         } else {
-            res = await fetch(`${API_BASE_URL}/api/clubs`, {
-                method: 'POST',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
+            res = await lumoraApiFetch(
+                `${API_BASE_URL}/api/clubs`,
+                {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                },
+                { auth: 'required', eventContext: 'current' }
+            );
         }
 
         if (!res.ok) {
@@ -1206,14 +1234,18 @@ async function resendSchoolStatsEmail(schoolId, schoolModal, sendBtn) {
     sendBtn.appendChild(spinner);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/clubs/send-stats`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                event_id: getEvent().id,
-                club_id: schoolId
-            })
-        });
+        const response = await lumoraApiFetch(
+            `${API_BASE_URL}/api/clubs/send-stats`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    event_id: getEvent().id,
+                    club_id: schoolId
+                })
+            },
+            { auth: 'required', eventContext: 'current' }
+        );
 
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
@@ -1235,7 +1267,11 @@ async function resendSchoolStatsEmail(schoolId, schoolModal, sendBtn) {
 
 async function deleteSchool(id) {
     try {
-        const res = await fetch(`${API_BASE_URL}/api/clubs/${id}`, { method: 'DELETE' });
+        const res = await lumoraApiFetch(
+            `${API_BASE_URL}/api/clubs/${id}`,
+            { method: 'DELETE' },
+            { auth: 'required', eventContext: 'current' }
+        );
         if (!res.ok) {
             const err = await res.json().catch(() => ({}));
             showMessageModal(err.error || t('schools_delete_error', 'Error deleting school.'), t('error'));
