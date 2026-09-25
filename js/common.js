@@ -247,6 +247,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         showGender: data.show_gender === 1,
         hasAudienceVoting: data.has_audience_voting === 1,
         hasMultipleScenarios: data.has_multiple_scenarios === 1,
+        hasAuthorization: data.registration_authorizations === 1,
+        hasAuthorizations: data.registration_authorizations === 1,
       };
 
     }

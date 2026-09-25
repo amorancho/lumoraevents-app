@@ -105,8 +105,10 @@ const EVENT_INFO_DEFAULT_DATA = Object.freeze({
   organizer: null,
   bases_document: null,
   poster: null,
+  authorization_template: null,
   event_description: null,
-  payment_instructions: null
+  payment_instructions: null,
+  registration_accept_text: null
 });
 const EVENT_INFO_ALLOWED_TAGS = ['p', 'br', 'strong', 'em', 'u', 's', 'ol', 'ul', 'li', 'a', 'h2', 'h3', 'blockquote'];
 const EVENT_INFO_ALLOWED_ATTRIBUTES = ['href', 'target', 'rel'];
@@ -115,6 +117,7 @@ const eventInfoState = {
   modal: null,
   editor: null,
   paymentInstructionsEditor: null,
+  registrationAcceptTextEditor: null,
   countrySelect: null,
   initialSnapshot: '',
   skipCloseGuard: false,
@@ -457,6 +460,7 @@ function initEventInfoModal() {
   eventInfoState.modal = modal;
   eventInfoState.editor = createEventInfoEditor('#eventInfoDescriptionEditor');
   eventInfoState.paymentInstructionsEditor = createEventInfoEditor('#eventInfoPaymentInstructionsEditor');
+  eventInfoState.registrationAcceptTextEditor = createEventInfoEditor('#eventInfoRegistrationAcceptTextEditor');
   initEventInfoCountrySelect(countryField);
 
   openBtn.addEventListener('click', async () => {
@@ -580,6 +584,9 @@ function setEventInfoBusyState(isBusy) {
   if (eventInfoState.paymentInstructionsEditor) {
     eventInfoState.paymentInstructionsEditor.enable(!isBusy);
   }
+  if (eventInfoState.registrationAcceptTextEditor) {
+    eventInfoState.registrationAcceptTextEditor.enable(!isBusy);
+  }
 }
 
 async function fetchEventInfoData(eventId) {
@@ -624,7 +631,8 @@ function populateEventInfoForm(data) {
     eventInfoPhone: normalized.phone_contact,
     eventInfoOrganizer: normalized.organizer,
     eventInfoBases: normalized.bases_document,
-    eventInfoPoster: normalized.poster
+    eventInfoPoster: normalized.poster,
+    eventInfoAuthorizationTemplate: normalized.authorization_template
   };
 
   Object.entries(fieldMap).forEach(([fieldId, value]) => {
@@ -637,6 +645,7 @@ function populateEventInfoForm(data) {
   setEventInfoCountryValue(normalized.country);
   setEventInfoEditorHtml(normalized.event_description);
   setEventInfoEditorHtml(normalized.payment_instructions, eventInfoState.paymentInstructionsEditor);
+  setEventInfoEditorHtml(normalized.registration_accept_text, eventInfoState.registrationAcceptTextEditor);
 }
 
 function normalizeEventInfoData(data) {
@@ -651,8 +660,10 @@ function normalizeEventInfoData(data) {
     organizer: String(data?.organizer ?? ''),
     bases_document: String(data?.bases_document ?? ''),
     poster: String(data?.poster ?? ''),
+    authorization_template: String(data?.authorization_template ?? ''),
     event_description: sanitizeEventInfoHtml(String(data?.event_description ?? '')),
-    payment_instructions: sanitizeEventInfoHtml(String(data?.payment_instructions ?? ''))
+    payment_instructions: sanitizeEventInfoHtml(String(data?.payment_instructions ?? '')),
+    registration_accept_text: sanitizeEventInfoHtml(String(data?.registration_accept_text ?? ''))
   };
 }
 
@@ -668,8 +679,10 @@ function buildEventInfoPayload(eventId) {
     organizer: normalizeOptionalField(document.getElementById('eventInfoOrganizer')?.value),
     bases_document: normalizeOptionalField(document.getElementById('eventInfoBases')?.value),
     poster: normalizeOptionalField(document.getElementById('eventInfoPoster')?.value),
+    authorization_template: normalizeOptionalField(document.getElementById('eventInfoAuthorizationTemplate')?.value),
     event_description: normalizeOptionalField(getEventInfoEditorHtml()),
-    payment_instructions: normalizeOptionalField(getEventInfoEditorHtml(eventInfoState.paymentInstructionsEditor))
+    payment_instructions: normalizeOptionalField(getEventInfoEditorHtml(eventInfoState.paymentInstructionsEditor)),
+    registration_accept_text: normalizeOptionalField(getEventInfoEditorHtml(eventInfoState.registrationAcceptTextEditor))
   };
 }
 

@@ -494,7 +494,7 @@
                 inputmode="url"
               >
             </div>
-            <div class="col-12">
+            <div class="col-12 col-md-6">
               <label for="eventInfoPoster" class="form-label" data-i18n="event_info_poster">Poster</label>
               <input
                 type="url"
@@ -502,6 +502,17 @@
                 id="eventInfoPoster"
                 placeholder="https://.../poster.jpg"
                 data-i18n-placeholder="event_info_poster_placeholder"
+                inputmode="url"
+              >
+            </div>
+            <div class="col-12 col-md-6">
+              <label for="eventInfoAuthorizationTemplate" class="form-label" data-i18n="event_info_authorization">Autorización</label>
+              <input
+                type="url"
+                class="form-control"
+                id="eventInfoAuthorizationTemplate"
+                placeholder="https://.../autorizacion.pdf"
+                data-i18n-placeholder="event_info_authorization_placeholder"
                 inputmode="url"
               >
             </div>
@@ -515,6 +526,13 @@
             <div class="col-12 event-info-rich-text-field">
               <label class="form-label" data-i18n="event_info_payment_instructions">Instrucciones de pago</label>
               <div id="eventInfoPaymentInstructionsEditor"></div>
+              <div class="form-text" data-i18n="event_info_description_help">
+                Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.
+              </div>
+            </div>
+            <div class="col-12 event-info-rich-text-field">
+              <label class="form-label" data-i18n="event_info_registration_accept_text">Texto de aceptacion de registro</label>
+              <div id="eventInfoRegistrationAcceptTextEditor"></div>
               <div class="form-text" data-i18n="event_info_description_help">
                 Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.
               </div>

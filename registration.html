@@ -25,8 +25,17 @@
       margin-top: 0;
       margin-bottom: 0;
     }
+    #confirmRegistrationAcceptText p,
+    #confirmRegistrationAcceptText ol,
+    #confirmRegistrationAcceptText ul,
+    #confirmRegistrationAcceptText blockquote {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
     #registrationPaymentInstructionsContent ol,
-    #registrationPaymentInstructionsContent ul {
+    #registrationPaymentInstructionsContent ul,
+    #confirmRegistrationAcceptText ol,
+    #confirmRegistrationAcceptText ul {
       padding-left: 1.5em;
     }
     .choreo-status-legend-tooltip {
@@ -1060,6 +1069,29 @@
         min-height: 2.55rem;
         border-radius: 0.7rem;
         font-weight: 650;
+      }
+      .participant-mobile-card__actions .btn-participant-authorization {
+        grid-column: 1 / -1;
+        margin-top: 0.15rem;
+      }
+      .participant-mobile-card__authorization {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.65rem 0.85rem 0.8rem;
+        border-top: 1px solid var(--bs-border-color-translucent);
+      }
+      .participant-mobile-card__authorization-copy {
+        min-width: 0;
+      }
+      .participant-mobile-card__authorization-label {
+        display: block;
+        color: var(--bs-secondary-color);
+        font-size: 0.7rem;
+        font-weight: 750;
+        letter-spacing: 0.045em;
+        text-transform: uppercase;
       }
       #org-registrations > .card,
       #competitions > .card {
@@ -2834,6 +2866,15 @@
             <div class="tab-pane fade" id="participants" role="tabpanel">
               <div class="card shadow-sm">
                 <div class="card-body p-4">
+                  <div class="participants-authorization-notice d-none flex-column flex-md-row align-items-md-center gap-2 gap-md-3 mb-3" id="participantsAuthorizationNotice">
+                    <button type="button" class="btn btn-warning flex-shrink-0" id="participantsAuthorizationDocumentBtn">
+                      <i class="bi bi-file-earmark-text me-2"></i>
+                      <span data-i18n="registration_authorization_document">Documento Autorización</span>
+                    </button>
+                    <p class="text-body-secondary small mb-0" data-i18n="registration_authorization_help">
+                      Cada participante deberá rellenar la autorización y adjuntarla para poder participar en el evento.
+                    </p>
+                  </div>
                   <div class="participants-controls d-flex flex-column flex-lg-row align-items-lg-end justify-content-lg-between gap-3 mb-3">
                     <div class="participants-primary-actions d-flex flex-wrap gap-2">
                       <button type="button" class="btn btn-primary" id="addParticipantBtn">
@@ -3341,6 +3382,11 @@
                 </div>
 
                 <div class="registration-payments-lists mt-3">
+                  <div class="mb-2">
+                    <button type="button" class="btn btn-link btn-sm p-0 text-start registration-bases-document-link">
+                      <i class="bi bi-file-earmark-text me-1"></i><span data-i18n="registration_competition_rules">BASES DEL CONCURSO</span>
+                    </button>
+                  </div>
                   <div class="mb-3 d-none" id="registrationPaymentInstructions">
                     <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#registrationPaymentInstructionsModal">
                       <i class="bi bi-info-circle me-1"></i><span data-i18n="registration_payment_instructions">INSTRUCCIONES DE PAGO</span>
@@ -3556,6 +3602,55 @@
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-outline-primary" id="participantSaveAddBtn" data-i18n="registration_participants_save_add">Guardar y crear otro</button>
           <button type="button" class="btn btn-primary" id="participantSaveBtn" data-i18n="registration_participants_save_close">Guardar y cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="participantAuthorizationModal" tabindex="-1" aria-labelledby="participantAuthorizationModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="participantAuthorizationModalTitle" data-i18n="registration_authorization_manage">Gestionar autorización</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <div class="small text-body-secondary" data-i18n="registration_authorization_participant">Participante</div>
+            <div class="fw-semibold" id="participantAuthorizationParticipantName">-</div>
+          </div>
+
+          <div class="border rounded p-3 mb-3 d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-3">
+            <div>
+              <div class="small text-body-secondary mb-1" data-i18n="registration_authorization_status">Estado de la autorización</div>
+              <span class="badge text-bg-secondary" id="participantAuthorizationStatus" data-i18n="registration_authorization_pending">Autorización pendiente</span>
+              <div class="small text-body-secondary mt-2 d-none" id="participantAuthorizationFileMeta"></div>
+            </div>
+            <div class="d-none flex-wrap gap-2" id="participantAuthorizationExistingActions">
+              <button type="button" class="btn btn-outline-primary btn-sm" id="participantAuthorizationViewBtn">
+                <i class="bi bi-eye me-1"></i><span data-i18n="registration_authorization_view">Ver autorización</span>
+              </button>
+              <button type="button" class="btn btn-outline-danger btn-sm" id="participantAuthorizationDeleteBtn">
+                <i class="bi bi-trash me-1"></i><span data-i18n="registration_authorization_delete">Eliminar autorización</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="alert d-none" id="participantAuthorizationFeedback" role="alert"></div>
+
+          <form id="participantAuthorizationForm" novalidate>
+            <label class="form-label" for="participantAuthorizationFile" id="participantAuthorizationFileLabel" data-i18n="registration_authorization_upload">Subir autorización</label>
+            <input class="form-control" type="file" id="participantAuthorizationFile" accept="application/pdf,.pdf" required>
+            <div class="form-text" data-i18n="registration_authorization_file_help">Solo PDF, máximo 10 MiB.</div>
+            <div class="invalid-feedback" id="participantAuthorizationFileError"></div>
+            <div class="small text-body-secondary mt-2 d-none" id="participantAuthorizationSelectedFile"></div>
+            <div class="d-grid d-md-flex justify-content-md-end mt-3">
+              <button type="submit" class="btn btn-warning" id="participantAuthorizationUploadBtn" data-i18n="registration_authorization_upload">Subir autorización</button>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
         </div>
       </div>
     </div>
@@ -4385,6 +4480,10 @@
         </div>
         <div class="modal-body">
           <p id="confirmRegistrationMessage" data-i18n="registration_competitions_confirm_question">Seguro que deseas confirmar esta inscripcion?</p>
+          <div class="form-check d-none" id="confirmRegistrationAcceptWrapper">
+            <input class="form-check-input" type="checkbox" id="confirmRegistrationAcceptCheck">
+            <label class="form-check-label" id="confirmRegistrationAcceptText" for="confirmRegistrationAcceptCheck"></label>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>

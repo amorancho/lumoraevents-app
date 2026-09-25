@@ -5,6 +5,9 @@ const registrationState = {
   organizerRegistrations: [],
   paymentDocuments: [],
   paymentInstructionsAvailable: false,
+  registrationAcceptText: '',
+  basesDocument: '',
+  authorizationTemplate: '',
   schools: [],
   registrationConfig: {
     categories: [],
@@ -529,7 +532,8 @@ function getRegistrationRole(user = getUserFromToken()) {
 document.addEventListener('DOMContentLoaded', async () => {
   await WaitEventLoaded();
   await ensureTranslationsReady();
-  await loadRegistrationPaymentInstructions();
+  await loadRegistrationEventInfo();
+  initRegistrationBasesDocumentLinks();
   const user = getUserFromToken();
   const role = getRegistrationRole(user);
   setupRegistrationNavigation(role);
@@ -549,7 +553,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-async function loadRegistrationPaymentInstructions() {
+async function loadRegistrationEventInfo() {
   const contentEl = document.getElementById('registrationPaymentInstructionsContent');
   const eventId = getEvent()?.id;
   if (!contentEl || !eventId) {
@@ -564,11 +568,18 @@ async function loadRegistrationPaymentInstructions() {
 
     const eventInfo = await response.json();
     const paymentInstructions = String(eventInfo?.payment_instructions ?? '').trim();
+    const registrationAcceptText = String(eventInfo?.registration_accept_text ?? '').trim();
     registrationState.paymentInstructionsAvailable = Boolean(paymentInstructions);
+    registrationState.registrationAcceptText = sanitizeRegistrationPaymentInstructionsHtml(registrationAcceptText);
+    registrationState.basesDocument = String(eventInfo?.bases_document ?? '').trim();
+    registrationState.authorizationTemplate = String(eventInfo?.authorization_template ?? '').trim();
     contentEl.innerHTML = sanitizeRegistrationPaymentInstructionsHtml(paymentInstructions);
   } catch (error) {
-    console.error('Error loading payment instructions:', error);
+    console.error('Error loading event information:', error);
     registrationState.paymentInstructionsAvailable = false;
+    registrationState.registrationAcceptText = '';
+    registrationState.basesDocument = '';
+    registrationState.authorizationTemplate = '';
     contentEl.replaceChildren();
   } finally {
     window.dispatchEvent(new CustomEvent('registration:payment-instructions-updated'));
@@ -610,6 +621,37 @@ function isSafeRegistrationPaymentInstructionsLink(href) {
     return REGISTRATION_PAYMENT_INSTRUCTIONS_ALLOWED_PROTOCOLS.has(url.protocol);
   } catch {
     return false;
+  }
+}
+
+function initRegistrationBasesDocumentLinks() {
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('.registration-bases-document-link');
+    if (!link) return;
+
+    const documentUrl = getSafeRegistrationDocumentUrl(registrationState.basesDocument);
+
+    if (!documentUrl) {
+      showMessageModal(
+        t('registration_competition_rules_missing', 'The organization has not defined the competition rules document.'),
+        t('registration_competition_rules', 'Competition rules'),
+        'warning'
+      );
+      return;
+    }
+
+    window.open(documentUrl, '_blank', 'noopener,noreferrer');
+  });
+}
+
+function getSafeRegistrationDocumentUrl(rawUrl) {
+  if (!rawUrl) return null;
+
+  try {
+    const parsedUrl = new URL(rawUrl, window.location.origin);
+    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:' ? parsedUrl.href : null;
+  } catch {
+    return null;
   }
 }
 
@@ -732,6 +774,13 @@ function buildRegistrationSidebarHeroMarkup() {
   const statusInfo = getRegistrationSidebarStatusInfo();
   const eventRange = formatRegistrationSidebarRange(eventObj?.start, eventObj?.end);
   const registrationRange = formatRegistrationSidebarRange(eventObj?.registrationStart, eventObj?.registrationEnd);
+  const competitionRulesMarkup = `
+    <div class="registration-sidebar-meta-row mt-2">
+      <button type="button" class="btn btn-link btn-sm p-0 text-start registration-bases-document-link">
+        <i class="bi bi-file-earmark-text me-1"></i><span>${t('registration_competition_rules', 'COMPETITION RULES')}</span>
+      </button>
+    </div>
+  `;
   const paymentInstructionsMarkup = hasRegistrationPaymentInstructions()
     ? `
       <div class="registration-sidebar-meta-row mt-2">
@@ -764,6 +813,7 @@ function buildRegistrationSidebarHeroMarkup() {
         </div>
         <div class="registration-sidebar-meta-value">${registrationRange}</div>
       </div>
+      ${competitionRulesMarkup}
       ${paymentInstructionsMarkup}
     </div>
   `;
@@ -2503,6 +2553,8 @@ function initParticipantsTab(role) {
   const emptyEl = document.getElementById('participantsEmpty');
   const addBtn = document.getElementById('addParticipantBtn');
   const importOpenBtn = document.getElementById('importParticipantsOpenBtn');
+  const authorizationNotice = document.getElementById('participantsAuthorizationNotice');
+  const authorizationDocumentBtn = document.getElementById('participantsAuthorizationDocumentBtn');
   const copyTsvBtn = document.getElementById('participantsCopyTsvBtn');
   const controlsEl = document.querySelector('#participants .participants-controls');
   const primaryActionsEl = document.querySelector('#participants .participants-primary-actions');
@@ -2517,6 +2569,7 @@ function initParticipantsTab(role) {
   const mobileNameClear = document.getElementById('participantsMobileNameClear');
   const mobileActiveFilters = document.getElementById('participantsMobileActiveFilters');
   const modalEl = document.getElementById('participantModal');
+  const authorizationModalEl = document.getElementById('participantAuthorizationModal');
   const importModalEl = document.getElementById('importParticipantsModal');
   const deleteModalEl = document.getElementById('deleteParticipantModal');
   const duplicateModalEl = document.getElementById('duplicateParticipantModal');
@@ -2532,7 +2585,10 @@ function initParticipantsTab(role) {
   }
 
   const allowEdit = role === 'school';
+  const authorizationsEnabled = getEvent()?.hasAuthorizations === true;
+  const showAuthorizations = allowEdit && authorizationsEnabled;
   const showSchoolColumn = role === 'organizer';
+  const showOrganizerAuthorizations = showSchoolColumn && authorizationsEnabled;
   const shouldShowGender = Boolean(getEvent()?.showGender);
   controlsEl?.classList.toggle('participants-controls--organizer', showSchoolColumn);
   const ageHeaderInfoBtn = document.getElementById('participantsAgeInfoBtn');
@@ -2541,6 +2597,10 @@ function initParticipantsTab(role) {
   const participantGenderHeader = participantTable?.querySelector('th[data-i18n="registration_participants_gender"]');
   if (feeSummaryEl) {
     feeSummaryEl.classList.remove('d-none');
+  }
+  if (showAuthorizations && authorizationNotice) {
+    authorizationNotice.classList.remove('d-none');
+    authorizationNotice.classList.add('d-flex');
   }
   if (!allowEdit) {
     if (addBtn) addBtn.classList.add('d-none');
@@ -2567,6 +2627,17 @@ function initParticipantsTab(role) {
       schoolHeader.setAttribute('data-i18n', 'registration_participants_school');
       schoolHeader.textContent = t('registration_participants_school', 'Escuela');
       headRow.insertBefore(schoolHeader, actionsHeader || null);
+    }
+  }
+  if (showOrganizerAuthorizations) {
+    const headRow = tableBody.closest('table')?.querySelector('thead tr');
+    if (headRow) {
+      const authorizationHeader = document.createElement('th');
+      authorizationHeader.className = 'text-center';
+      authorizationHeader.setAttribute('data-i18n', 'registration_authorization');
+      authorizationHeader.setAttribute('data-tsv-ignore', 'true');
+      authorizationHeader.textContent = t('registration_authorization', 'Autorización');
+      headRow.appendChild(authorizationHeader);
     }
   }
 
@@ -2608,10 +2679,31 @@ function initParticipantsTab(role) {
   }
 
   const participantModal = new bootstrap.Modal(modalEl);
+  const participantAuthorizationModal = authorizationModalEl && window.bootstrap?.Modal
+    ? new bootstrap.Modal(authorizationModalEl)
+    : null;
   const importParticipantsModal = importModalEl ? new bootstrap.Modal(importModalEl) : null;
   const deleteModal = new bootstrap.Modal(deleteModalEl);
   const duplicateModal = duplicateModalEl ? new bootstrap.Modal(duplicateModalEl) : null;
   let participantToDelete = null;
+  let authorizationParticipant = null;
+  let authorizationBusy = false;
+  let authorizationFileInfo = null;
+  const authorizationElements = {
+    participantName: document.getElementById('participantAuthorizationParticipantName'),
+    status: document.getElementById('participantAuthorizationStatus'),
+    fileMeta: document.getElementById('participantAuthorizationFileMeta'),
+    existingActions: document.getElementById('participantAuthorizationExistingActions'),
+    viewBtn: document.getElementById('participantAuthorizationViewBtn'),
+    deleteBtn: document.getElementById('participantAuthorizationDeleteBtn'),
+    feedback: document.getElementById('participantAuthorizationFeedback'),
+    form: document.getElementById('participantAuthorizationForm'),
+    fileLabel: document.getElementById('participantAuthorizationFileLabel'),
+    fileInput: document.getElementById('participantAuthorizationFile'),
+    fileError: document.getElementById('participantAuthorizationFileError'),
+    selectedFile: document.getElementById('participantAuthorizationSelectedFile'),
+    uploadBtn: document.getElementById('participantAuthorizationUploadBtn')
+  };
   const duplicateMessageEl = document.getElementById('duplicateParticipantMessage');
   const confirmDuplicateBtn = document.getElementById('confirmDuplicateParticipantBtn');
   const importElements = {
@@ -2680,6 +2772,274 @@ function initParticipantsTab(role) {
       return await res.json();
     } catch (error) {
       return null;
+    }
+  };
+
+  const PARTICIPANT_AUTHORIZATION_MAX_SIZE = 10 * 1024 * 1024;
+
+  const hasParticipantAuthorization = (participant) => (
+    participant?.has_authorization === true || Number(participant?.has_authorization) === 1
+  );
+
+  const formatAuthorizationFileSize = (value) => {
+    const bytes = Number(value);
+    if (!Number.isFinite(bytes) || bytes < 0) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+  };
+
+  const buildParticipantAuthorizationUrl = (participantId, action = '') => {
+    const eventIdValue = getEvent()?.id || registrationState.school?.event_id;
+    if (!participantId || !eventIdValue) return '';
+
+    const params = new URLSearchParams({ event_id: `${eventIdValue}` });
+    const suffix = action ? `/${action}` : '';
+    return `${API_BASE_URL}/api/participants/${encodeURIComponent(participantId)}/authorization${suffix}?${params.toString()}`;
+  };
+
+  const setAuthorizationFeedback = (message = '', variant = 'danger') => {
+    if (!authorizationElements.feedback) return;
+    authorizationElements.feedback.className = `alert alert-${variant}${message ? '' : ' d-none'}`;
+    authorizationElements.feedback.textContent = message;
+  };
+
+  const resetAuthorizationFileInput = () => {
+    if (authorizationElements.fileInput) {
+      authorizationElements.fileInput.value = '';
+      authorizationElements.fileInput.classList.remove('is-invalid');
+    }
+    if (authorizationElements.fileError) authorizationElements.fileError.textContent = '';
+    if (authorizationElements.selectedFile) {
+      authorizationElements.selectedFile.textContent = '';
+      authorizationElements.selectedFile.classList.add('d-none');
+    }
+    authorizationElements.form?.classList.remove('was-validated');
+  };
+
+  const setAuthorizationBusy = (isBusy) => {
+    authorizationBusy = isBusy;
+    [
+      authorizationElements.fileInput,
+      authorizationElements.uploadBtn,
+      authorizationElements.viewBtn,
+      authorizationElements.deleteBtn
+    ].forEach((element) => {
+      if (element) element.disabled = isBusy;
+    });
+    authorizationModalEl?.querySelectorAll('[data-bs-dismiss="modal"], .btn-close').forEach((button) => {
+      button.disabled = isBusy;
+    });
+  };
+
+  const syncAuthorizationModal = () => {
+    if (!authorizationParticipant) return;
+
+    const hasDocument = hasParticipantAuthorization(authorizationParticipant);
+    if (authorizationElements.participantName) {
+      authorizationElements.participantName.textContent = authorizationParticipant.name || '-';
+    }
+    if (authorizationElements.status) {
+      authorizationElements.status.className = `badge ${hasDocument ? 'text-bg-success' : 'text-bg-secondary'}`;
+      authorizationElements.status.textContent = hasDocument
+        ? t('registration_authorization_attached', 'Documento adjuntado')
+        : t('registration_authorization_pending', 'Autorización pendiente');
+    }
+    if (authorizationElements.existingActions) {
+      authorizationElements.existingActions.classList.toggle('d-none', !hasDocument);
+      authorizationElements.existingActions.classList.toggle('d-flex', hasDocument);
+    }
+
+    const fileName = `${authorizationFileInfo?.file_name ?? ''}`.trim();
+    const fileSize = formatAuthorizationFileSize(authorizationFileInfo?.size);
+    if (authorizationElements.fileMeta) {
+      authorizationElements.fileMeta.textContent = [fileName, fileSize].filter(Boolean).join(' · ');
+      authorizationElements.fileMeta.classList.toggle('d-none', !fileName && !fileSize);
+    }
+
+    const uploadLabel = hasDocument
+      ? t('registration_authorization_replace', 'Sustituir autorización')
+      : t('registration_authorization_upload', 'Subir autorización');
+    if (authorizationElements.fileLabel) authorizationElements.fileLabel.textContent = uploadLabel;
+    if (authorizationElements.uploadBtn && !authorizationBusy) authorizationElements.uploadBtn.textContent = uploadLabel;
+  };
+
+  const updateParticipantAuthorizationState = (participantId, data = {}) => {
+    const participant = registrationState.participants.find((item) => `${item.id}` === `${participantId}`);
+    if (!participant) return null;
+
+    Object.assign(participant, data, {
+      has_authorization: data.has_authorization === true || Number(data.has_authorization) === 1
+    });
+    if (authorizationParticipant && `${authorizationParticipant.id}` === `${participantId}`) {
+      authorizationParticipant = participant;
+    }
+    notifyRegistrationParticipantsUpdate();
+    renderParticipants();
+    return participant;
+  };
+
+  const refreshActiveAuthorizationParticipant = async (participantId) => {
+    await loadParticipants();
+    authorizationParticipant = registrationState.participants.find((item) => `${item.id}` === `${participantId}`) || null;
+    if (authorizationParticipant) syncAuthorizationModal();
+  };
+
+  const openParticipantAuthorizationModal = (participant) => {
+    if (!showAuthorizations || !participantAuthorizationModal || !participant) return;
+    authorizationParticipant = participant;
+    authorizationFileInfo = null;
+    resetAuthorizationFileInput();
+    setAuthorizationFeedback();
+    setAuthorizationBusy(false);
+    syncAuthorizationModal();
+    participantAuthorizationModal.show();
+  };
+
+  const viewParticipantAuthorization = async (participant, triggerButton) => {
+    if (!participant?.id || !hasParticipantAuthorization(participant)) return;
+
+    const previewWindow = window.open('', '_blank');
+    if (previewWindow) previewWindow.opener = null;
+    const originalHtml = triggerButton?.innerHTML || '';
+    if (triggerButton) {
+      triggerButton.disabled = true;
+      triggerButton.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>';
+    }
+
+    try {
+      const url = buildParticipantAuthorizationUrl(participant.id, 'download');
+      if (!url) throw new Error(t('registration_authorization_view_error', 'Error al abrir la autorización.'));
+      const response = await fetch(url);
+      const data = await safeJsonResponse(response);
+      if (!response.ok) {
+        throw new Error(data?.error || t('registration_authorization_view_error', 'Error al abrir la autorización.'));
+      }
+      const signedUrl = getSafeRegistrationDocumentUrl(data?.url);
+      if (!signedUrl) {
+        throw new Error(t('registration_authorization_view_error', 'Error al abrir la autorización.'));
+      }
+
+      authorizationFileInfo = data;
+      if (authorizationParticipant && `${authorizationParticipant.id}` === `${participant.id}`) {
+        syncAuthorizationModal();
+      }
+      if (previewWindow) {
+        previewWindow.location.replace(signedUrl);
+      } else {
+        const link = document.createElement('a');
+        link.href = signedUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+    } catch (error) {
+      previewWindow?.close();
+      const message = error?.message || t('registration_authorization_view_error', 'Error al abrir la autorización.');
+      if (authorizationModalEl?.classList.contains('show')) {
+        setAuthorizationFeedback(message, 'danger');
+      } else {
+        showMessageModal(message, t('error_title', 'Error'));
+      }
+    } finally {
+      if (triggerButton) {
+        triggerButton.disabled = false;
+        triggerButton.innerHTML = originalHtml;
+      }
+    }
+  };
+
+  const validateAuthorizationFile = (file) => {
+    if (!file) return t('registration_authorization_file_required', 'Selecciona un archivo PDF.');
+    const hasPdfExtension = /\.pdf$/i.test(file.name || '');
+    const hasPdfMimeType = file.type === 'application/pdf' || (!file.type && hasPdfExtension);
+    if (!hasPdfExtension || !hasPdfMimeType) {
+      return t('registration_authorization_file_invalid', 'El archivo debe ser un PDF válido.');
+    }
+    if (file.size > PARTICIPANT_AUTHORIZATION_MAX_SIZE) {
+      return t('registration_authorization_file_too_large', 'El PDF no puede superar los 10 MiB.');
+    }
+    return '';
+  };
+
+  const submitParticipantAuthorization = async () => {
+    if (!authorizationParticipant?.id || authorizationBusy) return;
+    const participantId = authorizationParticipant.id;
+    const file = authorizationElements.fileInput?.files?.[0] || null;
+    const validationError = validateAuthorizationFile(file);
+    if (validationError) {
+      if (authorizationElements.fileInput) {
+        authorizationElements.fileInput.value = '';
+        authorizationElements.fileInput.classList.add('is-invalid');
+      }
+      if (authorizationElements.fileError) authorizationElements.fileError.textContent = validationError;
+      if (authorizationElements.selectedFile) {
+        authorizationElements.selectedFile.textContent = '';
+        authorizationElements.selectedFile.classList.add('d-none');
+      }
+      authorizationElements.form?.classList.add('was-validated');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('authorization', file);
+    setAuthorizationFeedback();
+    setAuthorizationBusy(true);
+    if (authorizationElements.uploadBtn) {
+      authorizationElements.uploadBtn.textContent = t('registration_authorization_uploading', 'Subiendo...');
+    }
+
+    try {
+      const url = buildParticipantAuthorizationUrl(participantId);
+      if (!url) throw new Error(t('registration_authorization_upload_error', 'Error al subir la autorización.'));
+      const response = await fetch(url, { method: 'POST', body: formData });
+      const data = await safeJsonResponse(response);
+      if (!response.ok) {
+        throw new Error(data?.error || t('registration_authorization_upload_error', 'Error al subir la autorización.'));
+      }
+
+      authorizationFileInfo = data;
+      updateParticipantAuthorizationState(participantId, { ...data, has_authorization: true });
+      resetAuthorizationFileInput();
+      setAuthorizationFeedback(t('registration_authorization_upload_success', 'Autorización subida correctamente.'), 'success');
+    } catch (error) {
+      await refreshActiveAuthorizationParticipant(participantId);
+      resetAuthorizationFileInput();
+      setAuthorizationFeedback(error?.message || t('registration_authorization_upload_error', 'Error al subir la autorización.'), 'danger');
+    } finally {
+      setAuthorizationBusy(false);
+      if (authorizationParticipant) syncAuthorizationModal();
+    }
+  };
+
+  const deleteParticipantAuthorization = async () => {
+    if (!authorizationParticipant?.id || authorizationBusy || !hasParticipantAuthorization(authorizationParticipant)) return;
+    if (!window.confirm(t('registration_authorization_delete_confirm', '¿Seguro que deseas eliminar la autorización?'))) return;
+
+    const participantId = authorizationParticipant.id;
+    setAuthorizationFeedback();
+    setAuthorizationBusy(true);
+    try {
+      const url = buildParticipantAuthorizationUrl(participantId);
+      if (!url) throw new Error(t('registration_authorization_delete_error', 'Error al eliminar la autorización.'));
+      const response = await fetch(url, { method: 'DELETE' });
+      const data = await safeJsonResponse(response);
+      if (!response.ok) {
+        throw new Error(data?.error || t('registration_authorization_delete_error', 'Error al eliminar la autorización.'));
+      }
+
+      authorizationFileInfo = null;
+      updateParticipantAuthorizationState(participantId, { ...data, has_authorization: false });
+      resetAuthorizationFileInput();
+      setAuthorizationFeedback(t('registration_authorization_delete_success', 'Autorización eliminada correctamente.'), 'success');
+    } catch (error) {
+      await refreshActiveAuthorizationParticipant(participantId);
+      setAuthorizationFeedback(error?.message || t('registration_authorization_delete_error', 'Error al eliminar la autorización.'), 'danger');
+    } finally {
+      setAuthorizationBusy(false);
+      if (authorizationParticipant) syncAuthorizationModal();
     }
   };
 
@@ -3238,6 +3598,7 @@ function initParticipantsTab(role) {
     };
     const editTitle = t('edit', 'Edit');
     const deleteTitle = t('delete', 'Delete');
+    const authorizationTitle = t('registration_authorization', 'Authorization');
     const birthLabel = t('registration_participants_birth', 'Fecha nacimiento');
     const ageLabel = t('registration_participants_age', 'Edad');
     const countryLabel = t('registration_participants_country', 'Pais');
@@ -3274,6 +3635,7 @@ function initParticipantsTab(role) {
     filtered.forEach(participant => {
       const row = document.createElement('tr');
       row.dataset.id = participant.id;
+      const participantHasAuthorization = hasParticipantAuthorization(participant);
 
       const nameCell = document.createElement('td');
       nameCell.textContent = participant.name || '';
@@ -3326,6 +3688,29 @@ function initParticipantsTab(role) {
       registrationsCell.appendChild(registrationsWrap);
       row.appendChild(registrationsCell);
 
+      if (showOrganizerAuthorizations) {
+        const authorizationCell = document.createElement('td');
+        authorizationCell.className = 'text-center text-nowrap';
+        authorizationCell.setAttribute('data-tsv-ignore', 'true');
+        if (participantHasAuthorization) {
+          const viewAuthorizationBtn = document.createElement('button');
+          viewAuthorizationBtn.type = 'button';
+          viewAuthorizationBtn.className = 'btn btn-outline-primary btn-sm text-nowrap btn-view-participant-authorization';
+          viewAuthorizationBtn.dataset.id = participant.id;
+          viewAuthorizationBtn.innerHTML = '<i class="bi bi-eye me-1"></i>';
+          const viewAuthorizationText = document.createElement('span');
+          viewAuthorizationText.textContent = t('registration_authorization_view', 'Ver autorización');
+          viewAuthorizationBtn.appendChild(viewAuthorizationText);
+          authorizationCell.appendChild(viewAuthorizationBtn);
+        } else {
+          const pendingAuthorization = document.createElement('span');
+          pendingAuthorization.className = 'badge bg-secondary-subtle text-secondary-emphasis';
+          pendingAuthorization.textContent = t('registration_authorization_pending_short', 'Pendiente');
+          authorizationCell.appendChild(pendingAuthorization);
+        }
+        row.appendChild(authorizationCell);
+      }
+
       if (allowEdit) {
         const actionsCell = document.createElement('td');
         actionsCell.className = 'text-center';
@@ -3353,6 +3738,24 @@ function initParticipantsTab(role) {
         actionGroup.appendChild(editBtn);
         actionGroup.appendChild(deleteBtn);
         actionsCell.appendChild(actionGroup);
+        if (showAuthorizations) {
+          const authorizationStatus = participantHasAuthorization
+            ? t('registration_authorization_attached', 'Documento adjuntado')
+            : t('registration_authorization_pending', 'Autorización pendiente');
+          const authorizationBtn = document.createElement('button');
+          authorizationBtn.type = 'button';
+          authorizationBtn.className = `btn btn-outline-${participantHasAuthorization ? 'success' : 'warning'} btn-sm ms-2 text-nowrap btn-participant-authorization`;
+          authorizationBtn.dataset.id = participant.id;
+          authorizationBtn.title = `${authorizationTitle}: ${authorizationStatus}`;
+          authorizationBtn.setAttribute('aria-label', `${authorizationTitle}: ${authorizationStatus}`);
+          authorizationBtn.innerHTML = participantHasAuthorization
+            ? '<i class="bi bi-check-circle-fill me-1"></i>'
+            : '<i class="bi bi-file-earmark-arrow-up me-1"></i>';
+          const authorizationText = document.createElement('span');
+          authorizationText.textContent = authorizationTitle;
+          authorizationBtn.appendChild(authorizationText);
+          actionsCell.appendChild(authorizationBtn);
+        }
         row.appendChild(actionsCell);
       }
 
@@ -3456,6 +3859,42 @@ function initParticipantsTab(role) {
       mobileRegistrations.appendChild(mobileRegistrationList);
       mobileCard.appendChild(mobileRegistrations);
 
+      if (showOrganizerAuthorizations) {
+        const mobileAuthorization = document.createElement('div');
+        mobileAuthorization.className = 'participant-mobile-card__authorization';
+        const mobileAuthorizationCopy = document.createElement('div');
+        mobileAuthorizationCopy.className = 'participant-mobile-card__authorization-copy';
+        const mobileAuthorizationLabel = document.createElement('span');
+        mobileAuthorizationLabel.className = 'participant-mobile-card__authorization-label';
+        mobileAuthorizationLabel.textContent = authorizationTitle;
+        mobileAuthorizationCopy.appendChild(mobileAuthorizationLabel);
+
+        if (participantHasAuthorization) {
+          const attached = document.createElement('span');
+          attached.className = 'badge bg-success-subtle text-success-emphasis';
+          attached.textContent = t('registration_authorization_attached', 'Documento adjuntado');
+          mobileAuthorizationCopy.appendChild(attached);
+
+          const mobileViewAuthorizationBtn = document.createElement('button');
+          mobileViewAuthorizationBtn.type = 'button';
+          mobileViewAuthorizationBtn.className = 'btn btn-outline-primary btn-sm flex-shrink-0 btn-view-participant-authorization';
+          mobileViewAuthorizationBtn.dataset.id = participant.id;
+          mobileViewAuthorizationBtn.innerHTML = '<i class="bi bi-eye me-1"></i>';
+          const mobileViewAuthorizationText = document.createElement('span');
+          mobileViewAuthorizationText.textContent = t('registration_authorization_view_short', 'Ver');
+          mobileViewAuthorizationBtn.appendChild(mobileViewAuthorizationText);
+          mobileAuthorization.appendChild(mobileAuthorizationCopy);
+          mobileAuthorization.appendChild(mobileViewAuthorizationBtn);
+        } else {
+          const pending = document.createElement('span');
+          pending.className = 'badge bg-secondary-subtle text-secondary-emphasis';
+          pending.textContent = t('registration_authorization_pending_short', 'Pendiente');
+          mobileAuthorizationCopy.appendChild(pending);
+          mobileAuthorization.appendChild(mobileAuthorizationCopy);
+        }
+        mobileCard.appendChild(mobileAuthorization);
+      }
+
       if (allowEdit) {
         const mobileActions = document.createElement('div');
         mobileActions.className = 'participant-mobile-card__actions';
@@ -3480,6 +3919,19 @@ function initParticipantsTab(role) {
 
         mobileActions.appendChild(mobileEditBtn);
         mobileActions.appendChild(mobileDeleteBtn);
+        if (showAuthorizations) {
+          const mobileAuthorizationBtn = document.createElement('button');
+          mobileAuthorizationBtn.type = 'button';
+          mobileAuthorizationBtn.className = `btn btn-outline-${participantHasAuthorization ? 'success' : 'warning'} btn-participant-authorization`;
+          mobileAuthorizationBtn.dataset.id = participant.id;
+          mobileAuthorizationBtn.innerHTML = participantHasAuthorization
+            ? '<i class="bi bi-check-circle-fill me-2"></i>'
+            : '<i class="bi bi-file-earmark-arrow-up me-2"></i>';
+          const mobileAuthorizationText = document.createElement('span');
+          mobileAuthorizationText.textContent = authorizationTitle;
+          mobileAuthorizationBtn.appendChild(mobileAuthorizationText);
+          mobileActions.appendChild(mobileAuthorizationBtn);
+        }
         mobileCard.appendChild(mobileActions);
       }
 
@@ -3492,7 +3944,11 @@ function initParticipantsTab(role) {
     mobileCards.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 5 + (shouldShowGender ? 1 : 0) + (showSchoolColumn ? 1 : 0) + (allowEdit ? 1 : 0);
+    cell.colSpan = 5
+      + (shouldShowGender ? 1 : 0)
+      + (showSchoolColumn ? 1 : 0)
+      + (allowEdit ? 1 : 0)
+      + (showOrganizerAuthorizations ? 1 : 0);
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -3767,6 +4223,64 @@ function initParticipantsTab(role) {
     });
   }
 
+  if (authorizationDocumentBtn && showAuthorizations) {
+    authorizationDocumentBtn.addEventListener('click', () => {
+      const documentUrl = getSafeRegistrationDocumentUrl(registrationState.authorizationTemplate);
+      if (!documentUrl) {
+        showMessageModal(
+          t('registration_authorization_missing', 'The organization has not defined the authorization document.'),
+          t('registration_authorization', 'Authorization'),
+          'warning'
+        );
+        return;
+      }
+
+      window.open(documentUrl, '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  if (authorizationElements.form && showAuthorizations) {
+    authorizationElements.form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      submitParticipantAuthorization();
+    });
+  }
+
+  if (authorizationElements.fileInput && showAuthorizations) {
+    authorizationElements.fileInput.addEventListener('change', () => {
+      authorizationElements.fileInput.classList.remove('is-invalid');
+      if (authorizationElements.fileError) authorizationElements.fileError.textContent = '';
+      const file = authorizationElements.fileInput.files?.[0] || null;
+      if (authorizationElements.selectedFile) {
+        authorizationElements.selectedFile.textContent = file
+          ? `${file.name} · ${formatAuthorizationFileSize(file.size)}`
+          : '';
+        authorizationElements.selectedFile.classList.toggle('d-none', !file);
+      }
+    });
+  }
+
+  if (authorizationElements.viewBtn && showAuthorizations) {
+    authorizationElements.viewBtn.addEventListener('click', () => {
+      viewParticipantAuthorization(authorizationParticipant, authorizationElements.viewBtn);
+    });
+  }
+
+  if (authorizationElements.deleteBtn && showAuthorizations) {
+    authorizationElements.deleteBtn.addEventListener('click', deleteParticipantAuthorization);
+  }
+
+  authorizationModalEl?.addEventListener('hide.bs.modal', (event) => {
+    if (authorizationBusy) event.preventDefault();
+  });
+
+  authorizationModalEl?.addEventListener('hidden.bs.modal', () => {
+    authorizationParticipant = null;
+    authorizationFileInfo = null;
+    resetAuthorizationFileInput();
+    setAuthorizationFeedback();
+  });
+
   if (copyTsvBtn) {
     bindTableTsvExportButton(copyTsvBtn, tableBody);
   }
@@ -3780,6 +4294,21 @@ function initParticipantsTab(role) {
   }
 
   const handleParticipantAction = (event) => {
+    const authorizationBtn = event.target.closest('.btn-participant-authorization');
+    const viewAuthorizationBtn = event.target.closest('.btn-view-participant-authorization');
+
+    if (authorizationBtn && showAuthorizations) {
+      const participant = registrationState.participants.find((item) => `${item.id}` === `${authorizationBtn.dataset.id}`);
+      if (participant) openParticipantAuthorizationModal(participant);
+      return;
+    }
+
+    if (viewAuthorizationBtn && showOrganizerAuthorizations) {
+      const participant = registrationState.participants.find((item) => `${item.id}` === `${viewAuthorizationBtn.dataset.id}`);
+      if (participant) viewParticipantAuthorization(participant, viewAuthorizationBtn);
+      return;
+    }
+
     if (!allowEdit) return;
     const editBtn = event.target.closest('.btn-edit-participant');
     const deleteBtn = event.target.closest('.btn-delete-participant');
@@ -3902,6 +4431,7 @@ function initParticipantsTab(role) {
     updateParticipantsAgeHeaderTooltip();
     updateParticipantsFeeInfo();
     renderParticipants();
+    if (authorizationParticipant) syncAuthorizationModal();
   };
 
   if (ageHeaderInfoBtn) {

@@ -60,6 +60,9 @@
     deleteMessage: document.getElementById('deleteRegistrationMessage'),
     confirmDeleteBtn: document.getElementById('confirmDeleteRegistrationBtn'),
     confirmMessage: document.getElementById('confirmRegistrationMessage'),
+    confirmAcceptWrapper: document.getElementById('confirmRegistrationAcceptWrapper'),
+    confirmAcceptCheck: document.getElementById('confirmRegistrationAcceptCheck'),
+    confirmAcceptText: document.getElementById('confirmRegistrationAcceptText'),
     confirmRegistrationBtn: document.getElementById('confirmRegistrationBtn'),
     audioDeleteModal: deleteAudioModalEl,
     audioDeleteMessage: document.getElementById('deleteAudioMessage'),
@@ -2095,6 +2098,7 @@
       if (!registration) return;
       registrationToConfirm = registration;
       confirmAction = confirmBtn.dataset.action === 'cancel' ? 'cancel' : 'confirm';
+      const requiresAcceptance = confirmAction === 'confirm' && Boolean(registrationState.registrationAcceptText);
       if (elements.confirmMessage) {
         if (confirmAction === 'cancel') {
           const question = t('registration_competitions_cancel_confirm_question', 'Seguro que deseas cancelar la confirmacion de');
@@ -2110,6 +2114,16 @@
         elements.confirmRegistrationBtn.textContent = confirmAction === 'cancel'
           ? t('registration_competitions_cancel_confirm', 'Cancelar confirmacion')
           : t('registration_competitions_confirm', 'Confirmar');
+        elements.confirmRegistrationBtn.disabled = requiresAcceptance;
+      }
+      if (elements.confirmAcceptWrapper) {
+        elements.confirmAcceptWrapper.classList.toggle('d-none', !requiresAcceptance);
+      }
+      if (elements.confirmAcceptCheck) {
+        elements.confirmAcceptCheck.checked = false;
+      }
+      if (elements.confirmAcceptText) {
+        elements.confirmAcceptText.innerHTML = requiresAcceptance ? registrationState.registrationAcceptText : '';
       }
       confirmModal.show();
       return;
@@ -2143,6 +2157,9 @@
   if (elements.confirmRegistrationBtn) {
     elements.confirmRegistrationBtn.addEventListener('click', async () => {
       if (!registrationToConfirm) return;
+      if (confirmAction === 'confirm' && registrationState.registrationAcceptText && !elements.confirmAcceptCheck?.checked) {
+        return;
+      }
       elements.confirmRegistrationBtn.disabled = true;
       const originalText = elements.confirmRegistrationBtn.textContent;
       elements.confirmRegistrationBtn.textContent = t('saving', 'Guardando...');
@@ -2158,6 +2175,30 @@
       registrationToConfirm = null;
     });
   }
+
+  if (elements.confirmAcceptCheck) {
+    elements.confirmAcceptCheck.addEventListener('change', () => {
+      if (!elements.confirmRegistrationBtn) return;
+      elements.confirmRegistrationBtn.disabled = confirmAction === 'confirm'
+        && Boolean(registrationState.registrationAcceptText)
+        && !elements.confirmAcceptCheck.checked;
+    });
+  }
+
+  confirmModalEl.addEventListener('hidden.bs.modal', () => {
+    if (elements.confirmAcceptCheck) {
+      elements.confirmAcceptCheck.checked = false;
+    }
+    if (elements.confirmAcceptWrapper) {
+      elements.confirmAcceptWrapper.classList.add('d-none');
+    }
+    if (elements.confirmAcceptText) {
+      elements.confirmAcceptText.replaceChildren();
+    }
+    if (elements.confirmRegistrationBtn) {
+      elements.confirmRegistrationBtn.disabled = false;
+    }
+  });
 
   modalEl.addEventListener('hidden.bs.modal', () => {
     setAudioSectionVisible(false);
