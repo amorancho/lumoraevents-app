@@ -1,23 +1,86 @@
-<footer class="container-fluid bg-dark text-white py-4 mt-auto">
+<style id="app-footer-styles">
+  .app-footer {
+    background: #212529;
+    color: #fff;
+    box-shadow: inset 0 2px 0 rgba(58, 183, 149, 0.65);
+  }
 
-  <div class="row text-center text-md-start align-items-center">
+  .app-footer-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.9rem 1rem;
+  }
 
-    <div class="col-12 col-md-4 mb-3 mb-md-0">
-      <span id="regName">©2026 LumoraEvents</span>
-    </div>
+  .app-footer-brand {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.875rem;
+  }
 
-    <div class="col-12 col-md-4 mb-3 mb-md-0 d-flex justify-content-center gap-3">
-      <a href="https://instagram.com/lumoraevents.app" target="_blank" rel="noopener noreferrer" class="text-white"><i class="bi bi-instagram fs-5"></i></a>
-    </div>
+  .app-footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem 0.75rem;
+  }
 
-    <div class="col-12 col-md-4 text-md-end">
-      <a href="" target="_blank" rel="noopener noreferrer" class="text-white text-decoration-none me-3" id="eventUrl">Event Official Website</a>
-      <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="text-white text-decoration-none me-3">Terms</a>
-      <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="text-white text-decoration-none me-3">Privacy</a>
-      <a href="/cookies.html" target="_blank" rel="noopener noreferrer" class="text-white text-decoration-none me-3">Cookies</a>
-      <a href="mailto:soporte@lumoraevents.net" class="text-white text-decoration-none">Support</a>
-    </div>
+  .app-footer-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0.2rem;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 0.875rem;
+    line-height: 1.2;
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
 
+  .app-footer-link:hover {
+    color: #fff;
+  }
+
+  .app-footer-link:focus-visible {
+    outline: 2px solid rgba(58, 183, 149, 0.9);
+    outline-offset: 2px;
+    border-radius: 0.3rem;
+  }
+
+  .app-footer-instagram {
+    justify-content: center;
+    min-width: 2rem;
+    font-size: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .app-footer-inner {
+      flex-direction: row;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-right: 1.5rem;
+      padding-left: 1.5rem;
+    }
+
+    .app-footer-links {
+      justify-content: flex-end;
+    }
+  }
+</style>
+
+<footer id="footer" class="app-footer mt-auto">
+  <div class="app-footer-inner">
+    <span id="regName" class="app-footer-brand">© 2026 LumoraEvents</span>
+
+    <nav class="app-footer-links" aria-label="Legal links">
+      <a href="/terms.html" target="_blank" rel="noopener noreferrer" class="app-footer-link">Terms</a>
+      <a href="/privacy.html" target="_blank" rel="noopener noreferrer" class="app-footer-link">Privacy</a>
+      <a href="/cookies.html" target="_blank" rel="noopener noreferrer" class="app-footer-link">Cookies</a>
+      <a href="https://instagram.com/lumoraevents.app" target="_blank" rel="noopener noreferrer" class="app-footer-link app-footer-instagram" aria-label="Instagram" title="Instagram">
+        <i class="bi bi-instagram" aria-hidden="true"></i>
+      </a>
+    </nav>
   </div>
-
 </footer>

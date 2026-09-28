@@ -280,6 +280,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     applyTranslations();
   }
 
+  generateFooter();
+
   // Esperamos a que los datos del evento estén listos
   try {
     await eventReadyPromise;
@@ -288,7 +290,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         setPageTitleAndLang(t('title'), getCurrentAppLanguage());
         applyTranslations();
       });
-      generateFooter();
     }
   } catch (err) {
     console.warn("No se pudieron cargar datos del evento, cabecera no generada");
