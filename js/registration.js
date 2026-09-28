@@ -738,6 +738,7 @@ function formatRegistrationSidebarRange(startValue, endValue) {
   if (startLabel === '-' && endLabel === '-') return noDatesLabel;
   if (startLabel === '-') return endLabel;
   if (endLabel === '-') return startLabel;
+  if (startLabel === endLabel) return startLabel;
   return `${startLabel} - ${endLabel}`;
 }
 
