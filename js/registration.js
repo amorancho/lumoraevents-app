@@ -7351,6 +7351,7 @@ function initOrganizerRegistrationsTab() {
     addMemberBtn: document.getElementById('addRegistrationMemberBtn'),
     ageInfoBtn: document.getElementById('registrationMembersAgeInfoBtn'),
     genderHeader: document.querySelector('#registrationMembersModal th[data-i18n="registration_competitions_member_gender"]'),
+    authorizationHeader: document.querySelector('#registrationMembersModal .registration-members-authorization-header'),
     saveBtn: document.getElementById('registrationMembersSaveBtn'),
     actionsHeader: document.querySelector('#registrationMembersModal th[data-i18n="registration_competitions_member_actions"]')
   };
@@ -7885,6 +7886,9 @@ function initOrganizerRegistrationsTab() {
     if (membersElements.genderHeader) {
       membersElements.genderHeader.classList.toggle('d-none', !Boolean(getEvent()?.showGender));
     }
+    if (membersElements.authorizationHeader) {
+      membersElements.authorizationHeader.classList.toggle('d-none', getEvent()?.hasAuthorizations !== true);
+    }
   };
 
   const renderMembersTable = (members) => {
@@ -7928,10 +7932,12 @@ function initOrganizerRegistrationsTab() {
       );
       row.appendChild(ageCell);
 
-      const authorizationCell = document.createElement('td');
-      authorizationCell.className = 'text-center text-nowrap';
-      appendRegistrationAuthorizationStatus(authorizationCell, member);
-      row.appendChild(authorizationCell);
+      if (getEvent()?.hasAuthorizations === true) {
+        const authorizationCell = document.createElement('td');
+        authorizationCell.className = 'text-center text-nowrap';
+        appendRegistrationAuthorizationStatus(authorizationCell, member);
+        row.appendChild(authorizationCell);
+      }
 
       membersElements.table.appendChild(row);
     });

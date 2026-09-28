@@ -53,6 +53,7 @@
     membersStyle: document.getElementById('registrationMembersStyle'),
     membersAgeInfoBtn: document.getElementById('registrationMembersAgeInfoBtn'),
     membersGenderHeader: document.querySelector('#registrationMembersModal th[data-i18n="registration_competitions_member_gender"]'),
+    membersAuthorizationHeader: document.querySelector('#registrationMembersModal .registration-members-authorization-header'),
     saveBtn: document.getElementById('registrationSaveBtn'),
     membersForm: document.getElementById('registrationMembersForm'),
     membersId: document.getElementById('registrationMembersId'),
@@ -245,6 +246,9 @@
   const syncMembersGenderUi = () => {
     if (elements.membersGenderHeader) {
       elements.membersGenderHeader.classList.toggle('d-none', !Boolean(getEvent()?.showGender));
+    }
+    if (elements.membersAuthorizationHeader) {
+      elements.membersAuthorizationHeader.classList.toggle('d-none', getEvent()?.hasAuthorizations !== true);
     }
   };
 
@@ -811,10 +815,12 @@
       actionsCell.appendChild(removeBtn);
       row.appendChild(actionsCell);
 
-      const authorizationCell = document.createElement('td');
-      authorizationCell.className = 'text-center text-nowrap';
-      appendRegistrationAuthorizationStatus(authorizationCell, member);
-      row.appendChild(authorizationCell);
+      if (getEvent()?.hasAuthorizations === true) {
+        const authorizationCell = document.createElement('td');
+        authorizationCell.className = 'text-center text-nowrap';
+        appendRegistrationAuthorizationStatus(authorizationCell, member);
+        row.appendChild(authorizationCell);
+      }
 
       elements.membersTable.appendChild(row);
     });
