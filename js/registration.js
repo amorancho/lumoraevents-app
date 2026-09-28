@@ -6734,8 +6734,12 @@ function initRegistrationDisciplinesTab() {
       const statuses = document.createElement('div');
       statuses.className = 'registration-discipline-mobile-card__statuses d-flex align-items-center gap-2 flex-wrap';
 
+      statuses.appendChild(createChoreoStatusBadges(discipline.choreo_status, {
+        className: 'd-none d-md-flex flex-wrap justify-content-start gap-1'
+      }));
+
       statuses.appendChild(createLabeledChoreoStatusBadges(discipline.choreo_status, {
-        className: 'd-flex flex-wrap justify-content-start gap-1'
+        className: 'd-flex d-md-none flex-wrap justify-content-start gap-1'
       }));
 
       const syncroBadge = document.createElement('span');
