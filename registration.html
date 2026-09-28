@@ -659,6 +659,40 @@
     .participants-mobile-list {
       display: none;
     }
+    @media (min-width: 768px) {
+      .participants-table--organizer-without-authorization {
+        min-width: 980px;
+        table-layout: auto;
+      }
+      .participants-table--organizer-without-authorization th,
+      .participants-table--organizer-without-authorization td {
+        white-space: nowrap;
+      }
+      .participants-table--organizer-without-authorization .participants-col-name {
+        width: 17%;
+      }
+      .participants-table--organizer-without-authorization .participants-col-gender {
+        width: 7%;
+      }
+      .participants-table--organizer-without-authorization .participants-col-birth {
+        width: 12%;
+      }
+      .participants-table--organizer-without-authorization .participants-col-age {
+        width: 12%;
+      }
+      .participants-table--organizer-without-authorization .participants-col-country {
+        width: 11%;
+      }
+      .participants-table--organizer-without-authorization .participants-col-school {
+        width: 16%;
+      }
+      .participants-table--organizer-without-authorization .participants-col-registrations {
+        width: 25%;
+      }
+      .participants-table--organizer-without-authorization .participants-registrations-list {
+        flex-wrap: nowrap !important;
+      }
+    }
     .org-registrations-filters {
       order: 1;
     }
@@ -2869,7 +2903,11 @@
                   <div class="participants-authorization-notice d-none flex-column flex-md-row align-items-md-center gap-2 gap-md-3 mb-3" id="participantsAuthorizationNotice">
                     <button type="button" class="btn btn-warning flex-shrink-0" id="participantsAuthorizationDocumentBtn">
                       <i class="bi bi-file-earmark-text me-2"></i>
-                      <span data-i18n="registration_authorization_document">Documento Autorización</span>
+                      <span data-i18n="registration_authorization_adult_document">Documento autorización adultos</span>
+                    </button>
+                    <button type="button" class="btn btn-warning flex-shrink-0" id="participantsAuthorizationChildDocumentBtn">
+                      <i class="bi bi-file-earmark-text me-2"></i>
+                      <span data-i18n="registration_authorization_child_document">Documento autorización menores</span>
                     </button>
                     <p class="text-body-secondary small mb-0" data-i18n="registration_authorization_help">
                       Cada participante deberá rellenar la autorización y adjuntarla para poder participar en el evento.
@@ -2939,13 +2977,13 @@
                   </div>
 
                   <div class="table-responsive participants-desktop-table">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle participants-table">
                       <thead class="table-light">
                         <tr>
-                          <th data-i18n="registration_participants_name">Nombre</th>
-                          <th data-i18n="registration_participants_gender">Genero</th>
-                          <th data-i18n="registration_participants_birth">Fecha nacimiento</th>
-                          <th>
+                          <th class="participants-col-name" data-i18n="registration_participants_name">Nombre</th>
+                          <th class="participants-col-gender" data-i18n="registration_participants_gender">Genero</th>
+                          <th class="participants-col-birth" data-i18n="registration_participants_birth">Fecha nacimiento</th>
+                          <th class="participants-col-age">
                             <span data-i18n="registration_participants_age">Edad</span>
                             <button
                               type="button"
@@ -2958,9 +2996,9 @@
                               <i class="bi bi-info-circle"></i>
                             </button>
                           </th>
-                          <th data-i18n="registration_participants_country">Pais</th>
-                          <th class="text-center" data-i18n="registration_participants_actions" data-tsv-ignore="true">Acciones</th>
-                          <th data-i18n="registration_participants_registrations">Inscripciones</th>
+                          <th class="participants-col-country" data-i18n="registration_participants_country">Pais</th>
+                          <th class="text-center participants-col-actions" data-i18n="registration_participants_actions" data-tsv-ignore="true">Acciones</th>
+                          <th class="participants-col-registrations" data-i18n="registration_participants_registrations">Inscripciones</th>
                         </tr>
                       </thead>
                       <tbody id="participantsTable"></tbody>
@@ -4381,6 +4419,7 @@
                       </button>
                     </th>
                     <th class="text-center" data-i18n="registration_competitions_member_actions">Acciones</th>
+                    <th class="text-center" data-i18n="registration_authorization">Autorización</th>
                   </tr>
                 </thead>
                 <tbody id="registrationMembersTable"></tbody>

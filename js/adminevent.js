@@ -106,6 +106,7 @@ const EVENT_INFO_DEFAULT_DATA = Object.freeze({
   bases_document: null,
   poster: null,
   authorization_template: null,
+  authorization_child_template: null,
   event_description: null,
   payment_instructions: null,
   registration_accept_text: null
@@ -632,7 +633,8 @@ function populateEventInfoForm(data) {
     eventInfoOrganizer: normalized.organizer,
     eventInfoBases: normalized.bases_document,
     eventInfoPoster: normalized.poster,
-    eventInfoAuthorizationTemplate: normalized.authorization_template
+    eventInfoAuthorizationTemplate: normalized.authorization_template,
+    eventInfoAuthorizationChildTemplate: normalized.authorization_child_template
   };
 
   Object.entries(fieldMap).forEach(([fieldId, value]) => {
@@ -661,6 +663,7 @@ function normalizeEventInfoData(data) {
     bases_document: String(data?.bases_document ?? ''),
     poster: String(data?.poster ?? ''),
     authorization_template: String(data?.authorization_template ?? ''),
+    authorization_child_template: String(data?.authorization_child_template ?? ''),
     event_description: sanitizeEventInfoHtml(String(data?.event_description ?? '')),
     payment_instructions: sanitizeEventInfoHtml(String(data?.payment_instructions ?? '')),
     registration_accept_text: sanitizeEventInfoHtml(String(data?.registration_accept_text ?? ''))
@@ -680,6 +683,7 @@ function buildEventInfoPayload(eventId) {
     bases_document: normalizeOptionalField(document.getElementById('eventInfoBases')?.value),
     poster: normalizeOptionalField(document.getElementById('eventInfoPoster')?.value),
     authorization_template: normalizeOptionalField(document.getElementById('eventInfoAuthorizationTemplate')?.value),
+    authorization_child_template: normalizeOptionalField(document.getElementById('eventInfoAuthorizationChildTemplate')?.value),
     event_description: normalizeOptionalField(getEventInfoEditorHtml()),
     payment_instructions: normalizeOptionalField(getEventInfoEditorHtml(eventInfoState.paymentInstructionsEditor)),
     registration_accept_text: normalizeOptionalField(getEventInfoEditorHtml(eventInfoState.registrationAcceptTextEditor))

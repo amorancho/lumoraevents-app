@@ -8,6 +8,7 @@ const registrationState = {
   registrationAcceptText: '',
   basesDocument: '',
   authorizationTemplate: '',
+  authorizationChildTemplate: '',
   schools: [],
   registrationConfig: {
     categories: [],
@@ -573,6 +574,7 @@ async function loadRegistrationEventInfo() {
     registrationState.registrationAcceptText = sanitizeRegistrationPaymentInstructionsHtml(registrationAcceptText);
     registrationState.basesDocument = String(eventInfo?.bases_document ?? '').trim();
     registrationState.authorizationTemplate = String(eventInfo?.authorization_template ?? '').trim();
+    registrationState.authorizationChildTemplate = String(eventInfo?.authorization_child_template ?? '').trim();
     contentEl.innerHTML = sanitizeRegistrationPaymentInstructionsHtml(paymentInstructions);
   } catch (error) {
     console.error('Error loading event information:', error);
@@ -580,6 +582,7 @@ async function loadRegistrationEventInfo() {
     registrationState.registrationAcceptText = '';
     registrationState.basesDocument = '';
     registrationState.authorizationTemplate = '';
+    registrationState.authorizationChildTemplate = '';
     contentEl.replaceChildren();
   } finally {
     window.dispatchEvent(new CustomEvent('registration:payment-instructions-updated'));
@@ -2556,6 +2559,7 @@ function initParticipantsTab(role) {
   const importOpenBtn = document.getElementById('importParticipantsOpenBtn');
   const authorizationNotice = document.getElementById('participantsAuthorizationNotice');
   const authorizationDocumentBtn = document.getElementById('participantsAuthorizationDocumentBtn');
+  const authorizationChildDocumentBtn = document.getElementById('participantsAuthorizationChildDocumentBtn');
   const copyTsvBtn = document.getElementById('participantsCopyTsvBtn');
   const controlsEl = document.querySelector('#participants .participants-controls');
   const primaryActionsEl = document.querySelector('#participants .participants-primary-actions');
@@ -2596,6 +2600,11 @@ function initParticipantsTab(role) {
   const registrationsHeader = document.querySelector('th[data-i18n="registration_participants_registrations"]');
   const participantTable = tableBody.closest('table');
   const participantGenderHeader = participantTable?.querySelector('th[data-i18n="registration_participants_gender"]');
+  participantTable?.classList.toggle('participants-table--organizer', showSchoolColumn);
+  participantTable?.classList.toggle(
+    'participants-table--organizer-without-authorization',
+    showSchoolColumn && !showOrganizerAuthorizations
+  );
   if (feeSummaryEl) {
     feeSummaryEl.classList.remove('d-none');
   }
@@ -2625,6 +2634,7 @@ function initParticipantsTab(role) {
     const headRow = tableBody.closest('table')?.querySelector('thead tr');
     if (headRow) {
       const schoolHeader = document.createElement('th');
+      schoolHeader.className = 'participants-col-school';
       schoolHeader.setAttribute('data-i18n', 'registration_participants_school');
       schoolHeader.textContent = t('registration_participants_school', 'Escuela');
       headRow.insertBefore(schoolHeader, actionsHeader || null);
@@ -2634,7 +2644,7 @@ function initParticipantsTab(role) {
     const headRow = tableBody.closest('table')?.querySelector('thead tr');
     if (headRow) {
       const authorizationHeader = document.createElement('th');
-      authorizationHeader.className = 'text-center';
+      authorizationHeader.className = 'text-center participants-col-authorization';
       authorizationHeader.setAttribute('data-i18n', 'registration_authorization');
       authorizationHeader.setAttribute('data-tsv-ignore', 'true');
       authorizationHeader.textContent = t('registration_authorization', 'Autorización');
@@ -2778,10 +2788,6 @@ function initParticipantsTab(role) {
 
   const PARTICIPANT_AUTHORIZATION_MAX_SIZE = 10 * 1024 * 1024;
 
-  const hasParticipantAuthorization = (participant) => (
-    participant?.has_authorization === true || Number(participant?.has_authorization) === 1
-  );
-
   const formatAuthorizationFileSize = (value) => {
     const bytes = Number(value);
     if (!Number.isFinite(bytes) || bytes < 0) return '';
@@ -2836,7 +2842,7 @@ function initParticipantsTab(role) {
   const syncAuthorizationModal = () => {
     if (!authorizationParticipant) return;
 
-    const hasDocument = hasParticipantAuthorization(authorizationParticipant);
+    const hasDocument = registrationParticipantHasAuthorization(authorizationParticipant);
     if (authorizationElements.participantName) {
       authorizationElements.participantName.textContent = authorizationParticipant.name || '-';
     }
@@ -2869,9 +2875,14 @@ function initParticipantsTab(role) {
     const participant = registrationState.participants.find((item) => `${item.id}` === `${participantId}`);
     if (!participant) return null;
 
+    const hasAuthorization = data.has_authorization === true || Number(data.has_authorization) === 1;
     Object.assign(participant, data, {
-      has_authorization: data.has_authorization === true || Number(data.has_authorization) === 1
+      has_authorization: hasAuthorization
     });
+    if (!hasAuthorization) {
+      participant.authorization_documenti_id = null;
+      participant.authorization_document_id = null;
+    }
     if (authorizationParticipant && `${authorizationParticipant.id}` === `${participantId}`) {
       authorizationParticipant = participant;
     }
@@ -2898,7 +2909,7 @@ function initParticipantsTab(role) {
   };
 
   const viewParticipantAuthorization = async (participant, triggerButton) => {
-    if (!participant?.id || !hasParticipantAuthorization(participant)) return;
+    if (!participant?.id || !registrationParticipantHasAuthorization(participant)) return;
 
     const previewWindow = window.open('', '_blank');
     if (previewWindow) previewWindow.opener = null;
@@ -3016,7 +3027,7 @@ function initParticipantsTab(role) {
   };
 
   const deleteParticipantAuthorization = async () => {
-    if (!authorizationParticipant?.id || authorizationBusy || !hasParticipantAuthorization(authorizationParticipant)) return;
+    if (!authorizationParticipant?.id || authorizationBusy || !registrationParticipantHasAuthorization(authorizationParticipant)) return;
     if (!window.confirm(t('registration_authorization_delete_confirm', '¿Seguro que deseas eliminar la autorización?'))) return;
 
     const participantId = authorizationParticipant.id;
@@ -3636,41 +3647,49 @@ function initParticipantsTab(role) {
     filtered.forEach(participant => {
       const row = document.createElement('tr');
       row.dataset.id = participant.id;
-      const participantHasAuthorization = hasParticipantAuthorization(participant);
+      const participantHasAuthorization = registrationParticipantHasAuthorization(participant);
 
       const nameCell = document.createElement('td');
+      nameCell.className = 'participants-col-name';
       nameCell.textContent = participant.name || '';
       row.appendChild(nameCell);
 
       if (shouldShowGender) {
         const genderCell = document.createElement('td');
+        genderCell.className = 'participants-col-gender';
         genderCell.textContent = genderLabels[participant.gender] || participant.gender || '-';
         row.appendChild(genderCell);
       }
 
       const dobValue = getDateOnlyValue(participant.date_of_birth);
       const dobCell = document.createElement('td');
+      dobCell.className = 'participants-col-birth';
       dobCell.textContent = dobValue || '-';
       row.appendChild(dobCell);
 
+      const participantAge = calculateAge(dobValue, participantsAgeReferenceDate);
       const ageCell = document.createElement('td');
-      ageCell.textContent = `${calculateAge(dobValue, participantsAgeReferenceDate)}`;
+      ageCell.className = 'participants-col-age';
+      appendRegistrationAgeWithMinorBadge(ageCell, participantAge);
       row.appendChild(ageCell);
 
       const countryCell = document.createElement('td');
+      countryCell.className = 'participants-col-country';
       countryCell.textContent = getCountryName(participant.country, countryMap) || '-';
       row.appendChild(countryCell);
 
       if (showSchoolColumn) {
         const schoolCell = document.createElement('td');
+        schoolCell.className = 'participants-col-school';
         schoolCell.textContent = participant.school_name || participant.school || '-';
         row.appendChild(schoolCell);
       }
 
       const registrationsCell = document.createElement('td');
+      registrationsCell.className = 'participants-col-registrations';
       const registrations = getParticipantRegistrations(participant);
       const registrationsWrap = document.createElement('div');
-      registrationsWrap.className = 'd-flex flex-wrap gap-1';
+      registrationsWrap.className = 'participants-registrations-list d-flex flex-wrap gap-1';
 
       if (registrations.length) {
         registrations.forEach((registrationLabel) => {
@@ -3691,7 +3710,7 @@ function initParticipantsTab(role) {
 
       if (showOrganizerAuthorizations) {
         const authorizationCell = document.createElement('td');
-        authorizationCell.className = 'text-center text-nowrap';
+        authorizationCell.className = 'text-center text-nowrap participants-col-authorization';
         authorizationCell.setAttribute('data-tsv-ignore', 'true');
         if (participantHasAuthorization) {
           const viewAuthorizationBtn = document.createElement('button');
@@ -3714,7 +3733,7 @@ function initParticipantsTab(role) {
 
       if (allowEdit) {
         const actionsCell = document.createElement('td');
-        actionsCell.className = 'text-center';
+        actionsCell.className = 'text-center participants-col-actions';
         actionsCell.setAttribute('data-tsv-ignore', 'true');
         const actionGroup = document.createElement('div');
         actionGroup.className = 'btn-group';
@@ -3808,11 +3827,16 @@ function initParticipantsTab(role) {
       const details = document.createElement('div');
       details.className = 'participant-mobile-card__details';
       details.appendChild(createMobileDetail('bi-calendar3', birthLabel, dobValue || '-'));
-      details.appendChild(createMobileDetail(
+      const mobileAgeDetail = createMobileDetail(
         'bi-cake2',
         ageLabel,
-        `${calculateAge(dobValue, participantsAgeReferenceDate)}`
-      ));
+        `${participantAge}`
+      );
+      appendRegistrationAgeWithMinorBadge(
+        mobileAgeDetail.querySelector('.participant-mobile-card__detail-value'),
+        participantAge
+      );
+      details.appendChild(mobileAgeDetail);
       mobileCard.appendChild(details);
 
       const mobileRegistrations = document.createElement('div');
@@ -4229,8 +4253,24 @@ function initParticipantsTab(role) {
       const documentUrl = getSafeRegistrationDocumentUrl(registrationState.authorizationTemplate);
       if (!documentUrl) {
         showMessageModal(
-          t('registration_authorization_missing', 'The organization has not defined the authorization document.'),
+          t('registration_authorization_document_missing', 'No authorization document has been defined. Please contact the organization.'),
           t('registration_authorization', 'Authorization'),
+          'warning'
+        );
+        return;
+      }
+
+      window.open(documentUrl, '_blank', 'noopener,noreferrer');
+    });
+  }
+
+  if (authorizationChildDocumentBtn && showAuthorizations) {
+    authorizationChildDocumentBtn.addEventListener('click', () => {
+      const documentUrl = getSafeRegistrationDocumentUrl(registrationState.authorizationChildTemplate);
+      if (!documentUrl) {
+        showMessageModal(
+          t('registration_authorization_document_missing', 'No authorization document has been defined. Please contact the organization.'),
+          t('registration_authorization_child_document', 'Authorization document for minors'),
           'warning'
         );
         return;
@@ -4500,6 +4540,65 @@ function calculateAge(dateValue, referenceDateValue = null) {
     age -= 1;
   }
   return age;
+}
+
+function isRegistrationMinorAge(age) {
+  const numericAge = Number(age);
+  return Number.isFinite(numericAge) && numericAge >= 0 && numericAge < 18;
+}
+
+function registrationParticipantHasAuthorization(participant) {
+  const authorizationDocumentId = participant?.authorization_documenti_id
+    ?? participant?.authorization_document_id;
+  const hasDocumentId = authorizationDocumentId !== null
+    && authorizationDocumentId !== undefined
+    && `${authorizationDocumentId}`.trim() !== ''
+    && `${authorizationDocumentId}` !== '0';
+  const authorizationFlag = `${participant?.has_authorization ?? ''}`.trim().toLowerCase();
+
+  return hasDocumentId || authorizationFlag === 'true' || Number(authorizationFlag) === 1;
+}
+
+function appendRegistrationAuthorizationStatus(container, participant) {
+  if (!container) return;
+
+  const hasAuthorization = registrationParticipantHasAuthorization(participant);
+  const statusBadge = document.createElement('span');
+  statusBadge.className = hasAuthorization
+    ? 'badge bg-success-subtle text-success-emphasis border border-success-subtle'
+    : 'badge bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle';
+
+  const statusIcon = document.createElement('i');
+  statusIcon.className = `bi ${hasAuthorization ? 'bi-check-circle-fill' : 'bi-clock'} me-1`;
+  statusIcon.setAttribute('aria-hidden', 'true');
+
+  const statusText = document.createElement('span');
+  statusText.textContent = hasAuthorization
+    ? t('registration_authorization_attached', 'Document attached')
+    : t('registration_authorization_pending_short', 'Pending');
+
+  statusBadge.append(statusIcon, statusText);
+  container.replaceChildren(statusBadge);
+}
+
+function appendRegistrationAgeWithMinorBadge(container, age) {
+  if (!container) return;
+
+  const ageWrap = document.createElement('span');
+  ageWrap.className = 'd-inline-flex align-items-center gap-2 flex-nowrap text-nowrap';
+
+  const ageValue = document.createElement('span');
+  ageValue.textContent = `${age}`;
+  ageWrap.appendChild(ageValue);
+
+  if (isRegistrationMinorAge(age)) {
+    const minorBadge = document.createElement('span');
+    minorBadge.className = 'badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle';
+    minorBadge.textContent = t('registration_participants_minor', 'MINOR');
+    ageWrap.appendChild(minorBadge);
+  }
+
+  container.replaceChildren(ageWrap);
 }
 
 function getRegistrationAgeReferenceDate() {
@@ -7823,8 +7922,16 @@ function initOrganizerRegistrationsTab() {
       row.appendChild(dobCell);
 
       const ageCell = document.createElement('td');
-      ageCell.textContent = `${calculateAge(dobValue, getRegistrationAgeReferenceDate())}`;
+      appendRegistrationAgeWithMinorBadge(
+        ageCell,
+        calculateAge(dobValue, getRegistrationAgeReferenceDate())
+      );
       row.appendChild(ageCell);
+
+      const authorizationCell = document.createElement('td');
+      authorizationCell.className = 'text-center text-nowrap';
+      appendRegistrationAuthorizationStatus(authorizationCell, member);
+      row.appendChild(authorizationCell);
 
       membersElements.table.appendChild(row);
     });

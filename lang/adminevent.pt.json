@@ -128,6 +128,8 @@
   "event_info_poster_placeholder": "https://.../poster.jpg",
   "event_info_authorization": "Autorização",
   "event_info_authorization_placeholder": "https://.../autorizacao.pdf",
+  "event_info_authorization_child": "Autorização para menores",
+  "event_info_authorization_child_placeholder": "https://.../autorizacao-menores.pdf",
   "event_info_description": "Descricao",
   "event_info_payment_instructions": "Instruções de pagamento",
   "event_info_registration_accept_text": "Texto de aceitação do registo",

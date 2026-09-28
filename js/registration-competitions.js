@@ -791,7 +791,7 @@
       row.appendChild(dobCell);
 
       const ageCell = document.createElement('td');
-      ageCell.textContent = `${memberAge}`;
+      appendRegistrationAgeWithMinorBadge(ageCell, memberAge);
       if (isAboveRange) {
         ageCell.classList.add('fw-semibold', 'text-warning-emphasis');
       } else if (isBelowRange) {
@@ -810,6 +810,11 @@
       removeBtn.innerHTML = '<i class="bi bi-trash"></i>';
       actionsCell.appendChild(removeBtn);
       row.appendChild(actionsCell);
+
+      const authorizationCell = document.createElement('td');
+      authorizationCell.className = 'text-center text-nowrap';
+      appendRegistrationAuthorizationStatus(authorizationCell, member);
+      row.appendChild(authorizationCell);
 
       elements.membersTable.appendChild(row);
     });
@@ -846,9 +851,15 @@
           option: (data, escape) => {
             const ageValue = calculateAge(getDateOnlyValue(data.dob), getRegistrationAgeReferenceDate());
             const ageText = ageValue === '-' ? '' : `${ageValue}`;
+            const minorBadge = isRegistrationMinorAge(ageValue)
+              ? `<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle">${escape(t('registration_participants_minor', 'MINOR'))}</span>`
+              : '';
             return `<div class="d-flex justify-content-between">
               <span>${escape(data.text)}</span>
-              <span class="text-muted small">${escape(ageText)}</span>
+              <span class="d-inline-flex align-items-center gap-2 ms-2">
+                <span class="text-muted small">${escape(ageText)}</span>
+                ${minorBadge}
+              </span>
             </div>`;
           },
           item: (data, escape) => `<div>${escape(data.text)}</div>`
