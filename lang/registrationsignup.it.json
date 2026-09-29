@@ -1,8 +1,11 @@
 {
   "title": "Registrazione",
-  "signup_title": "Crea account scuola",
+  "signup_title": "Crea account",
   "signup_subtitle": "Completa il modulo per richiedere l accesso.",
   "signup_notice": "Dopo la creazione, riceverai le credenziali via email nei prossimi minuti.",
+  "field_user_type": "Tipo di utente",
+  "user_type_school": "Scuola",
+  "user_type_individual": "Privato",
   "field_name": "Nome",
   "field_username": "Username",
   "field_language": "Lingua",

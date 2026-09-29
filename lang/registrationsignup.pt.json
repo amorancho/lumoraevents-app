@@ -1,8 +1,11 @@
 {
   "title": "Registo",
-  "signup_title": "Criar conta da escola",
+  "signup_title": "Criar conta",
   "signup_subtitle": "Preencha o formulario para solicitar acesso.",
   "signup_notice": "Depois de criar a conta, recebera as credenciais por email nos proximos minutos.",
+  "field_user_type": "Tipo de utilizador",
+  "user_type_school": "Escola",
+  "user_type_individual": "Particular",
   "field_name": "Nome",
   "field_username": "Utilizador",
   "field_language": "Idioma",

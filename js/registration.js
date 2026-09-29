@@ -2432,6 +2432,8 @@ function initSchoolTab() {
     phone: document.getElementById('schoolPhone'),
     representative: document.getElementById('schoolRepresentative'),
     document: document.getElementById('schoolDocument'),
+    userTypeSchool: document.getElementById('schoolUserTypeSchool'),
+    userTypeIndividual: document.getElementById('schoolUserTypeIndividual'),
     saveBtn: document.getElementById('schoolSaveBtn'),
     alert: document.getElementById('schoolSaveAlert')
   };
@@ -2468,6 +2470,10 @@ function initSchoolTab() {
     try {
       schoolRecord = await fetchSchoolRecord(user.id);
 
+      const userType = String(schoolRecord.user_type || 'SCH').toUpperCase() === 'PAR' ? 'PAR' : 'SCH';
+      if (elements.userTypeSchool) elements.userTypeSchool.checked = userType === 'SCH';
+      if (elements.userTypeIndividual) elements.userTypeIndividual.checked = userType === 'PAR';
+
       if (elements.username) elements.username.value = schoolRecord.username || '';
 
       if (elements.name) elements.name.value = schoolRecord.name || '';
@@ -2475,7 +2481,11 @@ function initSchoolTab() {
       if (elements.language) elements.language.value = schoolRecord.language || 'es';
       if (elements.city) elements.city.value = schoolRecord.city || '';
       if (elements.phone) elements.phone.value = schoolRecord.phone || '';
-      if (elements.representative) elements.representative.value = schoolRecord.representative || '';
+      if (elements.representative) {
+        elements.representative.value = schoolRecord.representative || '';
+        elements.representative.disabled = userType === 'PAR';
+        elements.representative.classList.toggle('bg-light', userType === 'PAR');
+      }
       if (elements.document) elements.document.value = schoolRecord.document || '';
 
       if (elements.country) {
@@ -2508,6 +2518,7 @@ function initSchoolTab() {
       event_id: schoolRecord.event_id,
       name: elements.name.value.trim(),
       username: schoolRecord.username,
+      user_type: String(schoolRecord.user_type || 'SCH').toUpperCase() === 'PAR' ? 'PAR' : 'SCH',
       language: elements.language.value,
       email: schoolRecord.email,
       city: elements.city.value.trim(),
@@ -4886,6 +4897,7 @@ function initSchoolsTab() {
     : [];
   const detailElements = {
     name: document.getElementById('schoolDetailName'),
+    userType: document.getElementById('schoolDetailUserType'),
     email: document.getElementById('schoolDetailEmail'),
     language: document.getElementById('schoolDetailLanguage'),
     city: document.getElementById('schoolDetailCity'),
@@ -4898,6 +4910,17 @@ function initSchoolsTab() {
   let selectedSchool = null;
   let resetPasswordCompleted = false;
   let resetPasswordFeedback = null;
+
+  const getSchoolUserType = (school) => String(school?.user_type || 'SCH').toUpperCase() === 'PAR' ? 'PAR' : 'SCH';
+  const createSchoolUserTypeBadge = (school) => {
+    const userType = getSchoolUserType(school);
+    const badge = document.createElement('span');
+    badge.className = `badge ${userType === 'PAR' ? 'text-bg-warning' : 'text-bg-primary'}`;
+    badge.textContent = userType === 'PAR'
+      ? t('user_type_individual', 'Particular')
+      : t('user_type_school', 'Escuela');
+    return badge;
+  };
 
   const setMobileSchoolsFilterPanelOpen = (isOpen) => {
     filterForm.classList.toggle('mobile-filters-open', isOpen);
@@ -4950,6 +4973,7 @@ function initSchoolsTab() {
     name.className = 'school-mobile-card__name';
     name.textContent = school?.name || school?.school_name || '-';
     identity.appendChild(name);
+    identity.appendChild(createSchoolUserTypeBadge(school));
 
     const representative = document.createElement('div');
     representative.className = 'school-mobile-card__representative';
@@ -5123,6 +5147,10 @@ function initSchoolsTab() {
       nameCell.textContent = school?.name || school?.school_name || '-';
       row.appendChild(nameCell);
 
+      const userTypeCell = document.createElement('td');
+      userTypeCell.appendChild(createSchoolUserTypeBadge(school));
+      row.appendChild(userTypeCell);
+
       const countryCell = document.createElement('td');
       countryCell.textContent = getCountryName(school?.country, countryMap) || '-';
       row.appendChild(countryCell);
@@ -5215,6 +5243,11 @@ function initSchoolsTab() {
   const openSchoolDetails = (school) => {
     selectedSchool = school;
     if (detailElements.name) detailElements.name.value = school?.name || school?.school_name || '';
+    if (detailElements.userType) {
+      const userTypeBadge = createSchoolUserTypeBadge(school);
+      detailElements.userType.className = `${userTypeBadge.className} fs-5`;
+      detailElements.userType.textContent = userTypeBadge.textContent;
+    }
     if (detailElements.email) detailElements.email.value = school?.email || '';
     if (detailElements.language) detailElements.language.value = school?.language || '';
     if (detailElements.city) detailElements.city.value = school?.city || '';

@@ -1,8 +1,11 @@
 {
   "title": "Registration signup",
-  "signup_title": "Create school account",
+  "signup_title": "Create account",
   "signup_subtitle": "Complete the form to request access.",
   "signup_notice": "After creating the account, you will receive your access credentials by email in the next few minutes.",
+  "field_user_type": "User type",
+  "user_type_school": "School",
+  "user_type_individual": "Individual",
   "field_name": "Name",
   "field_username": "Username",
   "field_language": "Language",

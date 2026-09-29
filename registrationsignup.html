@@ -30,6 +30,20 @@
               </div>
 
               <form id="signupForm" novalidate>
+                <fieldset class="border border-primary rounded-3 bg-primary-subtle p-3 mb-4">
+                  <legend class="float-none w-auto px-2 mb-0 fs-6 fw-semibold text-primary" data-i18n="field_user_type">Account type</legend>
+                  <div class="d-flex flex-column flex-sm-row gap-3 pt-1">
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="signupUserType" id="signupUserTypeSchool" value="SCH" checked>
+                      <label class="form-check-label fw-semibold" for="signupUserTypeSchool" data-i18n="user_type_school">School</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="signupUserType" id="signupUserTypeIndividual" value="PAR">
+                      <label class="form-check-label fw-semibold" for="signupUserTypeIndividual" data-i18n="user_type_individual">Individual</label>
+                    </div>
+                  </div>
+                </fieldset>
+
                 <div class="row g-3">
                   <div class="col-12 col-md-6">
                     <label class="form-label" for="signupName" data-i18n="field_name">Name</label>
@@ -38,7 +52,7 @@
                   <div class="col-12 col-md-6">
                     <label class="form-label" for="signupUsername" data-i18n="field_username">Username</label>
                     <div class="input-group">
-                      <span class="input-group-text">sch_</span>
+                      <span class="input-group-text" id="signupUsernamePrefix">sch_</span>
                       <input type="text" class="form-control" id="signupUsername" required>
                     </div>
                   </div>

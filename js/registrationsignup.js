@@ -7,6 +7,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const form = document.getElementById('signupForm');
   const cancelLink = document.getElementById('cancelLink');
   const submitBtn = document.getElementById('signupSubmit');
+  const representativeInput = document.getElementById('signupRepresentative');
+  const usernamePrefix = document.getElementById('signupUsernamePrefix');
+  const userTypeInputs = document.querySelectorAll('input[name="signupUserType"]');
+
+  const getUserType = () => document.querySelector('input[name="signupUserType"]:checked')?.value || 'SCH';
+
+  const updateUserTypeFields = () => {
+    const isIndividual = getUserType() === 'PAR';
+
+    if (usernamePrefix) usernamePrefix.textContent = isIndividual ? 'par_' : 'sch_';
+    if (representativeInput) {
+      representativeInput.readOnly = isIndividual;
+      representativeInput.classList.toggle('bg-light', isIndividual);
+      if (isIndividual) representativeInput.value = '';
+    }
+  };
+
+  userTypeInputs.forEach(input => input.addEventListener('change', updateUserTypeFields));
+  updateUserTypeFields();
 
   if (cancelLink) {
     cancelLink.href = `registrationhome.html?eventId=${encodeURIComponent(eventId)}`;
@@ -52,7 +71,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const payload = {
       name: document.getElementById('signupName').value.trim(),
-      username: `sch_${document.getElementById('signupUsername').value.trim()}`,
+      username: `${getUserType() === 'PAR' ? 'par_' : 'sch_'}${document.getElementById('signupUsername').value.trim()}`,
+      user_type: getUserType(),
       language: document.getElementById('signupLanguage').value,
       email: document.getElementById('signupEmail').value.trim(),
       city: document.getElementById('signupCity').value.trim(),

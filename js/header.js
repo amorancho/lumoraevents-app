@@ -85,7 +85,7 @@ function renderUser() {
     const name = payload?.name || "User";
     const role = payload?.role?.toLowerCase() || "guest";
 
-    userNameEl.textContent = role !== "guest" ? `${name} (${role})` : "Guest";
+    userNameEl.textContent = role === "school" ? name : role !== "guest" ? `${name} (${role})` : "Guest";
     authBtn.textContent = "Logout";
 
     // Mostrar botón admin solo si el rol es "admin"

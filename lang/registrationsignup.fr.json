@@ -1,8 +1,11 @@
 {
   "title": "Inscription",
-  "signup_title": "Creer un compte ecole",
+  "signup_title": "Creer un compte",
   "signup_subtitle": "Remplissez le formulaire pour demander l acces.",
   "signup_notice": "Apres la creation, vous recevrez vos identifiants par email dans quelques minutes.",
+  "field_user_type": "Type d utilisateur",
+  "user_type_school": "École",
+  "user_type_individual": "Particulier",
   "field_name": "Nom",
   "field_username": "Utilisateur",
   "field_language": "Langue",
