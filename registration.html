@@ -3001,6 +3001,7 @@
                           <th class="participants-col-name" data-i18n="registration_participants_name">Nombre</th>
                           <th class="participants-col-gender" data-i18n="registration_participants_gender">Genero</th>
                           <th class="participants-col-birth" data-i18n="registration_participants_birth">Fecha nacimiento</th>
+                          <th class="participants-col-identification-document" id="participantsIdentificationDocumentHeader" data-i18n="registration_participants_identification_document">Documento identificativo</th>
                           <th class="participants-col-age">
                             <span data-i18n="registration_participants_age">Edad</span>
                             <button
@@ -3633,6 +3634,14 @@
                 <label class="form-label" for="participantDob" data-i18n="registration_participants_birth">Fecha nacimiento</label>
                 <input type="date" class="form-control" id="participantDob" required>
               </div>
+              <div class="col-12 col-md-6" id="participantIdentificationDocumentField">
+                <label class="form-label" for="participantIdentificationDocument" data-i18n="registration_participants_identification_document">Documento identificativo</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="participantIdentificationDocument" maxlength="50">
+                  <button type="button" class="btn btn-outline-secondary d-none" id="participantIdentificationDocumentEditBtn" data-i18n="registration_participants_identification_document_edit">Modificar</button>
+                </div>
+                <div class="form-text d-none" id="participantIdentificationDocumentEditHelp" data-i18n="registration_participants_identification_document_edit_help">Para cambiarlo, introduce el documento identificativo completo.</div>
+              </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="participantGender" data-i18n="registration_participants_gender">Genero</label>
                 <select id="participantGender" class="form-select">
@@ -3761,9 +3770,11 @@
             <ul class="mb-0 ps-3 small">
               <li data-i18n="registration_participants_import_column_name">Nombre</li>
               <li data-i18n="registration_participants_import_column_birth">Fecha de nacimiento</li>
+              <li id="importParticipantsIdentificationDocumentHint" class="d-none" data-i18n="registration_participants_import_column_identification_document_optional">Documento identificativo (opcional)</li>
               <li id="importParticipantsGenderHint" data-i18n="registration_participants_import_column_gender_optional">GÃ©nero (opcional)</li>
               <li data-i18n="registration_participants_import_column_country_optional">Nacionalidad ISO 2 letras (opcional)</li>
             </ul>
+            <div id="importParticipantsIdentificationDocumentEmptyHint" class="small text-muted mt-2 d-none" data-i18n="registration_participants_import_identification_document_empty_hint">Si no hay documento, deja su celda vacía para mantener el orden de las columnas.</div>
           </div>
 
           <div class="mb-3">
@@ -3811,6 +3822,7 @@
                     <th data-i18n="registration_participants_import_row">Fila</th>
                     <th data-i18n="registration_participants_name">Nombre</th>
                     <th data-i18n="registration_participants_birth">Fecha nacimiento</th>
+                    <th id="importParticipantsPreviewIdentificationDocumentHeader" class="d-none" data-i18n="registration_participants_identification_document">Documento identificativo</th>
                     <th id="importParticipantsPreviewGenderHeader" data-i18n="registration_participants_gender">Genero</th>
                     <th data-i18n="registration_participants_country">Pais</th>
                     <th data-i18n="registration_participants_import_status">Estado</th>

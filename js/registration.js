@@ -2606,11 +2606,16 @@ function initParticipantsTab(role) {
   const showSchoolColumn = role === 'organizer';
   const showOrganizerAuthorizations = showSchoolColumn && authorizationsEnabled;
   const shouldShowGender = Boolean(getEvent()?.showGender);
+  const showIdentificationDocument = getEvent()?.showIdentificationDocument === true;
   controlsEl?.classList.toggle('participants-controls--organizer', showSchoolColumn);
   const ageHeaderInfoBtn = document.getElementById('participantsAgeInfoBtn');
   const registrationsHeader = document.querySelector('th[data-i18n="registration_participants_registrations"]');
   const participantTable = tableBody.closest('table');
   const participantGenderHeader = participantTable?.querySelector('th[data-i18n="registration_participants_gender"]');
+  const participantIdentificationDocumentHeader = document.getElementById('participantsIdentificationDocumentHeader');
+  const participantIdentificationDocumentField = document.getElementById('participantIdentificationDocumentField');
+  participantIdentificationDocumentHeader?.classList.toggle('d-none', !showIdentificationDocument);
+  participantIdentificationDocumentField?.classList.toggle('d-none', !showIdentificationDocument);
   participantTable?.classList.toggle('participants-table--organizer', showSchoolColumn);
   participantTable?.classList.toggle(
     'participants-table--organizer-without-authorization',
@@ -2668,6 +2673,9 @@ function initParticipantsTab(role) {
     id: document.getElementById('participantId'),
     name: document.getElementById('participantName'),
     dob: document.getElementById('participantDob'),
+    identificationDocument: document.getElementById('participantIdentificationDocument'),
+    identificationDocumentEditBtn: document.getElementById('participantIdentificationDocumentEditBtn'),
+    identificationDocumentEditHelp: document.getElementById('participantIdentificationDocumentEditHelp'),
     gender: document.getElementById('participantGender'),
     genderField: document.getElementById('participantGender')?.closest('.col-12'),
     country: document.getElementById('participantCountry'),
@@ -2683,6 +2691,36 @@ function initParticipantsTab(role) {
     : new Map();
 
   let participantCountrySelect = null;
+  let identificationDocumentOriginalValue = '';
+  let isEditingIdentificationDocument = false;
+
+  const setIdentificationDocumentEditState = ({ value = '', editable = true, showEditButton = false } = {}) => {
+    identificationDocumentOriginalValue = value;
+    isEditingIdentificationDocument = editable && Boolean(value);
+
+    if (elements.identificationDocument) {
+      elements.identificationDocument.value = value;
+      elements.identificationDocument.readOnly = !editable;
+      elements.identificationDocument.required = isEditingIdentificationDocument;
+      elements.identificationDocument.classList.toggle('bg-light', !editable);
+    }
+    elements.identificationDocumentEditBtn?.classList.toggle('d-none', !showEditButton);
+    elements.identificationDocumentEditHelp?.classList.toggle('d-none', !isEditingIdentificationDocument);
+  };
+
+  elements.identificationDocumentEditBtn?.addEventListener('click', () => {
+    isEditingIdentificationDocument = true;
+    if (elements.identificationDocument) {
+      elements.identificationDocument.value = '';
+      elements.identificationDocument.readOnly = false;
+      elements.identificationDocument.required = true;
+      elements.identificationDocument.classList.remove('bg-light');
+      elements.identificationDocument.focus();
+    }
+    elements.identificationDocumentEditBtn.classList.add('d-none');
+    elements.identificationDocumentEditHelp?.classList.remove('d-none');
+  });
+
   if (elements.country && Array.isArray(countries)) {
     countries.forEach(c => {
       const option = document.createElement('option');
@@ -2732,6 +2770,9 @@ function initParticipantsTab(role) {
     textarea: document.getElementById('importParticipantsTextarea'),
     genderHint: document.getElementById('importParticipantsGenderHint'),
     genderHeader: document.getElementById('importParticipantsPreviewGenderHeader'),
+    identificationDocumentHint: document.getElementById('importParticipantsIdentificationDocumentHint'),
+    identificationDocumentEmptyHint: document.getElementById('importParticipantsIdentificationDocumentEmptyHint'),
+    identificationDocumentHeader: document.getElementById('importParticipantsPreviewIdentificationDocumentHeader'),
     previewWrap: document.getElementById('importParticipantsPreviewWrap'),
     detectedColumns: document.getElementById('importParticipantsDetectedColumns'),
     total: document.getElementById('importParticipantsPreviewTotal'),
@@ -2749,6 +2790,9 @@ function initParticipantsTab(role) {
 
   const syncImportParticipantsModalUi = () => {
     const showImportGender = Boolean(getEvent()?.showGender);
+    importElements.identificationDocumentHint?.classList.toggle('d-none', !showIdentificationDocument);
+    importElements.identificationDocumentEmptyHint?.classList.toggle('d-none', !showIdentificationDocument);
+    importElements.identificationDocumentHeader?.classList.toggle('d-none', !showIdentificationDocument);
 
     if (importElements.genderHint) {
       importElements.genderHint.classList.toggle('d-none', !showImportGender);
@@ -2757,12 +2801,20 @@ function initParticipantsTab(role) {
       importElements.genderHeader.classList.toggle('d-none', !showImportGender);
     }
     if (importElements.textarea) {
-      const placeholderKey = showImportGender
-        ? 'registration_participants_import_textarea_placeholder'
-        : 'registration_participants_import_textarea_placeholder_nogender';
-      const placeholderFallback = showImportGender
-        ? 'Nombre[TAB]Fecha nacimiento[TAB]Genero[TAB]Nacionalidad'
-        : 'Nombre[TAB]Fecha nacimiento[TAB]Nacionalidad';
+      const placeholderKey = showIdentificationDocument
+        ? (showImportGender
+          ? 'registration_participants_import_textarea_placeholder_id_doc'
+          : 'registration_participants_import_textarea_placeholder_nogender_id_doc')
+        : (showImportGender
+          ? 'registration_participants_import_textarea_placeholder'
+          : 'registration_participants_import_textarea_placeholder_nogender');
+      const placeholderFallback = showIdentificationDocument
+        ? (showImportGender
+          ? 'Nombre[TAB]Fecha nacimiento[TAB]Documento identificativo[TAB]Genero[TAB]Nacionalidad'
+          : 'Nombre[TAB]Fecha nacimiento[TAB]Documento identificativo[TAB]Nacionalidad')
+        : (showImportGender
+          ? 'Nombre[TAB]Fecha nacimiento[TAB]Genero[TAB]Nacionalidad'
+          : 'Nombre[TAB]Fecha nacimiento[TAB]Nacionalidad');
 
       importElements.textarea.dataset.i18nPlaceholder = placeholderKey;
       importElements.textarea.placeholder = t(placeholderKey, placeholderFallback);
@@ -3281,6 +3333,10 @@ function initParticipantsTab(role) {
           getImportPreviewBirthDate(rowData) || '-'
         ];
 
+        if (showIdentificationDocument) {
+          previewCells.push(`${rowData.identification_document ?? ''}`.trim() || '-');
+        }
+
         if (showImportGender) {
           previewCells.push(`${rowData.gender ?? ''}`.trim() || '-');
         }
@@ -3394,6 +3450,11 @@ function initParticipantsTab(role) {
         name: `${rowData.name ?? ''}`.trim(),
         birth_date: getImportPreviewBirthDate(rowData)
       };
+
+      const identificationDocumentValue = `${rowData.identification_document ?? ''}`.trim();
+      if (showIdentificationDocument && identificationDocumentValue) {
+        participantRow.identification_document = identificationDocumentValue;
+      }
 
       const genderValue = `${rowData.gender ?? ''}`.trim();
       const countryValue = normalizeImportConfirmCountry(rowData.country);
@@ -3509,6 +3570,7 @@ function initParticipantsTab(role) {
     if (elements.id) elements.id.value = '';
     if (elements.name) elements.name.value = '';
     if (elements.dob) elements.dob.value = '';
+    setIdentificationDocumentEditState();
     if (elements.gender) elements.gender.value = '';
     setCountryValue(defaultCountry);
   };
@@ -3541,6 +3603,12 @@ function initParticipantsTab(role) {
         if (elements.id) elements.id.value = participant.id || '';
         if (elements.name) elements.name.value = participant.name || '';
         if (elements.dob) elements.dob.value = getDateOnlyValue(participant.date_of_birth);
+        const identificationDocument = participant.identification_document || '';
+        setIdentificationDocumentEditState({
+          value: identificationDocument,
+          editable: !identificationDocument,
+          showEditButton: Boolean(identificationDocument)
+        });
         if (elements.gender) elements.gender.value = shouldShowGender ? (participant.gender || '') : '';
         setCountryValue(participant.country || '');
       }
@@ -3623,6 +3691,7 @@ function initParticipantsTab(role) {
     const deleteTitle = t('delete', 'Delete');
     const authorizationTitle = t('registration_authorization', 'Authorization');
     const birthLabel = t('registration_participants_birth', 'Fecha nacimiento');
+    const identificationDocumentLabel = t('registration_participants_identification_document', 'Documento identificativo');
     const ageLabel = t('registration_participants_age', 'Edad');
     const countryLabel = t('registration_participants_country', 'Pais');
     const schoolLabel = t('registration_participants_school', 'Escuela');
@@ -3677,6 +3746,13 @@ function initParticipantsTab(role) {
       dobCell.className = 'participants-col-birth';
       dobCell.textContent = dobValue || '-';
       row.appendChild(dobCell);
+
+      if (showIdentificationDocument) {
+        const identificationDocumentCell = document.createElement('td');
+        identificationDocumentCell.className = 'participants-col-identification-document';
+        identificationDocumentCell.textContent = participant.identification_document || '-';
+        row.appendChild(identificationDocumentCell);
+      }
 
       const participantAge = calculateAge(dobValue, participantsAgeReferenceDate);
       const ageCell = document.createElement('td');
@@ -3838,6 +3914,13 @@ function initParticipantsTab(role) {
       const details = document.createElement('div');
       details.className = 'participant-mobile-card__details';
       details.appendChild(createMobileDetail('bi-calendar3', birthLabel, dobValue || '-'));
+      if (showIdentificationDocument) {
+        details.appendChild(createMobileDetail(
+          'bi-person-vcard',
+          identificationDocumentLabel,
+          participant.identification_document || '-'
+        ));
+      }
       const mobileAgeDetail = createMobileDetail(
         'bi-cake2',
         ageLabel,
@@ -4122,6 +4205,15 @@ function initParticipantsTab(role) {
       event_id: eventIdValue,
       name: elements.name ? elements.name.value.trim() : '',
       date_of_birth: elements.dob ? elements.dob.value : '',
+      ...(showIdentificationDocument
+        ? {
+          identification_document: elements.identificationDocument
+            ? (isEditingIdentificationDocument
+              ? elements.identificationDocument.value.trim()
+              : identificationDocumentOriginalValue)
+            : ''
+        }
+        : {}),
       country: elements.country ? elements.country.value : '',
       gender: shouldShowGender
         ? ((elements.gender ? `${elements.gender.value || ''}`.trim() : '') || null)
