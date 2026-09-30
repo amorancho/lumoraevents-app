@@ -1,5 +1,6 @@
 let lang;
 let scheduleLoadInFlight = false;
+let selectedScheduleDate = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     await WaitEventLoaded();
@@ -71,8 +72,8 @@ function setScheduleRefreshButtonMode(mode, liveSlotOverride = null) {
     }
 
     refreshBtn.className = nextMode === 'live'
-        ? 'btn btn-sm rounded-pill schedule-refresh-btn-live'
-        : 'btn btn-outline-primary';
+        ? 'lm-btn schedule-refresh-btn-live'
+        : 'lm-btn lm-btn-secondary';
 
     refreshBtn.hidden = nextMode === 'hidden';
     defaultSlot.hidden = nextMode !== 'default';
@@ -97,7 +98,7 @@ async function loadSchedule() {
     const container = document.getElementById('scheduleContainer');
     const highlightContainer = document.getElementById('scheduleHighlightContainer');
 
-    container.innerHTML = '<div class="text-center my-5"><div class="spinner-border text-primary" role="status"></div></div>';
+    container.innerHTML = '<div class="schedule-loading" role="status"><div class="spinner-border" aria-hidden="true"></div><span class="visually-hidden">Loading...</span></div>';
     setScheduleRefreshButtonMode('hidden');
     if (highlightContainer) {
         highlightContainer.innerHTML = '';
@@ -115,7 +116,7 @@ async function loadSchedule() {
         renderSchedule(scheduleData);
     } catch (error) {
         console.error('Error loading schedule:', error);
-        container.innerHTML = `<div class="alert alert-danger text-center mt-4">Error loading schedule</div>`;
+        container.innerHTML = '<div class="lm-notice alert-danger schedule-error" role="alert">Error loading schedule</div>';
     } finally {
         scheduleLoadInFlight = false;
         setScheduleRefreshButtonLoading(false);
@@ -135,53 +136,110 @@ function renderSchedule(data) {
     const container = document.getElementById('scheduleContainer');
     container.innerHTML = '';
 
-    const row = document.createElement('div');
-    row.className = 'row justify-content-center';
+    const days = Object.entries(data || {}).map(([date, items], index) => ({
+        date,
+        key: normalizeScheduleDateKey(date) || date,
+        items: Array.isArray(items) ? items : [],
+        index
+    }));
+    if (!days.length) {
+        selectedScheduleDate = null;
+        return;
+    }
 
-    const col = document.createElement('div');
-    col.className = 'col-12 col-md-12 col-lg-10';
+    if (!days.some(day => day.key === selectedScheduleDate)) {
+        selectedScheduleDate = (days.find(day => day.key === getTodayDateKey()) || days[0]).key;
+    }
 
-    const accordion = document.createElement('div');
-    accordion.className = 'accordion';
-    accordion.id = 'scheduleAccordion';
+    const panels = days.map(day => {
+        const panel = document.createElement('div');
+        panel.className = 'schedule-day-content';
+        panel.id = `schedule-day-panel-${day.index}`;
+        panel.hidden = day.key !== selectedScheduleDate;
 
-    Object.entries(data || {}).forEach(([date, items], index) => {
-        const dayId = `day-${index}`;
-        const dayItem = document.createElement('div');
-        dayItem.className = 'accordion-item mb-3 shadow-sm';
-
-        dayItem.innerHTML = `
-            <h2 class="accordion-header" id="heading-${dayId}">
-                <button class="accordion-button collapsed" type="button"
-                        data-bs-toggle="collapse" data-bs-target="#collapse-${dayId}"
-                        aria-expanded="false" aria-controls="collapse-${dayId}">
-                    <div style="width: 100%; display: flex; justify-content: center">
-                        <strong>${formatDate(date)}</strong>
-                    </div>
-                </button>
-            </h2>
-            <div id="collapse-${dayId}" class="accordion-collapse collapse"
-                aria-labelledby="heading-${dayId}" data-bs-parent="#scheduleAccordion">
-                <div class="accordion-body"></div>
-            </div>
-        `;
-
-        const body = dayItem.querySelector('.accordion-body');
-
-        (Array.isArray(items) ? items : []).forEach((item, itemIndex) => {
+        day.items.forEach((item, itemIndex) => {
             const card = createScheduleItemCard(item, {
-                uniqueKey: `schedule-${index}-${itemIndex}`,
+                uniqueKey: `schedule-${day.index}-${itemIndex}`,
                 expandParticipants: false
             });
-            body.appendChild(card);
+            panel.appendChild(card);
         });
 
-        accordion.appendChild(dayItem);
+        return panel;
     });
 
-    col.appendChild(accordion);
-    row.appendChild(col);
-    container.appendChild(row);
+    if (days.length === 1) {
+        const heading = document.createElement('h2');
+        heading.className = 'schedule-day-single';
+        heading.id = 'schedule-day-heading';
+        heading.innerHTML = createScheduleDayLabel(days[0].date);
+        panels[0].setAttribute('role', 'region');
+        panels[0].setAttribute('aria-labelledby', heading.id);
+        container.append(heading, panels[0]);
+        return;
+    }
+
+    const selector = document.createElement('div');
+    selector.className = `schedule-days ${days.length === 2 ? 'schedule-days--two' : 'schedule-days--scroll'}`;
+    selector.setAttribute('role', 'tablist');
+    selector.setAttribute('aria-label', t('title', 'Schedule'));
+
+    const tabs = days.map((day, index) => {
+        const tab = document.createElement('button');
+        const active = day.key === selectedScheduleDate;
+        tab.type = 'button';
+        tab.className = `schedule-day-tab${active ? ' schedule-day-tab-active' : ''}`;
+        tab.id = `schedule-day-tab-${index}`;
+        tab.setAttribute('role', 'tab');
+        tab.setAttribute('aria-controls', panels[index].id);
+        tab.setAttribute('aria-selected', String(active));
+        tab.setAttribute('aria-label', formatDate(day.date));
+        tab.tabIndex = active ? 0 : -1;
+        tab.innerHTML = createScheduleDayLabel(day.date);
+        panels[index].setAttribute('role', 'tabpanel');
+        panels[index].setAttribute('aria-labelledby', tab.id);
+        panels[index].tabIndex = 0;
+        tab.addEventListener('click', () => selectDay(index));
+        selector.appendChild(tab);
+        return tab;
+    });
+
+    function selectDay(index) {
+        selectedScheduleDate = days[index].key;
+        tabs.forEach((tab, tabIndex) => {
+            const active = tabIndex === index;
+            tab.classList.toggle('schedule-day-tab-active', active);
+            tab.setAttribute('aria-selected', String(active));
+            tab.tabIndex = active ? 0 : -1;
+            panels[tabIndex].hidden = !active;
+        });
+    }
+
+    selector.addEventListener('keydown', event => {
+        const currentIndex = tabs.indexOf(event.target);
+        if (currentIndex < 0) return;
+        let nextIndex;
+        if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
+        else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        else if (event.key === 'Home') nextIndex = 0;
+        else if (event.key === 'End') nextIndex = tabs.length - 1;
+        else return;
+
+        event.preventDefault();
+        tabs[nextIndex].focus();
+        selectDay(nextIndex);
+    });
+
+    container.appendChild(selector);
+    container.append(...panels);
+}
+
+function createScheduleDayLabel(date) {
+    const day = new Date(date);
+    const locale = getScheduleDateLocale();
+    const weekday = day.toLocaleDateString(locale, { weekday: 'long' }).toUpperCase();
+    const shortDate = day.toLocaleDateString(locale, { day: 'numeric', month: 'short' }).toUpperCase();
+    return `<span class="schedule-day-weekday">${escapeHtml(weekday)}</span><span class="schedule-day-date">${escapeHtml(shortDate)}</span>`;
 }
 
 function renderScheduleHighlight(data) {
@@ -213,18 +271,12 @@ function renderScheduleHighlight(data) {
         titleKey = 'next_competition';
     }
 
-    const row = document.createElement('div');
-    row.className = 'row justify-content-center';
-
-    const col = document.createElement('div');
-    col.className = 'col-12 col-md-12 col-lg-10';
-
     const wrapper = document.createElement('div');
-    wrapper.className = showLiveHighlight ? 'card schedule-highlight-live shadow-sm' : 'card border-primary shadow-sm';
+    wrapper.className = showLiveHighlight ? 'lm-card schedule-highlight schedule-highlight-live' : 'lm-card schedule-highlight schedule-highlight-next';
     wrapper.innerHTML = showLiveHighlight
         ? `
-            <div class="card-body">
-                <div class="schedule-live-banner mb-3" role="status" aria-live="polite">
+            <div class="lm-card-body schedule-highlight-body">
+                <div class="schedule-live-banner" role="status" aria-live="polite">
                     <span class="schedule-live-pill">
                         <span class="schedule-live-dot" aria-hidden="true"></span>
                         ${t('live_now', 'Live now')}
@@ -234,12 +286,12 @@ function renderScheduleHighlight(data) {
             </div>
         `
         : `
-            <div class="card-body">
-                <h3 class="h5 mb-3 text-center">${t(titleKey, 'Next competition')}</h3>
+            <div class="lm-card-body schedule-highlight-body">
+                <h3 class="schedule-highlight-title"><i class="bi bi-arrow-right-circle" aria-hidden="true"></i> ${t(titleKey, 'Next competition')}</h3>
             </div>
         `;
 
-    const wrapperBody = wrapper.querySelector('.card-body');
+    const wrapperBody = wrapper.querySelector('.schedule-highlight-body');
     if (!showLiveHighlight && previousBreakItems.length) {
         wrapperBody.appendChild(createScheduleHighlightBreakStrip(previousBreakItems));
     }
@@ -259,9 +311,7 @@ function renderScheduleHighlight(data) {
         });
     }
 
-    col.appendChild(wrapper);
-    row.appendChild(col);
-    highlightContainer.appendChild(row);
+    highlightContainer.appendChild(wrapper);
     if (showLiveHighlight) {
         setScheduleRefreshButtonMode('live', wrapper.querySelector('#scheduleRefreshLiveSlot'));
     } else {
@@ -410,106 +460,77 @@ function createCompetitionScheduleItemCard(item, { uniqueKey, expandParticipants
     const card = document.createElement('div');
     const isLiveItem = highlightLive && item?.status === 'PRO';
     const showScenario = Boolean(getEvent()?.hasMultipleScenarios);
-    const categoryStyleColumnClass = showScenario
-        ? 'col-6 col-md-2 mb-2 mb-md-0'
-        : 'col-6 col-md-3 mb-2 mb-md-0';
-    const detailColumnClass = showScenario
-        ? 'col-6 col-md-2 mb-2 mb-md-0'
-        : 'col-4 col-md-2 mb-2 mb-md-0';
     const scenario = String(item?.scenario ?? '').trim() || '-';
-    card.className = `card mb-3 border border-secondary-subtle rounded-3 shadow-none${isLiveItem ? ' schedule-item-live' : ''}`;
+    const hasParticipants = Boolean(item?.dancersList?.length && canShowScheduleParticipants());
+    card.className = `lm-card schedule-item${isLiveItem ? ' schedule-item-live' : ''}`;
 
     card.innerHTML = `
-        <div class="card-body">
-            <div class="row text-center align-items-center">
-                <div class="${categoryStyleColumnClass}">
-                    <p class="mb-1 fw-semibold">${t('category', 'Category')}</p>
-                    <span class="badge bg-primary">${item?.category || ''}</span>
+        <div class="lm-card-body schedule-item-body">
+            <div class="schedule-item-main">
+                <time class="schedule-time">${escapeHtml(item?.time || '')}</time>
+                <div class="schedule-item-info">
+                    <div class="schedule-item-tags">
+                        <span class="lm-badge lm-badge-primary schedule-category">${escapeHtml(item?.category || '')}</span>
+                        <span class="lm-badge lm-badge-purple schedule-style">${escapeHtml(item?.style || '')}</span>
+                    </div>
+                    ${showScenario ? `<div class="schedule-item-meta"><span class="schedule-scenario"><i class="bi bi-pin-map" aria-hidden="true"></i><span class="visually-hidden">${t('scenario', 'Stage')}:</span> ${escapeHtml(scenario)}</span></div>` : ''}
                 </div>
-                <div class="${categoryStyleColumnClass}">
-                    <p class="mb-1 fw-semibold">${t('style', 'Style')}</p>
-                    <span class="badge bg-primary">${item?.style || ''}</span>
-                </div>
-                ${showScenario ? `
-                <div class="${detailColumnClass}">
-                    <p class="mb-1 fw-semibold">${t('scenario', 'Stage')}</p>
-                    <span>${escapeHtml(scenario)}</span>
-                </div>
-                ` : ''}
-                <div class="${detailColumnClass}">
-                    <p class="mb-1 fw-semibold">${t('time', 'Time')}</p>
-                    <span>${item?.time || ''}</span>
-                </div>
-                <div class="${detailColumnClass}">
-                    <p class="mb-1 fw-semibold">${t('status', 'Status')}</p>
-                    ${getStatusBadge(item?.status)}
-                </div>
-                <div class="${detailColumnClass}">
-                    <p class="mb-1 fw-semibold">${t('dancers', 'Dancers')}</p>
-                    <span class="badge bg-secondary">${item?.dancers ?? 0}</span>
+                <div class="schedule-item-summary">
+                    <span class="schedule-count"><i class="bi bi-people-fill" aria-hidden="true"></i> ${escapeHtml(item?.dancers ?? 0)} ${t('dancers', 'Dancers')}</span>
+                    <div class="schedule-item-status">${getStatusBadge(item?.status)}</div>
                 </div>
             </div>
         </div>
     `;
 
-    if (!item?.dancersList?.length || !canShowScheduleParticipants()) {
+    if (!hasParticipants) {
         return card;
     }
 
-    const rowWrapper = document.createElement('div');
-    rowWrapper.className = 'row justify-content-center mt-2 mt-4';
-
-    const subAccordionCol = document.createElement('div');
-    subAccordionCol.className = 'col-12 col-md-10';
+    const participants = document.createElement('div');
+    participants.className = 'schedule-participants';
 
     const subId = `subAccordion-${uniqueKey || item.id || 'item'}`;
-    const collapseClass = expandParticipants ? 'accordion-collapse collapse show' : 'accordion-collapse collapse';
-    const buttonClass = expandParticipants ? 'accordion-button py-1 px-2' : 'accordion-button collapsed py-1 px-2';
+    const collapseClass = expandParticipants ? 'collapse show' : 'collapse';
+    const buttonClass = expandParticipants ? 'lm-collapse-trigger schedule-participant-toggle' : 'lm-collapse-trigger schedule-participant-toggle collapsed';
     const ariaExpanded = expandParticipants ? 'true' : 'false';
 
-    subAccordionCol.innerHTML = `
-        <div class="accordion" id="${subId}">
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="heading-${subId}">
-                    <button class="${buttonClass}" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#collapse-${subId}"
-                            aria-expanded="${ariaExpanded}" aria-controls="collapse-${subId}">
-                        <div class="d-flex justify-content-center w-100">
-                            <strong>${t('participants')}</strong>
-                        </div>
-                    </button>
-                </h2>
-                <div id="collapse-${subId}" class="${collapseClass}"
-                    aria-labelledby="heading-${subId}" data-bs-parent="#${subId}">
-                    <div class="accordion-body p-0">
-                        <ul class="list-group list-group-flush"></ul>
-                    </div>
-                </div>
-            </div>
+    participants.innerHTML = `
+        <h3 class="schedule-participants-heading" id="heading-${subId}">
+            <button class="${buttonClass}" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#collapse-${subId}"
+                    aria-expanded="${ariaExpanded}" aria-controls="collapse-${subId}">
+                <span><i class="bi bi-list-ol" aria-hidden="true"></i> ${t('participants')}</span>
+                <span class="schedule-participants-count">${escapeHtml(item.dancersList.length)}</span>
+                <i class="bi bi-chevron-down schedule-participants-chevron" aria-hidden="true"></i>
+            </button>
+        </h3>
+        <div id="collapse-${subId}" class="${collapseClass} schedule-participant-panel"
+             aria-labelledby="heading-${subId}">
+            <ul class="lm-list schedule-participant-list"></ul>
         </div>
     `;
 
-    const list = subAccordionCol.querySelector('ul');
+    const list = participants.querySelector('ul');
     item.dancersList.forEach(dancer => {
         const dancerName = dancer.name || dancer.dancer_name || '';
         const clubLabel = getParticipantClubLabel(dancer);
         const dancerStatusBadge = item?.status === 'PRO' ? getDancerScheduleStatusBadge(dancer?.schedule_status) : '';
         const li = document.createElement('li');
-        li.className = 'list-group-item d-flex align-items-center';
+        li.className = 'lm-list-item schedule-participant-row';
         li.innerHTML = `
-            <span class="badge bg-info me-2">#${dancer.position}</span>
-            ${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'width: 24px;' })}
-            <span class="d-flex align-items-center flex-wrap flex-grow-1">
-                <span class="dancer-name">${escapeHtml(dancerName)}</span>
-                ${clubLabel ? `<span class="ms-2 small text-muted">${escapeHtml(clubLabel)}</span>` : ''}
+            <span class="schedule-participant-position">#${escapeHtml(dancer.position ?? '')}</span>
+            ${getDancerFlagImgHtml(dancer.nationality, { className: 'schedule-participant-flag' })}
+            <span class="schedule-participant-identity">
+                <span class="schedule-participant-name">${escapeHtml(dancerName)}</span>
+                ${clubLabel ? `<span class="schedule-participant-club">${escapeHtml(clubLabel)}</span>` : ''}
             </span>
-            ${dancerStatusBadge ? `<span class="ms-auto">${dancerStatusBadge}</span>` : ''}
+            ${dancerStatusBadge ? `<span class="schedule-participant-status">${dancerStatusBadge}</span>` : ''}
         `;
         list.appendChild(li);
     });
 
-    rowWrapper.appendChild(subAccordionCol);
-    card.querySelector('.card-body').appendChild(rowWrapper);
+    card.appendChild(participants);
 
     return card;
 }
@@ -520,15 +541,12 @@ function createScheduleBreakCard(item, { highlightLive = false } = {}) {
     const breakName = getScheduleBreakName(item);
     const breakDuration = formatBreakMinutesLabel(getScheduleBreakMinutes(item));
 
-    card.className = `card mb-3 border rounded-3 shadow-none schedule-item-break${isLiveItem ? ' schedule-item-live' : ''}`;
+    card.className = `lm-card schedule-break${isLiveItem ? ' schedule-item-live' : ''}`;
     card.innerHTML = `
-        <div class="card-body">
-            <div class="d-flex flex-column flex-md-row justify-content-center align-items-center gap-3 text-center">
-                <div class="schedule-break-title">${escapeHtml(breakName)}</div>
-                <div>
-                    <span class="badge text-bg-warning fs-6">${escapeHtml(breakDuration)}</span>
-                </div>
-            </div>
+        <div class="lm-card-body schedule-break-body">
+            <i class="bi bi-cup-hot schedule-break-icon" aria-hidden="true"></i>
+            <div class="schedule-break-title">${escapeHtml(breakName)}</div>
+            <div class="lm-badge lm-badge-warning schedule-break-duration">${escapeHtml(breakDuration)}</div>
         </div>
     `;
 
@@ -559,47 +577,51 @@ function formatBreakMinutesLabel(minutes) {
 
 function formatDate(dateStr) {
     const d = new Date(dateStr);
-    let locale;
+    return d.toLocaleDateString(getScheduleDateLocale(), { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+}
 
+function getScheduleDateLocale() {
     if (lang === 'es') {
-        locale = 'es-ES';
+        return 'es-ES';
     } else if (lang === 'it') {
-        locale = 'it-IT';
+        return 'it-IT';
     } else if (lang === 'pt') {
-        locale = 'pt-PT';
+        return 'pt-PT';
     } else if (lang === 'fr') {
-        locale = 'fr-FR';
-    } else {
-        locale = 'en-GB';
+        return 'fr-FR';
     }
-
-    return d.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' }).toUpperCase();
+    return 'en-GB';
 }
 
 function getStatusBadge(status) {
-    let badgeClass = 'bg-secondary';
+    let badgeClass = 'lm-status-neutral';
     let text = status;
+    let icon = '';
 
     switch (status) {
         case 'FIN':
-            badgeClass = 'bg-success';
+            badgeClass = 'lm-status-success';
             text = 'FINISHED';
+            icon = 'bi-check2';
             break;
         case 'OPE':
-            badgeClass = 'bg-warning text-dark';
+            badgeClass = 'lm-status-info';
             text = 'OPEN';
+            icon = 'bi-unlock';
             break;
         case 'CLO':
-            badgeClass = 'bg-danger';
+            badgeClass = 'lm-status-danger';
             text = 'CLOSED';
+            icon = 'bi-lock';
             break;
         case 'PRO':
-            badgeClass = 'bg-primary';
+            badgeClass = 'lm-status-live';
             text = 'IN PROGRESS';
+            icon = 'bi-broadcast';
             break;
     }
 
-    return `<span class="badge ${badgeClass}">${text}</span>`;
+    return `<span class="lm-status ${badgeClass}">${icon ? `<i class="bi ${icon}" aria-hidden="true"></i>` : ''}${escapeHtml(text)}</span>`;
 }
 
 function getDancerScheduleStatusBadge(status) {
@@ -607,12 +629,12 @@ function getDancerScheduleStatusBadge(status) {
 
     switch (normalizedStatus) {
         case 'FIN':
-            return '<span class="badge bg-success">FINISHED</span>';
+            return '<span class="lm-status lm-status-success">FINISHED</span>';
         case 'PEN':
-            return '<span class="badge bg-warning text-dark">PENDING</span>';
+            return '<span class="lm-status lm-status-warning">PENDING</span>';
         case 'NOS':
         case 'NO SHOW':
-            return '<span class="badge bg-noshown status-badge">NO SHOW</span>';
+            return '<span class="lm-status lm-status-purple">NO SHOW</span>';
         default:
             return '';
     }

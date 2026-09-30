@@ -7,338 +7,43 @@
   <title data-i18n="title">Participants</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <style>
-    .bg-noshown {
-      background-color: #6f42c1;
-      color: white;
-    }
-
-    .schedule-highlight-live {
-      border: 0;
-      background: linear-gradient(135deg, rgba(13, 110, 253, 0.14), rgba(13, 202, 240, 0.08) 55%, #ffffff);
-      box-shadow: 0 1rem 2.5rem rgba(13, 110, 253, 0.12);
-    }
-
-    .schedule-live-banner {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.7rem;
-      padding: 1rem 1.25rem;
-      border-radius: 1rem;
-      text-align: center;
-      background: rgba(13, 110, 253, 0.08);
-      border: 1px solid rgba(13, 110, 253, 0.18);
-    }
-
-    .schedule-live-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.55rem;
-      padding: 0.45rem 0.9rem;
-      border-radius: 999px;
-      background: #0d6efd;
-      color: #ffffff;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      box-shadow: 0 0.35rem 0.9rem rgba(13, 110, 253, 0.25);
-    }
-
-    .schedule-live-dot {
-      width: 0.65rem;
-      height: 0.65rem;
-      border-radius: 50%;
-      background: #ffffff;
-      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.85);
-      animation: scheduleLivePulse 1.6s ease-out infinite;
-    }
-
-    .schedule-highlight-live .schedule-item-live {
-      border-color: rgba(13, 110, 253, 0.35) !important;
-      box-shadow: 0 0.6rem 1.4rem rgba(13, 110, 253, 0.12);
-      background: rgba(255, 255, 255, 0.92);
-    }
-
-    .schedule-item-break {
-      border-color: rgba(255, 193, 7, 0.45) !important;
-      background: linear-gradient(135deg, rgba(255, 243, 205, 0.92), rgba(255, 255, 255, 1));
-    }
-
-    .schedule-break-title {
-      color: #7a4f01;
-      font-size: 1.1rem;
-      font-weight: 700;
-      line-height: 1.25;
-      word-break: break-word;
-    }
-
-    .schedule-highlight-breaks {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.6rem;
-      margin-bottom: 1rem;
-      padding: 0.8rem 0.95rem;
-      border-radius: 0.9rem;
-      background: rgba(255, 248, 225, 0.72);
-      border: 1px solid rgba(255, 193, 7, 0.18);
-    }
-
-    .schedule-highlight-breaks-label {
-      color: #8a6d1d;
-      font-size: 0.74rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .schedule-highlight-breaks-list {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.45rem;
-    }
-
-    .schedule-highlight-break-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-      padding: 0.38rem 0.7rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.92);
-      border: 1px solid rgba(255, 193, 7, 0.18);
-      color: #6c757d;
-      font-size: 0.84rem;
-    }
-
-    .schedule-highlight-break-name {
-      color: #7a4f01;
-      font-weight: 600;
-    }
-
-    .schedule-highlight-break-time {
-      color: #8a6d1d;
-      white-space: nowrap;
-    }
-
-    .schedule-live-refresh-slot {
-      display: flex;
-      justify-content: center;
-      width: 100%;
-      margin-top: 0.1rem;
-    }
-
-    .schedule-refresh-btn-live {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.45rem;
-      padding: 0.45rem 1rem;
-      border: 1px solid rgba(13, 110, 253, 0.16);
-      background: rgba(255, 255, 255, 0.88);
-      color: #0a58ca;
-      font-size: 0.88rem;
-      font-weight: 600;
-      box-shadow: 0 0.45rem 1.2rem rgba(13, 110, 253, 0.1);
-      backdrop-filter: blur(6px);
-    }
-
-    .schedule-refresh-btn-live:hover,
-    .schedule-refresh-btn-live:focus,
-    .schedule-refresh-btn-live:active {
-      border-color: rgba(13, 110, 253, 0.24) !important;
-      background: #ffffff !important;
-      color: #084298 !important;
-      box-shadow: 0 0.55rem 1.35rem rgba(13, 110, 253, 0.14) !important;
-    }
-
-    .schedule-instagram-section {
-      max-width: 46rem;
-      margin: 0 auto 0.8rem;
-    }
-
-    .schedule-instagram-card {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.68rem 0.95rem;
-      border-radius: 1.1rem;
-      text-decoration: none;
-      color: inherit;
-      background: linear-gradient(135deg, rgba(131, 58, 180, 0.09), rgba(253, 29, 29, 0.04) 45%, rgba(252, 176, 69, 0.1));
-      border: 1px solid rgba(131, 58, 180, 0.12);
-      box-shadow: 0 0.8rem 1.8rem rgba(15, 23, 42, 0.04);
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-    }
-
-    .schedule-instagram-card:hover,
-    .schedule-instagram-card:focus {
-      color: inherit;
-      transform: translateY(-1px);
-      border-color: rgba(131, 58, 180, 0.18);
-      box-shadow: 0 1rem 2.1rem rgba(15, 23, 42, 0.08);
-    }
-
-    .schedule-instagram-main {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.7rem;
-      transform: translateX(-0.18rem);
-    }
-
-    .schedule-instagram-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.8rem;
-      height: 1.8rem;
-      border-radius: 0.62rem;
-      background: linear-gradient(135deg, #f58529, #dd2a7b 58%, #8134af);
-      color: #ffffff;
-      font-size: 0.82rem;
-      flex-shrink: 0;
-      box-shadow: 0 0.7rem 1.5rem rgba(221, 42, 123, 0.18);
-    }
-
-    .schedule-instagram-copy {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.3rem 0.5rem;
-      min-width: 0;
-    }
-
-    .schedule-instagram-title {
-      color: #6f214d;
-      font-size: 0.8rem;
-      font-weight: 600;
-      line-height: 1.2;
-      text-align: center;
-    }
-
-    .schedule-instagram-handle {
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
-      padding: 0.2rem 0.52rem;
-      border-radius: 999px;
-      border: 1px solid rgba(129, 52, 175, 0.1);
-      background: rgba(255, 255, 255, 0.72);
-      color: #7e2b60;
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-    }
-
-    @keyframes scheduleLivePulse {
-      0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.85);
-      }
-
-      70% {
-        transform: scale(1.15);
-        box-shadow: 0 0 0 0.55rem rgba(255, 255, 255, 0);
-      }
-
-      100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-      }
-    }
-
-    @media (max-width: 576px) {
-      .schedule-instagram-main {
-        flex-wrap: nowrap;
-        gap: 0.55rem;
-        transform: translateX(-0.24rem);
-      }
-
-      .schedule-instagram-card {
-        padding: 0.62rem 0.74rem;
-      }
-
-      .schedule-instagram-icon {
-        width: 1.65rem;
-        height: 1.65rem;
-        font-size: 0.76rem;
-      }
-
-      .schedule-instagram-copy {
-        flex-wrap: nowrap;
-        gap: 0.24rem 0.36rem;
-      }
-
-      .schedule-instagram-title {
-        font-size: 0.73rem;
-        white-space: nowrap;
-      }
-
-      .schedule-instagram-handle {
-        padding: 0.18rem 0.45rem;
-        font-size: 0.64rem;
-        white-space: nowrap;
-      }
-
-      .schedule-live-banner {
-        padding: 0.9rem 1rem;
-      }
-
-      .schedule-live-pill {
-        font-size: 0.72rem;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="css/lumora-ui.css">
+  <link rel="stylesheet" href="css/schedule.css?v=20260930-5">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
 
-<body class="d-flex flex-column min-vh-100">
-    
+<body class="d-flex flex-column min-vh-100 schedule-page">
   <div id="header"></div>
 
-  <div class="container my-4">
-
-    <div class="schedule-instagram-section">
-      <a class="schedule-instagram-card" href="https://www.instagram.com/lumoraevents.app/" target="_blank" rel="noopener noreferrer" aria-label="Instagram lumoraevents.app">
-        <span class="schedule-instagram-main">
-          <span class="schedule-instagram-icon" aria-hidden="true">
-            <i class="bi bi-instagram"></i>
-          </span>
-          <span class="schedule-instagram-copy">
-            <span class="schedule-instagram-title" data-i18n="instagram_follow_message">Síguenos para no perderte nada</span>
-            <span class="schedule-instagram-handle">@lumoraevents.app</span>
-          </span>
-        </span>
-      </a>
-    </div>
-
-    <div id="scheduleRefreshDefaultSlot" class="mb-3 text-center" hidden>
-      <button type="button" class="btn btn-outline-primary" id="refreshScheduleBtn" data-i18n="update">
-        <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>
-        <span>Update</span>
-      </button>
-    </div>
-
-    <div id="scheduleHighlightContainer" class="mb-4" style="display: none;"></div>
-
-    <div id="noticePanel" class="mb-4" style="display: none;">
-      <div class="alert d-flex flex-column text-center alert-dismissible fade show" role="alert" id="notice_type">       
-        <div id="notice_text">
-          
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  <main class="lm-page">
+    <div class="lm-container schedule-content">
+      <div class="schedule-instagram-section">
+        <a class="schedule-instagram-card" href="https://www.instagram.com/lumoraevents.app/" target="_blank" rel="noopener noreferrer" aria-label="Instagram lumoraevents.app">
+          <span class="schedule-instagram-icon" aria-hidden="true"><i class="bi bi-instagram"></i></span>
+          <span class="schedule-instagram-title" data-i18n="instagram_follow_message">Síguenos para no perderte nada</span>
+          <span class="schedule-instagram-handle">@lumoraevents.app <i class="bi bi-arrow-up-right" aria-hidden="true"></i></span>
+        </a>
       </div>
+
+      <div id="scheduleRefreshDefaultSlot" class="schedule-refresh-default" hidden>
+        <button type="button" class="lm-btn lm-btn-secondary" id="refreshScheduleBtn" data-i18n="update">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+          <span>Update</span>
+        </button>
+      </div>
+
+      <div id="scheduleHighlightContainer" class="schedule-highlight-container" style="display: none;"></div>
+
+      <div id="noticePanel" class="schedule-notice" style="display: none;">
+        <div class="alert alert-dismissible fade show lm-notice" role="alert" id="notice_type">
+          <div id="notice_text"></div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <div id="scheduleContainer"></div>
     </div>
-
-    <div id="scheduleContainer"></div>
-
-  </div>
+  </main>
 
   <div id="footer"></div>
 
@@ -348,7 +53,6 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
-  <script src="js/schedule.js?v=20260917"></script>
-
+  <script src="js/schedule.js?v=20260930-3"></script>
 </body>
 </html>
