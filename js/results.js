@@ -69,20 +69,18 @@ function renderPenaltiesCard(penalties, { headerSuffix = '' } = {}) {
   if (!validPenalties.length) return null;
 
   const penaltyCard = document.createElement('div');
-  penaltyCard.className = 'card mb-3 border-warning shadow-sm';
+  penaltyCard.className = 'results-detail-card results-penalty-card';
   penaltyCard.innerHTML = `
-    <div class="card-header d-flex justify-content-between align-items-center bg-warning-subtle">
-      <h6 class="mb-0 text-warning">${escapeHtml(t('penalties', 'Penalties'))}${headerSuffix}</h6>
-      <span class="badge text-bg-warning">${validPenalties.length}</span>
+    <div class="results-detail-header">
+      <h3>${escapeHtml(t('penalties', 'Penalties'))}${headerSuffix}</h3>
+      <span class="results-penalty-count">${validPenalties.length}</span>
     </div>
-    <div class="card-body">
-      <div class="row g-2">
+    <div class="results-detail-body">
+      <div class="results-penalty-grid">
         ${validPenalties.map((penalty) => `
-          <div class="col-12 col-md-6">
-            <div class="border rounded p-2 h-100 bg-light">
-              <div class="fw-semibold">${escapeHtml(penalty.name || '-')}</div>
-              <div class="small text-muted">${escapeHtml(t('total_score', 'Total Score'))}: ${escapeHtml(penalty.score ?? '-')}</div>
-            </div>
+          <div class="results-penalty-item">
+            <div class="results-penalty-name">${escapeHtml(penalty.name || '-')}</div>
+            <div class="results-penalty-score">${escapeHtml(t('total_score', 'Total Score'))}: ${escapeHtml(penalty.score ?? '-')}</div>
           </div>
         `).join('')}
       </div>
@@ -200,7 +198,7 @@ function getCriteriaHeaderTextStyle() {
 }
 
 function getCriteriaHeaderMetaStyle() {
-  return 'display: block; margin-top: 0.2rem; font-size: 0.68rem; line-height: 1.1; color: var(--bs-secondary-color); text-align: center;';
+  return 'display: block; margin-top: 0.2rem; font-size: 0.68rem; line-height: 1.1; color: var(--lm-text-soft); text-align: center;';
 }
 
 function renderCriteriaHeaderCell(criteria) {
@@ -488,7 +486,7 @@ function renderStyleCriteriaSummaryTable(styleObj) {
   const totalScoreFixedDecimals = getEvent()?.criteriaConfig === 'WITH_POR' ? 2 : null;
 
   if (!dancers.length || !criteria.length) {
-    return `<div class="alert alert-info mb-0">${escapeHtml(t('no_style_voting_details', 'No voting details available for this style.'))}</div>`;
+    return `<div class="results-empty results-empty-page">${escapeHtml(t('no_style_voting_details', 'No voting details available for this style.'))}</div>`;
   }
 
   const headerCells = criteria
@@ -564,7 +562,7 @@ function renderStyleJudgeGroupedTable(styleObj) {
   const totalScoreFixedDecimals = getEvent()?.criteriaConfig === 'WITH_POR' ? 2 : null;
 
   if (!dancers.length || !judgeGroups.length) {
-    return `<div class="alert alert-info mb-0">${escapeHtml(t('no_style_voting_details', 'No voting details available for this style.'))}</div>`;
+    return `<div class="results-empty results-empty-page">${escapeHtml(t('no_style_voting_details', 'No voting details available for this style.'))}</div>`;
   }
 
   const judgeHeaderRow = judgeGroups.map((judgeGroup) => {
@@ -670,16 +668,18 @@ function showStyleVotingDetailsModal(styleObj, styleVotingModalEl, styleVotingMo
   if (!styleObj || !styleVotingModalEl || !styleVotingModal || !styleDetailsContainer) return;
 
   styleDetailsContainer.innerHTML = `
-    <div class="mb-3">
-      <div class="small text-muted">${escapeHtml(categoryName || '-')}</div>
-      <div class="fw-bold fs-4 text-primary">${escapeHtml(styleObj?.style_name || '-')}</div>
+    <div class="results-modal-summary">
+      <div>
+        <div class="results-modal-context">${escapeHtml(categoryName || '-')}</div>
+        <div class="results-modal-style">${escapeHtml(styleObj?.style_name || '-')}</div>
+      </div>
     </div>
     ${renderStyleVotingDetailsTable(styleObj)}
   `;
 
-  const titleSpan = styleVotingModalEl.querySelector('.modal-title span');
-  if (titleSpan) {
-    titleSpan.textContent = t('style_voting_details', 'Style Voting Details');
+  const titleEl = styleVotingModalEl.querySelector('#styleVotingDetailsModalLabel');
+  if (titleEl) {
+    titleEl.textContent = t('style_voting_details', 'Style Voting Details');
   }
   updateStyleVotingDetailsMaxScore(styleVotingModalEl, styleObj);
 
@@ -694,35 +694,28 @@ function showDancerVotingDetailsModal(styleObj, dancerData, votingModalEl, votin
   detailsContainer.innerHTML = '';
 
   const summaryCard = document.createElement('div');
-  summaryCard.className = 'card mb-3 border-primary shadow-sm';
+  summaryCard.className = 'results-modal-summary';
   summaryCard.innerHTML = `
-    <div class="card-body">
-      <div class="row align-items-center">
-        <div class="col">
-          <div class="fw-bold fs-2 text-primary mb-2">
-            ${escapeHtml(categoryName || '-')} - ${escapeHtml(styleObj.style_name || '-')}
-          </div>
-          <div class="d-flex align-items-center gap-2">
-            ${getDancerFlagImgHtml(dancerData.dancer_nationality, { width: 24, height: 24 })}
-            <div class="d-flex align-items-baseline flex-wrap gap-2">
-              <strong class="fs-5">${escapeHtml(dancerData.dancer_name || '-')}</strong>
-              ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
-            </div>
-          </div>
-        </div>
-        <div class="col-auto text-center">
-          <div class="d-flex align-items-center gap-2 justify-content-center flex-wrap">
-            <span class="badge bg-success fs-4 py-2 px-3">
-              ${formatScoreValue(dancerData.total_score, { fixedDecimals: totalScoreFixedDecimals })}
-            </span>
-            ${shouldShowAvgPlaceBadge() ? `
-              <span class="badge bg-info fs-5 py-2 px-3">
-                ${formatAvgPlace(dancerData.avg_place)}
-              </span>
-            ` : ''}
-          </div>
+    <div>
+      <div class="results-modal-context">${escapeHtml(categoryName || '-')}</div>
+      <div class="results-modal-style">${escapeHtml(styleObj.style_name || '-')}</div>
+      <div class="results-modal-person">
+        ${getDancerFlagImgHtml(dancerData.dancer_nationality, { width: 24, height: 24 })}
+        <div class="results-modal-person-copy">
+          <strong>${escapeHtml(dancerData.dancer_name || '-')}</strong>
+          ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
         </div>
       </div>
+    </div>
+    <div class="results-modal-score-group">
+      <span class="results-modal-score">
+        ${formatScoreValue(dancerData.total_score, { fixedDecimals: totalScoreFixedDecimals })}
+      </span>
+      ${shouldShowAvgPlaceBadge() ? `
+        <span class="results-modal-score results-modal-score--average">
+          ${formatAvgPlace(dancerData.avg_place)}
+        </span>
+      ` : ''}
     </div>
   `;
   detailsContainer.appendChild(summaryCard);
@@ -751,17 +744,17 @@ function showDancerVotingDetailsModal(styleObj, dancerData, votingModalEl, votin
       }
 
       const judgeCard = document.createElement('div');
-      judgeCard.className = 'card mb-3';
+      judgeCard.className = 'results-detail-card';
       judgeCard.innerHTML = `
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <h6 class="mb-0 text-primary">${escapeHtml(vote.judge_name || t('judge', 'Judge'))}</h6>
-          <span class="badge bg-primary fs-6">${escapeHtml(t('total', 'Total'))}: ${formatVoteTotalScore(vote, { defaultFixedDecimals: 1 })}</span>
+        <div class="results-detail-header">
+          <h3>${escapeHtml(vote.judge_name || t('judge', 'Judge'))}</h3>
+          <span class="results-detail-total">${escapeHtml(t('total', 'Total'))}: ${formatVoteTotalScore(vote, { defaultFixedDecimals: 1 })}</span>
         </div>
-        <div class="card-body">
-          <div class="row">
+        <div class="results-detail-body">
+          <div class="results-criteria-grid">
             ${(vote.criteria || []).map((criterion) => `
-              <div class="col-6 col-md-4 col-lg-4 mb-2">
-                <label class="form-label mb-1">${escapeHtml(getCriteriaDisplayLabel(criterion))}</label>
+              <div class="results-criterion">
+                <label>${escapeHtml(getCriteriaDisplayLabel(criterion))}</label>
                 <input type="text" class="form-control" value="${escapeHtml(formatScoreValue(criterion?.score))}" readonly>
               </div>
             `).join('')}
@@ -776,9 +769,9 @@ function showDancerVotingDetailsModal(styleObj, dancerData, votingModalEl, votin
     detailsContainer.appendChild(noVotes);
   }
 
-  const titleSpan = votingModalEl.querySelector('.modal-title span');
-  if (titleSpan) {
-    titleSpan.textContent = t('voting_details');
+  const titleEl = votingModalEl.querySelector('#votingDetailsModalLabel');
+  if (titleEl) {
+    titleEl.textContent = t('voting_details');
   }
 
   votingModal.show();
@@ -911,16 +904,17 @@ function clearRenderedResults() {
 
 function updateResultsSelectionUi() {
   const categoriaBadge = document.getElementById('categoriaBadge');
+  const categoriaBadgeText = categoriaBadge?.querySelector('span');
   const infoText = document.getElementById('infoText');
   const refreshBtn = document.getElementById('refreshBtn');
   const hasCompleteSelection = isResultsSelectionComplete();
 
   if (categoriaBadge) {
     if (hasCompleteSelection) {
-      categoriaBadge.textContent = getResultsBadgeText();
+      if (categoriaBadgeText) categoriaBadgeText.textContent = getResultsBadgeText();
       categoriaBadge.classList.remove('d-none');
     } else {
-      categoriaBadge.textContent = '';
+      if (categoriaBadgeText) categoriaBadgeText.textContent = '';
       categoriaBadge.classList.add('d-none');
     }
   }
@@ -938,16 +932,19 @@ function updateResultsSelectionUi() {
 function configureResultsFilterLayout() {
   const categorySelect = document.getElementById('categorySelect');
   const styleSelect = document.getElementById('styleSelect');
-  const inputGroup = categorySelect?.parentElement;
+  const categoryFilter = document.getElementById('categoryFilter');
+  const styleFilter = document.getElementById('styleFilter');
+  const filterControls = categoryFilter?.parentElement;
 
-  if (!categorySelect || !styleSelect || !inputGroup) return;
+  if (!categorySelect || !styleSelect || !categoryFilter || !styleFilter || !filterControls) return;
 
-  styleSelect.classList.toggle('d-none', !usesStyleResultsFilter());
+  styleFilter.classList.toggle('d-none', !usesStyleResultsFilter());
+  filterControls.classList.toggle('results-filter-controls--single', !usesStyleResultsFilter());
 
   if (resultsFilterState.mode === RESULTS_FILTER_MODE_BY_STYLE_CATEGORY) {
-    inputGroup.insertBefore(styleSelect, categorySelect);
+    filterControls.insertBefore(styleFilter, categoryFilter);
   } else {
-    inputGroup.insertBefore(categorySelect, styleSelect);
+    filterControls.insertBefore(categoryFilter, styleFilter);
   }
 }
 
@@ -961,7 +958,8 @@ function setResultsControlsLoadingState(isLoading) {
   }
 
   if (styleSelect) {
-    const shouldDisableStyle = styleSelect.classList.contains('d-none') || styleSelect.options.length <= 1;
+    const styleFilter = document.getElementById('styleFilter');
+    const shouldDisableStyle = styleFilter?.classList.contains('d-none') || styleSelect.options.length <= 1;
     styleSelect.disabled = isLoading || shouldDisableStyle;
   }
 
@@ -1225,7 +1223,7 @@ async function loadClasifications(filters) {
     renderResults(data);
   } catch (err) {
     console.error('Error loading results:', err);
-    resultsContainer.innerHTML = '<div class="alert alert-danger">Error loading results.</div>';
+    resultsContainer.innerHTML = '<div class="results-empty results-empty-page results-error">Error loading results.</div>';
   } finally {
     setResultsControlsLoadingState(false);
     refreshBtn.innerHTML = originalBtnText;
@@ -1238,175 +1236,151 @@ function renderResults(data) {
   const styles = Array.isArray(data?.styles) ? data.styles : [];
   const hasGeneralClassification = getEvent().catClassification !== 'NO';
   const shouldRenderGeneralBlock = hasGeneralClassification && general.length > 0;
-  const shouldCenterSingleStyle = styles.length === 1 && !shouldRenderGeneralBlock;
+  const blockCount = styles.length + (shouldRenderGeneralBlock ? 1 : 0);
 
   resultsContainer.innerHTML = '';
 
-  if (!general.length && !styles.length) {
+  if (blockCount === 0) {
     resultsContainer.innerHTML = `
-      <div class="alert alert-info text-center">
+      <div class="results-empty results-empty-page">
         ${t('no_results')}
       </div>
     `;
     return;
   }
 
-  const row = document.createElement('div');
-  row.className = 'row g-4 pt-2';
-
-  let colStylesClass = 'col-12';
+  const grid = document.createElement('div');
+  grid.className = `results-grid${blockCount === 1 ? ' results-grid--single' : ''}`;
 
   if (shouldRenderGeneralBlock) {
-    const colGeneral = document.createElement('div');
-    colGeneral.className = 'col-12 col-lg-4';
-    colGeneral.innerHTML = renderGeneralClassification(general);
-    row.appendChild(colGeneral);
-
-    colStylesClass += ' col-lg-8';
+    grid.insertAdjacentHTML('beforeend', renderGeneralClassification(general));
   }
 
-  const colStyles = document.createElement('div');
-  colStyles.className = colStylesClass;
-
-  const stylesRow = document.createElement('div');
-  stylesRow.className = `row g-4${shouldCenterSingleStyle ? ' justify-content-center' : ''}`;
-
   styles.forEach((style) => {
-    const styleCol = document.createElement('div');
-    styleCol.className = 'col-12 col-xl-6 col-xxl-4';
-    styleCol.innerHTML = renderStyleClassification(style);
-    stylesRow.appendChild(styleCol);
+    grid.insertAdjacentHTML('beforeend', renderStyleClassification(style));
   });
 
-  colStyles.appendChild(stylesRow);
-  row.appendChild(colStyles);
-  resultsContainer.appendChild(row);
+  resultsContainer.appendChild(grid);
 }
 
 function renderGeneralClassification(general) {
   if (!general || general.length === 0) {
     return `
-      <div class="list-group shadow-sm border-primary border-2 h-100">
-        <div class="list-group-item active bg-primary fs-5 text-center">${t('general_classification')}</div>
-        <div class="list-group-item text-center text-muted">${t('no_results')}</div>
-      </div>
+      <section class="results-card results-general-card">
+        <header class="results-card-header">
+          <h2 class="results-card-heading"><i class="bi bi-trophy-fill" aria-hidden="true"></i><span>${t('general_classification')}</span></h2>
+        </header>
+        <p class="results-empty">${t('no_results')}</p>
+      </section>
     `;
   }
 
   let html = `
-    <div class="list-group shadow-sm border-primary border-2 h-100">
-      <div class="list-group-item active bg-primary fs-5 text-center">${t('general_classification')}</div>
+    <section class="results-card results-general-card">
+      <header class="results-card-header">
+        <h2 class="results-card-heading"><i class="bi bi-trophy-fill" aria-hidden="true"></i><span>${t('general_classification')}</span></h2>
+      </header>
+      <ol class="results-ranking-list">
   `;
 
   general.forEach((dancer, index) => {
-    const medals = ['🥇', '🥈', '🥉'];
-    const colors = ['warning', 'secondary', 'warning-subtle'];
+    const displayPosition = index < 3 ? index + 1 : dancer.position;
+    const podiumClass = getResultsPodiumClass(index + 1);
     const clubLabel = getDancerClubLabel(dancer);
-
-    if (index < 3) {
-      html += `
-        <div class="row my-2">
-          <div class="col-12${index === 0 ? '' : ' col-6'}">
-            <div class="card border-${colors[index]} shadow text-center">
-              <div class="card-header bg-${colors[index]} text-${index === 2 ? 'dark' : 'white'} fs-4">${medals[index]} ${index + 1}&ordm; ${t('place')}</div>
-              <div class="card-body">
-                <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-                  ${getDancerFlagImgHtml(dancer.dancer_nationality, { width: 24, height: 24 })}
-                  <div class="d-flex align-items-baseline flex-wrap gap-2">
-                    <h3 class="mb-0 dancer-result">${escapeHtml(dancer.dancer_name)}</h3>
-                    ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
-                  </div>
-                </div>
-                <p class="card-text fs-4">
-                  🥇 ${dancer.num_oros || 0} &nbsp;|&nbsp; 🥈 ${dancer.num_platas || 0} &nbsp;|&nbsp; 🥉 ${dancer.num_bronces || 0}
-                </p>
-                <p class="fs-5 text-muted mb-0">
-                  <strong>${t('total_score')}:</strong> ${formatScoreValue(dancer.total_score, { fixedDecimals: 1 })}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-      return;
-    }
-
     html += `
-      <div class="list-group-item d-flex justify-content-between align-items-center fs-6">
-        <span class="me-2">${dancer.position}</span>
-        ${getDancerFlagImgHtml(dancer.dancer_nationality, { className: 'me-2' })}
-        <span class="me-auto d-flex align-items-baseline flex-wrap gap-1 dancer-result">
-          <span>${escapeHtml(dancer.dancer_name)}</span>
-          ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
+      <li class="results-rank-row${podiumClass}">
+        <span class="results-place">${escapeHtml(displayPosition)}</span>
+        <span class="results-person">
+          ${getDancerFlagImgHtml(dancer.dancer_nationality)}
+          <span class="results-person-copy">
+            <span class="results-person-name">${escapeHtml(dancer.dancer_name)}</span>
+            ${clubLabel ? `<span class="results-person-club">${escapeHtml(clubLabel)}</span>` : ''}
+            <span class="results-general-medals">
+              <span>🥇 ${dancer.num_oros || 0}</span>
+              <span>🥈 ${dancer.num_platas || 0}</span>
+              <span>🥉 ${dancer.num_bronces || 0}</span>
+            </span>
+          </span>
         </span>
-        <span class="mx-2 text-muted small">
-          (${t('total_score')}: ${formatScoreValue(dancer.total_score)})
-        </span>
-        <span class="badge bg-light text-dark rounded-pill">
-          🥇 ${dancer.num_oros || 0} | 🥈 ${dancer.num_platas || 0} | 🥉 ${dancer.num_bronces || 0}
-        </span>
-      </div>
+        <span class="results-score results-general-score">${formatScoreValue(dancer.total_score, { fixedDecimals: index < 3 ? 1 : null })}</span>
+      </li>
     `;
   });
 
-  html += '</div>';
+  html += '</ol></section>';
   return html;
 }
 
 function renderStyleClassification(style) {
   if (!style || !style.clasification || style.clasification.length === 0) {
     return `
-      <div class="list-group shadow-sm style-block" data-style-id="${style?.style_id || ''}">
-        <div class="list-group-item active bg-secondary fs-5 text-center">${escapeHtml(style?.style_name || 'Unknown Style')}</div>
-        <div class="list-group-item text-center text-muted">${t('no_results')}</div>
-      </div>
+      <section class="results-card style-block" data-style-id="${style?.style_id || ''}">
+        <header class="results-card-header">
+          <h2 class="results-card-heading"><i class="bi bi-lightning-charge-fill" aria-hidden="true"></i><span>${escapeHtml(style?.style_name || 'Unknown Style')}</span></h2>
+        </header>
+        <p class="results-empty">${t('no_results')}</p>
+      </section>
     `;
   }
 
   const detailsLabel = t('details', 'Details');
 
   let html = `
-    <div class="list-group shadow-sm style-block" data-style-id="${style.style_id}">
-      <div class="list-group-item active bg-secondary fs-5">
-        <div class="d-flex align-items-center gap-2">
-          <span class="btn btn-light btn-sm invisible flex-shrink-0" tabindex="-1" aria-hidden="true">${escapeHtml(detailsLabel)}</span>
-          <span class="flex-grow-1 text-center">${escapeHtml(style.style_name)}</span>
-          <button type="button" class="btn btn-light btn-sm flex-shrink-0 style-details-btn" data-style-id="${style.style_id}">
-            ${escapeHtml(detailsLabel)}
-          </button>
-        </div>
-      </div>
+    <section class="results-card style-block" data-style-id="${style.style_id}">
+      <header class="results-card-header">
+        <h2 class="results-card-heading"><i class="bi bi-lightning-charge-fill" aria-hidden="true"></i><span>${escapeHtml(style.style_name)}</span></h2>
+        <button type="button" class="results-details-btn style-details-btn" data-style-id="${style.style_id}">
+          ${escapeHtml(detailsLabel)} <i class="bi bi-table" aria-hidden="true"></i>
+        </button>
+      </header>
+      <ol class="results-ranking-list">
   `;
 
   const displayPositions = getClassificationDisplayPositions(style.clasification);
   const totalScoreFixedDecimals = getEvent()?.criteriaConfig === 'WITH_POR' ? 2 : 1;
 
   style.clasification.forEach((dancer, index) => {
-    const medals = ['🥇', '🥈', '🥉'];
     const displayPosition = displayPositions[index];
-    const bg = displayPosition === 1 ? 'bg-warning' : displayPosition === 2 ? 'bg-secondary-subtle' : displayPosition === 3 ? 'bg-warning-subtle' : '';
-    const fw = displayPosition <= 3 ? 'fw-bold' : '';
-    const medal = displayPosition >= 1 && displayPosition <= 3 ? medals[displayPosition - 1] : '';
+    const podiumClass = getResultsPodiumClass(displayPosition);
+    const medal = getResultsMedal(displayPosition);
     const clubLabel = getDancerClubLabel(dancer);
 
     html += `
-      <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${bg} fs-6 ${fw} dancer-result" data-dancer-id="${dancer.dancer_id}">
-        <span class="me-2">${displayPosition}</span>
-        ${getDancerFlagImgHtml(dancer.dancer_nationality, { className: 'me-2' })}
-        <span class="me-auto d-flex align-items-baseline flex-wrap gap-1">
-          <span>${escapeHtml(dancer.dancer_name)} ${medal}</span>
-          ${clubLabel ? `<small class="text-muted">${escapeHtml(clubLabel)}</small>` : ''}
-        </span>
-        <span class="badge bg-light text-dark rounded-pill">${formatScoreValue(dancer.total_score, { fixedDecimals: totalScoreFixedDecimals })}</span>
-        ${shouldShowAvgPlaceBadge() ? `
-          <span class="badge bg-info text-dark rounded-pill ms-2">${formatAvgPlace(dancer.avg_place)}</span>
-        ` : ''}
-      </button>
+      <li>
+        <button type="button" class="results-rank-row${podiumClass} dancer-result" data-dancer-id="${dancer.dancer_id}">
+          <span class="results-place">${escapeHtml(displayPosition)}</span>
+          <span class="results-person">
+            ${getDancerFlagImgHtml(dancer.dancer_nationality)}
+            <span class="results-person-copy">
+              <span class="results-person-name">${escapeHtml(dancer.dancer_name)}${medal ? ` <span aria-hidden="true">${medal}</span>` : ''}</span>
+              ${clubLabel ? `<span class="results-person-club">${escapeHtml(clubLabel)}</span>` : ''}
+            </span>
+          </span>
+          <span class="results-row-values">
+            <span class="results-score">${formatScoreValue(dancer.total_score, { fixedDecimals: totalScoreFixedDecimals })}</span>
+            ${shouldShowAvgPlaceBadge() ? `<span class="results-average">${formatAvgPlace(dancer.avg_place)}</span>` : ''}
+            <i class="bi bi-chevron-right results-row-chevron" aria-hidden="true"></i>
+          </span>
+        </button>
+      </li>
     `;
   });
 
-  html += '</div>';
+  html += '</ol></section>';
   return html;
+}
+
+function getResultsPodiumClass(position) {
+  switch (Number(position)) {
+    case 1: return ' results-rank-row--podium results-rank-row--first';
+    case 2: return ' results-rank-row--podium results-rank-row--second';
+    case 3: return ' results-rank-row--podium results-rank-row--third';
+    default: return '';
+  }
+}
+
+function getResultsMedal(position) {
+  return ['🥇', '🥈', '🥉'][Number(position) - 1] || '';
 }
 
 function escapeHtml(str) {

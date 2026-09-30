@@ -59,8 +59,27 @@
 .lm-notice.alert-danger { border-color: #8d434d; color: #ffd5d9; background: #35212b; }
 .lm-notice.alert-success { border-color: #267b6c; color: #d0fff0; background: #17342f; }
 .lm-notice .btn-close { top: 50%; transform: translateY(-50%); filter: invert(1) grayscale(1); opacity: .8; }
+.lm-instagram-section { max-width: 48rem; margin: 0 auto 1.4rem; }
+.lm-instagram-card { display: flex; align-items: center; gap: .45rem; min-width: 0; min-height: 40px; padding: .38rem .55rem; border: 1px solid #713c80; border-radius: var(--lm-radius-lg); color: #f9e9ff; background: #251632; text-decoration: none; white-space: nowrap; transition: border-color .15s ease, background-color .15s ease; }
+.lm-instagram-card:hover { border-color: #bd63ab; color: #fff; background: #2d1a3a; }
+.lm-instagram-icon { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; border-radius: .5rem; color: #fff; background: linear-gradient(135deg, #e77d42, #ce3b99 58%, #743fd6); font-size: .9rem; }
+.lm-instagram-title { min-width: 0; flex: 1 1 auto; font-size: .76rem; font-weight: 600; letter-spacing: -.025em; }
+.lm-instagram-handle { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .25rem; padding: .18rem .36rem; border: 1px solid #745183; border-radius: var(--lm-radius-pill); color: #edd8fa; font-size: .68rem; font-weight: 700; }
 .lm-page :is(button, a):focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 3px; box-shadow: none; }
 
+@media (max-width: 359px) {
+  .lm-instagram-section { margin-inline: -.5rem; }
+  .lm-instagram-card { gap: .2rem; padding-inline: .3rem; }
+  .lm-instagram-icon { width: 20px; height: 20px; flex-basis: 20px; font-size: .78rem; }
+  .lm-instagram-title { font-size: .56rem; letter-spacing: -.035em; }
+  .lm-instagram-handle { gap: .1rem; padding: 0; border: 0; font-size: .55rem; }
+}
+
+@media (min-width: 360px) and (max-width: 430px) {
+  .lm-instagram-title { font-size: clamp(.58rem, 2.5vw, .68rem); }
+  .lm-instagram-handle { padding: .1rem .2rem; font-size: clamp(.58rem, 2.4vw, .66rem); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .lm-btn { transition: none; }
+  .lm-btn, .lm-instagram-card { transition: none; }
 }

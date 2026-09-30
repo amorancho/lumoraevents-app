@@ -1,12 +1,6 @@
 .schedule-page { background: var(--lm-bg); color: var(--lm-text); }
 .schedule-page > .lm-page { flex: 1 0 auto; }
 .schedule-content { padding-block: 1.35rem 3rem; }
-.schedule-instagram-section { max-width: 48rem; margin: 0 auto 1.4rem; }
-.schedule-instagram-card { display: flex; align-items: center; gap: .45rem; min-width: 0; min-height: 40px; padding: .38rem .55rem; border: 1px solid #713c80; border-radius: var(--lm-radius-lg); color: #f9e9ff; background: #251632; text-decoration: none; white-space: nowrap; transition: border-color .15s ease, background-color .15s ease; }
-.schedule-instagram-card:hover { border-color: #bd63ab; color: #fff; background: #2d1a3a; }
-.schedule-instagram-icon { display: grid; width: 24px; height: 24px; flex: 0 0 24px; place-items: center; border-radius: .5rem; color: #fff; background: linear-gradient(135deg, #e77d42, #ce3b99 58%, #743fd6); font-size: .9rem; }
-.schedule-instagram-title { min-width: 0; flex: 1 1 auto; font-size: .76rem; font-weight: 600; letter-spacing: -.025em; }
-.schedule-instagram-handle { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .25rem; padding: .18rem .36rem; border: 1px solid #745183; border-radius: var(--lm-radius-pill); color: #edd8fa; font-size: .68rem; font-weight: 700; }
 .schedule-refresh-default { margin-bottom: 1rem; text-align: center; }
 .schedule-refresh-default[hidden], #refreshScheduleBtn[hidden] { display: none; }
 .schedule-loading { display: flex; justify-content: center; padding: 3rem; color: var(--lm-cyan); }
@@ -95,20 +89,10 @@
 
 @media (max-width: 359px) {
   .schedule-content { padding-inline: 0; }
-  .schedule-instagram-section { margin-inline: -.5rem; }
-  .schedule-instagram-card { gap: .2rem; padding-inline: .3rem; }
-  .schedule-instagram-icon { width: 20px; height: 20px; flex-basis: 20px; font-size: .78rem; }
-  .schedule-instagram-title { font-size: .56rem; letter-spacing: -.035em; }
-  .schedule-instagram-handle { gap: .1rem; padding: 0; border: 0; font-size: .55rem; }
   .schedule-count { gap: .3rem; font-size: .72rem; }
   .schedule-item-summary .lm-status { gap: .25rem; padding: .3rem .4rem; font-size: .7rem; }
   .schedule-participant-row { gap: .4rem; }
   .schedule-participant-status .lm-status { font-size: .61rem; }
-}
-
-@media (min-width: 360px) and (max-width: 430px) {
-  .schedule-instagram-title { font-size: clamp(.58rem, 2.5vw, .68rem); }
-  .schedule-instagram-handle { padding: .1rem .2rem; font-size: clamp(.58rem, 2.4vw, .66rem); }
 }
 
 @media (max-width: 430px) {
@@ -123,7 +107,7 @@
 
 @media (min-width: 768px) {
   .schedule-content { padding-block: 2rem 4rem; }
-  .schedule-instagram-section { margin-bottom: 1.8rem; }
+  .lm-instagram-section { margin-bottom: 1.8rem; }
   .schedule-days { margin-bottom: 1rem; }
   .schedule-days--two { grid-template-columns: repeat(2, minmax(0, 180px)); justify-content: center; gap: .8rem; }
   .schedule-days--scroll { justify-content: center; flex-wrap: wrap; overflow: visible; gap: .8rem; }
@@ -153,5 +137,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   .schedule-live-dot { animation: none; }
-  .schedule-participants-chevron, .schedule-instagram-card { transition: none; }
+  .schedule-participants-chevron { transition: none; }
 }
