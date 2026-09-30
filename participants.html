@@ -7,270 +7,125 @@
   <title data-i18n="title">Participants</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <style>
-    .schedule-instagram-section {
-      max-width: 46rem;
-      margin: 0 auto 1rem;
-    }
-
-    .schedule-instagram-card {
-      position: relative;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.68rem 0.95rem;
-      border-radius: 1.1rem;
-      text-decoration: none;
-      color: inherit;
-      background: linear-gradient(135deg, rgba(131, 58, 180, 0.09), rgba(253, 29, 29, 0.04) 45%, rgba(252, 176, 69, 0.1));
-      border: 1px solid rgba(131, 58, 180, 0.12);
-      box-shadow: 0 0.8rem 1.8rem rgba(15, 23, 42, 0.04);
-      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-    }
-
-    .schedule-instagram-card:hover,
-    .schedule-instagram-card:focus {
-      color: inherit;
-      transform: translateY(-1px);
-      border-color: rgba(131, 58, 180, 0.18);
-      box-shadow: 0 1rem 2.1rem rgba(15, 23, 42, 0.08);
-    }
-
-    .schedule-instagram-main {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.7rem;
-      transform: translateX(-0.18rem);
-    }
-
-    .schedule-instagram-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 1.8rem;
-      height: 1.8rem;
-      border-radius: 0.62rem;
-      background: linear-gradient(135deg, #f58529, #dd2a7b 58%, #8134af);
-      color: #ffffff;
-      font-size: 0.82rem;
-      flex-shrink: 0;
-      box-shadow: 0 0.7rem 1.5rem rgba(221, 42, 123, 0.18);
-    }
-
-    .schedule-instagram-copy {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.3rem 0.5rem;
-      min-width: 0;
-    }
-
-    .schedule-instagram-title {
-      color: #6f214d;
-      font-size: 0.8rem;
-      font-weight: 600;
-      line-height: 1.2;
-      text-align: center;
-    }
-
-    .schedule-instagram-handle {
-      display: inline-flex;
-      align-items: center;
-      width: fit-content;
-      padding: 0.2rem 0.52rem;
-      border-radius: 999px;
-      border: 1px solid rgba(129, 52, 175, 0.1);
-      background: rgba(255, 255, 255, 0.72);
-      color: #7e2b60;
-      font-size: 0.7rem;
-      font-weight: 700;
-      letter-spacing: 0.01em;
-    }
-
-    @media (max-width: 576px) {
-      .schedule-instagram-main {
-        flex-wrap: nowrap;
-        gap: 0.55rem;
-        transform: translateX(-0.24rem);
-      }
-
-      .schedule-instagram-card {
-        padding: 0.62rem 0.74rem;
-      }
-
-      .schedule-instagram-icon {
-        width: 1.65rem;
-        height: 1.65rem;
-        font-size: 0.76rem;
-      }
-
-      .schedule-instagram-copy {
-        flex-wrap: nowrap;
-        gap: 0.24rem 0.36rem;
-      }
-
-      .schedule-instagram-title {
-        font-size: 0.73rem;
-        white-space: nowrap;
-      }
-
-      .schedule-instagram-handle {
-        padding: 0.18rem 0.45rem;
-        font-size: 0.64rem;
-        white-space: nowrap;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20260930-1">
+  <link rel="stylesheet" href="css/participants.css?v=20260930-1">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
 
-<body class="d-flex flex-column min-vh-100">
-    
+<body class="d-flex flex-column min-vh-100 participants-page">
   <div id="header"></div>
 
-  <div class="container py-4">
+  <main class="lm-page">
+    <div class="lm-container participants-content">
+      <div class="lm-instagram-section">
+        <a class="lm-instagram-card" href="https://www.instagram.com/lumoraevents.app/" target="_blank" rel="noopener noreferrer" aria-label="Instagram lumoraevents.app">
+          <span class="lm-instagram-icon" aria-hidden="true"><i class="bi bi-instagram"></i></span>
+          <span class="lm-instagram-title" data-i18n="instagram_follow_message">Síguenos para no perderte nada</span>
+          <span class="lm-instagram-handle">@lumoraevents.app <i class="bi bi-arrow-up-right" aria-hidden="true"></i></span>
+        </a>
+      </div>
 
-    <div class="schedule-instagram-section">
-      <a class="schedule-instagram-card" href="https://www.instagram.com/lumoraevents.app/" target="_blank" rel="noopener noreferrer" aria-label="Instagram lumoraevents.app">
-        <span class="schedule-instagram-main">
-          <span class="schedule-instagram-icon" aria-hidden="true">
-            <i class="bi bi-instagram"></i>
-          </span>
-          <span class="schedule-instagram-copy">
-            <span class="schedule-instagram-title" data-i18n="instagram_follow_message">Síguenos para no perderte nada</span>
-            <span class="schedule-instagram-handle">@lumoraevents.app</span>
-          </span>
-        </span>
-      </a>
+      <div id="noticePanel" class="participants-notice" style="display: none;">
+        <div class="alert alert-dismissible fade show lm-notice" role="alert" id="notice_type">
+          <div id="notice_text"></div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <section id="participantsSummary" class="participants-summary">
+        <article id="statsColCat" class="participants-stat">
+          <i class="bi bi-grid-fill participants-stat-icon" aria-hidden="true"></i>
+          <strong class="participants-stat-value" id="numCat"></strong>
+          <span class="participants-stat-label" data-i18n="categories">Categories</span>
+        </article>
+        <article id="statsColSty" class="participants-stat">
+          <i class="bi bi-lightning-charge-fill participants-stat-icon" aria-hidden="true"></i>
+          <strong class="participants-stat-value" id="numSty"></strong>
+          <span class="participants-stat-label" data-i18n="styles">Styles</span>
+        </article>
+        <article id="statsColPar" class="participants-stat">
+          <i class="bi bi-people-fill participants-stat-icon" aria-hidden="true"></i>
+          <strong class="participants-stat-value" id="numPar"></strong>
+          <span class="participants-stat-label" data-i18n="participants">Participants</span>
+        </article>
+        <article id="statsColNat" class="participants-stat">
+          <i class="bi bi-globe2 participants-stat-icon" aria-hidden="true"></i>
+          <strong class="participants-stat-value" id="numNat"></strong>
+          <span class="participants-stat-label" data-i18n="nationalities">Nationalities</span>
+        </article>
+      </section>
+
+      <section id="natDistributionSection" class="participants-nationalities">
+        <div class="participants-section-label">
+          <i class="bi bi-globe2" aria-hidden="true"></i>
+          <span data-i18n="nationalities">Nationalities</span>
+        </div>
+        <div id="parByNat" class="participants-nationality-list"></div>
+      </section>
+
+      <form id="participantsSearchForm" class="participants-search" role="search">
+        <div class="participants-search-field">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <label class="visually-hidden" for="buscador" data-i18n="search">Search</label>
+          <input type="search" id="buscador" class="form-control" placeholder="Search for participant by first or last name" data-i18n-placeholder="search_placeholder">
+        </div>
+        <button type="submit" class="lm-btn participants-search-btn" data-i18n="search">Search</button>
+        <button type="button" id="clearSearchBtn" class="lm-btn lm-btn-secondary participants-clear-btn" data-i18n="clear">Clear</button>
+      </form>
+
+      <div id="participantsContainer" class="participants-categories" aria-live="polite"></div>
     </div>
+  </main>
 
-    <div id="noticePanel" class="mb-4" style="display: none;">
-      <div class="alert d-flex flex-column text-center alert-dismissible fade show" role="alert" id="notice_type">       
-        <div id="notice_text">
-          
-        </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    </div>
-  
-    <section class="row justify-content-center text-center mb-2">
-      <div id="statsColCat" class="col-md-2 col-12 mb-2">
-        <div class="bg-white border border-secondary p-2 shadow-sm rounded">
-          <h5 class="text-primary mb-1" id="numCat"></h5>
-          <p class="mb-0 small" data-i18n="categories">Categories</p>
-        </div>
-      </div>
-      <div id="statsColSty" class="col-md-2 col-12 mb-2">
-        <div class="bg-white border border-secondary p-2 shadow-sm rounded">
-          <h5 class="text-primary mb-1" id="numSty"></h5>
-          <p class="mb-0 small" data-i18n="styles">Styles</p>
-        </div>
-      </div>
-      <div id="statsColPar" class="col-md-2 col-12 mb-2">
-        <div class="bg-white border border-secondary p-2 shadow-sm rounded">
-          <h5 class="text-primary mb-1" id="numPar"></h5>
-          <p class="mb-0 small" data-i18n="participants">Participants</p>
-        </div>
-      </div>
-      <div id="statsColNat" class="col-md-2 col-12 mb-2">
-        <div class="bg-white border border-secondary p-2 shadow-sm rounded">
-          <h5 class="text-primary mb-1" id="numNat"></h5>
-          <p class="mb-0 small" data-i18n="nationalities">Nationalities</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="natDistributionSection" class="row justify-content-center text-center mb-4">
-      <!-- Total de nacionalidades (mismo ancho que numCategories) -->
-      
-
-      <!-- Banderas con número: ahora col-md-4 para que la fila ocupe 6 columnas en total (2 + 4) -->
-      <div class="col-md-8 col-12 mb-2">
-        <div class="bg-white border border-secondary p-3 shadow-sm rounded">
-          <div id="parByNat" class="d-flex flex-wrap justify-content-center align-items-center gap-2 small text-secondary"></div>
-        </div>
-      </div>
-    </section>
-
-    <div class="row justify-content-center mb-5">
-      <div class="col-md-8">
-        <div class="row g-2 align-items-center">
-          <div class="col-md-8">
-            <input type="text" id="buscador" class="form-control" placeholder="Search for participant by first or last name" data-i18n-placeholder="search_placeholder">
-          </div>
-          <div class="col-md-2">
-            <button class="btn btn-primary w-100" onclick="filtrarCategorias()" data-i18n="search">Search</button>
-          </div>
-          <div class="col-md-2">
-            <button class="btn btn-secondary w-100" onclick="resetearBuscador()" data-i18n="clear">Clear</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="participantsContainer"></div>
-
-  </div>
-
-  <div class="modal fade" id="styleDancersModal" tabindex="-1" aria-labelledby="styleDancersModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-md">
+  <div class="modal fade participants-modal" id="styleDancersModal" tabindex="-1" aria-labelledby="styleDancersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="styleDancersModalLabel" data-i18n="dancer_styles">Bailarinas del estilo</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <!-- Insertar la hora estimada de inicio -->
-          <div class="text-center mb-3">
-            <small class="text-muted">
-              <span data-i18n="stimated_start">Estimated Start: </span><span id="estimatedStart" class="fw-semibold"></span>
-            </small>
-          </div>
-          <ul id="styleDancersList" class="list-group">
-            <!-- Se insertarán aquí las bailarinas -->
-          </ul>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="styleScheduleModal" tabindex="-1" aria-labelledby="styleScheduleLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-md">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="styleScheduleLabel">Styles Schedule - Category XYZ</h5>
+          <h2 class="modal-title fs-5" id="styleDancersModalLabel" data-i18n="dancer_styles">Participants in this style</h2>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <!-- Tabla de estilos -->
-          <div class="table-responsive">
-            <table class="table table-striped">
+          <div class="participants-estimated-time">
+            <i class="bi bi-clock" aria-hidden="true"></i>
+            <span data-i18n="stimated_start">Estimated Start: </span>
+            <strong id="estimatedStart"></strong>
+          </div>
+          <ol id="styleDancersList" class="participants-modal-list"></ol>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade participants-modal" id="styleScheduleModal" tabindex="-1" aria-labelledby="styleScheduleLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title fs-5" id="styleScheduleLabel">Styles Schedule</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive participants-modal-table-wrap">
+            <table class="table participants-modal-table">
               <thead>
                 <tr>
                   <th data-i18n="col_style">Style</th>
                   <th data-i18n="col_start">Estimated Start Time</th>
                 </tr>
               </thead>
-              <tbody>
-                <!-- Aquí se generarán filas dinámicamente -->
-              </tbody>
+              <tbody></tbody>
             </table>
           </div>
         </div>
-        <div class="modal-footer justify-content-center">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+        <div class="modal-footer">
+          <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
         </div>
       </div>
     </div>
   </div>
 
-    
   <div id="footer"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -279,7 +134,6 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
-  <script src="js/participants.js?v=20260917"></script>
-
+  <script src="js/participants.js?v=20260930-1"></script>
 </body>
 </html>

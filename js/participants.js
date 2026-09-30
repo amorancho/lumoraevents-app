@@ -28,19 +28,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   applyParticipantsSummaryLayout();
+  bindParticipantsSearch();
   loadParticipants(); 
 });
 
 function applyParticipantsSummaryLayout() {
   const showFlags = shouldShowDancerFlags();
-  const statCols = ['statsColCat', 'statsColSty', 'statsColPar'];
-
-  statCols.forEach((colId) => {
-    const colEl = document.getElementById(colId);
-    if (!colEl) return;
-    colEl.classList.remove('col-md-2', 'col-md-4');
-    colEl.classList.add(showFlags ? 'col-md-2' : 'col-md-4');
-  });
+  const summary = document.getElementById('participantsSummary');
+  summary?.classList.toggle('participants-summary--three', !showFlags);
 
   const natCol = document.getElementById('statsColNat');
   if (natCol) {
@@ -51,6 +46,18 @@ function applyParticipantsSummaryLayout() {
   if (natDistributionSection) {
     natDistributionSection.classList.toggle('d-none', !showFlags);
   }
+}
+
+function bindParticipantsSearch() {
+  const searchForm = document.getElementById('participantsSearchForm');
+  const clearButton = document.getElementById('clearSearchBtn');
+
+  searchForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    filtrarCategorias();
+  });
+
+  clearButton?.addEventListener('click', resetearBuscador);
 }
 
 function getParticipantClubLabel(participant) {
@@ -72,7 +79,7 @@ async function loadParticipants() {
     window.participantsData = data;
   } catch (err) {
     console.error('Error fetching participants:', err);
-    participantsContainer.innerHTML = '<p class="text-danger">Error loading participants.</p>';
+    participantsContainer.innerHTML = '<p class="participants-error">Error loading participants.</p>';
     return;
   }  
 
@@ -121,11 +128,10 @@ function renderData(data) {
   .sort((a, b) => b[1] - a[1])
   .forEach(([nat, count]) => {
     const div = document.createElement('div');
-    div.className = 'd-flex align-items-center';
+    div.className = 'participants-nationality';
 
     if (showFlags) {
       const img = document.createElement('img');
-      img.className = 'me-1';
       img.src = getDancerFlagUrl(nat, 24);
       img.alt = nat;
       img.width = 24;
@@ -153,25 +159,51 @@ function renderData(data) {
 
 function createCategoryItem(category, categoryData, index) {
   const accordion = document.createElement('div');
-  accordion.className = 'accordion mb-4';
+  accordion.className = 'accordion participants-category';
   accordion.id = 'accordion-' + index;
 
   const item = document.createElement('div');
   item.className = 'accordion-item';
-  item.dataset.nombres = categoryData.participants.map(p => p.name).join(', ');
+  item.dataset.nombres = categoryData.participants.map((participant) => participant.name || '').join(', ');
 
   const header = document.createElement('h2');
   header.className = 'accordion-header';
   header.id = `heading-${index}`;
 
   const button = document.createElement('button');
-  button.className = 'accordion-button collapsed';
+  button.className = 'accordion-button collapsed participants-category-toggle';
   button.type = 'button';
   button.setAttribute('data-bs-toggle', 'collapse');
   button.setAttribute('data-bs-target', `#collapse-${index}`);
   button.setAttribute('aria-expanded', 'false');
   button.setAttribute('aria-controls', `collapse-${index}`);
-  button.textContent = category;
+
+  const categoryTitle = document.createElement('span');
+  categoryTitle.className = 'participants-category-title';
+
+  const categoryIcon = document.createElement('i');
+  categoryIcon.className = 'bi bi-people-fill';
+  categoryIcon.setAttribute('aria-hidden', 'true');
+
+  const categoryName = document.createElement('span');
+  categoryName.className = 'participants-category-name';
+  categoryName.textContent = category;
+
+  const categorySummary = document.createElement('span');
+  categorySummary.className = 'participants-category-summary';
+
+  const participantCount = document.createElement('span');
+  participantCount.className = 'participants-category-count';
+  participantCount.textContent = categoryData.participants.length;
+  participantCount.setAttribute('aria-label', `${t('total_participants')}: ${categoryData.participants.length}`);
+
+  const categoryChevron = document.createElement('i');
+  categoryChevron.className = 'bi bi-chevron-down participants-category-chevron';
+  categoryChevron.setAttribute('aria-hidden', 'true');
+
+  categoryTitle.append(categoryIcon, categoryName);
+  categorySummary.append(participantCount, categoryChevron);
+  button.append(categoryTitle, categorySummary);
 
   header.appendChild(button);
 
@@ -183,31 +215,21 @@ function createCategoryItem(category, categoryData, index) {
   const body = document.createElement('div');
   body.className = 'accordion-body';
 
-  const title = document.createElement('h4'); 
-  const titleText = document.createElement('span'); 
-  titleText.className = 'badge bg-warning'; 
-  titleText.textContent = `${t('total_participants')}: ${categoryData.participants.length}`; 
-  title.appendChild(titleText);
-
   const controlsDiv = document.createElement('div');
-  // flex-column en móvil, fila en pantallas medianas o mayores
-  controlsDiv.className = 'd-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-3 gap-2';
+  controlsDiv.className = 'participants-category-controls';
 
-  // Botón "Style Schedule"
   const btnSchedule = document.createElement('button');
   btnSchedule.type = 'button';
-  btnSchedule.className = 'btn btn-primary';
-  btnSchedule.innerHTML = `<i class="bi bi-calendar-week me-2"></i>${t('style_schedule')}`;
+  btnSchedule.className = 'lm-btn participants-schedule-btn';
+  btnSchedule.innerHTML = `<i class="bi bi-calendar-week" aria-hidden="true"></i><span>${t('style_schedule')}</span>`;
   controlsDiv.appendChild(btnSchedule);
 
   btnSchedule.addEventListener('click', () => {
-    // Título del modal
     const modalTitle = document.getElementById('styleScheduleLabel');
     modalTitle.textContent = `${t('style_schedule')} - ${category}`;
 
-    // Cuerpo del modal: tabla
     const tbodyModal = document.querySelector('#styleScheduleModal tbody');
-    tbodyModal.innerHTML = ''; // limpiar filas previas
+    tbodyModal.innerHTML = '';
 
     categoryData.styles.forEach(style => {
       const tr = document.createElement('tr');
@@ -217,70 +239,74 @@ function createCategoryItem(category, categoryData, index) {
       tr.appendChild(tdStyle);
 
       const tdStart = document.createElement('td');
-      if (style.start && style.start.toLowerCase() !== 'null') {
-        tdStart.innerHTML = `<i class="bi bi-clock me-1"></i>${style.start}`;
+      if (style.start && String(style.start).toLowerCase() !== 'null') {
+        const clockIcon = document.createElement('i');
+        clockIcon.className = 'bi bi-clock';
+        clockIcon.setAttribute('aria-hidden', 'true');
+        tdStart.append(clockIcon, document.createTextNode(style.start));
       } else {
-        tdStart.innerHTML = `<span class="text-muted">${t('not_defined')}</span>`; // Aquí el texto si no hay hora
+        const notDefined = document.createElement('span');
+        notDefined.className = 'text-muted';
+        notDefined.textContent = t('not_defined');
+        tdStart.appendChild(notDefined);
       }
       tr.appendChild(tdStart);
 
       tbodyModal.appendChild(tr);
     });
 
-    // Abrir el modal con Bootstrap 5
-    const modal = new bootstrap.Modal(document.getElementById('styleScheduleModal'));
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('styleScheduleModal'));
     modal.show();
   });
 
-
-  // Leyenda con icono y texto explicativo
   const legend = document.createElement('small');
-  legend.className = 'text-muted';
-  legend.innerHTML = `<i class="bi bi-list-ol text-primary me-1 legend-icon"></i>${t('icon_legend')}`;
+  legend.className = 'participants-category-legend';
+  legend.innerHTML = `<i class="bi bi-list-ol" aria-hidden="true"></i><span>${t('icon_legend')}</span>`;
   controlsDiv.appendChild(legend);
 
   const tableDiv = document.createElement('div');
-  tableDiv.className = 'table-responsive';
+  tableDiv.className = 'table-responsive participants-table-wrap';
 
   const table = document.createElement('table');
-  table.className = 'table table-bordered table-hover';
+  table.className = 'table participants-table';
   const thead = document.createElement('thead');
-  thead.className = 'table-light text-primary';
   const headerRow = document.createElement('tr');
 
   const thParticipant = document.createElement('th');
-  thParticipant.className = 'text-center';
   thParticipant.textContent = t('participant');
   headerRow.appendChild(thParticipant);
 
   categoryData.styles.forEach(style => {
     const th = document.createElement('th');
-    th.className = 'text-center';
 
-    // Nombre del estilo
+    const styleHeader = document.createElement('div');
+    styleHeader.className = 'participants-style-header';
+
     const spanName = document.createElement('span');
+    spanName.className = 'participants-style-name';
     spanName.textContent = style.name;
-    th.appendChild(spanName);
+    styleHeader.appendChild(spanName);
 
     if (style.competition_id) {
-        // Icono clickable para mostrar bailarinas
-        const icon = document.createElement('i');
-        icon.className = 'bi bi-list-ol ms-2 text-primary';
-        icon.style.cursor = 'pointer';
-        icon.title = t('participants_by_style');
-        icon.dataset.compId = style.competition_id; // Se usará en el fetch
-        icon.dataset.start = style.start;
-        icon.dataset.categoryName = category;
-        icon.dataset.styleName = style.name;
-        th.appendChild(icon);
+      const orderButton = document.createElement('button');
+      orderButton.type = 'button';
+      orderButton.className = 'participants-style-order-btn';
+      orderButton.title = t('participants_by_style');
+      orderButton.setAttribute('aria-label', `${t('participants_by_style')}: ${style.name}`);
+      orderButton.dataset.compId = style.competition_id;
+      orderButton.dataset.start = style.start ?? '';
+      orderButton.dataset.categoryName = category;
+      orderButton.dataset.styleName = style.name;
+      orderButton.innerHTML = '<i class="bi bi-list-ol" aria-hidden="true"></i>';
+      styleHeader.appendChild(orderButton);
     } else {
-        // Badge rojo "No Competition"
-        const badge = document.createElement('span');
-        badge.className = 'badge bg-danger d-block mt-1';
-        badge.textContent = t('no_competition');
-        th.appendChild(badge);
+      const badge = document.createElement('span');
+      badge.className = 'participants-no-competition';
+      badge.textContent = t('no_competition');
+      th.appendChild(badge);
     }
 
+    th.insertBefore(styleHeader, th.firstChild);
     headerRow.appendChild(th);
   });
 
@@ -288,42 +314,41 @@ function createCategoryItem(category, categoryData, index) {
   table.appendChild(thead);
 
   const tbody = document.createElement('tbody');
-  tbody.className = 'text-success fw-bold';
 
   categoryData.participants.forEach(participant => {
     const row = document.createElement('tr');
 
-    // Celda participante con bandera, nombre, club y badge
     const tdParticipant = document.createElement('td');
-    tdParticipant.className = 'ps-3';
+    tdParticipant.className = 'participants-table-participant';
 
     const participantContent = document.createElement('div');
-    participantContent.className = 'd-flex align-items-start w-100 gap-2';
+    participantContent.className = 'participants-person';
 
     if (shouldShowDancerFlags()) {
       const imgCountry = document.createElement('img');
-      imgCountry.className = 'mt-1 flex-shrink-0';
+      imgCountry.className = 'participants-person-flag';
       imgCountry.src = getDancerFlagUrl(participant.nationality, 24);
+      imgCountry.alt = String(participant.nationality || 'N/A');
       imgCountry.width = 24;
       imgCountry.height = 24;
       participantContent.appendChild(imgCountry);
     }
 
     const textBlock = document.createElement('div');
-    textBlock.className = 'd-flex flex-column flex-grow-1 w-100';
-    textBlock.style.minWidth = '0';
+    textBlock.className = 'participants-person-copy';
 
     const topRow = document.createElement('div');
-    topRow.className = 'd-flex align-items-center justify-content-between gap-2 w-100';
+    topRow.className = 'participants-person-main';
 
     const spanDancer = document.createElement('span');
+    spanDancer.className = 'participants-person-name';
     spanDancer.textContent = participant.name;
     const clubLabel = getParticipantClubLabel(participant);
 
     topRow.appendChild(spanDancer);
 
     const badge = document.createElement('span');
-    badge.className = 'badge bg-info ms-2 flex-shrink-0';
+    badge.className = 'participants-style-count';
     badge.textContent = `${participant.styles.length} ${t('styles')}`;
     topRow.appendChild(badge);
 
@@ -331,7 +356,7 @@ function createCategoryItem(category, categoryData, index) {
 
     if (clubLabel) {
       const spanClub = document.createElement('small');
-      spanClub.className = 'text-muted';
+      spanClub.className = 'participants-person-club';
       spanClub.textContent = clubLabel;
       textBlock.appendChild(spanClub);
     }
@@ -342,15 +367,14 @@ function createCategoryItem(category, categoryData, index) {
 
     row.appendChild(tdParticipant);
 
-    // Columnas de estilos
     categoryData.styles.forEach(style => {
-        const td = document.createElement('td');
-        td.className = 'text-center align-middle';
-        const spanTd = document.createElement('span');
-        spanTd.className = 'text-success';
-        spanTd.textContent = participant.styles.some(s => s.id === style.id) ? '✓' : '';
-        td.appendChild(spanTd);
-        row.appendChild(td);
+      const td = document.createElement('td');
+      td.className = 'participants-style-cell';
+      const spanTd = document.createElement('span');
+      spanTd.className = 'participants-style-check';
+      spanTd.textContent = participant.styles.some(s => s.id === style.id) ? '✓' : '';
+      td.appendChild(spanTd);
+      row.appendChild(td);
     });
 
     tbody.appendChild(row);
@@ -360,9 +384,7 @@ function createCategoryItem(category, categoryData, index) {
   table.appendChild(tbody);
   tableDiv.appendChild(table);
 
-  body.appendChild(title);
   body.appendChild(controlsDiv);
-  //body.appendChild(headerLine);
   body.appendChild(tableDiv);
   collapse.appendChild(body);
 
@@ -384,15 +406,22 @@ function filtrarCategorias() {
 
     if (texto === "") {
       item.style.display = '';
-      collapse.classList.remove('show');
+      setParticipantCategoryExpanded(item, collapse, false);
     } else if (nombres.includes(texto)) {
       item.style.display = '';
-      collapse.classList.add('show');
+      setParticipantCategoryExpanded(item, collapse, true);
     } else {
       item.style.display = 'none';
-      collapse.classList.remove('show');
+      setParticipantCategoryExpanded(item, collapse, false);
     }
   });
+}
+
+function setParticipantCategoryExpanded(item, collapse, expanded) {
+  const toggle = item.querySelector('.participants-category-toggle');
+  collapse.classList.toggle('show', expanded);
+  toggle?.classList.toggle('collapsed', !expanded);
+  toggle?.setAttribute('aria-expanded', String(expanded));
 }
 
 function resetearBuscador() {
@@ -402,19 +431,14 @@ function resetearBuscador() {
   filtrarCategorias();
 }
 
-// Permitir buscar al pulsar Enter
-document.getElementById('buscador').addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') filtrarCategorias();
-});
-
 document.addEventListener('click', async (event) => {
-  const icon = event.target.closest('.bi-list-ol');
-  if (!icon || icon.classList.contains('legend-icon')) return;
+  const orderButton = event.target.closest('.participants-style-order-btn');
+  if (!orderButton) return;
 
-  const compId = icon.dataset.compId;
-  const categoryName = icon.dataset.categoryName;
-  const styleName = icon.dataset.styleName;
-  const startTime = icon.dataset.start;
+  const compId = orderButton.dataset.compId;
+  const categoryName = orderButton.dataset.categoryName;
+  const styleName = orderButton.dataset.styleName;
+  const startTime = orderButton.dataset.start;
   const eventId = getEvent().id; // tu función existente
 
   const modalTitle = document.getElementById('styleDancersModalLabel');
@@ -438,11 +462,11 @@ document.addEventListener('click', async (event) => {
 
     dancers.forEach(dancer => {
       const li = document.createElement('li');
-      li.className = 'list-group-item d-flex align-items-center';
+      li.className = 'participants-modal-person';
       li.innerHTML = `        
-        <span class="badge bg-info me-2 ">#${dancer.position}</span>
-        ${getDancerFlagImgHtml(dancer.nationality, { className: 'me-2', style: 'width: 24px;' })}
-        <span class="dancer-name">${dancer.name || dancer.dancer_name}</span>
+        <span class="participants-modal-position">#${escapeHtml(dancer.position)}</span>
+        ${getDancerFlagImgHtml(dancer.nationality, { className: 'participants-modal-flag', width: 22, height: 22 })}
+        <span class="participants-modal-name">${escapeHtml(dancer.name || dancer.dancer_name || '')}</span>
       `;
       list.appendChild(li);
     });
@@ -453,8 +477,18 @@ document.addEventListener('click', async (event) => {
 
   } catch (err) {
     console.error('Error loading dancers:', err);
-    list.innerHTML = '<li class="list-group-item text-danger">Error loading dancers</li>';
+    list.innerHTML = '<li class="participants-modal-error">Error loading dancers</li>';
   }
 });
+
+function escapeHtml(value) {
+  if (value == null) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 
