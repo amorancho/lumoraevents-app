@@ -1,6 +1,6 @@
 .results-page { color: var(--lm-text); background: var(--lm-bg); }
 .results-page > .lm-page { flex: 1 0 auto; }
-.results-content { max-width: 1080px; padding-block: 1.35rem 3rem; }
+.results-content { width: calc(100% - 2rem); max-width: none; padding-block: 1.35rem 3rem; }
 .results-notice { margin-bottom: 1rem; }
 
 .results-filter-panel { margin-bottom: 1rem; }

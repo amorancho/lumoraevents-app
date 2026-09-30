@@ -1,6 +1,6 @@
 .participants-page { color: var(--lm-text); background: var(--lm-bg); }
 .participants-page > .lm-page { flex: 1 0 auto; }
-.participants-content { max-width: 1080px; padding-block: 1.35rem 3rem; }
+.participants-content { width: calc(100% - 2rem); max-width: none; padding-block: 1.35rem 3rem; }
 .participants-notice { margin-bottom: 1rem; }
 
 .participants-summary { display: grid; grid-template-columns: minmax(0, 1fr); gap: .65rem; margin-bottom: .8rem; }
@@ -22,8 +22,7 @@
 .participants-search-field .form-control { min-height: 48px; padding: .65rem .85rem .65rem 2.55rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); color: var(--lm-text); background: var(--lm-surface); box-shadow: var(--lm-shadow-sm); }
 .participants-search-field .form-control::placeholder { color: var(--lm-text-soft); opacity: 1; }
 .participants-search-field .form-control:focus { border-color: var(--lm-cyan); color: var(--lm-text); background: var(--lm-surface-raised); box-shadow: 0 0 0 .2rem rgba(38, 215, 232, .12); }
-.participants-search-btn { border-color: #277cad; color: #061725; background: var(--lm-blue); }
-.participants-search-btn:hover { border-color: var(--lm-cyan); color: #04121d; background: #83c8ff; }
+.participants-clear-btn { color: var(--lm-text-muted); background: transparent; }
 
 .participants-categories { display: grid; min-width: 0; gap: .8rem; }
 .participants-error { margin: 0; padding: 1.5rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); color: var(--lm-text-muted); background: var(--lm-surface); text-align: center; }
@@ -130,6 +129,10 @@
   .participants-stat { min-height: 88px; }
   .participants-search { max-width: 800px; margin-right: auto; margin-left: auto; }
   .participants-category .accordion-body { padding: 1rem; }
+}
+
+@media (min-width: 992px) {
+  .participants-summary, .participants-nationalities, .participants-categories { width: 83.333333%; margin-right: auto; margin-left: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
