@@ -5,203 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="favicon32.png" type="image/png">
   <title>Cookies - LumoraEvents</title>
-  <style>
-    :root {
-      color-scheme: light;
-      --bg: #f4f6fb;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --border: #d9e0ea;
-      --accent: #1d4ed8;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(180deg, #eef3ff 0%, var(--bg) 100%);
-      color: var(--text);
-    }
-
-    .page {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 48px 20px 64px;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08);
-      overflow: hidden;
-    }
-
-    /* ---------- HEADER ---------- */
-
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 20px 28px;
-      border-bottom: 1px solid var(--border);
-      background: #ffffff;
-    }
-
-    .logo {
-      height: 40px;
-    }
-
-    .brand {
-      font-weight: 600;
-      font-size: 1.1rem;
-      color: #111827;
-    }
-
-    .sub {
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-
-    /* ---------- CONTENT ---------- */
-
-    .content {
-      padding: 32px;
-    }
-
-    .status {
-      color: var(--muted);
-      font-size: 0.95rem;
-    }
-
-    #legalContent {
-      line-height: 1.7;
-    }
-
-    #legalContent h1,
-    #legalContent h2,
-    #legalContent h3,
-    #legalContent h4 {
-      line-height: 1.2;
-      color: #111827;
-    }
-
-    #legalContent a {
-      color: var(--accent);
-    }
-
-    @media (max-width: 640px) {
-      .content {
-        padding: 24px;
-      }
-
-      .header {
-        padding: 16px 20px;
-      }
-    }
-
-  </style>
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20260930-1">
+  <link rel="stylesheet" href="css/legal.css?v=20260930-1">
 </head>
 
-<body>
+<body data-legal-type="cookies">
+  <main class="legal-page">
+    <section class="legal-shell">
+      <header class="legal-header">
+        <img src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1781521973/copy_of_new_logo_lumoraevents_small_kwnjrc.png" alt="LumoraEvents" class="legal-logo">
+      </header>
 
-  <main class="page">
+      <article class="legal-content">
+        <div id="legalContent" class="legal-status">Loading document...</div>
+      </article>
 
-    <section class="card">
-
-      <!-- HEADER -->
-
-      <div class="header">
-
-        <img
-          src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1781521973/copy_of_new_logo_lumoraevents_small_kwnjrc.png"
-          alt="Logo LumoraEvents"
-          class="logo"
-          id="lumoraevents-logo"
-        >
-
-      </div>
-
-
-      <!-- CONTENT -->
-
-      <div class="content">
-
-        <div id="legalContent" class="status">
-          Loading document...
-        </div>
-
-      </div>
-
+      <footer class="legal-footer">
+        <span>&copy; 2026 LumoraEvents</span>
+        <nav class="legal-footer-links" aria-label="Legal">
+          <a href="terms.html">Terms</a>
+          <a href="privacy.html">Privacy</a>
+          <a href="cookies.html">Cookies</a>
+        </nav>
+      </footer>
     </section>
-
   </main>
 
-
   <script src="js/utils.js"></script>
-
-  <script>
-
-    async function loadLegalDocument() {
-
-      const storedLang =
-        localStorage.getItem('lang') || 'en';
-
-      const lang =
-        storedLang === 'es' ||
-        storedLang === 'en'
-          ? storedLang
-          : 'en';
-
-      document.documentElement.lang = lang;
-
-      try {
-
-        const response = await fetch(
-          `${API_BASE_URL}/api/public/legal?type=cookies`,
-          {
-            headers: {
-              'Accept-Language': lang
-            }
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(
-            `Error ${response.status} loading cookies`
-          );
-        }
-
-        const data = await response.json();
-
-        document.getElementById(
-          'legalContent'
-        ).innerHTML = data.content || '';
-
-      }
-      catch (error) {
-
-        console.error(
-          'Error loading legal document:',
-          error
-        );
-
-        document.getElementById(
-          'legalContent'
-        ).textContent =
-          'Unable to load the legal document.';
-      }
-
-    }
-
-    loadLegalDocument();
-
-  </script>
-
+  <script src="js/legal.js?v=20260930-1"></script>
 </body>
 </html>
