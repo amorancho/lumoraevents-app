@@ -4208,7 +4208,7 @@ function initParticipantsTab(role) {
       ...(showIdentificationDocument
         ? {
           identification_document: elements.identificationDocument
-            ? (isEditingIdentificationDocument
+            ? ((isEditingIdentificationDocument || !identificationDocumentOriginalValue)
               ? elements.identificationDocument.value.trim()
               : identificationDocumentOriginalValue)
             : ''
