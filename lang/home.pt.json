@@ -14,5 +14,20 @@
   "sta_access_sub": "As suas estat?sticas para este evento.",
   "res_access_sub": "Visualize as classificações e as votações.",
   "reg_access_sub": "Área de Registro de Participantes.",
-  "audience_vote_access": "Votação do público"
+  "audience_vote_access": "Votação do público",
+  "home_organization_title": "Organização",
+  "home_jury_title": "Júri",
+  "home_registrations_title": "Inscrições",
+  "home_public_title": "Público",
+  "home_back": "Voltar",
+  "home_public_intro": "Acompanhe o evento, consulte os resultados e faça parte da experiência.",
+  "home_organization_description": "Configure o evento, as categorias, os horários e muito mais.",
+  "home_jury_description": "Aceda à plataforma de votação.",
+  "home_registrations_description": "Gira participantes, pagamentos e validações.",
+  "home_public_description": "Participantes, programação, resultados e muito mais.",
+  "home_participants_description": "Consulte participantes e grupos.",
+  "home_schedule_description": "Horários, categorias e ordem de atuação.",
+  "home_results_description": "Classificações e pontuações.",
+  "home_statistics_description": "Dados e métricas do evento.",
+  "home_audience_vote_description": "Participe na votação do evento."
 }

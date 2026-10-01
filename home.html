@@ -7,251 +7,153 @@
   <title>Home - LumoraEvents</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20260930-1">
+  <link rel="stylesheet" href="css/home.css?v=20261001-1">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
-  <style>
-    .card-organizer-emphasis {
-      --menu-card-accent: #0f6fff;
-    }
-
-    .card-registration-emphasis {
-      --menu-card-accent: #1f9d55;
-    }
-
-    .card-judge-emphasis {
-      --menu-card-accent: #d97706;
-    }
-
-    .menu-card-public {
-      --menu-card-accent: #475569;
-    }
-
-    .home-menu-section + .home-menu-section {
-      margin-top: 0.5rem;
-    }
-
-    .menu-card {
-      --menu-card-accent: #2563eb;
-      --menu-card-line-accent: var(--menu-card-accent);
-      position: relative;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      min-height: 112px;
-      padding: 1rem 1.15rem;
-      border-radius: 22px;
-      border: 1px solid rgba(15, 23, 42, 0.08);
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
-      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
-      color: inherit;
-      text-decoration: none;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      overflow: hidden;
-    }
-
-    .menu-card::before {
-      content: "";
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 4px;
-      background: linear-gradient(180deg, var(--menu-card-line-accent), rgba(255, 255, 255, 0.4));
-    }
-
-    #home-access-row .menu-card {
-      --menu-card-line-accent: #1f9d55;
-    }
-
-    .menu-card:hover {
-      transform: translateY(-4px);
-      border-color: rgba(15, 23, 42, 0.14);
-      box-shadow: 0 20px 42px rgba(15, 23, 42, 0.12);
-    }
-
-    .menu-card-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 56px;
-      height: 56px;
-      flex: 0 0 56px;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.16);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
-      color: var(--menu-card-accent);
-      font-size: 1.5rem;
-    }
-
-    .menu-card-title {
-      flex: 1 1 auto;
-      min-width: 0;
-      padding-right: 2.25rem;
-      font-size: 1.05rem;
-      font-weight: 700;
-      line-height: 1.35;
-      color: #0f172a;
-    }
-
-    .menu-card-arrow {
-      position: absolute;
-      top: 50%;
-      right: 18px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 38px;
-      height: 38px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.8);
-      color: #475569;
-      opacity: 0.6;
-      transform: translate(-6px, -50%);
-      transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
-    }
-
-    .menu-card:hover .menu-card-arrow {
-      opacity: 1;
-      transform: translate(0, -50%);
-      background: rgba(255, 255, 255, 0.96);
-    }
-
-    @media (max-width: 767.98px) {
-      .menu-card {
-        min-height: 96px;
-      }
-
-      .menu-card-title {
-        font-size: 1rem;
-      }
-    }
-  </style>
 </head>
-<body class="d-flex flex-column min-vh-100">
 
+<body class="d-flex flex-column min-vh-100 home-page">
   <div id="header"></div>
 
-  <div id="principalContainer" class="container py-4">
-
-    <div id="noticePanel" class="mb-4" style="display: none;">
-      <div class="alert d-flex flex-column text-center alert-dismissible fade show" role="alert" id="notice_type">
-        <div id="notice_text">
-          El festival ha dado comienzo. Si modifica estos datos puede provocar inconsistencias en los datos.
+  <main id="principalContainer" class="lm-page flex-grow-1">
+    <div class="lm-container home-content">
+      <div id="noticePanel" class="home-notice" style="display: none;">
+        <div class="alert alert-dismissible fade show lm-notice" role="alert" id="notice_type">
+          <div id="notice_text"></div>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
+
+      <div class="home-event-brand" id="homeEventBrand">
+        <img src="" alt="Event logo" class="home-event-logo" id="event-logo">
+      </div>
+
+      <div class="home-primary-menu" id="homePrimaryMenu">
+        <div class="home-primary-grid d-none" id="home-access-row">
+          <div class="d-none" id="col-configUrl">
+            <a href="dashboard.html" class="home-access-card home-access-card--organization" id="configUrl">
+              <span class="home-access-icon" aria-hidden="true"><i class="bi bi-building-gear"></i></span>
+              <span class="home-access-copy">
+                <strong class="home-access-title" data-i18n="home_organization_title">Organization</strong>
+                <span class="home-access-description" data-i18n="home_organization_description">Configure the event, categories, schedule and more.</span>
+              </span>
+              <span class="home-access-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+            </a>
+          </div>
+
+          <div class="d-none" id="col-votingUrl">
+            <a href="voting.html" class="home-access-card home-access-card--jury" id="votingUrl">
+              <span class="home-access-icon" aria-hidden="true"><i class="bi bi-trophy"></i></span>
+              <span class="home-access-copy">
+                <strong class="home-access-title" data-i18n="home_jury_title">Jury</strong>
+                <span class="home-access-description" data-i18n="home_jury_description">Access the voting platform.</span>
+              </span>
+              <span class="home-access-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+            </a>
+          </div>
+
+          <div class="d-none" id="col-registrationUrl">
+            <a href="registrationhome.html" class="home-access-card home-access-card--registration" id="registrationUrl">
+              <span class="home-access-icon" aria-hidden="true"><i class="bi bi-journal-check"></i></span>
+              <span class="home-access-copy">
+                <strong class="home-access-title" data-i18n="home_registrations_title">Registrations</strong>
+                <span class="home-access-description" data-i18n="home_registrations_description">Manage participants, payments and validations.</span>
+              </span>
+              <span class="home-access-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+            </a>
+          </div>
+
+          <div class="d-none" id="col-publicAccess">
+            <button type="button" class="home-access-card home-access-card--public" id="publicMenuButton" aria-expanded="false" aria-controls="homePublicPanel">
+              <span class="home-access-icon" aria-hidden="true"><i class="bi bi-compass"></i></span>
+              <span class="home-access-copy">
+                <strong class="home-access-title" data-i18n="home_public_title">Public</strong>
+                <span class="home-access-description" data-i18n="home_public_description">Participants, schedule, results and more.</span>
+              </span>
+              <span class="home-access-arrow" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <section class="home-public-panel" id="homePublicPanel" aria-labelledby="homePublicTitle" hidden>
+        <div class="home-public-header">
+          <button type="button" class="home-public-back" id="publicMenuBackButton">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+            <span data-i18n="home_back">Back</span>
+          </button>
+
+          <div class="home-public-identity">
+            <span class="home-public-icon" aria-hidden="true"><i class="bi bi-people"></i></span>
+            <div class="home-public-heading">
+              <h1 id="homePublicTitle" data-i18n="home_public_title">Public</h1>
+              <p data-i18n="home_public_intro">Follow the event, view results and be part of the experience.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="home-public-grid" id="home-public-row">
+          <div class="d-none" id="col-participantsUrl">
+            <a href="participants.html" class="home-access-card home-access-card--participants" id="participantsUrl">
+              <span class="home-access-icon" aria-hidden="true"><i class="bi bi-people"></i></span>
+              <span class="home-access-copy">
+                <strong class="home-access-title" data-i18n="par_access">Participants</strong>
+                <span class="home-access-description" data-i18n="home_participants_description">View participants and groups.</span>
+              </span>
+              <span class="home-access-arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+            </a>
+          </div>
+
+          <div class="d-none" id="col-scheduleUrl">
+            <a href="schedule.html" class="home-access-card home-access-card--schedule" id="scheduleUrl">
+              <span class="home-access-icon" aria-hidden="true"><i class="bi bi-calendar3"></i></span>
+              <span class="home-access-copy">
+                <strong class="home-access-title" data-i18n="sch_access">Schedule</strong>
+                <span class="home-access-description" data-i18n="home_schedule_description">Times, categories and running order.</span>
+              </span>
+              <span class="home-access-arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+            </a>
+          </div>
+
+          <div class="d-none" id="col-resultsUrl">
+            <a href="results.html" class="home-access-card home-access-card--results" id="resultsUrl">
+              <span class="home-access-icon" aria-hidden="true"><i class="bi bi-award"></i></span>
+              <span class="home-access-copy">
+                <strong class="home-access-title" data-i18n="res_access">Results</strong>
+                <span class="home-access-description" data-i18n="home_results_description">Rankings and scores.</span>
+              </span>
+              <span class="home-access-arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+            </a>
+          </div>
+
+          <div class="d-none" id="col-statisticsUrl">
+            <a href="statistics.html" class="home-access-card home-access-card--statistics" id="statisticsUrl">
+              <span class="home-access-icon" aria-hidden="true"><i class="bi bi-bar-chart-line"></i></span>
+              <span class="home-access-copy">
+                <strong class="home-access-title" data-i18n="sta_access">Statistics</strong>
+                <span class="home-access-description" data-i18n="home_statistics_description">Event data and metrics.</span>
+              </span>
+              <span class="home-access-arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+            </a>
+          </div>
+
+          <div class="d-none" id="col-audienceVoteUrl">
+            <a href="public-votes.html" class="home-access-card home-access-card--audience" id="audienceVoteUrl">
+              <span class="home-access-icon" aria-hidden="true"><i class="bi bi-megaphone"></i></span>
+              <span class="home-access-copy">
+                <strong class="home-access-title" data-i18n="audience_vote_access">Audience voting</strong>
+                <span class="home-access-description" data-i18n="home_audience_vote_description">Take part in the event voting.</span>
+              </span>
+              <span class="home-access-arrow" aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
+  </main>
 
-    <div class="row">
-      <div class="col text-center">
-        <img src="" alt="Logo del Evento" class="img-fluid mb-3" style="max-width: 150px;" id="event-logo">
-      </div>
-    </div>
-
-    <div class="pt-4" id="home-menu-grid">
-      <div class="row g-3 justify-content-center home-menu-section d-none" id="home-access-row">
-        <div class="col-12 col-md-6 col-xl-4 d-none" id="col-configUrl">
-          <a href="dashboard.html" class="menu-card card-organizer-emphasis" id="configUrl">
-            <div class="menu-card-icon">
-              <i class="bi bi-building-gear"></i>
-            </div>
-            <div class="menu-card-title" data-i18n="org_access">Organization Access</div>
-            <div class="menu-card-arrow">
-              <i class="bi bi-arrow-right"></i>
-            </div>
-          </a>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-4 d-none" id="col-registrationUrl">
-          <a href="registrationhome.html" class="menu-card card-registration-emphasis" id="registrationUrl">
-            <div class="menu-card-icon">
-              <i class="bi bi-journal-check"></i>
-            </div>
-            <div class="menu-card-title" data-i18n="reg_access">Schools Access</div>
-            <div class="menu-card-arrow">
-              <i class="bi bi-arrow-right"></i>
-            </div>
-          </a>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-4 d-none" id="col-votingUrl">
-          <a href="voting.html" class="menu-card card-judge-emphasis" id="votingUrl">
-            <div class="menu-card-icon">
-              <i class="bi bi-trophy"></i>
-            </div>
-            <div class="menu-card-title" data-i18n="jud_access">Voting</div>
-            <div class="menu-card-arrow">
-              <i class="bi bi-arrow-right"></i>
-            </div>
-          </a>
-        </div>
-      </div>
-
-      <div class="row g-3 justify-content-center home-menu-section d-none" id="home-public-row">
-        <div class="col-12 col-md-6 col-xl-3 d-none" id="col-participantsUrl">
-          <a href="participants.html" class="menu-card menu-card-public" id="participantsUrl">
-            <div class="menu-card-icon">
-              <i class="bi bi-people"></i>
-            </div>
-            <div class="menu-card-title" data-i18n="par_access">Participants</div>
-            <div class="menu-card-arrow">
-              <i class="bi bi-arrow-right"></i>
-            </div>
-          </a>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3 d-none" id="col-scheduleUrl">
-          <a href="schedule.html" class="menu-card menu-card-public" id="scheduleUrl">
-            <div class="menu-card-icon">
-              <i class="bi bi-calendar3"></i>
-            </div>
-            <div class="menu-card-title" data-i18n="sch_access">Schedule</div>
-            <div class="menu-card-arrow">
-              <i class="bi bi-arrow-right"></i>
-            </div>
-          </a>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3 d-none" id="col-resultsUrl">
-          <a href="results.html" class="menu-card menu-card-public" id="resultsUrl">
-            <div class="menu-card-icon">
-              <i class="bi bi-award"></i>
-            </div>
-            <div class="menu-card-title" data-i18n="res_access">Results</div>
-            <div class="menu-card-arrow">
-              <i class="bi bi-arrow-right"></i>
-            </div>
-          </a>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3 d-none" id="col-statisticsUrl">
-          <a href="statistics.html" class="menu-card menu-card-public" id="statisticsUrl">
-            <div class="menu-card-icon">
-              <i class="bi bi-bar-chart-line"></i>
-            </div>
-            <div class="menu-card-title" data-i18n="sta_access">Statistics</div>
-            <div class="menu-card-arrow">
-              <i class="bi bi-arrow-right"></i>
-            </div>
-          </a>
-        </div>
-
-        <div class="col-12 col-md-6 col-xl-3 d-none" id="col-audienceVoteUrl">
-          <a href="public-votes.html" class="menu-card menu-card-public" id="audienceVoteUrl">
-            <div class="menu-card-icon">
-              <i class="bi bi-megaphone"></i>
-            </div>
-            <div class="menu-card-title" data-i18n="audience_vote_access">Audience voting</div>
-            <div class="menu-card-arrow">
-              <i class="bi bi-arrow-right"></i>
-            </div>
-          </a>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <div id="eventHiddenMessage" class="container py-5 d-none text-center">
-    <div class="alert alert-warning">
+  <div id="eventHiddenMessage" class="home-hidden-message d-none text-center">
+    <div class="lm-notice home-hidden-notice">
       This event is not visible at the moment.
     </div>
   </div>
@@ -264,6 +166,6 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
-  <script src="js/home.js"></script>
-
-</body></html>
+  <script src="js/home.js?v=20261001-1"></script>
+</body>
+</html>

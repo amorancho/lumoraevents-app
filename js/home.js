@@ -36,8 +36,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const principalContainer = document.getElementById("principalContainer");
     const hiddenMessage = document.getElementById("eventHiddenMessage");
+    const eventBrand = document.getElementById("homeEventBrand");
+    const primaryMenu = document.getElementById("homePrimaryMenu");
+    const publicPanel = document.getElementById("homePublicPanel");
+    const publicMenuButton = document.getElementById("publicMenuButton");
+    const publicMenuBackButton = document.getElementById("publicMenuBackButton");
     const accessRow = document.getElementById("home-access-row");
     const publicRow = document.getElementById("home-public-row");
+    const publicCol = document.getElementById("col-publicAccess");
     const configCol = document.getElementById("col-configUrl");
     const votingCol = document.getElementById("col-votingUrl");
     const participantsCol = document.getElementById("col-participantsUrl");
@@ -147,6 +153,30 @@ document.addEventListener("DOMContentLoaded", async () => {
         showColumn(audienceVoteCol);
     }
 
+    const hasVisiblePublicAccess = Array.from(publicRow.children)
+        .some((column) => !column.classList.contains("d-none"));
+
+    if (hasVisiblePublicAccess) {
+        showColumn(publicCol);
+    }
+
     syncRowVisibility(accessRow);
-    syncRowVisibility(publicRow);
+
+    if (primaryMenu && publicPanel && publicMenuButton && publicMenuBackButton) {
+        const setPublicMenuOpen = (isOpen) => {
+            if (eventBrand) eventBrand.hidden = isOpen;
+            primaryMenu.hidden = isOpen;
+            publicPanel.hidden = !isOpen;
+            publicMenuButton.setAttribute("aria-expanded", String(isOpen));
+
+            if (isOpen) {
+                publicMenuBackButton.focus();
+            } else {
+                publicMenuButton.focus();
+            }
+        };
+
+        publicMenuButton.addEventListener("click", () => setPublicMenuOpen(true));
+        publicMenuBackButton.addEventListener("click", () => setPublicMenuOpen(false));
+    }
 });
