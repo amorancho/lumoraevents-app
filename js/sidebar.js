@@ -90,7 +90,7 @@ const ORGANIZATION_SIDEBAR_ITEMS = [
 
 const ORGANIZATION_HEADER_MENU_PAGES = new Set([
   'dashboard', 'adminevent', 'masterdata', 'judges', 'dancers',
-  'competitions', 'scheduleconfig', 'tracking'
+  'competitions', 'scheduleconfig', 'tracking', 'audience-voting'
 ]);
 
 function usesOrganizationHeaderMenu() {
