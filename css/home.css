@@ -290,8 +290,15 @@
 
   .home-primary-grid,
   .home-public-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 1rem;
+  }
+
+  .home-primary-grid > div,
+  .home-public-grid > div {
+    flex: 0 1 calc((100% - 1rem) / 2);
   }
 
   .home-access-card {
@@ -329,14 +336,17 @@
 }
 
 @media (min-width: 900px) {
-  .home-public-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .home-public-grid > div {
+    flex-basis: calc((100% - 2rem) / 3);
   }
 }
 
 @media (min-width: 1200px) {
+  .home-primary-grid > div {
+    flex-basis: calc((100% - 3.3rem) / 4);
+  }
+
   .home-primary-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 1.1rem;
   }
 
