@@ -17,7 +17,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
   es: {
     section: 'Acceso Organizadores',
     subtitle: 'Zona privada',
-    menuButton: 'Abrir menu',
+    menuButton: 'Abrir menú',
     closeButton: 'Cerrar',
     dashboard: 'Dashboard',
     general: 'Configuracion General',
@@ -87,6 +87,15 @@ const ORGANIZATION_SIDEBAR_ITEMS = [
   { key: 'tracking', href: 'tracking.html', icon: 'bi-activity', labelKey: 'tracking' },
   { key: 'audienceVoting', href: 'audience-voting.html', icon: 'bi-megaphone', labelKey: 'audienceVoting' }
 ];
+
+const ORGANIZATION_HEADER_MENU_PAGES = new Set([
+  'dashboard', 'adminevent', 'masterdata', 'judges', 'dancers',
+  'competitions', 'scheduleconfig', 'tracking'
+]);
+
+function usesOrganizationHeaderMenu() {
+  return ORGANIZATION_HEADER_MENU_PAGES.has(pageName);
+}
 
 function getOrganizationSidebarLanguage() {
   const rawLang = document.documentElement.getAttribute('lang') || localStorage.getItem('lang') || 'en';
@@ -167,27 +176,39 @@ function buildOrganizationSidebarDesktopMarkup(copy, activeKey) {
   `;
 }
 
-function buildOrganizationSidebarMobileMarkup(copy, activeKey) {
+function buildOrganizationSidebarMobileMarkup(copy, activeKey, useHeaderMenu = false) {
   return `
-    <button class="btn btn-outline-dark d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#organizationSidebarOffcanvas" aria-controls="organizationSidebarOffcanvas">
+    ${useHeaderMenu ? '' : `<button class="btn btn-outline-dark d-inline-flex align-items-center gap-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#organizationSidebarOffcanvas" aria-controls="organizationSidebarOffcanvas">
       <i class="bi bi-list"></i>
       <span>${copy.menuButton}</span>
-    </button>
+    </button>`}
     <div class="offcanvas offcanvas-start" tabindex="-1" id="organizationSidebarOffcanvas" aria-labelledby="organizationSidebarTitleMobile">
       <div class="offcanvas-header border-bottom">
         <div>
           <div class="h5 mb-1" id="organizationSidebarTitleMobile">${getOrganizationSidebarTitle()}</div>
-          <div class="small text-body-secondary">${copy.section}</div>
+          <div class="small text-body-secondary js-organization-mobile-section">${copy.section}</div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="${copy.closeButton}"></button>
       </div>
       <div class="offcanvas-body p-0">
-        <div class="list-group list-group-flush">
+        <div class="list-group list-group-flush js-organization-mobile-links">
           ${buildOrganizationSidebarItemsMarkup(copy, activeKey)}
         </div>
       </div>
     </div>
   `;
+}
+
+function updateOrganizationHeaderMenu(copy = getOrganizationSidebarCopy()) {
+  if (!usesOrganizationHeaderMenu()) return;
+
+  const toggle = document.getElementById('organizationSidebarHeaderToggle');
+  if (!toggle || !document.getElementById('organizationSidebarOffcanvas')) return;
+
+  toggle.classList.remove('d-none');
+  toggle.setAttribute('aria-label', copy.menuButton);
+  toggle.title = copy.menuButton;
+  toggle.closest('.app-subheader')?.classList.add('app-subheader--organization-menu');
 }
 
 function updateOrganizationSidebarTitles() {
@@ -206,7 +227,14 @@ function updateOrganizationSidebarTitles() {
 
 function renderOrganizationSidebar() {
   const desktopMount = document.getElementById('organizationSidebarMount');
-  const mobileMount = document.getElementById('organizationSidebarToggle');
+  let mobileMount = document.getElementById('organizationSidebarToggle');
+
+  if (!mobileMount && pageName === 'tracking') {
+    mobileMount = document.createElement('div');
+    mobileMount.id = 'organizationSidebarToggle';
+    mobileMount.className = 'd-lg-none';
+    document.body.appendChild(mobileMount);
+  }
 
   if (!desktopMount && !mobileMount) {
     return;
@@ -220,9 +248,33 @@ function renderOrganizationSidebar() {
   }
 
   if (mobileMount) {
-    mobileMount.innerHTML = buildOrganizationSidebarMobileMarkup(copy, activeKey);
+    const useHeaderMenu = usesOrganizationHeaderMenu();
+    if (useHeaderMenu) {
+      mobileMount.classList.remove('mb-3');
+      const existingOffcanvas = mobileMount.querySelector('#organizationSidebarOffcanvas');
+      if (existingOffcanvas) {
+        existingOffcanvas.querySelector('#organizationSidebarTitleMobile').textContent = getOrganizationSidebarTitle();
+        existingOffcanvas.querySelector('.js-organization-mobile-section').textContent = copy.section;
+        existingOffcanvas.querySelector('.js-organization-mobile-links').innerHTML = buildOrganizationSidebarItemsMarkup(copy, activeKey);
+        existingOffcanvas.querySelector('.btn-close').setAttribute('aria-label', copy.closeButton);
+      } else {
+        mobileMount.innerHTML = buildOrganizationSidebarMobileMarkup(copy, activeKey, true);
+        const offcanvas = mobileMount.querySelector('#organizationSidebarOffcanvas');
+        offcanvas.addEventListener('show.bs.offcanvas', () => {
+          document.getElementById('organizationSidebarHeaderToggle')?.setAttribute('aria-expanded', 'true');
+        });
+        offcanvas.addEventListener('hidden.bs.offcanvas', () => {
+          document.getElementById('organizationSidebarHeaderToggle')?.setAttribute('aria-expanded', 'false');
+        });
+      }
+      updateOrganizationHeaderMenu(copy);
+    } else {
+      mobileMount.innerHTML = buildOrganizationSidebarMobileMarkup(copy, activeKey);
+    }
   }
 }
+
+document.addEventListener('lumora:header-ready', () => updateOrganizationHeaderMenu());
 
 document.addEventListener('DOMContentLoaded', () => {
   if (typeof WaitEventLoaded === 'function') {

@@ -1,6 +1,6 @@
 function generateHeader(callback) {
 
-  fetch('header.html')
+  fetch('header.html?v=20261002-1')
     .then(res => res.text())
     .then(html => {
       // Convertir string HTML en DOM manipulable
@@ -38,6 +38,7 @@ function generateHeader(callback) {
       const headerContainer = document.getElementById('header');
       if (headerContainer) {
         headerContainer.outerHTML = doc.body.innerHTML;
+        document.dispatchEvent(new CustomEvent('lumora:header-ready'));
       }
 
       if (typeof updateFlag === 'function' && typeof getCurrentAppLanguage === 'function') {
