@@ -627,6 +627,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     eventDetailsTitleEl.textContent = String(event.name || t('event_details_default_name'));
     eventDetailsLogoEl.src = safeLogo;
     eventDetailsLogoEl.alt = String(event.name || t('event_details_default_name'));
+    eventDetailsStatusBadgeEl.className = `event-details-status-badge event-details-status-badge--${normalizedStatus || 'default'}`;
     eventDetailsStatusBadgeEl.innerHTML = `
       <i class="bi ${statusMeta.icon}"></i>
       <span>${escapeHtml(statusLabel)}</span>
@@ -703,57 +704,49 @@ document.addEventListener('DOMContentLoaded', async () => {
       Number(event.has_registrations) === 1 && event.registration_start && event.registration_end;
     const categoriesMarkup = categories.length
       ? `
-            <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-              ${categories.map((category) => `<span class="badge rounded-pill text-bg-secondary">${escapeHtml(category)}</span>`).join('')}
+            <div class="index-event-categories">
+              ${categories.map((category) => `<span class="index-event-category">${escapeHtml(category)}</span>`).join('')}
             </div>
           `
       : '';
 
     return `
-      <div class="col-12 col-md-6 col-lg-4">
-        <div class="card h-100">
-          <div class="card-header fw-bold text-center">
-            ${safeName}
+      <article class="index-event-card lm-card">
+        <div class="index-event-top">
+          <div class="index-event-logo-shell"><img src="${safeLogo}" class="index-event-logo" alt="${safeName}" loading="lazy"></div>
+          <div class="index-event-identity">
+            <h3 class="index-event-name">${safeName}</h3>
+            <p class="index-event-date"><i class="bi bi-calendar3" aria-hidden="true"></i><span>${formatEventDateRange(event.start, event.end)}</span></p>
           </div>
-          <div class="card-body d-flex flex-column">
-            <img
-              src="${safeLogo}"
-              class="img-fluid mb-3"
-              style="height: 150px; width: 100%; object-fit: contain;"
-              alt="${safeName}"
-            >
-            <p class="text-muted text-center d-flex align-items-center justify-content-center gap-2">
-              <i class="bi bi-calendar3 text-primary"></i>
-              <span>${formatEventDateRange(event.start, event.end)}</span>
-            </p>
+        </div>
+        <div class="index-event-body">
             ${categoriesMarkup}
             ${showRegistrationPeriod ? `
-              <p class="text-muted text-center d-flex align-items-center justify-content-center gap-2 small">
-                <i class="bi bi-pencil-square text-success"></i>
+              <p class="index-event-registration">
+                <i class="bi bi-pencil-square" aria-hidden="true"></i>
                 <span><span data-i18n="registration_period">Registration</span>: ${formatEventDateRange(event.registration_start, event.registration_end)}</span>
               </p>
             ` : ''}
-            <div class="mt-auto">
+            <div class="index-event-actions">
               <button
                 type="button"
-                class="btn btn-outline-primary w-100 mb-2"
+                class="lm-btn lm-btn-secondary index-event-details"
                 data-open-event-details="true"
                 data-event-id="${safeEventId}"
                 ${safeEventId ? '' : 'disabled'}
               >
-                <i class="bi bi-stars me-2"></i><span data-i18n="event_details_button">Event Details</span>
+                <i class="bi bi-info-circle" aria-hidden="true"></i><span data-i18n="event_details_button">Event Details</span>
               </button>
-              <a href="home.html?eventId=${safeCode}" class="btn btn-primary w-100" data-i18n="go_to_event">Go to Event</a>
+              <a href="home.html?eventId=${safeCode}" class="lm-btn lm-btn-primary index-event-enter"><span data-i18n="go_to_event">Go to Event</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
             </div>
-          </div>
         </div>
-      </div>
+      </article>
     `;
   };
 
   const renderEmptyState = (translationKey) => {
     container.innerHTML = `
-      <div class="alert alert-light border text-center mb-0" data-i18n="${translationKey}">
+      <div class="index-empty-state lm-card" data-i18n="${translationKey}">
         ${translationKey}
       </div>
     `;
@@ -793,24 +786,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         return `
-          <section class="card shadow-sm border-0">
-            <div class="card-body">
-              <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4 pb-2 border-bottom">
-                <div class="d-flex align-items-center gap-3">
-                  <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center shadow-sm" style="width: 52px; height: 52px;">
-                    <i class="bi ${statusMeta.icon} fs-4 ${statusMeta.iconClass}"></i>
-                  </div>
-                  <div>
-                    <h2 class="h4 mb-0 fw-bold ${statusMeta.sectionClass}" style="letter-spacing: 0.02em;">
-                      <span data-i18n="${status}">${status}</span>
-                    </h2>
-                  </div>
-                </div>
-                <span class="badge rounded-pill text-bg-light fs-6 px-3 py-2">${statusEvents.length}</span>
+          <section class="index-status-section index-status-section--${status}" aria-labelledby="index-status-${status}">
+            <div class="index-status-heading">
+              <div class="index-status-title-wrap">
+                <span class="index-status-icon"><i class="bi ${statusMeta.icon}" aria-hidden="true"></i></span>
+                <h2 id="index-status-${status}" class="index-status-title"><span data-i18n="${status}">${status}</span></h2>
               </div>
-              <div class="row g-4">
+              <span class="index-status-count" aria-label="${statusEvents.length}">${statusEvents.length}</span>
+            </div>
+            <div class="index-event-grid">
                 ${statusEvents.map(createEventCard).join('')}
-              </div>
             </div>
           </section>
         `;
@@ -833,8 +818,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     filterButtons.forEach((button) => {
       const isActive = button.dataset.statusFilter === nextStatus;
       button.classList.toggle('active', isActive);
-      button.classList.toggle('btn-secondary', isActive);
-      button.classList.toggle('btn-outline-secondary', !isActive);
       button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
     });
   };
@@ -940,7 +923,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     .catch((error) => {
       console.error('Failed to load events:', error);
       container.innerHTML = `
-        <div class="alert alert-danger text-center mt-4" data-i18n="error_loading_events">
+        <div class="index-empty-state index-empty-state--error lm-card" data-i18n="error_loading_events">
           Error loading events
         </div>
       `;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,763 +7,71 @@
   <title>LumoraEvents</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <style>
-    :root {
-      --event-details-hero-start: #0b2545;
-      --event-details-hero-end: #1f5aa6;
-      --event-details-accent: #ffd24d;
-      --event-details-surface: #f6f9fc;
-    }
-
-    .index-app-header {
-      --index-app-control-width: 2.55rem;
-      --index-app-control-height: 2.1rem;
-      min-height: 58px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      background: #212529;
-      box-shadow: inset 0 -2px 0 rgba(58, 183, 149, 0.65);
-    }
-
-    .index-app-header-inner {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      min-height: 58px;
-      align-items: center;
-      width: 100%;
-      padding: 0 0.75rem;
-    }
-
-    .index-app-brand,
-    .index-app-actions {
-      display: flex;
-      min-width: 0;
-      align-items: center;
-    }
-
-    .index-app-brand {
-      justify-content: flex-start;
-    }
-
-    .index-app-actions {
-      justify-content: flex-end;
-      gap: 0.4rem;
-    }
-
-    .index-app-header .language-selector {
-      width: var(--index-app-control-width);
-      height: var(--index-app-control-height);
-      flex: 0 0 var(--index-app-control-width);
-    }
-
-    .index-app-logo {
-      display: block;
-      object-fit: contain;
-    }
-
-    .index-app-logo--full {
-      display: none;
-    }
-
-    .index-app-logo--mark {
-      width: 36px;
-      height: 36px;
-    }
-
-    .index-app-title {
-      display: inline-flex;
-      min-width: 0;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 1.05rem;
-      font-weight: 650;
-      line-height: 1;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .index-app-title:hover,
-    .index-app-title:focus {
-      color: #fff;
-    }
-
-    .index-admin-btn {
-      display: inline-flex;
-      width: var(--index-app-control-width);
-      height: var(--index-app-control-height);
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      border: 1px solid rgba(255, 210, 77, 0.55);
-      border-radius: 0.6rem;
-      box-shadow: none;
-      transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
-    }
-
-    .index-admin-btn:hover,
-    .index-admin-btn:focus-visible {
-      border-color: #ffe69c;
-      background: #ffda6a;
-      transform: translateY(-1px);
-    }
-
-    .index-admin-label {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    .index-app-header .language-selector .dropdown-toggle {
-      display: inline-flex;
-      width: 100%;
-      height: 100%;
-      align-items: center;
-      justify-content: center;
-      padding: 0.25rem;
-      border: 1px solid rgba(255, 255, 255, 0.24);
-      border-radius: 0.7rem;
-      background: rgba(255, 255, 255, 0.08);
-      color: #fff;
-      box-shadow: none;
-      transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
-    }
-
-    .index-app-header .language-selector .dropdown-toggle:hover,
-    .index-app-header .language-selector .dropdown-toggle:focus {
-      border-color: rgba(255, 255, 255, 0.5);
-      background: rgba(255, 255, 255, 0.16);
-      color: #fff;
-      transform: translateY(-1px);
-    }
-
-    .index-app-header .language-selector .dropdown-toggle:focus {
-      box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.14);
-    }
-
-    .index-app-header .language-selector .dropdown-toggle::after {
-      margin-left: 0.2rem;
-      vertical-align: 0.1em;
-    }
-
-    .language-selector-code {
-      display: inline-block;
-      min-width: 1.2rem;
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      line-height: 1;
-      text-align: center;
-    }
-
-    .index-app-header .language-selector .dropdown-menu {
-      min-width: 8.25rem;
-      padding: 0.4rem;
-      margin-top: 0.55rem;
-      border: 1px solid rgba(15, 45, 85, 0.1);
-      border-radius: 1rem;
-      box-shadow: 0 16px 34px rgba(10, 32, 60, 0.2);
-    }
-
-    .index-app-header .language-selector .dropdown-item {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 2.35rem;
-      border-radius: 0.65rem;
-      color: #17314a;
-      font-size: 0.78rem;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      transition: background-color 0.18s ease, color 0.18s ease;
-    }
-
-    .index-app-header .language-selector .dropdown-item:hover,
-    .index-app-header .language-selector .dropdown-item:focus,
-    .index-app-header .language-selector .dropdown-item.is-active {
-      background: #eaf2fc;
-      color: #1f5aa6;
-    }
-
-    @media (min-width: 768px) {
-      .index-app-header,
-      .index-app-header-inner {
-        min-height: 64px;
-      }
-
-      .index-app-header {
-      --index-app-control-width: 3.3rem;
-      --index-app-control-height: 2.15rem;
-      }
-
-      .index-app-header-inner {
-        padding: 0 1.5rem;
-      }
-
-      .index-app-logo--full {
-        display: block;
-        width: auto;
-        height: 36px;
-        max-width: 205px;
-      }
-
-      .index-app-logo--mark {
-        display: none;
-      }
-
-      .index-app-title {
-        padding: 0.42rem 0.9rem;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.06);
-        font-size: 1.18rem;
-      }
-
-      .index-admin-btn {
-        width: auto;
-        min-width: var(--index-app-control-width);
-        height: var(--index-app-control-height);
-        gap: 0.3rem;
-        padding: 0.3rem 0.5rem;
-      }
-
-      .index-admin-label {
-        position: static;
-        width: auto;
-        height: auto;
-        overflow: visible;
-        clip: auto;
-        white-space: normal;
-      }
-
-      .index-app-header .language-selector .dropdown-toggle {
-        width: auto;
-        min-width: 100%;
-        height: 100%;
-        padding: 0.25rem 0.4rem;
-      }
-    }
-
-    .event-details-modal .modal-content {
-      border: 0;
-      border-radius: 28px;
-      overflow: hidden;
-      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-      box-shadow: 0 32px 80px rgba(15, 45, 85, 0.24);
-    }
-
-    .event-details-modal .modal-header {
-      position: relative;
-      padding: 0;
-      border-bottom: 0;
-      background:
-        radial-gradient(circle at top right, rgba(255, 210, 77, 0.3), transparent 32%),
-        radial-gradient(circle at left center, rgba(255, 255, 255, 0.12), transparent 28%),
-        linear-gradient(135deg, var(--event-details-hero-start) 0%, var(--event-details-hero-end) 100%);
-      color: #fff;
-    }
-
-    .event-details-modal .modal-header::after {
-      content: "";
-      position: absolute;
-      inset: auto -10% -28px;
-      height: 64px;
-      background: rgba(255, 255, 255, 0.08);
-      filter: blur(18px);
-    }
-
-    .event-details-hero {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      padding: 1.35rem 1.5rem 1.55rem;
-    }
-
-    .event-details-close {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      z-index: 2;
-      width: 2.9rem;
-      height: 2.9rem;
-      padding: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255, 255, 255, 0.16);
-      color: #fff;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 999px;
-      backdrop-filter: blur(10px);
-    }
-
-    .event-details-close:hover {
-      background: rgba(255, 255, 255, 0.24);
-      color: #fff;
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    .event-details-close i {
-      font-size: 1rem;
-      line-height: 1;
-    }
-
-    .event-details-logo-shell {
-      width: min(100%, 180px);
-      min-height: 120px;
-      padding: 0.85rem;
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.14);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(10px);
-    }
-
-    .event-details-logo-shell img {
-      max-width: 100%;
-      max-height: 105px;
-      object-fit: contain;
-    }
-
-    .event-details-title {
-      font-size: clamp(1.7rem, 3vw, 2.45rem);
-      line-height: 1.1;
-    }
-
-    .event-details-status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.55rem 0.95rem;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.16);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      font-weight: 600;
-      letter-spacing: 0.02em;
-    }
-
-    .event-details-meta-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-top: 1.5rem;
-    }
-
-    .event-details-meta-card {
-      padding: 1rem 1.1rem;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      min-height: 100%;
-    }
-
-    .event-details-meta-label {
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: rgba(255, 255, 255, 0.72);
-      margin-bottom: 0.35rem;
-    }
-
-    .event-details-meta-value {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #fff;
-      word-break: break-word;
-    }
-
-    .event-details-modal .modal-body {
-      padding: 1.75rem 2rem 2rem;
-      background:
-        radial-gradient(circle at top right, rgba(31, 90, 166, 0.06), transparent 24%),
-        linear-gradient(180deg, var(--event-details-surface) 0%, #ffffff 100%);
-    }
-
-    .event-details-panel {
-      height: 100%;
-      border: 1px solid rgba(11, 37, 69, 0.08);
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 18px 40px rgba(15, 45, 85, 0.08);
-      padding: 1.35rem;
-    }
-
-    .event-details-panel-title {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-weight: 700;
-      color: #0b2545;
-      margin-bottom: 1rem;
-    }
-
-    .event-details-panel-title i {
-      color: #1f5aa6;
-      font-size: 1.1rem;
-    }
-
-    .event-details-description {
-      color: #24384d;
-      line-height: 1.7;
-    }
-
-    #eventDetailsPoster {
-      display: inline-block;
-      max-width: 100%;
-    }
-
-    .event-details-poster-trigger {
-      display: inline-flex;
-      max-width: 100%;
-      padding: 0;
-      border: 1px solid rgba(31, 90, 166, 0.1);
-      border-radius: 22px;
-      background:
-        linear-gradient(180deg, rgba(11, 37, 69, 0.02), rgba(31, 90, 166, 0.08)),
-        #eef4fb;
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
-      text-align: inherit;
-      cursor: pointer;
-      overflow: hidden;
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-    }
-
-    .event-details-poster-trigger:hover,
-    .event-details-poster-trigger:focus-visible {
-      transform: translateY(-2px);
-      box-shadow: 0 16px 28px rgba(15, 45, 85, 0.12);
-      border-color: rgba(31, 90, 166, 0.22);
-    }
-
-    .event-details-poster-trigger:focus-visible {
-      outline: none;
-    }
-
-    .event-details-poster-image {
-      display: block;
-      width: auto;
-      max-width: min(100%, 220px);
-      height: 250px;
-      object-fit: contain;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.18));
-    }
-
-    .event-poster-preview-modal .modal-content {
-      background: rgba(5, 16, 30, 0.96);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 24px;
-      overflow: hidden;
-    }
-
-    .event-poster-preview-modal .modal-header {
-      border-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .event-poster-preview-modal .btn-close {
-      filter: invert(1) grayscale(1);
-      opacity: 0.9;
-    }
-
-    .event-poster-preview-body {
-      padding-top: 0.75rem;
-      text-align: center;
-    }
-
-    .event-poster-preview-body img {
-      width: 100%;
-      max-height: 78vh;
-      object-fit: contain;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.04);
-    }
-
-    .event-details-description :last-child {
-      margin-bottom: 0;
-    }
-
-    .event-details-fallback {
-      color: #6c7c8f;
-      font-style: italic;
-      margin-bottom: 0;
-    }
-
-    .event-details-info-list {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0.65rem;
-    }
-
-    .event-details-info-item {
-      display: flex;
-      gap: 0.55rem;
-      align-items: flex-start;
-      padding: 0.55rem 0.65rem;
-      border-radius: 14px;
-      background: #f7faff;
-      border: 1px solid rgba(31, 90, 166, 0.08);
-      min-height: 100%;
-    }
-
-    .event-details-info-icon {
-      width: 1.8rem;
-      height: 1.8rem;
-      border-radius: 10px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, rgba(31, 90, 166, 0.12), rgba(255, 210, 77, 0.28));
-      color: #1f5aa6;
-      flex: 0 0 auto;
-    }
-
-    .event-details-info-label {
-      display: block;
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #73869a;
-      margin-bottom: 0.05rem;
-    }
-
-    .event-details-info-value {
-      color: #17314a;
-      font-size: 0.95rem;
-      font-weight: 600;
-      word-break: break-word;
-    }
-
-    .event-details-placeholder {
-      color: #7c8ea1;
-      font-weight: 500;
-    }
-
-    .event-details-action {
-      display: flex;
-      align-items: center;
-      gap: 0.55rem;
-      padding: 0.55rem 0.65rem;
-      border-radius: 14px;
-      text-decoration: none;
-      color: #0b2545;
-      background: linear-gradient(135deg, rgba(31, 90, 166, 0.08), rgba(255, 210, 77, 0.12));
-      border: 1px solid rgba(31, 90, 166, 0.1);
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-    }
-
-    .event-details-action:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 26px rgba(15, 45, 85, 0.12);
-      border-color: rgba(31, 90, 166, 0.22);
-      color: #0b2545;
-    }
-
-    .event-details-action.is-disabled {
-      cursor: default;
-      box-shadow: none;
-      transform: none;
-      opacity: 0.78;
-    }
-
-    .event-details-action.is-disabled:hover {
-      transform: none;
-      box-shadow: none;
-      border-color: rgba(31, 90, 166, 0.1);
-      color: #0b2545;
-    }
-
-    .event-details-action-icon {
-      width: 1.8rem;
-      height: 1.8rem;
-      border-radius: 10px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      background: linear-gradient(135deg, #1f5aa6 0%, #347fe4 100%);
-      flex: 0 0 auto;
-    }
-
-    .event-details-action-label {
-      display: block;
-      font-size: 0.95rem;
-      font-weight: 700;
-    }
-
-    .event-details-action-subtitle {
-      display: block;
-      color: #5f7388;
-      font-size: 0.8rem;
-      word-break: break-word;
-    }
-
-    .event-details-link {
-      color: #17314a;
-      text-decoration: none;
-      border-bottom: 1px solid rgba(23, 49, 74, 0.18);
-    }
-
-    .event-details-link:hover {
-      color: #1f5aa6;
-      border-bottom-color: rgba(31, 90, 166, 0.35);
-    }
-
-    .event-details-bases-card {
-      min-height: 100%;
-    }
-
-    .event-details-loading {
-      display: flex;
-      align-items: center;
-      gap: 0.8rem;
-      color: #365676;
-      padding: 0.3rem 0;
-    }
-
-    .event-details-error {
-      border-radius: 18px;
-      margin-bottom: 0;
-    }
-
-    @media (max-width: 991.98px) {
-      .event-details-info-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
-    @media (max-width: 767.98px) {
-      .event-details-hero {
-        padding: 1.05rem 1rem 1.15rem;
-      }
-
-      .event-details-modal .modal-body {
-        padding: 1.2rem;
-      }
-
-      .event-details-logo-shell {
-        width: min(100%, 150px);
-        min-height: 100px;
-      }
-
-      .event-details-logo-shell img {
-        max-height: 86px;
-      }
-
-      .event-details-info-list {
-        grid-template-columns: 1fr;
-      }
-
-      .event-details-poster-image {
-        height: 250px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20260930-1">
+  <link rel="stylesheet" href="css/index.css?v=20261002-2">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
-<body class="d-flex flex-column min-vh-100">
-  
-  <header class="index-app-header text-white">
-    <div class="index-app-header-inner">
-      <div class="index-app-brand">
-        <img class="index-app-logo index-app-logo--full" src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1781521973/copy_of_new_logo_lumoraevents_small_kwnjrc.png" alt="LumoraEvents">
-        <img class="index-app-logo index-app-logo--mark" src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1789748600/isotipo-lumoraevents_ylusci.png" alt="LumoraEvents">
+<body class="d-flex flex-column min-vh-100 index-page">
+  <header class="app-header index-header">
+    <div class="app-header-main">
+      <div class="app-header-brand">
+        <a href="index.html" aria-label="LumoraEvents">
+          <img class="app-header-logo app-header-logo--full" src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1781521973/copy_of_new_logo_lumoraevents_small_kwnjrc.png" alt="LumoraEvents">
+          <img class="app-header-logo app-header-logo--mark" src="https://res.cloudinary.com/ddgxtuwdo/image/upload/v1789748600/isotipo-lumoraevents_ylusci.png" alt="LumoraEvents">
+        </a>
       </div>
-
-      <a href="" id="event-name" class="index-app-title">
-        <span data-i18n="home_title"></span>
-      </a>
-
-      <div class="index-app-actions">
-        <button id="admin-btn" type="button" class="index-admin-btn btn btn-warning d-none" aria-label="Admin" title="Admin">
-          <i class="bi bi-shield-lock" aria-hidden="true"></i>
-          <span class="index-admin-label">Admin</span>
+      <h1 class="app-event-heading">
+        <a href="" id="event-name" class="app-event-name" data-i18n="home_title">Events</a>
+      </h1>
+      <div class="app-header-user">
+        <button id="admin-btn" type="button" class="btn btn-warning app-user-action index-admin-btn d-none" aria-label="Admin" title="Admin">
+          <i class="bi bi-shield-lock" aria-hidden="true"></i><span class="index-admin-label">Admin</span>
         </button>
         <div class="dropdown language-selector">
-          <button class="btn btn-sm dropdown-toggle" type="button" id="languageDropdown"
-            data-bs-toggle="dropdown" aria-expanded="false" aria-label="Cambiar idioma" title="Cambiar idioma">
+          <button class="btn btn-sm dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Cambiar idioma" title="Cambiar idioma">
             <span class="language-selector-code" id="current-language-code">ES</span>
           </button>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-            <li>
-              <button class="dropdown-item" type="button" data-language="es" aria-label="Español" onclick="changeLanguage('es')">
-                ES
-              </button>
-            </li>
-            <li>
-              <button class="dropdown-item" type="button" data-language="en" aria-label="English" onclick="changeLanguage('en')">
-                EN
-              </button>
-            </li>
-            <li>
-              <button class="dropdown-item" type="button" data-language="it" aria-label="Italiano" onclick="changeLanguage('it')">
-                IT
-              </button>
-            </li>
-            <li>
-              <button class="dropdown-item" type="button" data-language="pt" aria-label="Português" onclick="changeLanguage('pt')">
-                PT
-              </button>
-            </li>
-            <li>
-              <button class="dropdown-item" type="button" data-language="fr" aria-label="Français" onclick="changeLanguage('fr')">
-                FR
-              </button>
-            </li>
+            <li><button class="dropdown-item" type="button" data-language="es" aria-label="Español" onclick="changeLanguage('es')">ES</button></li>
+            <li><button class="dropdown-item" type="button" data-language="en" aria-label="English" onclick="changeLanguage('en')">EN</button></li>
+            <li><button class="dropdown-item" type="button" data-language="it" aria-label="Italiano" onclick="changeLanguage('it')">IT</button></li>
+            <li><button class="dropdown-item" type="button" data-language="pt" aria-label="Português" onclick="changeLanguage('pt')">PT</button></li>
+            <li><button class="dropdown-item" type="button" data-language="fr" aria-label="Français" onclick="changeLanguage('fr')">FR</button></li>
           </ul>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="container mt-4">
-    <div class="row g-3 align-items-center mb-4">
-      <div class="col-12 col-lg-4">
-        <div class="input-group shadow-sm">
-          <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-primary"></i></span>
-          <input
-            type="search"
-            id="eventSearchInput"
-            class="form-control border-start-0"
-            data-i18n-placeholder="search_by_name_placeholder"
-            placeholder="Buscar evento"
-          >
-        </div>
-      </div>
-      <div class="col-12 col-lg-3">
-        <select id="eventCategoryFilter" class="form-select shadow-sm" data-i18n-aria-label="filter_by_category" aria-label="Filter by category">
-          <option value="" data-i18n="all_categories">All Categories</option>
-        </select>
-      </div>
-      <div class="col-12 col-lg-5">
-        <div class="d-flex justify-content-end">
-          <div id="eventStatusFilters" class="btn-group flex-wrap justify-content-end shadow-sm" role="group" aria-label="Event status filters">
-            <button type="button" class="btn btn-outline-secondary active" data-status-filter="all" aria-pressed="true">
-              <i class="bi bi-grid-3x3-gap-fill me-2 text-primary"></i><span data-i18n="all">All</span>
-            </button>
-            <button type="button" class="btn btn-outline-secondary" data-status-filter="en_curso" aria-pressed="false">
-              <i class="bi bi-broadcast-pin me-2 text-warning"></i><span data-i18n="en_curso">En curso</span>
-            </button>
-            <button type="button" class="btn btn-outline-secondary" data-status-filter="proximamente" aria-pressed="false">
-              <i class="bi bi-calendar-event me-2 text-info"></i><span data-i18n="proximamente">Próximamente</span>
-            </button>
-            <button type="button" class="btn btn-outline-secondary" data-status-filter="finalizado" aria-pressed="false">
-              <i class="bi bi-check-circle me-2 text-success"></i><span data-i18n="finalizado">Finalizado</span>
-            </button>
+  <main class="lm-page index-main">
+    <div class="lm-container index-content">
+      <section class="index-discover" aria-label="Events" data-i18n-aria-label="home_title">
+        <div class="index-filter-panel">
+          <div class="index-filter-fields">
+            <label class="index-search-field" for="eventSearchInput">
+              <i class="bi bi-search" aria-hidden="true"></i>
+              <input type="search" id="eventSearchInput" class="form-control lm-input" data-i18n-placeholder="search_by_name_placeholder" data-i18n-aria-label="search_by_name" placeholder="Search event" aria-label="Search by name">
+            </label>
+            <div class="index-category-field">
+              <select id="eventCategoryFilter" class="form-select lm-input" data-i18n-aria-label="filter_by_category" aria-label="Filter by category">
+                <option value="" data-i18n="all_categories">All Categories</option>
+              </select>
+              <i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </div>
+          </div>
+          <div id="eventStatusFilters" class="index-status-filters" role="group" data-i18n-aria-label="filter_by_status" aria-label="Filter by status">
+            <button type="button" class="index-filter-btn active" data-status-filter="all" aria-pressed="true"><i class="bi bi-grid-3x3-gap-fill" aria-hidden="true"></i><span data-i18n="all">All</span></button>
+            <button type="button" class="index-filter-btn" data-status-filter="en_curso" aria-pressed="false"><i class="bi bi-broadcast-pin" aria-hidden="true"></i><span data-i18n="en_curso">Ongoing</span></button>
+            <button type="button" class="index-filter-btn" data-status-filter="proximamente" aria-pressed="false"><i class="bi bi-calendar-event" aria-hidden="true"></i><span data-i18n="proximamente">Upcoming</span></button>
+            <button type="button" class="index-filter-btn" data-status-filter="finalizado" aria-pressed="false"><i class="bi bi-check-circle" aria-hidden="true"></i><span data-i18n="finalizado">Finished</span></button>
           </div>
         </div>
-      </div>
+        <div id="eventsContainer" class="index-events"></div>
+      </section>
     </div>
-    <div id="eventsContainer" class="d-flex flex-column gap-4"></div>
-  </div>
+  </main>
 
-  <div class="modal fade event-details-modal" id="eventDetailsModal" tabindex="-1" aria-labelledby="eventDetailsModalLabel" aria-hidden="true">
+  <div class="modal fade lm-modal event-details-modal" id="eventDetailsModal" tabindex="-1" aria-labelledby="eventDetailsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -809,15 +117,15 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer border-0 pt-0 px-4 pb-4">
-          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal" data-i18n="close">Close</button>
-          <a href="#" class="btn btn-warning text-dark fw-semibold rounded-pill px-4" id="eventDetailsGoToEventBtn" data-i18n="go_to_event">Go to Event</a>
+        <div class="modal-footer event-details-footer">
+          <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+          <a href="#" class="lm-btn lm-btn-primary" id="eventDetailsGoToEventBtn" data-i18n="go_to_event">Go to Event</a>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade event-poster-preview-modal" id="eventPosterPreviewModal" tabindex="-1" aria-labelledby="eventPosterPreviewModalLabel" aria-hidden="true">
+  <div class="modal fade lm-modal event-poster-preview-modal" id="eventPosterPreviewModal" tabindex="-1" aria-labelledby="eventPosterPreviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header border-0 px-4 pt-4">
@@ -840,6 +148,6 @@
   <script src="js/common.js?v=20260917"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/index.js?v=20260917"></script>
+  <script src="js/index.js?v=20261002-1"></script>
 
 </body></html>
