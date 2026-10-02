@@ -8,368 +8,47 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />  
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20261002-1">
+  <link rel="stylesheet" href="css/voting.css?v=20261002-2">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
-  <style>
-    .bg-noshown {
-      background-color: #6f42c1; /* morado Bootstrap */
-      color: white;
-    }
-
-    .btn-comments {
-      background-color: #f97316;
-      border-color: #f97316;
-      color: #fff;
-    }
-
-    .btn-comments:hover {
-      background-color: #ea580c;
-      border-color: #ea580c;
-      color: #fff;
-    }
-
-    .btn-outline-comments {
-      color: #f97316;
-      border-color: #f97316;
-    }
-
-    .btn-outline-comments:hover {
-      background-color: #f97316;
-      border-color: #f97316;
-      color: #fff;
-    }
-
-    .btn-audio-feedback {
-      background-color: #0f766e;
-      border-color: #0f766e;
-      color: #fff;
-    }
-
-    .btn-audio-feedback:hover {
-      background-color: #115e59;
-      border-color: #115e59;
-      color: #fff;
-    }
-
-    .btn-outline-audio-feedback {
-      color: #0f766e;
-      border-color: #0f766e;
-    }
-
-    .btn-outline-audio-feedback:hover {
-      background-color: #0f766e;
-      border-color: #0f766e;
-      color: #fff;
-    }
-
-    .feedback-actions {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      flex-wrap: wrap;
-    }
-
-    .btn-feedback-icon {
-      width: 2rem;
-      height: 2rem;
-      padding: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
-    }
-
-    #audioFeedbackModal .modal-body {
-      min-height: 260px;
-    }
-
-    .audio-feedback-card {
-      border: 1px solid #dfe3e8;
-      border-radius: 0.75rem;
-      background: #f8f9fa;
-      padding: 1rem;
-    }
-
-    .audio-feedback-player {
-      width: 100%;
-    }
-
-    .audio-feedback-meta {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    .audio-feedback-title {
-      font-weight: 600;
-      word-break: break-word;
-    }
-
-    .audio-feedback-duration {
-      font-size: 0.9rem;
-      color: #6c757d;
-    }
-
-    .audio-feedback-recording-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.45rem;
-    }
-
-    #clearCommentsConfirmModal {
-      z-index: 1065;
-    }
-
-    .modal-backdrop.comments-confirm-backdrop {
-      z-index: 1060;
-    }
-
-    .audio-feedback-recording-dot {
-      width: 0.6rem;
-      height: 0.6rem;
-      border-radius: 50%;
-      background: #dc3545;
-      animation: audio-feedback-pulse 1s ease-in-out infinite;
-    }
-
-    @keyframes audio-feedback-pulse {
-      0%,
-      100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-
-      50% {
-        opacity: 0.45;
-        transform: scale(0.82);
-      }
-    }
-
-    #dancersTableContainer.dancers-table-collapsed {
-      max-width: 700px;
-    }
-
-    #dancersTableContainer.dancers-table-expanded {
-      max-width: 100%;
-    }
-
-    .criteria-col {
-      width: 70px;
-      min-width: 70px;
-      max-width: 70px;
-      white-space: nowrap;
-    }
-
-    .criteria-header-text {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .criteria-header-meta {
-      display: block;
-      margin-top: 0.15rem;
-      font-size: 0.75em;
-      line-height: 1.1;
-      color: var(--bs-secondary-color);
-      text-align: center;
-    }
-
-    .competition-option-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.25rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .badge-neutral-dark {
-      background-color: #495057;
-      color: #fff;
-    }
-
-    .competition-option-meta {
-      font-size: 0.82rem;
-      color: #6c757d;
-    }
-
-    .competition-option-meta i {
-      margin-right: 0.2rem;
-    }
-
-    .ts-dropdown .option .competition-option-wrap {
-      padding: 0.2rem 0;
-    }
-
-    .competition-info-row {
-      display: flex;
-      align-items: center;
-      column-gap: 1.25rem;
-      row-gap: 0.85rem;
-      flex-wrap: wrap;
-    }
-
-    .competition-info-badges {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.6rem;
-      margin-bottom: 0;
-    }
-
-    .competition-info-time {
-      font-size: 0.92rem;
-      color: #495057;
-      margin-bottom: 0;
-      white-space: nowrap;
-    }
-
-    .competition-info-progress-wrap {
-      flex: 1 1 260px;
-      min-width: 220px;
-      display: flex;
-      align-items: center;
-      gap: 0.6rem;
-    }
-
-    .competition-info-progress {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-
-    .head-judge-indicator {
-      width: 30px;
-      height: 30px;
-      border: 0;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #ffc107;
-      color: #664d03;
-      flex: 0 0 auto;
-    }
-
-    .voting-mobile-range-shell {
-      width: 100%;
-      padding-inline: clamp(0.75rem, 4vw, 1.5rem);
-    }
-
-    .voting-mobile-range-card {
-      width: 100%;
-      border: 1px solid rgba(108, 117, 125, 0.35);
-      border-radius: 0.5rem;
-      padding: 0.75rem;
-    }
-
-    #penaltyAssignmentModal .modal-dialog {
-      width: 96vw;
-      max-width: 980px;
-    }
-
-    #penaltyAssignmentModal .modal-body {
-      max-height: 72vh;
-      overflow-y: auto;
-    }
-
-    #penaltyAssignmentModal .penalty-assignment-header {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
-
-    #penaltyAssignmentModal .penalty-assignment-participant {
-      font-size: 1.3rem;
-      line-height: 1.2;
-    }
-
-    #penaltyAssignmentModal .penalty-assignment-competition-badge {
-      width: fit-content;
-      max-width: 100%;
-      text-align: left;
-      white-space: normal;
-    }
-
-    #penaltyAssignmentModal .penalty-assignment-table {
-      table-layout: fixed;
-      min-width: 860px;
-    }
-
-    #penaltyAssignmentModal .penalty-col-apply {
-      width: 72px;
-    }
-
-    #penaltyAssignmentModal .penalty-col-name {
-      width: auto;
-    }
-
-    #penaltyAssignmentModal .penalty-col-assigned-by {
-      width: 130px;
-    }
-
-    #penaltyAssignmentModal .penalty-col-for-judges {
-      width: 100px;
-    }
-
-    #penaltyAssignmentModal .penalty-col-range {
-      width: 110px;
-    }
-
-    #penaltyAssignmentModal .penalty-col-score {
-      width: 120px;
-    }
-
-    #penaltyAssignmentModal .penalty-fixed-badge {
-      font-size: 0.68rem;
-      line-height: 1;
-    }
-  </style>
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 voting-page">
   <div id="header"></div>
-  <div class="container py-4">
-      
-    <div class="container" id="voteContainer">
-      <div class="row g-3 align-items-start mb-4 justify-content-center">
-        <div class="col-md-6">
-          <select class="form-select" id="competitionSelect" disabled>
+  <main class="lm-page flex-grow-1">
+    <div class="lm-container voting-content" id="voteContainer">
+      <section class="lm-card voting-picker">
+        <div class="voting-picker-main">
+          <label class="visually-hidden" for="competitionSelect" data-i18n="select_competition">Select a competition</label>
+          <select class="form-select lm-input" id="competitionSelect" disabled>
             <option selected disabled value="" data-i18n="select_competition">Select a competition</option>
           </select>
-          <div class="row g-2 mt-2">
-            <div class="col-12 col-md-6">
-              <button class="btn btn-outline-primary w-100 text-start d-flex flex-column justify-content-center" id="previousCompetitionBtn" disabled>
+          <div class="voting-picker-nav">
+              <button type="button" class="lm-btn lm-btn-secondary voting-nav-btn" id="previousCompetitionBtn" disabled>
                 <span class="competition-nav-label">Previous Competition</span>
-                <span class="competition-nav-meta small opacity-75 d-none"></span>
+                <span class="competition-nav-meta d-none"></span>
               </button>
-            </div>
-            <div class="col-12 col-md-6">
-              <button class="btn btn-outline-primary w-100 text-start d-flex flex-column justify-content-center" id="nextCompetitionBtn" disabled>
+              <button type="button" class="lm-btn lm-btn-secondary voting-nav-btn" id="nextCompetitionBtn" disabled>
                 <span class="competition-nav-label">Next Competition</span>
-                <span class="competition-nav-meta small opacity-75 d-none"></span>
+                <span class="competition-nav-meta d-none"></span>
               </button>
-            </div>
           </div>
         </div>
-        
-        <div class="col-md-1">
-          <button class="btn btn-primary" id="refreshBtn" data-i18n="refresh" disabled>Refresh</button>
-        </div>
-      </div>
+        <button type="button" class="lm-btn lm-btn-primary voting-refresh-btn" id="refreshBtn" data-i18n="refresh" disabled>Refresh</button>
+      </section>
 
-      <div class="card mb-4" id="competitionInfo" style="display:none;">
-        <div class="card-body">
+      <section class="lm-card voting-competition-info" id="competitionInfo" style="display:none;">
+        <div class="lm-card-body">
           <div class="competition-info-row">
             <div class="competition-info-badges">
-              <span id="compCategory" class="badge bg-secondary fs-6 px-2 py-1">-</span>
-              <span id="compStyle" class="badge bg-secondary fs-6 px-2 py-1">-</span>
-              <span id="compStatus" class="badge bg-secondary fs-6 px-2 py-1">-</span>
+              <span id="compCategory" class="lm-badge lm-badge-primary">-</span>
+              <span id="compStyle" class="lm-badge lm-badge-purple">-</span>
+              <span id="compStatus" class="lm-status lm-status-neutral">-</span>
             </div>
             <div id="compTime" class="competition-info-time"></div>
             <div class="competition-info-progress-wrap">
-              <div class="progress position-relative competition-info-progress" role="progressbar" aria-label="Competition progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="height: 30px;">
-                <div id="compProgressBar" class="progress-bar progress-bar-striped bg-warning" style="width: 0%"></div>
-                <span id="compProgressText" class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap text-dark">0/0 (0%)</span>
+              <div class="progress competition-info-progress" role="progressbar" aria-label="Competition progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div id="compProgressBar" class="progress-bar" style="width: 0%"></div>
+                <span id="compProgressText" class="competition-info-progress-text">0/0 (0%)</span>
               </div>
               <button
                 type="button"
@@ -386,68 +65,70 @@
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="alert alert-info text-center" id="judgeReserveInfo" style="display:none;" data-i18n="reserve_alert">
+      <div class="alert alert-info lm-notice voting-reserve-info" id="judgeReserveInfo" style="display:none;" data-i18n="reserve_alert">
         <i class="bi bi-info-circle-fill me-2"></i>
         You are a reserve judge. You can only vote for dancers who have a judge as their coach.
       </div>
 
       <!-- Tabla de bailarinas -->
-      <div class="table-responsive mx-auto dancers-table-collapsed" id="dancersTableContainer" style="display:none;">
-        <div class="d-flex justify-content-center mb-2">
-          <button type="button" class="btn btn-sm btn-outline-secondary opacity-75" id="toggleCriteriaBtn">
+      <section class="voting-dancers dancers-table-collapsed" id="dancersTableContainer" style="display:none;">
+        <div class="voting-table-toolbar">
+          <button type="button" class="lm-btn lm-btn-secondary voting-toggle-btn" id="toggleCriteriaBtn" aria-pressed="false">
             <i class="bi bi-layout-three-columns me-1"></i>
             <span id="toggleCriteriaBtnText">Show scores</span>
           </button>
         </div>
-        <table class="table table-bordered align-middle text-center">
-          <thead class="table-light">
+        <div class="voting-table-scroll">
+        <table class="table lm-table voting-table align-middle">
+          <thead>
             <tr id="dancersTableHeadRow"></tr>
           </thead>
           <tbody id="dancersTableBody">
             <!-- Bailarinas se cargarán aquí dinámicamente -->
           </tbody>
         </table>
-      </div>
+        </div>
+      </section>
 
-      <div class="modal fade" id="detailsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+      <div class="modal fade lm-modal voting-modal" id="detailsModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header">
               <div class="d-flex align-items-center gap-2 flex-wrap">
                 <h5 class="modal-title mb-0" id="detailsModalLabel">Votes</h5>
-                <span id="detailsModalModeBadge" class="badge text-bg-warning text-dark text-uppercase d-none">Change vote</span>
+                <span id="detailsModalModeBadge" class="lm-status lm-status-warning text-uppercase d-none">Change vote</span>
               </div>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
               <div class="row g-3 text-center" id="criteriaContainer"></div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="modal fade" id="commentsModal" tabindex="-1" aria-hidden="true">
+      <div class="modal fade lm-modal voting-modal" id="commentsModal" tabindex="-1" aria-labelledby="commentsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-body">
-              <label for="commentsTextarea" class="form-label fw-semibold" data-i18n="comments">Comments</label>
-              <textarea id="commentsTextarea" class="form-control" rows="5" placeholder="Add comments..." data-i18n-placeholder="add_comments"></textarea>
+              <label for="commentsTextarea" id="commentsModalLabel" class="form-label fw-semibold" data-i18n="comments">Comments</label>
+              <textarea id="commentsTextarea" class="form-control lm-input" rows="5" placeholder="Add comments..." data-i18n-placeholder="add_comments"></textarea>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-outline-danger me-auto" id="clearCommentsBtn" data-i18n="clear">Clear</button>
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
-              <button type="button" class="btn btn-primary" id="saveCommentsBtn" data-i18n="save">Save</button>
+              <button type="button" class="lm-btn lm-btn-danger me-auto" id="clearCommentsBtn" data-i18n="clear">Clear</button>
+              <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+              <button type="button" class="lm-btn lm-btn-primary" id="saveCommentsBtn" data-i18n="save">Save</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="modal fade" id="clearCommentsConfirmModal" tabindex="-1" aria-hidden="true">
+      <div class="modal fade lm-modal voting-modal" id="clearCommentsConfirmModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
@@ -458,19 +139,19 @@
               <p class="mb-0" data-i18n="comments_delete_confirm">Are you sure you want to delete the comment?</p>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
-              <button type="button" class="btn btn-danger" id="confirmClearCommentsBtn" data-i18n="confirm">Confirm</button>
+              <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+              <button type="button" class="lm-btn lm-btn-danger-solid" id="confirmClearCommentsBtn" data-i18n="confirm">Confirm</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="modal fade" id="audioFeedbackModal" tabindex="-1" aria-labelledby="audioFeedbackModalLabel" aria-hidden="true">
+      <div class="modal fade lm-modal voting-modal" id="audioFeedbackModal" tabindex="-1" aria-labelledby="audioFeedbackModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header">
               <h5 class="modal-title" id="audioFeedbackModalLabel" data-i18n="audio_feedback_modal_title">Audio feedback</h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
               <div class="mb-3">
@@ -495,7 +176,7 @@
                         <span id="audioFeedbackExistingDuration">-</span>
                       </div>
                     </div>
-                    <button type="button" class="btn btn-outline-danger btn-sm" id="deleteAudioFeedbackBtn" data-i18n="audio_feedback_delete">Delete audio</button>
+                    <button type="button" class="lm-btn lm-btn-danger" id="deleteAudioFeedbackBtn" data-i18n="audio_feedback_delete">Delete audio</button>
                   </div>
                   <audio id="audioFeedbackExistingPlayer" class="audio-feedback-player mt-3" controls preload="metadata"></audio>
                 </div>
@@ -508,18 +189,18 @@
                 </div>
 
                 <div id="audioFeedbackRecordIdleSection">
-                  <button type="button" class="btn btn-outline-primary" id="startAudioFeedbackBtn" data-i18n="audio_feedback_record">Record audio</button>
+                  <button type="button" class="lm-btn lm-btn-primary" id="startAudioFeedbackBtn" data-i18n="audio_feedback_record">Record audio</button>
                 </div>
 
                 <div class="d-none" id="audioFeedbackRecordingSection">
                   <div class="mb-3">
-                    <span class="badge text-bg-danger audio-feedback-recording-badge">
+                    <span class="lm-status lm-status-danger audio-feedback-recording-badge">
                       <span class="audio-feedback-recording-dot" aria-hidden="true"></span>
                       <span data-i18n="audio_feedback_recording">Recording</span>
                     </span>
                     <span class="ms-2 fw-semibold" id="audioFeedbackRecordingTimer">0:00</span>
                   </div>
-                  <button type="button" class="btn btn-outline-danger" id="stopAudioFeedbackBtn" data-i18n="audio_feedback_stop">Stop recording</button>
+                  <button type="button" class="lm-btn lm-btn-danger" id="stopAudioFeedbackBtn" data-i18n="audio_feedback_stop">Stop recording</button>
                 </div>
 
                 <div class="d-none" id="audioFeedbackPreviewSection">
@@ -531,8 +212,8 @@
                       <span id="audioFeedbackPreviewDuration">-</span>
                     </div>
                     <div class="d-flex gap-2 flex-wrap mt-3">
-                      <button type="button" class="btn btn-outline-secondary" id="discardAudioFeedbackBtn" data-i18n="audio_feedback_discard">Discard audio</button>
-                      <button type="button" class="btn btn-primary" id="saveAudioFeedbackBtn" data-i18n="audio_feedback_send">Send audio</button>
+                      <button type="button" class="lm-btn lm-btn-secondary" id="discardAudioFeedbackBtn" data-i18n="audio_feedback_discard">Discard audio</button>
+                      <button type="button" class="lm-btn lm-btn-primary" id="saveAudioFeedbackBtn" data-i18n="audio_feedback_send">Send audio</button>
                     </div>
                   </div>
                 </div>
@@ -554,18 +235,18 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+              <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="modal fade" id="penaltyAssignmentModal" tabindex="-1" aria-labelledby="penaltyAssignmentModalLabel" aria-hidden="true">
+      <div class="modal fade lm-modal voting-modal" id="penaltyAssignmentModal" tabindex="-1" aria-labelledby="penaltyAssignmentModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header">
               <h5 class="modal-title" id="penaltyAssignmentModalLabel" data-i18n="penalty_modal_title">Penalties</h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body" id="penaltyAssignmentModalBody">
               <div class="d-flex align-items-center justify-content-center py-4">
@@ -574,16 +255,15 @@
               </div>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-primary btn-sm" id="penaltyAssignmentSaveBtn" data-i18n="penalty_modal_save">Save</button>
-              <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
+              <button type="button" class="lm-btn lm-btn-primary" id="penaltyAssignmentSaveBtn" data-i18n="penalty_modal_save">Save</button>
+              <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
             </div>
           </div>
         </div>
       </div>
 
     </div>
-
-  </div>
+  </main>
   
   <div id="footer"></div>
 
@@ -594,6 +274,6 @@
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
-  <script src="js/voting.js"></script>
+  <script src="js/voting.js?v=20261002-2"></script>
 </body>
 </html>

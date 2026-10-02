@@ -90,6 +90,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   //await eventReadyPromise;
   await WaitEventLoaded();
 
+  const messageModalEl = document.getElementById('messageModal');
+  messageModalEl?.classList.add('lm-modal', 'voting-modal');
+  const messageModalCloseBtn = messageModalEl?.querySelector('.modal-footer button');
+  messageModalCloseBtn?.classList.remove('btn', 'btn-primary');
+  messageModalCloseBtn?.classList.add('lm-btn', 'lm-btn-primary');
+
   criteriaColumnsVisible = loadCriteriaColumnsVisibility();
 
   competitionSelect = document.getElementById('competitionSelect');
@@ -1277,17 +1283,17 @@ function showVotesModal(dancer, mode = "details") {
       const currentScore = getDetailCriteriaScore(criteria);
       const formattedValue = currentScore === null ? '-' : formatScoreForDisplay(currentScore, scoreType);
       return `
-        <span class="badge text-bg-light border">
+        <span class="lm-status lm-status-neutral voting-previous-score">
           ${escapeHtml(formatCriteriaLabel(criteria))}: <span class="fw-semibold">${escapeHtml(formattedValue)}</span>
         </span>
       `;
     }).join('');
 
     summaryBlock.innerHTML = `
-      <div class="alert alert-warning border shadow-sm mb-0 text-start">
+      <div class="alert alert-warning lm-notice voting-previous-summary mb-0 text-start">
         <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
           <div class="fw-semibold">${escapeHtml(t('change_vote_previous_summary', 'Current submitted votes'))}</div>
-          <span class="badge bg-dark">${escapeHtml(t('total', 'Total'))}: ${escapeHtml(formatTotalScore(getInitialTotalScore()) || '0')}</span>
+          <span class="lm-status lm-status-warning">${escapeHtml(t('total', 'Total'))}: ${escapeHtml(formatTotalScore(getInitialTotalScore()) || '0')}</span>
         </div>
         <div class="d-flex flex-wrap gap-2 mt-2">
           ${criteriaSummary}
@@ -1327,7 +1333,7 @@ function showVotesModal(dancer, mode = "details") {
     const input = document.createElement('input');
     input.type = 'number';
     input.inputMode = inputMode;
-    input.className = large ? 'form-control form-control-lg' : 'form-control';
+    input.className = large ? 'form-control form-control-lg lm-input voting-number-input' : 'form-control lm-input voting-number-input';
     input.step = scoreStep;
     input.min = bounds.min;
     input.max = bounds.max;
@@ -1341,36 +1347,24 @@ function showVotesModal(dancer, mode = "details") {
   const createRangeControl = (criteria, currentScore) => {
     const bounds = getCriteriaBounds(criteria);
     const wrapper = document.createElement('div');
-    wrapper.className = 'w-100 d-grid align-items-center gap-1';
-    wrapper.style.gridTemplateColumns = 'minmax(0, 1fr) auto';
-    wrapper.style.columnGap = '0.75rem';
+    wrapper.className = 'voting-range-control';
 
     const range = document.createElement('input');
     range.type = 'range';
-    range.className = 'form-range flex-grow-1 mb-0';
+    range.className = 'form-range score-range';
     range.min = bounds.min;
     range.max = bounds.max;
     range.step = scoreStep;
     range.value = currentScore !== null ? String(currentScore) : String(bounds.min);
-    range.style.cursor = 'pointer';
-    range.style.height = '1.6rem';
-    range.style.gridColumn = '1';
-    range.style.gridRow = '1';
     applyInputMetadata(range, criteria, bounds);
     setInputAssignedState(range, currentScore !== null);
 
     const valueLabel = document.createElement('div');
-    valueLabel.className = 'badge fs-5 px-3 py-2';
-    valueLabel.style.minWidth = normalizedScoreType === 'INT' ? '64px' : '72px';
-    valueLabel.style.textAlign = 'center';
-    valueLabel.style.gridColumn = '2';
-    valueLabel.style.gridRow = '1';
+    valueLabel.className = 'voting-range-value';
 
     const renderValueLabel = () => {
       const assigned = isInputAssigned(range, criteria);
-      valueLabel.className = assigned
-        ? 'badge bg-primary fs-5 px-3 py-2'
-        : 'badge border text-secondary bg-light fs-5 px-3 py-2';
+      valueLabel.classList.toggle('is-unassigned', !assigned);
       if (!assigned) {
         valueLabel.textContent = '\u00A0';
         return;
@@ -1397,9 +1391,7 @@ function showVotesModal(dancer, mode = "details") {
     });
 
     const rangeMeta = document.createElement('div');
-    rangeMeta.className = 'd-flex justify-content-between small text-muted';
-    rangeMeta.style.gridColumn = '1';
-    rangeMeta.style.gridRow = '2';
+    rangeMeta.className = 'voting-range-meta';
     rangeMeta.innerHTML = `
       <span>${formatBoundValue(bounds.min)}</span>
       <span>${formatBoundValue(bounds.max)}</span>
@@ -1426,12 +1418,11 @@ function showVotesModal(dancer, mode = "details") {
 
     const btnGroup = document.createElement('div');
     const useSingleLine = normalizedScoreType === 'MED';
-    if (useSingleLine) {
-      btnGroup.className = 'd-grid w-100 gap-1';
-      btnGroup.style.gridTemplateColumns = `repeat(${options.length}, minmax(0, 1fr))`;
-    } else {
-      btnGroup.className = 'd-flex flex-wrap w-100 gap-2';
-    }
+    btnGroup.className = useSingleLine
+      ? 'voting-score-choices voting-score-choices--scroll'
+      : 'voting-score-choices';
+    btnGroup.setAttribute('role', 'group');
+    btnGroup.setAttribute('aria-labelledby', `vote-criterion-${criteria.id}`);
 
     options.forEach(opt => {
       const formattedOption = formatScoreForDisplay(opt, scoreType);
@@ -1445,11 +1436,9 @@ function showVotesModal(dancer, mode = "details") {
 
       const label = document.createElement('label');
       const isHalfStep = normalizedScoreType === 'MED' && !Number.isInteger(opt);
-      const sizeClass = normalizedScoreType === 'INT' ? 'btn-lg' : 'btn-sm';
-      const colorClass = isHalfStep ? 'btn-outline-warning' : 'btn-outline-primary';
-      label.className = useSingleLine
-        ? `btn ${colorClass} ${sizeClass} w-100 px-1`
-        : `btn ${colorClass} ${sizeClass} flex-fill`;
+      label.className = isHalfStep
+        ? 'voting-score-option voting-score-option--half'
+        : 'voting-score-option';
       label.setAttribute('for', btnId);
       label.textContent = formattedOption;
 
@@ -1467,7 +1456,7 @@ function showVotesModal(dancer, mode = "details") {
     });
 
     const wrapper = document.createElement('div');
-    wrapper.className = 'w-100';
+    wrapper.className = 'voting-button-control';
     wrapper.appendChild(hiddenInput);
     wrapper.appendChild(btnGroup);
     return wrapper;
@@ -1489,16 +1478,16 @@ function showVotesModal(dancer, mode = "details") {
   function renderTotal(initialTotal = 0) {
     const totalCol = document.createElement('div');
     if (useMobileLayout) {
-      totalCol.className = 'col-12 mt-3 text-center';
+      totalCol.className = 'col-12 voting-total';
       totalCol.innerHTML = `
-        <div class="fw-bold mb-1">Total</div>
-        <span id="totalScore" class="badge bg-success fs-4 px-4">${formatTotalScore(initialTotal) || '0'}</span>
+        <div class="voting-total-label">${escapeHtml(t('total', 'Total'))}</div>
+        <span id="totalScore" class="voting-total-value">${formatTotalScore(initialTotal) || '0'}</span>
       `;
     } else {
-      totalCol.className = 'border-top pt-3 text-center';
+      totalCol.className = 'voting-total';
       totalCol.innerHTML = `
-        <div class="fw-bold mb-1">Total</div>
-        <span id="totalScore" class="badge bg-success fs-4 px-4">${formatTotalScore(initialTotal) || '0'}</span>
+        <div class="voting-total-label">${escapeHtml(t('total', 'Total'))}</div>
+        <span id="totalScore" class="voting-total-value">${formatTotalScore(initialTotal) || '0'}</span>
       `;
     }
     criteriaContainer.appendChild(totalCol);
@@ -1509,12 +1498,12 @@ function showVotesModal(dancer, mode = "details") {
   if (mode === "details") {
     criteriaList.forEach(c => {
       const col = document.createElement('div');
-      col.className = 'col-6 text-center';
+      col.className = 'col-6 voting-detail-col';
       const currentScore = getDetailCriteriaScore(c);
       const formattedValue = currentScore === null ? '-' : formatScoreForDisplay(currentScore, scoreType);
       col.innerHTML = `
-        <div class="mb-1 fw-semibold">${formatCriteriaLabel(c)}</div>
-        <span class="badge bg-info fs-5">${formattedValue}</span>
+        <div class="voting-detail-label">${escapeHtml(formatCriteriaLabel(c))}</div>
+        <span class="voting-detail-value">${escapeHtml(formattedValue)}</span>
       `;
       criteriaContainer.appendChild(col);
     });
@@ -1524,22 +1513,27 @@ function showVotesModal(dancer, mode = "details") {
       const controlType = getVoteControlType(c);
       const currentScore = getInitialCriteriaScore(c);
       const col = document.createElement('div');
-      col.className = controlType === 'range' ? 'col-12 voting-mobile-range-shell' : 'col-12 text-center';
+      col.className = 'col-12 voting-criterion-col';
 
       const content = document.createElement('div');
-      content.className = controlType === 'range' ? 'voting-mobile-range-card text-center' : 'text-center';
+      content.className = 'voting-criterion-card';
 
       const label = document.createElement('div');
-      label.className = 'mb-2 fw-semibold';
+      label.className = 'voting-criterion-label';
+      label.id = `vote-criterion-${c.id}`;
       label.textContent = formatCriteriaLabel(c);
       content.appendChild(label);
 
       if (controlType === 'range') {
-        content.appendChild(createRangeControl(c, currentScore));
+        const control = createRangeControl(c, currentScore);
+        control.querySelector('input').setAttribute('aria-labelledby', label.id);
+        content.appendChild(control);
       } else if (controlType === 'buttons') {
         content.appendChild(createButtonsControl(c, currentScore));
       } else {
-        content.appendChild(createNumberInput(c, currentScore, { large: true }));
+        const input = createNumberInput(c, currentScore, { large: true });
+        input.setAttribute('aria-labelledby', label.id);
+        content.appendChild(input);
       }
 
       col.appendChild(content);
@@ -1549,7 +1543,7 @@ function showVotesModal(dancer, mode = "details") {
   } else {
     criteriaList.forEach(c => {
       const row = document.createElement('div');
-      row.className = 'row align-items-center';
+      row.className = 'row align-items-center voting-desktop-criterion';
       const useStackedDesktopRow = normalizedScoreType === 'DEC' || normalizedScoreType === 'MED';
 
       const labelCol = document.createElement('div');
@@ -1557,6 +1551,7 @@ function showVotesModal(dancer, mode = "details") {
         ? 'col-12 mb-2 fw-semibold'
         : 'col-12 col-md-3 mb-2 mb-md-0 fw-semibold text-md-end';
       labelCol.textContent = formatCriteriaLabel(c);
+      labelCol.id = `vote-criterion-${c.id}`;
       row.appendChild(labelCol);
 
       const controlCol = document.createElement('div');
@@ -1565,11 +1560,15 @@ function showVotesModal(dancer, mode = "details") {
       const currentScore = getInitialCriteriaScore(c);
 
       if (controlType === 'range') {
-        controlCol.appendChild(createRangeControl(c, currentScore));
+        const control = createRangeControl(c, currentScore);
+        control.querySelector('input').setAttribute('aria-labelledby', labelCol.id);
+        controlCol.appendChild(control);
       } else if (controlType === 'buttons') {
         controlCol.appendChild(createButtonsControl(c, currentScore));
       } else {
-        controlCol.appendChild(createNumberInput(c, currentScore));
+        const input = createNumberInput(c, currentScore);
+        input.setAttribute('aria-labelledby', labelCol.id);
+        controlCol.appendChild(input);
       }
 
       row.appendChild(controlCol);
@@ -1581,7 +1580,7 @@ function showVotesModal(dancer, mode = "details") {
 
   // Footer - limpiar primero
   const footer = modal._element.querySelector('.modal-footer');
-  footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${t('close')}</button>`;
+  footer.innerHTML = `<button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal">${escapeHtml(t('close'))}</button>`;
 
   if (mode === "vote") {
 
@@ -1629,7 +1628,7 @@ function showVotesModal(dancer, mode = "details") {
       if (!alertDiv) {
         alertDiv = document.createElement("div");
         alertDiv.id = "voteErrorAlert";
-        alertDiv.className = "alert alert-danger alert-dismissible fade show mt-3";
+        alertDiv.className = "alert alert-danger lm-notice alert-dismissible fade show mt-3";
         alertDiv.role = "alert";
         criteriaContainer.appendChild(alertDiv);
       }
@@ -1640,11 +1639,11 @@ function showVotesModal(dancer, mode = "details") {
     };
 
     const sendBtn = document.createElement('button');
-    sendBtn.className = "btn btn-primary btn-sm";
+    sendBtn.className = "lm-btn lm-btn-primary";
     sendBtn.textContent = t('send_votes');
   
     const noShowBtn = document.createElement('button');
-    noShowBtn.className = "btn btn-warning btn-sm me-auto d-none"; // Por ahora lo ocultamos
+    noShowBtn.className = "lm-btn lm-btn-secondary me-auto d-none"; // Por ahora lo ocultamos
     noShowBtn.textContent = t('no_show');
   
     // --- funcion auxiliar para enviar votos ---
@@ -1698,7 +1697,7 @@ function showVotesModal(dancer, mode = "details") {
     // --- modal de confirmacion (solo se crea si no existe aun) ---
     if (!document.getElementById("outlierConfirmModal")) {
       document.body.insertAdjacentHTML("beforeend", `
-        <div class="modal fade" id="outlierConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade lm-modal voting-modal" id="outlierConfirmModal" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog">
             <div class="modal-content">
               <div class="modal-header">
@@ -1710,8 +1709,8 @@ function showVotesModal(dancer, mode = "details") {
                 <p id="outlierConfirmList" class="mb-0 fw-semibold"></p>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t('cancel')}</button>
-                <button type="button" class="btn btn-primary" id="confirmOutlierBtn">${t('confirm')}</button>
+                <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal">${t('cancel')}</button>
+                <button type="button" class="lm-btn lm-btn-primary" id="confirmOutlierBtn">${t('confirm')}</button>
               </div>
             </div>
           </div>
@@ -1726,7 +1725,7 @@ function showVotesModal(dancer, mode = "details") {
 
     if (!document.getElementById("changeVoteConfirmModal")) {
       document.body.insertAdjacentHTML("beforeend", `
-        <div class="modal fade" id="changeVoteConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade lm-modal voting-modal" id="changeVoteConfirmModal" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
               <div class="modal-header">
@@ -1737,8 +1736,8 @@ function showVotesModal(dancer, mode = "details") {
                 <p class="mb-0">${t('confirm_change_vote_text', 'Are you sure you want to change the votes?')}</p>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t('cancel')}</button>
-                <button type="button" class="btn btn-primary" id="confirmChangeVoteBtn">${t('confirm')}</button>
+                <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal">${t('cancel')}</button>
+                <button type="button" class="lm-btn lm-btn-primary" id="confirmChangeVoteBtn">${t('confirm')}</button>
               </div>
             </div>
           </div>
@@ -1824,7 +1823,7 @@ function showVotesModal(dancer, mode = "details") {
     // --- modal de confirmacion (solo se crea si no existe aun) ---
     if (!document.getElementById("noShowConfirmModal")) {
       document.body.insertAdjacentHTML("beforeend", `
-        <div class="modal fade" id="noShowConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal fade lm-modal voting-modal" id="noShowConfirmModal" tabindex="-1" aria-hidden="true">
           <div class="modal-dialog">
             <div class="modal-content">
               <div class="modal-header">
@@ -1835,8 +1834,8 @@ function showVotesModal(dancer, mode = "details") {
                 <p>${t('confirm_no_show_text')}</p>
               </div>
               <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">${t('cancel')}</button>
-                <button type="button" class="btn btn-danger" id="confirmNoShowBtn">${t('confirm')}</button>
+                <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal">${t('cancel')}</button>
+                <button type="button" class="lm-btn lm-btn-danger-solid" id="confirmNoShowBtn">${t('confirm')}</button>
               </div>
             </div>
           </div>
@@ -1890,10 +1889,8 @@ function showVotesModal(dancer, mode = "details") {
   modal.show();
 }
 function setVoteButtonsDisabled(disabled) {
-  document.querySelectorAll('button.btn-primary').forEach(btn => {
-    if (btn.textContent.trim() === t('vote')) {
-      btn.disabled = disabled;
-    }
+  document.querySelectorAll('#dancersTableContainer [data-action="vote"]').forEach(btn => {
+    btn.disabled = disabled;
   });
 }
 
@@ -1923,53 +1920,50 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
 
   dancers.forEach(d => {
     const tr = document.createElement('tr');
+    tr.className = 'voting-dancer-row';
 
     // Columna Dancer (bandera + nombre + orden)
     const tdDancer = document.createElement('td');
+    tdDancer.className = 'voting-cell-person';
     tdDancer.innerHTML = `
-      <div class="d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center">
-          ${getDancerFlagImgHtml(d.nationality, { className: 'me-2', style: 'vertical-align: middle;' })}
-          <span>${d.name}</span>
+      <div class="voting-person">
+        <div class="voting-person-identity">
+          ${getDancerFlagImgHtml(d.nationality, { className: 'voting-person-flag' })}
+          <span class="voting-person-name" title="${escapeHtml(d.name)}">${escapeHtml(d.name)}</span>
         </div>
-        <span class="badge bg-info">#${d.position}</span>
+        <span class="voting-position voting-position--desktop">#${escapeHtml(d.position)}</span>
       </div>
     `;
     tr.appendChild(tdDancer);
 
     // Columna Status
     const tdStatus = document.createElement('td');
-    tdStatus.className = 'text-center';
+    tdStatus.className = 'voting-cell-status';
+    const dancerStatusClass = d.status === 'Pending'
+      ? 'lm-status-warning'
+      : ['Incompatible', 'Max Judges Voted', 'Disqualified'].includes(d.status)
+        ? 'lm-status-danger'
+        : d.status === 'No Show'
+          ? 'lm-status-purple'
+          : d.status === 'Not Applicable'
+            ? 'lm-status-neutral'
+            : 'lm-status-success';
     tdStatus.innerHTML = `
-      <span class="badge 
-        ${d.status === 'Pending'
-          ? 'bg-warning'
-          : d.status === 'Incompatible'
-            ? 'bg-danger'
-            : d.status === 'Max Judges Voted'
-              ? 'bg-danger'
-              : d.status === 'Disqualified'
-                ? 'bg-danger'
-                  : d.status === 'No Show'
-                    ? 'bg-noshown'
-                    : d.status === 'Not Applicable'
-                      ? 'bg-secondary'
-                      : 'bg-success'}">
-        ${d.status}
-      </span>
+      <span class="lm-status ${dancerStatusClass}" title="${escapeHtml(d.status)}"><span class="voting-status-text">${escapeHtml(d.status)}</span></span>
+      <span class="voting-position voting-position--mobile">#${escapeHtml(d.position)}</span>
     `;
     tr.appendChild(tdStatus);
 
     // Columna Actions
     const tdActions = document.createElement('td');
-    tdActions.className = 'text-center';
+    tdActions.className = 'voting-cell-actions';
     const actionsWrap = document.createElement('div');
-    actionsWrap.className = 'd-flex justify-content-center gap-2 flex-wrap';
+    actionsWrap.className = 'voting-actions';
     let hasPrimaryAction = false;
 
     if (d.status === 'Completed') {
       const btnDetails = document.createElement('button');
-      btnDetails.className = 'btn btn-sm btn-secondary';
+      btnDetails.className = 'lm-btn lm-btn-secondary voting-action-btn';
       btnDetails.textContent = allowCompletedVoteChanges
         ? t('details_change_votes', 'Details/change votes')
         : t('details');
@@ -1978,7 +1972,8 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
       hasPrimaryAction = true;
     } else if (d.status === 'Pending' && (compStatus === 'OPE' || compStatus === 'PRO') && d.can_vote) {
       const btnVote = document.createElement('button');
-      btnVote.className = 'btn btn-sm btn-primary';
+      btnVote.className = 'lm-btn lm-btn-primary voting-action-btn';
+      btnVote.dataset.action = 'vote';
       btnVote.textContent = t('vote');
       btnVote.addEventListener('click', () => showVotesModal(d, "vote"));
       actionsWrap.appendChild(btnVote);
@@ -1987,9 +1982,9 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
 
     if (hasPrimaryAction && canShowPenaltiesButton) {
       const penaltiesCount = Number(d?.num_penalties) || 0;
-      const penaltiesButtonClass = penaltiesCount > 0 ? 'btn-outline-danger' : 'btn-outline-warning';
+      const penaltiesButtonClass = penaltiesCount > 0 ? 'lm-btn-danger' : 'voting-penalty-btn';
       const btnPenalties = document.createElement('button');
-      btnPenalties.className = `btn btn-sm ${penaltiesButtonClass}`;
+      btnPenalties.className = `lm-btn voting-action-btn ${penaltiesButtonClass}`;
       btnPenalties.textContent = `${t('penalties', 'Penalties')} (${penaltiesCount})`;
       btnPenalties.addEventListener('click', async () => {
         await openPenaltyAssignmentModal({
@@ -2012,7 +2007,12 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
     if (shouldShowJudgeFeedbackColumn()) {
       // Columna Feedback (ultima)
       const tdComments = document.createElement('td');
-      tdComments.className = 'text-center';
+      const hasFeedbackActions = d.status === 'Completed'
+        && (shouldJudgeTextFeedback() || shouldJudgeAudioFeedback());
+      tdComments.className = hasFeedbackActions
+        ? 'voting-cell-feedback'
+        : 'voting-cell-feedback is-unavailable';
+      tr.classList.toggle('has-feedback-actions', hasFeedbackActions);
 
       const hasComments = typeof d.comments === 'string' && d.comments.trim().length > 0;
       const hasAudioFeedback = parseJudgeFlag(d?.has_feedback);
@@ -2024,7 +2024,7 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
 
           const btnComments = document.createElement('button');
           btnComments.type = 'button';
-          btnComments.className = `btn btn-sm btn-feedback-icon ${hasComments ? 'btn-comments' : 'btn-outline-comments'}`;
+          btnComments.className = `voting-feedback-btn voting-feedback-btn--comments ${hasComments ? 'is-present' : ''}`;
           btnComments.dataset.role = 'comments-btn';
           btnComments.dataset.hasComments = hasComments ? 'true' : 'false';
           btnComments.addEventListener('click', () => {
@@ -2040,7 +2040,7 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
         if (shouldJudgeAudioFeedback()) {
           const btnAudioFeedback = document.createElement('button');
           btnAudioFeedback.type = 'button';
-          btnAudioFeedback.className = `btn btn-sm btn-feedback-icon ${hasAudioFeedback ? 'btn-audio-feedback' : 'btn-outline-audio-feedback'}`;
+          btnAudioFeedback.className = `voting-feedback-btn voting-feedback-btn--audio ${hasAudioFeedback ? 'is-present' : ''}`;
           btnAudioFeedback.dataset.role = 'audio-feedback-btn';
           btnAudioFeedback.dataset.hasFeedback = hasAudioFeedback ? 'true' : 'false';
           btnAudioFeedback.addEventListener('click', async () => {
@@ -2064,10 +2064,14 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
 
     const scoreType = getScoreType();
 
+    const mobileScoreGrid = document.createElement('div');
+    mobileScoreGrid.className = 'voting-mobile-score-grid';
+
     criteriaList.forEach(c => {
       const tdCriteria = document.createElement('td');
-      tdCriteria.className = 'text-center small criteria-col';
+      tdCriteria.className = 'voting-cell-score criteria-col';
       tdCriteria.dataset.criteriaId = c.id;
+      tdCriteria.dataset.label = formatCriteriaLabel(c);
 
       const rawScore = d?.scores?.[c.name];
       const scoreNumber = typeof rawScore === 'number' ? rawScore : rawScore == null ? null : Number(rawScore);
@@ -2077,15 +2081,42 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
           : (formatScoreForDisplay(scoreNumber, scoreType) || '-');
 
       tr.appendChild(tdCriteria);
+
+      const mobileScore = document.createElement('div');
+      mobileScore.className = 'voting-mobile-score';
+      const mobileScoreLabel = document.createElement('span');
+      mobileScoreLabel.className = 'voting-mobile-score-label';
+      mobileScoreLabel.textContent = formatCriteriaLabel(c);
+      const mobileScoreValue = document.createElement('strong');
+      mobileScoreValue.className = 'voting-mobile-score-value';
+      mobileScoreValue.textContent = tdCriteria.textContent;
+      mobileScore.append(mobileScoreLabel, mobileScoreValue);
+      mobileScoreGrid.appendChild(mobileScore);
     });
 
     const tdTotal = document.createElement('td');
-    tdTotal.className = 'text-center fw-semibold criteria-col';
+    tdTotal.className = 'voting-cell-score voting-cell-total criteria-col';
+    tdTotal.dataset.label = t('total', 'Total');
     const totalNumber = typeof d.totalScore === 'number' ? d.totalScore : d.totalScore == null ? null : Number(d.totalScore);
-    tdTotal.textContent =
+    const formattedTotal =
       totalNumber === null || Number.isNaN(totalNumber)
         ? '-'
         : (formatTotalForDisplay(totalNumber, scoreType) || '-');
+    const desktopTotal = document.createElement('span');
+    desktopTotal.className = 'voting-desktop-total';
+    desktopTotal.textContent = formattedTotal;
+    const mobileScores = document.createElement('div');
+    mobileScores.className = 'voting-mobile-scores';
+    mobileScores.appendChild(mobileScoreGrid);
+    const mobileTotal = document.createElement('div');
+    mobileTotal.className = 'voting-mobile-total';
+    const mobileTotalLabel = document.createElement('span');
+    mobileTotalLabel.textContent = t('total', 'Total');
+    const mobileTotalValue = document.createElement('strong');
+    mobileTotalValue.textContent = formattedTotal;
+    mobileTotal.append(mobileTotalLabel, mobileTotalValue);
+    mobileScores.appendChild(mobileTotal);
+    tdTotal.append(desktopTotal, mobileScores);
     tr.appendChild(tdTotal);
 
     dancersTableBody.appendChild(tr);
@@ -2191,11 +2222,11 @@ function getCompetitionStatusText(status) {
 }
 
 function getCompetitionStatusBadgeClass(status) {
-  if (status === 'OPE') return 'bg-warning text-dark';
-  if (status === 'PRO') return 'bg-primary';
-  if (status === 'CLO') return 'bg-danger';
-  if (status === 'FIN') return 'bg-success';
-  return 'bg-secondary';
+  if (status === 'OPE') return 'lm-status-warning';
+  if (status === 'PRO') return 'lm-status-live';
+  if (status === 'CLO') return 'lm-status-danger';
+  if (status === 'FIN') return 'lm-status-success';
+  return 'lm-status-neutral';
 }
 
 function splitCompetitionDateAndTime(competition) {
@@ -2246,6 +2277,23 @@ function getCompetitionOptionRenderData(item) {
   };
 }
 
+function renderCompetitionSelectItem(item, escape) {
+  const optionData = getCompetitionOptionRenderData(item);
+  return `
+    <div class="lm-rich-select-entry">
+      <div class="lm-rich-select-tags">
+        <span class="lm-badge lm-badge-primary">${escape(optionData.category || '-')}</span>
+        <span class="lm-badge lm-badge-purple">${escape(optionData.style || '-')}</span>
+        <span class="lm-status ${escape(optionData.statusClass || 'lm-status-neutral')}">${escape(optionData.statusText || '-')}</span>
+      </div>
+      <div class="lm-rich-select-meta">
+        <span><i class="bi bi-calendar-event" aria-hidden="true"></i>${escape(optionData.day || '-')}</span>
+        ${optionData.hour ? `<span><i class="bi bi-clock" aria-hidden="true"></i>${escape(optionData.hour)}</span>` : ''}
+      </div>
+    </div>
+  `;
+}
+
 function initCompetitionTomSelect() {
   if (!competitionSelect || typeof TomSelect !== 'function') return;
 
@@ -2264,34 +2312,11 @@ function initCompetitionTomSelect() {
     create: false,
     placeholder: t('select_competition', 'Select a competition'),
     render: {
-      option: function (item, escape) {
-        const optionData = getCompetitionOptionRenderData(item);
-        return `
-          <div class="competition-option-wrap">
-            <div class="competition-option-badges">
-              <span class="badge bg-secondary">${escape(optionData.category || '-')}</span>
-              <span class="badge bg-secondary">${escape(optionData.style || '-')}</span>
-              <span class="badge ${escape(optionData.statusClass || 'bg-secondary')}">${escape(optionData.statusText || '-')}</span>
-            </div>
-            <div class="competition-option-meta">
-              <i class="bi bi-calendar-event"></i>${escape(optionData.day || '-')}
-              ${optionData.hour ? ` <span class="ms-2"><i class="bi bi-clock"></i>${escape(optionData.hour)}</span>` : ''}
-            </div>
-          </div>
-        `;
-      },
-      item: function (item, escape) {
-        const optionData = getCompetitionOptionRenderData(item);
-        return `
-          <div class="competition-option-badges">
-            <span class="badge bg-secondary">${escape(optionData.category || '-')}</span>
-            <span class="badge bg-secondary">${escape(optionData.style || '-')}</span>
-            <span class="badge ${escape(optionData.statusClass || 'bg-secondary')}">${escape(optionData.statusText || '-')}</span>
-          </div>
-        `;
-      }
+      option: renderCompetitionSelectItem,
+      item: renderCompetitionSelectItem
     }
   });
+  competitionTomSelect.wrapper.classList.add('lm-rich-select');
 
   if (competitionSelect.disabled) {
     competitionTomSelect.disable();
@@ -2594,16 +2619,16 @@ function renderCompetitionInfo(competition) {
   const statusText = getCompetitionStatusText(competition.status);
   const statusClass = getCompetitionStatusBadgeClass(competition.status);
   if (statusEl) {
-    statusEl.classList.remove('bg-warning', 'bg-danger', 'bg-success', 'bg-secondary', 'text-dark');
-    statusClass.split(' ').forEach(cls => statusEl.classList.add(cls));
+    statusEl.classList.remove('lm-status-warning', 'lm-status-live', 'lm-status-danger', 'lm-status-success', 'lm-status-neutral');
+    statusEl.classList.add(statusClass);
     statusEl.textContent = statusText;
   }
 
   if (timeEl) {
     const { day, hour } = splitCompetitionDateAndTime(competition);
     timeEl.innerHTML = `
-      <i class="bi bi-calendar-event me-1"></i>${day || t('not_defined', 'NOT DEFINED')}
-      ${hour ? `<span class="ms-3"><i class="bi bi-clock me-1"></i>${hour}</span>` : ''}
+      <i class="bi bi-calendar-event me-1" aria-hidden="true"></i>${escapeHtml(day || t('not_defined', 'NOT DEFINED'))}
+      ${hour ? `<span class="ms-3"><i class="bi bi-clock me-1" aria-hidden="true"></i>${escapeHtml(hour)}</span>` : ''}
     `;
   }
 
@@ -2625,14 +2650,11 @@ function renderCompetitionInfo(competition) {
 
   if (progressBarEl) {
     progressBarEl.style.width = `${progressPercentage}%`;
-    progressBarEl.classList.remove('bg-success', 'bg-warning');
-    progressBarEl.classList.add(isCompleted ? 'bg-success' : 'bg-warning');
+    progressBarEl.classList.toggle('is-complete', isCompleted);
   }
 
   if (progressTextEl) {
     progressTextEl.textContent = progressText;
-    progressTextEl.classList.remove('text-white', 'text-dark');
-    progressTextEl.classList.add(isCompleted ? 'text-white' : 'text-dark');
   }
 
   updateHeadJudgeIndicator(parseJudgeFlag(competition?.judge_head));
@@ -3010,7 +3032,7 @@ function renderPenaltyAssignmentModalContent() {
 
   if (!penalties.length) {
     bodyEl.innerHTML = `
-      <div class="alert alert-info mb-0">
+      <div class="alert alert-info lm-notice mb-0">
         ${escapeHtml(t('penalty_modal_no_penalties', 'No penalties available.'))}
       </div>
     `;
@@ -3039,12 +3061,12 @@ function renderPenaltyAssignmentModalContent() {
       ? String(penalty.minPenalty)
       : `${penalty.minPenalty} - ${penalty.maxPenalty}`;
     const fixedBadge = penalty.isFixedScore
-      ? `<span class="badge text-bg-warning text-dark penalty-fixed-badge">${escapeHtml(t('penalty_modal_fixed_score', 'Fixed'))}</span>`
+      ? `<span class="lm-status lm-status-warning penalty-fixed-badge">${escapeHtml(t('penalty_modal_fixed_score', 'Fixed'))}</span>`
       : '';
     const assignedByBadge = assignedBy === 'O'
-      ? `<span class="badge bg-primary">${escapeHtml(t('penalty_modal_assigned_by_org', 'ORGANIZATION'))}</span>`
+      ? `<span class="lm-status lm-status-info">${escapeHtml(t('penalty_modal_assigned_by_org', 'ORGANIZATION'))}</span>`
       : assignedBy === 'J'
-        ? `<span class="badge bg-dark">${escapeHtml(t('penalty_modal_assigned_by_jury', 'JURY'))}</span>`
+        ? `<span class="lm-status lm-status-purple">${escapeHtml(t('penalty_modal_assigned_by_jury', 'JURY'))}</span>`
         : '<span class="text-muted">-</span>';
     const forJudgesIcon = penalty.forJudges
       ? '<i class="bi bi-check-circle-fill text-success"></i>'
@@ -3053,41 +3075,43 @@ function renderPenaltyAssignmentModalContent() {
 
     return `
       <tr
-        class="js-penalty-row ${isEditable ? '' : 'table-light'}"
+        class="js-penalty-row"
         data-penalty-id="${penalty.id}"
         data-min-penalty="${penalty.minPenalty}"
         data-max-penalty="${penalty.maxPenalty}"
         data-fixed-score="${penalty.isFixedScore ? '1' : '0'}"
         data-editable="${isEditable ? '1' : '0'}"
       >
-        <td class="text-center align-middle">
+        <td class="text-center align-middle penalty-col-apply" data-label="${escapeHtml(t('penalty_modal_apply', 'Apply'))}">
           <input
             class="form-check-input js-penalty-toggle"
             type="checkbox"
+            aria-label="${escapeHtml(`${t('penalty_modal_apply', 'Apply')}: ${penalty.name}`)}"
             ${isSelected ? 'checked' : ''}
             ${isEditable ? '' : 'disabled'}
           >
         </td>
-        <td class="align-middle penalty-col-name">
+        <td class="align-middle penalty-col-name" data-label="${escapeHtml(t('penalty_modal_name', 'Penalty'))}">
           <div class="fw-semibold">${escapeHtml(penalty.name)}</div>
         </td>
-        <td class="text-center align-middle penalty-col-assigned-by">
+        <td class="text-center align-middle penalty-col-assigned-by" data-label="${escapeHtml(t('penalty_modal_assigned_by', 'Assigned by'))}">
           ${assignedByBadge}
         </td>
-        <td class="text-center align-middle penalty-col-for-judges" title="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}">
+        <td class="text-center align-middle penalty-col-for-judges" data-label="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}" title="${escapeHtml(t('penalty_modal_for_judges', 'For judges'))}">
           ${forJudgesIcon}
         </td>
-        <td class="text-center align-middle penalty-col-range">
+        <td class="text-center align-middle penalty-col-range" data-label="${escapeHtml(t('penalty_modal_range', 'Range'))}">
           <div class="d-inline-flex align-items-center justify-content-center gap-1 flex-wrap">
-            <span class="badge text-bg-light border">${escapeHtml(rangeText)}</span>
+            <span class="lm-status lm-status-neutral">${escapeHtml(rangeText)}</span>
             ${fixedBadge}
           </div>
         </td>
-        <td class="align-middle penalty-col-score">
+        <td class="align-middle penalty-col-score" data-label="${escapeHtml(t('penalty_modal_score', 'Score'))}">
           <input
             id="${inputId}"
             type="number"
-            class="form-control form-control-sm js-penalty-score"
+            class="form-control form-control-sm lm-input js-penalty-score"
+            aria-label="${escapeHtml(`${t('penalty_modal_score', 'Score')}: ${penalty.name}`)}"
             min="${penalty.minPenalty}"
             max="${penalty.maxPenalty}"
             step="1"
@@ -3107,12 +3131,12 @@ function renderPenaltyAssignmentModalContent() {
     <div class="mb-3 penalty-assignment-header">
       <div class="penalty-assignment-participant fw-semibold">${escapeHtml(dancerName)}</div>
       ${competitionLabel
-    ? `<span class="badge text-bg-light border penalty-assignment-competition-badge">${escapeHtml(competitionLabel)}</span>`
+    ? `<span class="lm-status lm-status-neutral penalty-assignment-competition-badge">${escapeHtml(competitionLabel)}</span>`
     : ''}
     </div>
     <div class="table-responsive">
-      <table class="table table-sm table-bordered align-middle mb-2 penalty-assignment-table">
-        <thead class="table-light">
+      <table class="table table-sm lm-table align-middle mb-2 penalty-assignment-table">
+        <thead>
           <tr>
             <th class="text-center penalty-col-apply">${escapeHtml(t('penalty_modal_apply', 'Apply'))}</th>
             <th class="penalty-col-name">${escapeHtml(t('penalty_modal_name', 'Penalty'))}</th>
@@ -3127,7 +3151,7 @@ function renderPenaltyAssignmentModalContent() {
         </tbody>
       </table>
     </div>
-    <div id="penaltyAssignmentValidation" class="alert alert-warning py-2 mb-2 d-none"></div>
+    <div id="penaltyAssignmentValidation" class="alert alert-warning lm-notice py-2 mb-2 d-none"></div>
     <small class="text-muted" id="penaltyAssignmentSummary"></small>
   `;
 
