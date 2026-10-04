@@ -16,6 +16,12 @@
   --lm-purple: #b68aff;
   --lm-warning: #ffc54d;
   --lm-danger: #ff747e;
+  --lm-font-data: .8125rem;
+  --lm-font-table-header: .75rem;
+  --lm-font-card-title: 1rem;
+  --lm-font-card-body: .875rem;
+  --lm-font-card-meta: var(--lm-font-data);
+  --lm-font-tab: .875rem;
   --lm-radius-sm: .55rem;
   --lm-radius-md: .85rem;
   --lm-radius-lg: 1.15rem;
@@ -47,6 +53,13 @@
 .lm-status-danger { color: var(--lm-danger); border-color: #934148; background: #351e29; }
 .lm-status-purple { color: var(--lm-purple); border-color: #66489c; background: #2a2141; }
 .lm-status-neutral { color: var(--lm-text-muted); border-color: var(--lm-border); background: var(--lm-bg-elevated); }
+:is(.masterdata-page, .judges-page, .dancers-page, .competitions-page, .tracking-page, .audience-vote-page) :is(.lm-org-main, .lm-modal) .table,
+:is(.masterdata-page, .judges-page, .dancers-page, .competitions-page, .tracking-page, .audience-vote-page) :is(.lm-org-main, .lm-modal) .table :is(th, td, .small, small),
+:is(.masterdata-page, .judges-page, .dancers-page, .competitions-page, .tracking-page, .audience-vote-page) :is(.lm-org-main, .lm-modal) :is(.badge, .lm-badge, .lm-status) { font-size: var(--lm-font-data); }
+:is(.masterdata-page, .judges-page, .dancers-page, .competitions-page, .tracking-page, .audience-vote-page) :is(.lm-org-main, .lm-modal) .table thead :is(th, .small, small) { font-size: var(--lm-font-table-header); }
+:is(.masterdata-page, .judges-page, .dancers-page, .competitions-page, .tracking-page, .audience-vote-page) :is(.lm-org-main, .lm-modal) .card-header { font-size: var(--lm-font-card-title); }
+:is(.masterdata-page, .judges-page, .dancers-page, .competitions-page, .tracking-page, .audience-vote-page) :is(.lm-org-main, .lm-modal) .card-body { font-size: var(--lm-font-card-body); }
+:is(.masterdata-page, .judges-page, .dancers-page, .competitions-page, .tracking-page, .audience-vote-page) :is(.lm-org-main, .lm-modal) .card-body :is(.small, small) { font-size: var(--lm-font-card-meta); }
 .lm-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-md); color: var(--lm-text); background: transparent; font-weight: 600; text-decoration: none; transition: background-color .15s ease, border-color .15s ease; }
 .lm-btn { padding: .55rem .9rem; }
 .lm-btn-secondary { background: var(--lm-surface-raised); }

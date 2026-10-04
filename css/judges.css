@@ -5,13 +5,13 @@
 
 .judges-card.card { min-width: 0; overflow: hidden; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-lg); color: var(--lm-text); background: var(--lm-bg-elevated); box-shadow: var(--lm-shadow-sm); }
 .judges-card__header { display: flex; min-width: 0; align-items: center; flex-wrap: wrap; gap: .75rem; padding: .85rem 1rem; border-bottom: 1px solid var(--lm-border); background: var(--lm-surface); }
-.judges-card__title { display: flex; min-width: 0; flex: 1 1 9rem; align-items: center; gap: .6rem; margin: 0; color: var(--lm-text); font-size: .96rem; font-weight: 750; line-height: 1.3; }
+.judges-card__title { display: flex; min-width: 0; flex: 1 1 9rem; align-items: center; gap: .6rem; margin: 0; color: var(--lm-text); font-size: var(--lm-font-card-title); font-weight: 750; line-height: 1.3; }
 .judges-card__title i { display: inline-grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border: 1px solid #277886; border-radius: var(--lm-radius-sm); color: var(--lm-cyan); background: #0a3038; }
 .judges-card__actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; }
 .judges-main .judges-card__actions .btn { min-height: 36px; padding: .45rem .7rem; white-space: normal; }
 .judges-card__actions .badge { flex: 0 0 auto; }
 .judges-card > .card-body { padding: 1rem; }
-.judges-main .badge.bg-secondary { padding: .35rem .6rem; border: 1px solid var(--lm-border-strong); color: var(--lm-text-muted) !important; background: var(--lm-surface-raised) !important; font-size: .7rem; font-variant-numeric: tabular-nums; }
+.judges-main .badge.bg-secondary { padding: .35rem .6rem; border: 1px solid var(--lm-border-strong); color: var(--lm-text-muted) !important; background: var(--lm-surface-raised) !important; font-variant-numeric: tabular-nums; }
 .judges-main .badge.bg-success { border: 1px solid #197d68; color: var(--lm-green) !important; background: #0b302e !important; }
 .judges-main .badge.bg-warning { border: 1px solid #8c681e; color: var(--lm-warning) !important; background: #302817 !important; }
 .judges-main .badge.bg-danger { border: 1px solid #934148; color: var(--lm-danger) !important; background: #351e29 !important; }
@@ -31,28 +31,28 @@
 .judges-page :where(.judges-main, .judges-modal, #messageModal) .btn:focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 2px; box-shadow: none; }
 
 .judges-main .table-responsive { min-width: 0; max-width: 100%; overflow-x: auto; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); scrollbar-color: var(--lm-border-strong) var(--lm-bg-elevated); }
-.judges-main .table { --bs-table-bg: transparent; --bs-table-color: var(--lm-text); --bs-table-border-color: var(--lm-border); min-width: 720px; margin: 0; color: var(--lm-text); font-size: .76rem; }
+.judges-main .table { --bs-table-bg: transparent; --bs-table-color: var(--lm-text); --bs-table-border-color: var(--lm-border); min-width: 720px; margin: 0; color: var(--lm-text); }
 .judges-main .table > :not(caption) > * > * { padding: .75rem .65rem; border-color: var(--lm-border); color: inherit; background: transparent; box-shadow: none; overflow-wrap: anywhere; }
-.judges-main .table thead th { color: var(--lm-text-muted); background: var(--lm-surface-raised) !important; font-size: .66rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; vertical-align: middle; }
+.judges-main .table thead th { color: var(--lm-text-muted); background: var(--lm-surface-raised) !important; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; vertical-align: middle; }
 .judges-main .table tbody tr:hover > * { background: var(--lm-surface-hover); }
 .judges-main .table td { vertical-align: middle; }
 .judges-main .table .btn-group .btn { min-width: 34px; min-height: 34px; padding: .3rem; }
 .judges-main .table .text-success { color: var(--lm-green) !important; }
 
 .judges-mobile-list { display: none; }
-.judge-mobile-card { min-width: 0; overflow: hidden; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-lg); color: var(--lm-text); background: var(--lm-surface); box-shadow: var(--lm-shadow-sm); }
+.judge-mobile-card { min-width: 0; overflow: hidden; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-lg); color: var(--lm-text); background: var(--lm-surface); box-shadow: var(--lm-shadow-sm); font-size: var(--lm-font-card-body); }
 .judge-mobile-card::before { display: block; height: 3px; content: ''; background: linear-gradient(90deg, var(--lm-cyan), var(--lm-purple)); }
 .judge-mobile-card__header { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: .6rem; padding: .85rem .85rem .65rem; }
 .judge-mobile-card__identity { min-width: 0; flex: 1 1 auto; }
-.judge-mobile-card__name { margin: 0; overflow-wrap: anywhere; color: var(--lm-text); font-size: .9rem; font-weight: 750; line-height: 1.25; }
+.judge-mobile-card__name { margin: 0; overflow-wrap: anywhere; color: var(--lm-text); font-size: var(--lm-font-card-title); font-weight: 750; line-height: 1.25; }
 .judge-mobile-card__welcome { max-width: 48%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .judge-mobile-card__metrics { display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; padding: 0 .85rem .75rem; }
 .judge-mobile-card__metric { display: flex; min-width: 0; align-items: center; gap: .45rem; padding: .55rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-sm); background: var(--lm-bg-elevated); }
 .judge-mobile-card__metric > i { flex: 0 0 auto; color: var(--lm-blue); }
 .judge-mobile-card__metric-copy { min-width: 0; }
 .judge-mobile-card__metric-label, .judge-mobile-card__metric-value { display: block; overflow-wrap: anywhere; }
-.judge-mobile-card__metric-label { color: var(--lm-text-muted); font-size: .6rem; font-weight: 700; line-height: 1.2; text-transform: uppercase; }
-.judge-mobile-card__metric-value { margin-top: .15rem; color: var(--lm-text); font-size: .78rem; font-weight: 750; }
+.judge-mobile-card__metric-label { color: var(--lm-text-muted); font-size: var(--lm-font-card-meta); font-weight: 700; line-height: 1.2; text-transform: uppercase; }
+.judge-mobile-card__metric-value { margin-top: .15rem; color: var(--lm-text); font-size: var(--lm-font-card-body); font-weight: 750; }
 .judge-mobile-card__footer { display: flex; padding: .7rem .85rem .8rem; border-top: 1px solid var(--lm-border); }
 .judge-mobile-card__action { min-width: 0; min-height: 40px !important; }
 
@@ -69,7 +69,7 @@
 .judges-modal .form-check-input:checked { border-color: #159d80; background-color: var(--lm-green); }
 .judges-modal .form-check-input:focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 2px; box-shadow: none; }
 .judges-modal__actions-card.card { overflow: hidden; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); color: var(--lm-text); background: var(--lm-surface); box-shadow: none; }
-.judges-modal__actions-card .card-header { padding: .65rem .85rem; border-color: var(--lm-border); color: var(--lm-text); background: var(--lm-surface-raised); font-size: .8rem; font-weight: 750; }
+.judges-modal__actions-card .card-header { padding: .65rem .85rem; border-color: var(--lm-border); color: var(--lm-text); background: var(--lm-surface-raised); font-size: var(--lm-font-card-title); font-weight: 750; }
 .judges-modal__actions-card .card-body { padding: .85rem; }
 .judges-modal__actions-card .btn { min-height: 44px !important; white-space: normal; }
 .judges-modal #actionFeedback { margin: 0; }
@@ -83,8 +83,8 @@
 
 .judges-empty { display: grid; justify-items: center; gap: .5rem; padding: 2.5rem 1rem; color: var(--lm-text-muted); text-align: center; }
 .judges-empty > i { color: var(--lm-blue); font-size: 2.5rem; line-height: 1; }
-.judges-empty h3 { margin: .4rem 0 0; color: var(--lm-text); font-size: .98rem; font-weight: 750; }
-.judges-empty p { max-width: 30rem; margin: 0; font-size: .79rem; }
+.judges-empty h3 { margin: .4rem 0 0; color: var(--lm-text); font-size: var(--lm-font-card-title); font-weight: 750; }
+.judges-empty p { max-width: 30rem; margin: 0; font-size: var(--lm-font-card-body); }
 
 @media (max-width: 767px) {
   .judges-desktop-table { display: none; }
@@ -92,6 +92,7 @@
 }
 @media (max-width: 575px) {
   .judges-card__header { align-items: stretch; flex-direction: column; }
+  .judges-card__title { width: 100%; flex: 0 1 auto; }
   .judges-card__actions { justify-content: flex-start; }
   .judges-card__actions .btn { flex: 1 1 100%; }
   .judges-card__actions .badge { margin-left: auto; }

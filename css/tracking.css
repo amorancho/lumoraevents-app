@@ -75,6 +75,7 @@
   border-radius: 999px;
   color: #405466;
   font-weight: 600;
+  font-size: var(--lm-font-tab);
   background: #f8fafc;
   padding: 0.5rem 0.85rem;
 }
@@ -98,6 +99,7 @@
   border-radius: 0.85rem;
   background: #f8fafc;
   font-weight: 700;
+  font-size: var(--lm-font-card-title);
   color: #22303d;
 }
 .vote-details-section-card {
@@ -106,6 +108,7 @@
   background: #ffffff;
   padding: 0.9rem;
   box-shadow: 0 0.6rem 1.4rem rgba(15, 23, 42, 0.04);
+  font-size: var(--lm-font-card-body);
 }
 .vote-details-section-card + .vote-details-section-card {
   margin-top: 1rem;
@@ -119,12 +122,13 @@
 }
 .vote-details-section-title {
   font-weight: 700;
+  font-size: var(--lm-font-card-title);
   color: #22303d;
   min-width: 0;
 }
 .vote-details-section-subtitle {
   color: #617182;
-  font-size: 0.85rem;
+  font-size: var(--lm-font-card-meta);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -138,7 +142,7 @@
   margin-bottom: 0.75rem;
 }
 .vote-details-criteria-leaders-title {
-  font-size: 0.78rem;
+  font-size: var(--lm-font-card-meta);
   font-weight: 700;
   color: #4f5d6b;
   text-transform: uppercase;
@@ -263,7 +267,6 @@
   border-color: #d7dee5;
 }
 .vote-details-criteria-head {
-  font-size: 0.82rem;
   max-width: 90px;
   min-width: 72px;
   padding-left: 0.25rem;
@@ -293,7 +296,7 @@
   display: block;
   max-width: 100%;
   white-space: nowrap;
-  font-size: 0.72rem;
+  font-size: var(--lm-font-table-header);
   color: #4f5d6b;
   font-weight: 700;
 }
@@ -425,7 +428,7 @@
   width: 120px;
 }
 #penaltyAssignmentModal .penalty-fixed-badge {
-  font-size: 0.68rem;
+  font-size: var(--lm-font-data);
   line-height: 1;
 }
 @media (max-width: 767.98px) {
@@ -500,7 +503,7 @@
     margin-bottom: 0.22rem;
     color: var(--bs-secondary-color);
     content: attr(data-label);
-    font-size: 0.6rem;
+    font-size: var(--lm-font-data);
     font-weight: 700;
     letter-spacing: 0.035em;
     line-height: 1.1;
@@ -511,7 +514,7 @@
     min-height: 2.5rem;
     padding: 0 5.5rem 0.55rem 0;
     background: transparent;
-    font-size: 0.95rem;
+    font-size: var(--lm-font-data);
   }
   #penaltyAssignmentModal .js-penalty-row .penalty-col-name::before {
     display: none;
@@ -570,7 +573,7 @@
   border-radius: 999px;
   background: #dc3545;
   color: #fff;
-  font-size: 0.72rem;
+  font-size: var(--lm-font-data);
   font-weight: 700;
   line-height: 1;
   box-shadow: 0 0 0 0.16rem rgba(220, 53, 69, 0.22);
@@ -657,7 +660,7 @@
   border-radius: 999px;
   background: rgba(25, 135, 84, 0.12);
   color: #146c43;
-  font-size: 0.68rem;
+  font-size: var(--lm-font-data);
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1;
@@ -806,6 +809,7 @@
     border-radius: 0.85rem;
     background: var(--bs-body-bg);
     box-shadow: 0 0.15rem 0.45rem rgba(0, 0, 0, 0.06);
+    font-size: var(--lm-font-card-body);
   }
   #competitionsContainer .tracking-dancer-card::before {
     position: absolute;
@@ -830,7 +834,7 @@
   }
   #competitionsContainer .tracking-dancer-card__name {
     overflow-wrap: anywhere;
-    font-size: 0.95rem;
+    font-size: var(--lm-font-card-title);
     font-weight: 750;
     line-height: 1.2;
   }
@@ -859,7 +863,7 @@
   #competitionsContainer .tracking-dancer-card__score-label {
     display: block;
     color: var(--bs-secondary-color);
-    font-size: 0.62rem;
+    font-size: var(--lm-font-card-meta);
     font-weight: 700;
     letter-spacing: 0.035em;
     text-transform: uppercase;
@@ -874,7 +878,7 @@
   #competitionsContainer .tracking-dancer-card__score-penalized {
     display: block;
     color: var(--bs-danger);
-    font-size: 0.7rem;
+    font-size: var(--lm-font-card-meta);
     font-weight: 650;
   }
   #competitionsContainer .tracking-dancer-card__votes {
@@ -893,7 +897,7 @@
   #competitionsContainer .tracking-dancer-card__judge {
     min-width: 0;
     overflow-wrap: anywhere;
-    font-size: 0.8rem;
+    font-size: var(--lm-font-card-body);
     font-weight: 650;
   }
   #competitionsContainer .tracking-dancer-card__vote-result {
@@ -956,10 +960,10 @@
 .tracking-left-card.card, .tracking-summary-card.card, .tracking-votes-panel { min-width: 0; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-lg); color: var(--lm-text); background: var(--lm-bg-elevated); box-shadow: var(--lm-shadow-sm); }
 .tracking-empty { display: grid; justify-items: center; align-content: center; gap: .65rem; min-height: 220px; padding: 2rem 1rem; border: 1px dashed var(--lm-border-strong); border-radius: var(--lm-radius-lg); color: var(--lm-text-muted); background: var(--lm-bg-elevated); text-align: center; }
 .tracking-empty i { color: var(--lm-blue); font-size: 2rem; line-height: 1; }
-.tracking-empty p { max-width: 28rem; margin: 0; font-size: .85rem; }
+.tracking-empty p { max-width: 28rem; margin: 0; font-size: var(--lm-font-card-body); }
 .tracking-left-card.card { overflow: visible; }
 .tracking-left-card-header.card-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .55rem; padding: .8rem .9rem; border-bottom: 1px solid var(--lm-border); border-radius: calc(var(--lm-radius-lg) - 1px) calc(var(--lm-radius-lg) - 1px) 0 0; color: var(--lm-text); background: var(--lm-surface); background-clip: padding-box; }
-.tracking-panel-title { display: flex; align-items: center; gap: .5rem; min-width: 0; margin: 0; color: var(--lm-text); font-size: .9rem; font-weight: 750; line-height: 1.25; }
+.tracking-panel-title { display: flex; align-items: center; gap: .5rem; min-width: 0; margin: 0; color: var(--lm-text); font-size: var(--lm-font-card-title); font-weight: 750; line-height: 1.25; }
 .tracking-panel-title i { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border: 1px solid #277886; border-radius: var(--lm-radius-sm); color: var(--lm-cyan); background: #0a3038; }
 .tracking-left-header-actions { display: flex; align-items: center; gap: .4rem; margin-left: auto; }
 .tracking-org-sidebar-toggle { width: 38px; min-width: 38px; padding: .3rem; }
@@ -996,8 +1000,8 @@
 .tracking-page :where(.tracking-main, .tracking-modal) .text-danger { color: var(--lm-danger) !important; }
 .tracking-page :where(.tracking-main, .tracking-modal) .text-success { color: var(--lm-green) !important; }
 .tracking-page :where(.tracking-main, .tracking-modal) .text-warning { color: var(--lm-warning) !important; }
-.tracking-page :where(.tracking-main, .tracking-modal) .badge { display: inline-flex; align-items: center; max-width: 100%; border: 1px solid transparent; border-radius: var(--lm-radius-pill); font-size: .69rem; font-weight: 700; line-height: 1.2; white-space: normal; text-align: left; }
-.tracking-page :where(.tracking-main, .tracking-modal) .badge.fs-6 { font-size: .72rem !important; }
+.tracking-page :where(.tracking-main, .tracking-modal) .badge { display: inline-flex; align-items: center; max-width: 100%; border: 1px solid transparent; border-radius: var(--lm-radius-pill); font-weight: 700; line-height: 1.2; white-space: normal; text-align: left; }
+.tracking-page :where(.tracking-main, .tracking-modal) .badge.fs-6 { font-size: var(--lm-font-data) !important; }
 .tracking-page :where(.tracking-main, .tracking-modal) .badge:is(.bg-secondary, .text-bg-secondary) { border-color: var(--lm-border-strong); color: var(--lm-text-muted) !important; background: var(--lm-surface-raised) !important; }
 .tracking-page :where(.tracking-main, .tracking-modal) .badge:is(.bg-primary, .bg-info, .text-bg-info) { border-color: #287a91; color: var(--lm-cyan) !important; background: #0a3038 !important; }
 .tracking-page :where(.tracking-main, .tracking-modal) .badge:is(.bg-success, .text-bg-success) { border-color: #197d68; color: var(--lm-green) !important; background: #0b302e !important; }
@@ -1012,12 +1016,12 @@
 .tracking-competition-item:hover { border-color: var(--lm-border-strong); background: var(--lm-surface-raised); }
 .tracking-competition-item.sidebar-competition-item-active { border-color: #287a91; border-left: 4px solid var(--lm-cyan); background: #102e3c; }
 .tracking-competition-item.sidebar-competition-item-active .js-sidebar-competition-item { color: var(--lm-text) !important; }
-.tracking-competition-info { display: grid; width: 100%; min-width: 0; gap: .6rem; padding: .8rem .85rem; border: 0; border-radius: calc(var(--lm-radius-md) - 1px) calc(var(--lm-radius-md) - 1px) 0 0; color: var(--lm-text); background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.tracking-competition-info { display: grid; width: 100%; min-width: 0; gap: .6rem; padding: .8rem .85rem; border: 0; border-radius: calc(var(--lm-radius-md) - 1px) calc(var(--lm-radius-md) - 1px) 0 0; color: var(--lm-text); background: transparent; font: inherit; font-size: var(--lm-font-card-body); text-align: left; cursor: pointer; }
 .tracking-competition-info:hover { background: var(--lm-surface-raised); }
 .tracking-competition-info:focus-visible { position: relative; z-index: 1; outline: 2px solid var(--lm-cyan); outline-offset: -2px; }
 .tracking-competition-info-head { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: .45rem; min-width: 0; }
 .tracking-competition-tags, .tracking-competition-states { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; min-width: 0; }
-.tracking-competition-meta { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem .85rem; min-width: 0; color: var(--lm-text-muted); font-size: .75rem; line-height: 1.35; }
+.tracking-competition-meta { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem .85rem; min-width: 0; color: var(--lm-text-muted); font-size: var(--lm-font-card-meta); line-height: 1.35; }
 .tracking-competition-date, .tracking-competition-scenario { display: inline-flex; align-items: center; gap: .4rem; min-width: 0; overflow-wrap: anywhere; }
 .tracking-competition-date i { color: var(--lm-blue); }
 .tracking-competition-scenario i { color: var(--lm-purple); }
@@ -1025,7 +1029,7 @@
 .tracking-competition-item .sidebar-competition-actions-row { display: flex; justify-content: flex-start; flex-wrap: wrap; gap: .35rem; white-space: normal; }
 .tracking-competition-item .sidebar-competition-actions-row .btn { min-height: 34px; padding: .35rem .5rem; }
 .tracking-competition-item .sidebar-allow-changes-btn { width: 34px; min-width: 34px; height: 34px; padding: 0 !important; }
-.tracking-competition-item .sidebar-classification-visible-text { color: var(--lm-text-muted); font-size: .7rem; line-height: 1.3; }
+.tracking-competition-item .sidebar-classification-visible-text { color: var(--lm-text-muted); font-size: var(--lm-font-card-meta); line-height: 1.3; }
 .tracking-live-indicator { border: 1px solid #197d68; color: var(--lm-green); background: #0b302e; }
 .tracking-live-dot { background: var(--lm-green); box-shadow: 0 0 0 .14rem rgba(34, 216, 171, .16); }
 .tracking-penalties-indicator { border: 1px solid #934148; color: var(--lm-danger); background: #351e29; }
@@ -1044,9 +1048,9 @@
 .tracking-votes-panel { overflow: visible; }
 .tracking-main .table-responsive { min-width: 0; max-width: 100%; overflow-x: auto; border-radius: var(--lm-radius-md); scrollbar-color: var(--lm-border-strong) var(--lm-bg-elevated); }
 .tracking-votes-panel.tracking-desktop-votes-table { border-radius: var(--lm-radius-lg); }
-.tracking-main .table, .tracking-modal .table { --bs-table-bg: transparent; --bs-table-color: var(--lm-text); --bs-table-border-color: var(--lm-border); margin: 0; color: var(--lm-text); font-size: .75rem; }
+.tracking-main .table, .tracking-modal .table { --bs-table-bg: transparent; --bs-table-color: var(--lm-text); --bs-table-border-color: var(--lm-border); margin: 0; color: var(--lm-text); }
 .tracking-main .table > :not(caption) > * > *, .tracking-modal .table > :not(caption) > * > * { padding: .65rem .55rem; border-color: var(--lm-border); color: var(--lm-text); background: var(--lm-surface); box-shadow: none; }
-.tracking-main .table thead th, .tracking-modal .table thead th { color: var(--lm-text-muted); background: var(--lm-surface-raised) !important; font-size: .69rem; font-weight: 750; vertical-align: middle; }
+.tracking-main .table thead th, .tracking-modal .table thead th { color: var(--lm-text-muted); background: var(--lm-surface-raised) !important; font-weight: 750; vertical-align: middle; }
 .tracking-main .table tbody tr:hover > *, .tracking-modal .table tbody tr:hover > * { background: var(--lm-surface-hover); }
 .tracking-main .table td.bg-light, .tracking-modal .table td.bg-light { color: var(--lm-text) !important; background: #122b42 !important; }
 .tracking-main .tracking-votes-table { min-width: 660px; }
