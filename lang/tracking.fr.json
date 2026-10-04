@@ -1,4 +1,8 @@
 {
+  "tracking_competitions_title": "Compétitions",
+  "tracking_show_menu": "Afficher le menu",
+  "tracking_hide_menu": "Masquer le menu",
+  "tracking_select_competition_hint": "Sélectionnez une compétition pour voir son suivi.",
   "title": "Suivi des Compétitions",
   "category": "Catégorie",
   "style": "Style",

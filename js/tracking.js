@@ -7,6 +7,7 @@ const SIDEBAR_STATUS_FILTER_NOT_FINISHED = '__NOT_FINISHED__';
 const TRACKING_SIDEBAR_FILTERS_STORAGE_PREFIX = 'lumora.tracking.sidebarFilters';
 const LIVE_TRACKING_POLL_INTERVAL_MS = 15000;
 const trackingSidebarMobileMediaQuery = window.matchMedia('(max-width: 767.98px)');
+let trackingMobileSelectionRequestId = 0;
 const classificationExportState = {
   competitions: [],
   scope: 'FULL',
@@ -38,6 +39,37 @@ const trackingDancersOrderState = {
   sortable: null,
   modal: null
 };
+
+function initTrackingOrganizationSidebarToggle() {
+  const button = document.getElementById('trackingOrgSidebarToggle');
+  const sidebar = document.querySelector('.tracking-org-sidebar');
+  if (!button || !sidebar) return;
+
+  const setOpen = (isOpen) => {
+    if (!isOpen && sidebar.contains(document.activeElement)) {
+      const focusTarget = window.matchMedia('(max-width: 991.98px)').matches
+        ? document.getElementById('organizationSidebarHeaderToggle')
+        : button;
+      focusTarget?.focus();
+    }
+    document.body.classList.toggle('tracking-org-sidebar-open', isOpen);
+    button.setAttribute('aria-expanded', String(isOpen));
+    const labelKey = isOpen ? 'tracking_hide_menu' : 'tracking_show_menu';
+    button.dataset.i18nAriaLabel = labelKey;
+    button.dataset.i18nTitle = labelKey;
+    const label = t(labelKey, isOpen ? 'Hide menu' : 'Show menu');
+    button.setAttribute('aria-label', label);
+    button.title = label;
+  };
+
+  button.addEventListener('click', () => {
+    setOpen(!document.body.classList.contains('tracking-org-sidebar-open'));
+  });
+  window.matchMedia('(max-width: 991.98px)').addEventListener?.('change', (event) => {
+    if (event.matches) setOpen(false);
+  });
+  setOpen(false);
+}
 
 function getTrackingSidebarFiltersStorageKey() {
   const eventId = typeof getEvent === 'function' ? (getEvent()?.id ?? 'no_event') : 'no_event';
@@ -160,13 +192,13 @@ function renderSidebarAllowChangesButtonContent(allowChanges) {
 
 function renderTrackingSummaryAllowChangesBadge(allowChanges) {
   const badgeClass = allowChanges
-    ? 'bg-white text-success border border-success'
-    : 'bg-white text-danger border border-danger';
+    ? 'tracking-allow-changes-badge--allowed'
+    : 'tracking-allow-changes-badge--blocked';
   const label = allowChanges
     ? t('tracking_summary_allow_vote_changes_enabled', 'JUECES PUEDEN CAMBIAR VOTOS')
     : t('tracking_summary_allow_vote_changes_disabled', 'JUECES NO PUEDEN CAMBIAR VOTOS');
 
-  return `<span class="badge ${badgeClass} fs-6 px-2 py-1">${escapeHtml(label)}</span>`;
+  return `<span class="badge tracking-allow-changes-badge ${badgeClass} fs-6 px-2 py-1">${escapeHtml(label)}</span>`;
 }
 
 function refreshSidebarAllowChangesTooltip(button, allowChanges) {
@@ -2059,6 +2091,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await WaitEventLoaded();
   await ensureTranslationsReady();
+  initTrackingOrganizationSidebarToggle();
   trackingUiState.sidebarFilters = loadTrackingSidebarFilters();
   initClassificationExportOptions();
   initTrackingDancersOrderModal();
@@ -2255,7 +2288,7 @@ async function executeGetCompetitions(categoryId, styleId, options = {}) {
 
   ensureLiveTrackingPolling();
   updateSidebarSelectedCompetition(trackingUiState.selectedCategoryId, trackingUiState.selectedStyleId);
-  await loadCompetitions(
+  return loadCompetitions(
     trackingUiState.selectedCategoryId,
     trackingUiState.selectedStyleId,
     { syncSidebarState: true }
@@ -2788,7 +2821,10 @@ function updateTrackingSidebarMobileHeight() {
     return;
   }
 
-  const visibleHeight = items.slice(0, 5).reduce((height, item) => height + item.getBoundingClientRect().height, 0);
+  const visibleItems = items.slice(0, 5);
+  const rowGap = parseFloat(getComputedStyle(container).rowGap) || 0;
+  const visibleHeight = visibleItems.reduce((height, item) => height + item.getBoundingClientRect().height, 0)
+    + rowGap * (visibleItems.length - 1);
   container.style.maxHeight = `${Math.ceil(visibleHeight)}px`;
 }
 
@@ -2824,9 +2860,9 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
     const btnDisabled = getEvent().status === 'finished' ? 'disabled' : '';
     const statusBadgeClass = getCompetitionListStatusBadgeClass(comp?.status);
     const estimatedStart = comp?.estimated_start_form || t('not_defined');
-    const scenario = getTrackingCompetitionScenario(comp) || t('scenario_not_defined', 'Stage not defined');
-    const scenarioAfterTime = shouldShowTrackingScenario()
-      ? ` - ${escapeHtml(scenario)}`
+    const scenario = getTrackingCompetitionScenario(comp);
+    const scenarioDetail = scenario
+      ? `<span class="tracking-competition-scenario"><i class="bi bi-pin-map" aria-hidden="true"></i>${escapeHtml(scenario)}</span>`
       : '';
     const visibilityButtonDisabled = !isFinished ? 'disabled' : '';
     const classificationVisibilityActionButton = isFinished
@@ -2876,47 +2912,50 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
       : '';
     const isSelected = String(trackingUiState.selectedCategoryId) === String(categoryId)
       && String(trackingUiState.selectedStyleId) === String(styleId);
-    const itemClassName = isSelected ? 'list-group-item sidebar-competition-item-active' : 'list-group-item';
-// <span>${escapeHtml(categoryName)} / ${escapeHtml(styleName)}</span>
+    const itemClassName = isSelected
+      ? 'list-group-item tracking-competition-item sidebar-competition-item-active'
+      : 'list-group-item tracking-competition-item';
     return `
       <div class="${itemClassName}">
-        <div class="d-flex justify-content-between align-items-start gap-2">
-          <button
-            type="button"
-            class="btn btn-link text-start text-decoration-none p-0 border-0 flex-grow-1 js-sidebar-competition-item"
-            data-competition-id="${compId}"
-            data-category-id="${categoryId}"
-            data-style-id="${styleId}"
-            data-revision="${competitionRevision !== null ? competitionRevision : ''}">
-            <div class="fw-semibold d-flex align-items-center flex-wrap gap-2">
-              
-              <span class="badge bg-secondary fs-7 px-2 py-1">${escapeHtml(categoryName || '-')}</span>
-              <span class="badge bg-secondary fs-7 px-2 py-1">${escapeHtml(styleName || '-')}</span>
-              <span
-                class="tracking-live-indicator js-live-tracking-indicator ${isSelected ? '' : 'd-none'}"
-                title="${escapeHtml(t('tracking_live_tooltip', 'Automatic updates every 30 seconds'))}">
-                <span class="tracking-live-dot" aria-hidden="true"></span>
-                <span>${escapeHtml(t('tracking_live_badge', 'LiveTracking'))}</span>
-              </span>
-            </div>
-            <small class="text-muted">
+        <button
+          type="button"
+          class="tracking-competition-info js-sidebar-competition-item"
+          data-competition-id="${compId}"
+          data-category-id="${categoryId}"
+          data-style-id="${styleId}"
+          data-revision="${competitionRevision !== null ? competitionRevision : ''}">
+          <span class="tracking-competition-info-head">
+            <span class="tracking-competition-tags">
+              <span class="badge tracking-category-badge fs-7 px-2 py-1">${escapeHtml(categoryName || '-')}</span>
+              <span class="badge tracking-style-badge fs-7 px-2 py-1">${escapeHtml(styleName || '-')}</span>
+            </span>
+            <span class="tracking-competition-states">
               <span class="badge ${statusBadgeClass} js-sidebar-status-badge">${escapeHtml(status)}</span>
-              - ${escapeHtml(estimatedStart)}${scenarioAfterTime}
-            </small>
-          </button>
-          <div class="d-flex flex-column align-items-end text-end gap-2 sidebar-competition-actions">
-            ${isFinished ? `
-            <small
-              class="text-muted js-classification-visible-text sidebar-classification-visible-text"
-              data-category-id="${categoryId}"
-              data-style-id="${styleId}">${escapeHtml(getClassificationVisibilityText(isClassificationVisible))}</small>
-            ` : ''}
-            <div class="sidebar-competition-actions-row">
-              ${classificationVisibilityActionButton}
-              ${statusActionButton}
-              ${allowChangesActionButton}
-            </div>
+            </span>
+          </span>
+          <span class="tracking-competition-meta">
+            <span class="tracking-competition-date"><i class="bi bi-calendar3" aria-hidden="true"></i>${escapeHtml(estimatedStart)}</span>
+            <span
+              class="tracking-live-indicator js-live-tracking-indicator ${isSelected ? '' : 'd-none'}"
+              title="${escapeHtml(t('tracking_live_tooltip', 'Automatic updates every 30 seconds'))}">
+              <span class="tracking-live-dot" aria-hidden="true"></span>
+              <span>${escapeHtml(t('tracking_live_badge', 'LiveTracking'))}</span>
+            </span>
+            ${scenarioDetail}
+          </span>
+        </button>
+        <div class="tracking-competition-actions" role="group" aria-label="${escapeHtml(t('actions', 'Actions'))}">
+          <div class="sidebar-competition-actions-row">
+            ${statusActionButton}
+            ${allowChangesActionButton}
+            ${classificationVisibilityActionButton}
           </div>
+          ${isFinished ? `
+          <small
+            class="js-classification-visible-text sidebar-classification-visible-text"
+            data-category-id="${categoryId}"
+            data-style-id="${styleId}">${escapeHtml(getClassificationVisibilityText(isClassificationVisible))}</small>
+          ` : ''}
         </div>
       </div>
     `;
@@ -2931,7 +2970,20 @@ function renderCompetitionSidebar(competitions = trackingUiState.sidebarCompetit
       const competitionId = item.dataset.competitionId;
       const revision = item.dataset.revision;
       if (!categoryId || !styleId) return;
-      await executeGetCompetitions(categoryId, styleId, { competitionId, revision });
+      const requestId = ++trackingMobileSelectionRequestId;
+      const competitions = await executeGetCompetitions(categoryId, styleId, { competitionId, revision });
+      if (!trackingSidebarMobileMediaQuery.matches || requestId !== trackingMobileSelectionRequestId) return;
+      if (!Array.isArray(competitions) || competitions.length === 0) return;
+
+      requestAnimationFrame(() => {
+        if (!trackingSidebarMobileMediaQuery.matches || requestId !== trackingMobileSelectionRequestId) return;
+        const summaries = Array.from(document.querySelectorAll('#competitionsContainer .tracking-summary-card'));
+        const summary = summaries.find(card => card.dataset.competitionId === String(competitionId)) || summaries[0];
+        summary?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+          block: 'start'
+        });
+      });
     });
   });
 
@@ -3124,22 +3176,23 @@ function buildComparisonSummaryCard(comp, statusText, isFinished, isClassificati
     : '';
 
   const card = document.createElement('div');
-  card.className = 'card mb-4 border-primary-subtle';
+  card.className = 'card mb-3 tracking-summary-card';
+  card.dataset.competitionId = String(comp?.id ?? comp?.competition_id ?? '');
   card.innerHTML = `
     <div class="card-body">
       <div class="tracking-summary-layout">
         <div class="tracking-summary-top">
           <div class="tracking-summary-badges">
-            <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.category_name || '-')}</span>
-            <span class="badge bg-secondary fs-6 px-2 py-1">${escapeHtml(comp.style_name || '-')}</span>
+            <span class="badge tracking-category-badge fs-6 px-2 py-1">${escapeHtml(comp.category_name || '-')}</span>
+            <span class="badge tracking-style-badge fs-6 px-2 py-1">${escapeHtml(comp.style_name || '-')}</span>
             <span class="badge ${statusBadgeClass} fs-6 px-2 py-1">${escapeHtml(statusText || '-')}</span>
             ${scenarioBadge}
             ${allowChangesSummaryBadge}
           </div>
           <div class="d-flex align-items-center gap-3 tracking-summary-progress">
-            <div class="progress flex-grow-1 position-relative" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.percentage}" style="height: 30px;">
+            <div class="progress flex-grow-1 position-relative" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress.percentage}">
               <div class="progress-bar progress-bar-striped ${progressBarColorClass}" style="width: ${progress.percentage}%"></div>
-              <span class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap ${progressTextClass}">
+              <span class="position-absolute top-50 start-50 translate-middle fw-bold fs-6 text-nowrap tracking-progress-label ${progressTextClass}">
                 ${progressText}
               </span>
             </div>
@@ -3266,7 +3319,7 @@ function renderCompetitions(competitions) {
 
   if (!competitions || competitions.length === 0) {
     container.innerHTML = `
-      <div class="alert alert-warning text-center my-4">
+      <div class="alert alert-warning text-center my-4 lm-notice">
         ${t('no_competitions_found')}
       </div>
     `;
@@ -3296,23 +3349,21 @@ function renderCompetitions(competitions) {
     // Tabla de votaciones
     if (!comp.judges.length || !comp.dancers.length) {
       const alertDiv = document.createElement('div');
-      alertDiv.className = 'alert alert-info text-center';
+      alertDiv.className = 'alert alert-info text-center lm-notice';
       alertDiv.textContent = t('no_data');
       container.appendChild(alertDiv);
     } else {
       const competitionId = comp.id ?? comp.competition_id ?? '';
       const competitionLabel = `${comp.category_name || ''}${comp.style_name ? ` - ${comp.style_name}` : ''}`.trim();
-      const tableContainer = document.createElement('div');
-      tableContainer.className = 'mx-auto mb-4';
       let mobileCardsHTML = '';
 
       let tableHTML = `
-        <table class="table table-bordered align-middle text-center">
-          <thead class="table-light">
+        <table class="table table-bordered align-middle text-center tracking-votes-table">
+          <thead>
             <tr>
-              <th class="position-relative text-center">
-                <span>${t('dancer')}</span>
-                <div class="position-absolute top-50 end-0 translate-middle-y me-2">
+              <th class="tracking-votes-dancer-head">
+                <div class="tracking-votes-dancer-head-content">
+                  <span>${t('dancer')}</span>
                   <button
                     type="button"
                     class="btn btn-outline-secondary btn-sm js-change-dancers-order"
@@ -3596,7 +3647,7 @@ function renderCompetitions(competitions) {
       });
 
       tableHTML += '</tbody></table>';
-      tableContainer.innerHTML = `
+      container.insertAdjacentHTML('beforeend', `
         <div class="tracking-mobile-order-action">
           <button
             type="button"
@@ -3606,17 +3657,15 @@ function renderCompetitions(competitions) {
             <i class="bi bi-list-ol me-1" aria-hidden="true"></i>${escapeHtml(t('change_order', 'Change order'))}
           </button>
         </div>
-        <div class="table-responsive tracking-desktop-votes-table">${tableHTML}</div>
-        <div class="tracking-mobile-votes-list">${mobileCardsHTML}</div>
-      `;
-      container.appendChild(tableContainer);
+        <div class="table-responsive tracking-desktop-votes-table tracking-votes-panel mb-3">${tableHTML}</div>
+        <div class="tracking-mobile-votes-list mb-3">${mobileCardsHTML}</div>
+      `);
     }
 
     // Separador entre competiciones (menos después de la última)
     if (index < competitions.length - 1) {
       const hr = document.createElement('hr');
-      hr.className = 'my-4 mx-auto';
-      hr.style.width = '200px';
+      hr.className = 'tracking-separator';
       container.appendChild(hr);
     }
   });

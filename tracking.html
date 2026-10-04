@@ -1,5 +1,5 @@
-﻿<!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,1004 +8,65 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />  
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
-  <style>
-    .bg-noshown {
-      background-color: #6f42c1; /* morado Bootstrap */
-      color: white;
-    }
-    /* Allow dropdowns to expand without forcing vertical scroll in the table wrapper */
-    .table-responsive {
-      overflow-x: auto;
-      overflow-y: visible;
-    }
-    .results-draggable {
-      cursor: grab;
-    }
-    .results-draggable:active {
-      cursor: grabbing;
-    }
-    .draggable-item {
-      cursor: grab;
-    }
-    .draggable-item:active {
-      cursor: grabbing;
-    }
-    .drag-icon {
-      cursor: grab;
-    }
-    .tie-move-icon {
-      font-size: 0.9rem;
-    }
-    .results-dancer-cell {
-      text-align: left;
-    }
-    .results-dancer-row {
-      width: 100%;
-      min-width: 0;
-    }
-    .results-dancer-content {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .results-dancer-name {
-      display: block;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    #resultsModal .modal-dialog {
-      max-width: 600px;
-    }
-    #resultsModal .modal-dialog.results-modal-wide {
-      max-width: 800px;
-    }
-    #resultsModal .results-draggable td:first-child {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.25rem;
-    }
-    #voteDetailsModal .modal-dialog {
-      width: 96vw;
-      max-width: 1100px;
-    }
-    #voteDetailsModal .modal-body {
-      max-height: 75vh;
-      overflow-x: hidden;
-      overflow-y: auto;
-      padding: 1rem;
-    }
-    .vote-details-tab-nav {
-      gap: 0.35rem;
-      border-bottom: 0;
-      flex-wrap: wrap;
-    }
-    .vote-details-tab-nav .nav-link {
-      border: 1px solid #d7dee5;
-      border-radius: 999px;
-      color: #405466;
-      font-weight: 600;
-      background: #f8fafc;
-      padding: 0.5rem 0.85rem;
-    }
-    .vote-details-tab-nav .nav-link.active {
-      color: #ffffff;
-      background: #0d6efd;
-      border-color: #0d6efd;
-      box-shadow: 0 0.5rem 1rem rgba(13, 110, 253, 0.16);
-    }
-    .vote-details-competition-block + .vote-details-competition-block {
-      margin-top: 1rem;
-    }
-    .vote-details-competition-heading {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      margin-bottom: 0.85rem;
-      padding: 0.8rem 0.95rem;
-      border: 1px solid #d7dee5;
-      border-radius: 0.85rem;
-      background: #f8fafc;
-      font-weight: 700;
-      color: #22303d;
-    }
-    .vote-details-section-card {
-      border: 1px solid #d7dee5;
-      border-radius: 0.85rem;
-      background: #ffffff;
-      padding: 0.9rem;
-      box-shadow: 0 0.6rem 1.4rem rgba(15, 23, 42, 0.04);
-    }
-    .vote-details-section-card + .vote-details-section-card {
-      margin-top: 1rem;
-    }
-    .vote-details-section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      margin-bottom: 0.8rem;
-    }
-    .vote-details-section-title {
-      font-weight: 700;
-      color: #22303d;
-      min-width: 0;
-    }
-    .vote-details-section-subtitle {
-      color: #617182;
-      font-size: 0.85rem;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .vote-details-scroll-group {
-      margin: 0;
-    }
-    .vote-details-scroll-group + .vote-details-scroll-group {
-      margin-top: 1rem;
-    }
-    .vote-details-criteria-leaders {
-      margin-bottom: 0.75rem;
-    }
-    .vote-details-criteria-leaders-title {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: #4f5d6b;
-      text-transform: uppercase;
-      letter-spacing: 0.02em;
-    }
-    .vote-details-criteria-leaders-accordion-item {
-      border: 1px solid #d7dee5;
-      border-radius: 0.5rem;
-      background: #f8fafc;
-      overflow: hidden;
-    }
-    .vote-details-criteria-leaders .accordion-button {
-      background: #f8fafc;
-      box-shadow: none;
-      padding: 0.65rem 0.75rem;
-    }
-    .vote-details-criteria-leaders .accordion-button:not(.collapsed) {
-      color: #4f5d6b;
-      background: #eef3f8;
-      box-shadow: none;
-    }
-    .vote-details-criteria-leaders .accordion-body {
-      padding: 0.65rem 0.75rem;
-      border-top: 1px solid #d7dee5;
-    }
-    .vote-details-criteria-leaders-list {
-      display: flex;
-      flex-direction: column;
-      column-gap: 0;
-      row-gap: 0.35rem;
-    }
-    .vote-details-criteria-leader-item {
-      display: flex;
-      align-items: baseline;
-      gap: 0.25rem;
-      max-width: 100%;
-      min-width: 0;
-    }
-    .vote-details-criteria-leader-name {
-      font-weight: 700;
-      color: #22303d;
-      white-space: nowrap;
-    }
-    .vote-details-criteria-leader-value {
-      font-size: 0.9rem;
-      color: #1f2b37;
-      overflow: hidden;
-      text-overflow: initial;
-      white-space: normal;
-    }
-    .vote-details-scrollbar-top {
-      overflow-x: auto;
-      overflow-y: hidden;
-      height: 12px;
-      margin-bottom: 0.4rem;
-    }
-    .vote-details-scrollbar-spacer {
-      height: 1px;
-    }
-    .vote-details-table-wrap {
-      overflow: auto;
-      max-height: 60vh;
-    }
-    .vote-details-table {
-      table-layout: auto;
-      width: max-content;
-      min-width: max-content;
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .vote-details-col-dancer {
-      width: auto;
-    }
-    .vote-details-col-dancer-total {
-      width: 84px;
-    }
-    .vote-details-col-criteria {
-      width: 64px;
-    }
-    .vote-details-col-judge-total {
-      width: 72px;
-    }
-    .vote-details-table th,
-    .vote-details-table td {
-      vertical-align: top;
-      white-space: nowrap;
-    }
-    .vote-details-cell {
-      width: 64px;
-      min-width: 64px;
-      max-width: 64px;
-      text-align: center;
-      vertical-align: middle;
-    }
-    .vote-details-score-cell {
-      font-weight: 600;
-    }
-    .vote-details-dancer-total-cell {
-      width: 84px;
-      min-width: 84px;
-      max-width: 84px;
-      background-color: #edf5ff !important;
-      font-weight: 700;
-    }
-    .vote-details-judge-total-cell {
-      background-color: #edf5ff !important;
-      font-weight: 700;
-    }
-    .vote-details-total-head,
-    .vote-details-judge-total-head {
-      font-weight: 700;
-      background-color: #e3eefb !important;
-    }
-    .vote-details-status-cell {
-      width: auto;
-      min-width: 120px;
-      max-width: none;
-      text-align: center;
-      vertical-align: middle;
-    }
-    .vote-details-table.table-bordered > :not(caption) > * > * {
-      border-color: #d7dee5;
-    }
-    .vote-details-criteria-head {
-      font-size: 0.82rem;
-      max-width: 90px;
-      min-width: 72px;
-      padding-left: 0.25rem;
-      padding-right: 0.25rem;
-      white-space: normal;
-      text-align: center;
-    }
-    .vote-details-criteria-caption {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0.1rem;
-      line-height: 1.15;
-      text-align: center;
-      width: 100%;
-    }
-    .vote-details-criteria-name {
-      display: block;
-      max-width: 100%;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-weight: 600;
-    }
-    .vote-details-criteria-percentage {
-      display: block;
-      max-width: 100%;
-      white-space: nowrap;
-      font-size: 0.72rem;
-      color: #4f5d6b;
-      font-weight: 700;
-    }
-    .vote-details-table thead tr:first-child th {
-      position: sticky;
-      top: 0;
-      z-index: 4;
-      background: var(--bs-light);
-    }
-    .vote-details-table thead tr:nth-child(2) th {
-      position: sticky;
-      top: var(--vote-details-header-second-row-top, 42px);
-      z-index: 3;
-      background: var(--bs-light);
-    }
-    .vote-details-table .vote-details-sticky-col {
-      position: sticky;
-      left: 0;
-      z-index: 2;
-      background: #fff;
-      width: auto;
-      min-width: max-content;
-      max-width: none;
-      overflow: hidden;
-    }
-    .vote-details-table thead .vote-details-sticky-col {
-      z-index: 5;
-      background: var(--bs-light);
-    }
-    .vote-details-dancer-cell {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.35rem;
-      min-width: 0;
-      width: 100%;
-    }
-    .vote-details-dancer-name {
-      flex: 1 1 auto;
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      text-align: left;
-    }
-    .vote-details-dancer-badge {
-      flex: 0 0 auto;
-      margin-left: 0.35rem;
-    }
-    .vote-details-table tbody tr.vote-details-hover-row > th,
-    .vote-details-table tbody tr.vote-details-hover-row > td {
-      background: #f8fafc !important;
-    }
-    .vote-details-table tbody tr.vote-details-hover-row > td.vote-details-dancer-total-cell,
-    .vote-details-table tbody tr.vote-details-hover-row > td.vote-details-judge-total-cell {
-      background-color: #edf5ff !important;
-    }
-    .vote-details-table .vote-details-hover-col {
-      background: #eaf3ff !important;
-    }
-    .vote-details-table .vote-details-hover-col.vote-details-dancer-total-cell,
-    .vote-details-table .vote-details-hover-col.vote-details-judge-total-cell {
-      background-color: #edf5ff !important;
-    }
-    .vote-details-tab-pane:not(.vote-details-show-criteria) .vote-details-criteria-col {
-      display: none;
-    }
-    @media (max-width: 576px) {
-      .vote-details-tab-nav .nav-link {
-        width: 100%;
-        text-align: center;
-      }
-      .vote-details-competition-heading,
-      .vote-details-section-header {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .vote-details-section-subtitle {
-        white-space: normal;
-      }
-    }
-    #classificationExportOptionsModal .export-competitions-list {
-      max-height: 320px;
-      overflow-y: auto;
-    }
-    #penaltyAssignmentModal .modal-dialog {
-      width: 96vw;
-      max-width: 980px;
-    }
-    #penaltyAssignmentModal .modal-body {
-      max-height: 72vh;
-      overflow-y: auto;
-    }
-    #penaltyAssignmentModal .penalty-assignment-header {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-    }
-    #penaltyAssignmentModal .penalty-assignment-participant {
-      font-size: 1.3rem;
-      line-height: 1.2;
-    }
-    #penaltyAssignmentModal .penalty-assignment-competition-badge {
-      width: fit-content;
-      max-width: 100%;
-      text-align: left;
-      white-space: normal;
-    }
-    #penaltyAssignmentModal .penalty-assignment-table {
-      table-layout: fixed;
-      min-width: 860px;
-    }
-    #penaltyAssignmentModal .penalty-col-apply {
-      width: 72px;
-    }
-    #penaltyAssignmentModal .penalty-col-name {
-      width: auto;
-    }
-    #penaltyAssignmentModal .penalty-col-assigned-by {
-      width: 130px;
-    }
-    #penaltyAssignmentModal .penalty-col-for-judges {
-      width: 100px;
-    }
-    #penaltyAssignmentModal .penalty-col-range {
-      width: 110px;
-    }
-    #penaltyAssignmentModal .penalty-col-score {
-      width: 120px;
-    }
-    #penaltyAssignmentModal .penalty-fixed-badge {
-      font-size: 0.68rem;
-      line-height: 1;
-    }
-    @media (max-width: 767.98px) {
-      #penaltyAssignmentModal .modal-dialog {
-        width: calc(100% - 1rem);
-        margin: 0.5rem auto;
-      }
-      #penaltyAssignmentModal .modal-content {
-        max-height: calc(100dvh - 1rem);
-      }
-      #penaltyAssignmentModal .modal-header,
-      #penaltyAssignmentModal .modal-footer {
-        flex: 0 0 auto;
-      }
-      #penaltyAssignmentModal .modal-body {
-        max-height: none;
-        padding: 0.85rem;
-        overscroll-behavior-y: contain;
-      }
-      #penaltyAssignmentModal .penalty-assignment-participant {
-        font-size: 1.05rem;
-      }
-      #penaltyAssignmentModal .penalty-assignment-table-wrap {
-        overflow: visible;
-      }
-      #penaltyAssignmentModal .penalty-assignment-table,
-      #penaltyAssignmentModal .penalty-assignment-table tbody {
-        display: block;
-        width: 100%;
-      }
-      #penaltyAssignmentModal .penalty-assignment-table {
-        min-width: 0;
-        border: 0;
-      }
-      #penaltyAssignmentModal .penalty-assignment-table thead {
-        display: none;
-      }
-      #penaltyAssignmentModal .penalty-assignment-table tbody {
-        display: grid;
-        gap: 0.7rem;
-      }
-      #penaltyAssignmentModal .js-penalty-row {
-        position: relative;
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
-        padding: 0.8rem;
-        border: 1px solid var(--bs-border-color) !important;
-        border-radius: 0.8rem;
-        background: var(--bs-body-bg);
-        box-shadow: 0 0.15rem 0.4rem rgba(0, 0, 0, 0.05);
-      }
-      #penaltyAssignmentModal .js-penalty-row:has(.js-penalty-toggle:checked) {
-        border-color: rgba(var(--bs-primary-rgb), 0.45) !important;
-        background: rgba(var(--bs-primary-rgb), 0.035);
-      }
-      #penaltyAssignmentModal .js-penalty-row > td {
-        display: flex;
-        width: auto;
-        min-width: 0;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
-        padding: 0.5rem 0.6rem;
-        border: 0;
-        border-radius: 0.65rem;
-        background: var(--bs-tertiary-bg);
-        text-align: left !important;
-      }
-      #penaltyAssignmentModal .js-penalty-row > td::before {
-        display: block;
-        margin-bottom: 0.22rem;
-        color: var(--bs-secondary-color);
-        content: attr(data-label);
-        font-size: 0.6rem;
-        font-weight: 700;
-        letter-spacing: 0.035em;
-        line-height: 1.1;
-        text-transform: uppercase;
-      }
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-name {
-        grid-column: 1 / -1;
-        min-height: 2.5rem;
-        padding: 0 5.5rem 0.55rem 0;
-        background: transparent;
-        font-size: 0.95rem;
-      }
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-name::before {
-        display: none;
-      }
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-apply {
-        position: absolute;
-        top: 0.65rem;
-        right: 0.7rem;
-        z-index: 1;
-        min-height: auto;
-        flex-direction: row-reverse;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.35rem 0.5rem;
-        background: rgba(var(--bs-primary-rgb), 0.08);
-      }
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-apply::before {
-        margin: 0;
-        color: var(--bs-primary-text-emphasis);
-      }
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-apply .form-check-input {
-        float: none;
-        margin: 0;
-      }
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-assigned-by,
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-for-judges,
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-range,
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-score {
-        width: auto;
-      }
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-for-judges > i {
-        font-size: 1rem;
-      }
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-range > div {
-        justify-content: flex-start !important;
-      }
-      #penaltyAssignmentModal .js-penalty-row .penalty-col-score .form-control {
-        width: 100%;
-      }
-      #penaltyAssignmentModal .modal-footer {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
-      }
-      #penaltyAssignmentModal .modal-footer .btn {
-        width: 100%;
-        min-height: 2.5rem;
-        margin: 0;
-      }
-    }
-    .tracking-penalties-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.2rem 0.45rem;
-      border-radius: 999px;
-      background: #dc3545;
-      color: #fff;
-      font-size: 0.72rem;
-      font-weight: 700;
-      line-height: 1;
-      box-shadow: 0 0 0 0.16rem rgba(220, 53, 69, 0.22);
-      animation: trackingPenaltyPulse 1.7s ease-in-out infinite;
-    }
-    .tracking-penalties-indicator i {
-      font-size: 0.75rem;
-      line-height: 1;
-    }
-    @keyframes trackingPenaltyPulse {
-      0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0.16rem rgba(220, 53, 69, 0.22);
-      }
-      50% {
-        transform: scale(1.04);
-        box-shadow: 0 0 0 0.28rem rgba(220, 53, 69, 0.1);
-      }
-    }
-    .tracking-center-column {
-      min-width: 0;
-    }
-    .tracking-left-column {
-      align-self: flex-start;
-    }
-    .tracking-left-card {
-      position: sticky;
-      top: 1rem;
-    }
-    #competitionsSidebarList {
-      max-height: 72vh;
-      overflow-y: auto;
-    }
-    @media (max-width: 767.98px) {
-      #competitionsSidebarList {
-        overscroll-behavior-y: contain;
-        scrollbar-gutter: stable;
-      }
-    }
-    .sidebar-competition-item-active {
-      border-left: 4px solid var(--bs-primary);
-      background-color: #eaf3ff;
-    }
-    .sidebar-competition-item-active .js-sidebar-competition-item {
-      color: var(--bs-primary) !important;
-    }
-    .sidebar-competition-actions {
-      flex: 0 0 auto;
-      max-width: none;
-      min-width: fit-content;
-    }
-    .sidebar-competition-actions-row {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 0.5rem;
-      flex-wrap: nowrap;
-      white-space: nowrap;
-    }
-    .sidebar-classification-visible-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.35rem;
-      white-space: nowrap;
-    }
-    .sidebar-classification-visible-text {
-      font-size: 0.72rem;
-      line-height: 1.2;
-    }
-    .sidebar-allow-changes-btn {
-      width: 2rem;
-      height: 2rem;
-      padding: 0;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .tracking-live-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.12rem 0.48rem;
-      border-radius: 999px;
-      background: rgba(25, 135, 84, 0.12);
-      color: #146c43;
-      font-size: 0.68rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      line-height: 1;
-      text-transform: uppercase;
-    }
-    .tracking-live-dot {
-      width: 0.46rem;
-      height: 0.46rem;
-      border-radius: 50%;
-      background: #198754;
-      box-shadow: 0 0 0 0.14rem rgba(25, 135, 84, 0.2);
-      animation: trackingLivePulse 1.7s ease-in-out infinite;
-    }
-    @keyframes trackingLivePulse {
-      0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0.14rem rgba(25, 135, 84, 0.2);
-      }
-      50% {
-        transform: scale(1.08);
-        box-shadow: 0 0 0 0.24rem rgba(25, 135, 84, 0.12);
-      }
-    }
-    .tracking-vote-cell-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-      align-items: center;
-      width: 100%;
-      gap: 0.35rem;
-    }
-    .tracking-vote-cell-side {
-      min-width: 0;
-      display: inline-flex;
-      align-items: center;
-    }
-    .tracking-vote-cell-side-start {
-      justify-self: start;
-    }
-    .tracking-vote-cell-side-end {
-      justify-self: end;
-    }
-    .tracking-vote-cell-center {
-      justify-self: center;
-    }
-    .tracking-vote-status-icons {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.2rem;
-      color: #6c757d;
-    }
-    .tracking-vote-status-icon {
-      font-size: 0.72rem;
-      line-height: 1;
-    }
-    .tracking-summary-layout {
-      display: flex;
-      flex-direction: column;
-      row-gap: 0.6rem;
-    }
-    .tracking-summary-top {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      min-width: 0;
-    }
-    .tracking-summary-badges {
-      flex: 0 0 auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      width: fit-content;
-      max-width: 100%;
-      min-width: 0;
-    }
-    .tracking-summary-progress {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .tracking-summary-progress .progress {
-      width: 100%;
-      min-width: 0;
-    }
-    .tracking-summary-actions {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      align-items: stretch;
-      align-content: center;
-      gap: 0.5rem;
-      min-width: 0;
-    }
-    .tracking-summary-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.25rem;
-      min-height: 31px;
-      min-width: 8rem;
-      max-width: 12.5rem;
-      flex: 0 1 auto;
-    }
-    .tracking-summary-btn i {
-      flex: 0 0 auto;
-      margin-right: 0 !important;
-    }
-    .tracking-summary-btn-label {
-      display: block;
-      min-width: 0;
-      line-height: 1.1;
-      text-align: center;
-      white-space: normal;
-      word-break: break-word;
-    }
-    .tracking-mobile-order-action,
-    .tracking-mobile-votes-list {
-      display: none;
-    }
-    @media (max-width: 767.98px) {
-      #competitionsContainer .tracking-summary-top {
-        flex-wrap: wrap;
-      }
-      #competitionsContainer .tracking-summary-progress {
-        flex: 0 0 100%;
-        width: 100%;
-      }
-      #competitionsContainer .tracking-desktop-votes-table {
-        display: none;
-      }
-      #competitionsContainer .tracking-mobile-order-action {
-        display: flex;
-        justify-content: flex-end;
-        margin-bottom: 0.75rem;
-      }
-      #competitionsContainer .tracking-mobile-order-action .btn {
-        min-height: 2.5rem;
-        border-radius: 0.7rem;
-        font-weight: 650;
-      }
-      #competitionsContainer .tracking-mobile-votes-list {
-        display: grid;
-        gap: 0.75rem;
-      }
-      #competitionsContainer .tracking-dancer-card {
-        position: relative;
-        border: 1px solid var(--bs-border-color);
-        border-radius: 0.85rem;
-        background: var(--bs-body-bg);
-        box-shadow: 0 0.15rem 0.45rem rgba(0, 0, 0, 0.06);
-      }
-      #competitionsContainer .tracking-dancer-card::before {
-        position: absolute;
-        inset: 0 0 auto;
-        height: 0.25rem;
-        border-radius: 0.85rem 0.85rem 0 0;
-        background: linear-gradient(90deg, var(--bs-primary), #6f42c1);
-        content: '';
-      }
-      #competitionsContainer .tracking-dancer-card__header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.65rem;
-        padding: 1rem 0.85rem 0.7rem;
-      }
-      #competitionsContainer .tracking-dancer-card__identity {
-        display: flex;
-        min-width: 0;
-        align-items: center;
-        gap: 0.45rem;
-      }
-      #competitionsContainer .tracking-dancer-card__name {
-        overflow-wrap: anywhere;
-        font-size: 0.95rem;
-        font-weight: 750;
-        line-height: 1.2;
-      }
-      #competitionsContainer .tracking-dancer-card__header-actions {
-        display: flex;
-        flex: 0 0 auto;
-        align-items: center;
-        gap: 0.4rem;
-      }
-      #competitionsContainer .tracking-dancer-card__scores {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
-        padding: 0 0.85rem 0.75rem;
-      }
-      #competitionsContainer .tracking-dancer-card__score {
-        min-width: 0;
-        padding: 0.55rem 0.65rem;
-        border-radius: 0.72rem;
-        background: var(--bs-tertiary-bg);
-        text-align: center;
-      }
-      #competitionsContainer .tracking-dancer-card__score:only-child {
-        grid-column: 1 / -1;
-      }
-      #competitionsContainer .tracking-dancer-card__score-label {
-        display: block;
-        color: var(--bs-secondary-color);
-        font-size: 0.62rem;
-        font-weight: 700;
-        letter-spacing: 0.035em;
-        text-transform: uppercase;
-      }
-      #competitionsContainer .tracking-dancer-card__score-value {
-        display: block;
-        margin-top: 0.1rem;
-        color: var(--bs-emphasis-color);
-        font-size: 1rem;
-        font-weight: 750;
-      }
-      #competitionsContainer .tracking-dancer-card__score-penalized {
-        display: block;
-        color: var(--bs-danger);
-        font-size: 0.7rem;
-        font-weight: 650;
-      }
-      #competitionsContainer .tracking-dancer-card__votes {
-        border-top: 1px solid var(--bs-border-color-translucent);
-      }
-      #competitionsContainer .tracking-dancer-card__vote {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 0.65rem;
-        padding: 0.65rem 0.85rem;
-      }
-      #competitionsContainer .tracking-dancer-card__vote + .tracking-dancer-card__vote {
-        border-top: 1px solid var(--bs-border-color-translucent);
-      }
-      #competitionsContainer .tracking-dancer-card__judge {
-        min-width: 0;
-        overflow-wrap: anywhere;
-        font-size: 0.8rem;
-        font-weight: 650;
-      }
-      #competitionsContainer .tracking-dancer-card__vote-result {
-        display: flex;
-        min-width: 0;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 0.45rem;
-      }
-      #competitionsContainer .tracking-dancer-card__vote-actions {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-      }
-      #competitionsContainer .tracking-dancer-card__vote-actions .btn {
-        display: inline-flex;
-        width: 2rem;
-        height: 2rem;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        border-radius: 0.55rem;
-      }
-    }
-    @media (min-width: 1400px) {
-      .tracking-summary-layout {
-        flex-direction: row;
-        align-items: center;
-        column-gap: 0.75rem;
-      }
-      .tracking-summary-top {
-        flex: 1 1 auto;
-      }
-      .tracking-summary-badges {
-        flex: 0 1 auto;
-      }
-      .tracking-summary-progress {
-        flex: 1 1 260px;
-      }
-      .tracking-summary-actions {
-        margin-left: auto;
-        justify-content: flex-end;
-        flex-wrap: nowrap;
-      }
-      .tracking-summary-btn {
-        flex: 0 0 auto;
-        min-width: auto;
-        max-width: none;
-      }
-      .tracking-summary-btn-label {
-        white-space: nowrap;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20261002-2">
+  <link rel="stylesheet" href="css/tracking.css?v=20261004-7">
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 tracking-page">
 
   <div id="header"></div>
 
-  <div class="container-fluid py-4">
+  <div class="container-fluid lm-page lm-org-shell flex-grow-1">
     <div id="organizationSidebarToggle" class="d-lg-none"></div>
-    <div class="row g-4 align-items-start">
-      <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+    <div class="row g-4 align-items-start lm-org-layout tracking-org-layout">
+      <aside class="col-lg-3 col-xl-2 d-none d-lg-block lm-org-sidebar-column tracking-org-sidebar" id="trackingOrganizationSidebar">
         <div id="organizationSidebarMount"></div>
       </aside>
-      <main class="col-12 col-lg-9 col-xl-10">
-    <div class="my-2" id="trackingContainer">
-      <div class="row g-4 align-items-start">
+      <main class="col-12 col-lg-9 col-xl-10 lm-org-main tracking-main">
+    <h1 class="visually-hidden" data-i18n="title">Competition Tracking</h1>
+    <div id="trackingContainer">
+      <div class="row g-3 align-items-start tracking-columns">
         <div class="col-12 col-xl-3 tracking-left-column">
           <div class="card tracking-left-card">
-            <div class="card-header d-flex justify-content-between align-items-center gap-2">
-              <span class="fw-semibold">Competiciones</span>
-              <button class="btn btn-warning btn-sm" id="exportBtn" type="button" data-i18n="export">Export Results</button>
+            <div class="card-header tracking-left-card-header">
+              <h2 class="tracking-panel-title"><i class="bi bi-trophy" aria-hidden="true"></i><span data-i18n="tracking_competitions_title">Competiciones</span></h2>
+              <div class="tracking-left-header-actions">
+                <button class="btn btn-outline-secondary btn-sm d-none d-lg-inline-flex tracking-org-sidebar-toggle" id="trackingOrgSidebarToggle" type="button" aria-controls="trackingOrganizationSidebar" aria-expanded="false" aria-label="Mostrar menú" title="Mostrar menú" data-i18n-aria-label="tracking_show_menu" data-i18n-title="tracking_show_menu">
+                  <i class="bi bi-list" aria-hidden="true"></i>
+                </button>
+                <button class="btn btn-warning btn-sm" id="exportBtn" type="button"><i class="bi bi-download" aria-hidden="true"></i><span data-i18n="export_results_button">Export Results</span></button>
+              </div>
             </div>
             <div class="card-body p-0">
-              <div class="p-2 border-bottom">
+              <div class="tracking-sidebar-filters">
                 <div class="row g-1">
                   <div class="col-4">
-                    <select class="form-select form-select-sm" id="trackingCategoryFilter" aria-label="Category filter" title="Category filter">
-                      <option value="">Todas CategorÃ­as</option>
+                    <select class="form-select form-select-sm" id="trackingCategoryFilter" aria-label="Categoría" title="Categoría" data-i18n-aria-label="category" data-i18n-title="category">
+                      <option value="">Todas Categorías</option>
                     </select>
                   </div>
                   <div class="col-4">
-                    <select class="form-select form-select-sm" id="trackingStyleFilter" aria-label="Style filter" title="Style filter">
+                    <select class="form-select form-select-sm" id="trackingStyleFilter" aria-label="Estilo" title="Estilo" data-i18n-aria-label="style" data-i18n-title="style">
                       <option value="">Todos Estilos</option>
                     </select>
                   </div>
                   <div class="col-4">
-                    <select class="form-select form-select-sm" id="trackingStatusFilter" aria-label="Status filter" title="Status filter">
+                    <select class="form-select form-select-sm" id="trackingStatusFilter" aria-label="Estado" title="Estado" data-i18n-aria-label="status" data-i18n-title="status">
                       <option value="">Todos Estados</option>
                     </select>
                   </div>
                 </div>
               </div>
-              <div id="competitionsSidebarList" class="list-group list-group-flush"></div>
+              <div id="competitionsSidebarList" class="list-group tracking-competitions-list"></div>
             </div>
           </div>
         </div>
         <div class="col-12 col-xl-9 tracking-center-column">
-          <div id="competitionsContainer"></div>
+          <div id="competitionsContainer">
+            <div class="tracking-empty">
+              <i class="bi bi-activity" aria-hidden="true"></i>
+              <p data-i18n="tracking_select_competition_hint">Selecciona una competición para ver su seguimiento.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1013,12 +74,12 @@
     </div>
 
 
-    <div class="modal fade" id="voteDetailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade lm-modal tracking-modal" id="voteDetailsModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title" data-i18n="voting_details">Detalles de votaciÃ³n</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <div class="modal-header">
+            <h5 class="modal-title" data-i18n="voting_details">Detalles de votación</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
           </div>
           <div class="modal-body">
             <div id="voteDetailsBody"></div>
@@ -1028,12 +89,12 @@
       </div>
     </div>
 
-    <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal fade lm-modal tracking-modal" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
+          <div class="modal-header">
             <h5 class="modal-title" id="detailsModalLabel" data-i18n="view_details">Details</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <div class="row g-3 text-center" id="criteriaContainer"></div>
@@ -1045,12 +106,12 @@
       </div>
     </div>
 
-    <div class="modal fade" id="resultsModal" tabindex="-1" aria-labelledby="resultsModalLabel" aria-hidden="true">
+    <div class="modal fade lm-modal tracking-modal" id="resultsModal" tabindex="-1" aria-labelledby="resultsModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
+          <div class="modal-header">
             <h5 class="modal-title" id="resultsModalLabel" data-i18n="view_results">View Results</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body" id="resultsModalBody"></div>
           <div class="modal-footer">
@@ -1061,10 +122,10 @@
       </div>
     </div>
 
-    <div class="modal fade" id="classificationExportOptionsModal" tabindex="-1" aria-labelledby="classificationExportOptionsModalLabel" aria-hidden="true">
+    <div class="modal fade lm-modal tracking-modal" id="classificationExportOptionsModal" tabindex="-1" aria-labelledby="classificationExportOptionsModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-          <div class="modal-header bg-warning">
+          <div class="modal-header">
             <h5 class="modal-title" id="classificationExportOptionsModalLabel">Export Results</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
@@ -1089,12 +150,12 @@
       </div>
     </div>
 
-    <div class="modal fade" id="penaltyAssignmentModal" tabindex="-1" aria-labelledby="penaltyAssignmentModalLabel" aria-hidden="true">
+    <div class="modal fade lm-modal tracking-modal" id="penaltyAssignmentModal" tabindex="-1" aria-labelledby="penaltyAssignmentModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-          <div class="modal-header bg-primary text-white">
+          <div class="modal-header">
             <h5 class="modal-title" id="penaltyAssignmentModalLabel" data-i18n="penalty_modal_title">Penalties</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body" id="penaltyAssignmentModalBody">
             <div class="d-flex align-items-center justify-content-center py-4">
@@ -1110,7 +171,7 @@
       </div>
     </div>
 
-    <div class="modal fade" id="dancersOrderModal" tabindex="-1" aria-labelledby="dancersOrderModalLabel" aria-hidden="true">
+    <div class="modal fade lm-modal tracking-modal" id="dancersOrderModal" tabindex="-1" aria-labelledby="dancersOrderModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-md">
         <div class="modal-content">
           <div class="modal-header">
@@ -1129,7 +190,7 @@
     </div>
   </div>
 
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade lm-modal tracking-modal" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -1157,6 +218,6 @@
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
   <script src="js/sidebar.js?v=20261002-1"></script>
-  <script src="js/tracking.js"></script>
+  <script src="js/tracking.js?v=20261004-5"></script>
 </body>
 </html>
