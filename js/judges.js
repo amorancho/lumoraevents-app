@@ -17,8 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (isFinishedEventReadOnly()) {
-    document.querySelectorAll('input, button').forEach(el => {
-      if (el.closest('#organizationSidebarToggle')) return;
+    document.querySelectorAll('.judges-main button, .judges-modal input, .judges-modal select, .judges-modal button:not(.btn-close)').forEach(el => {
       el.disabled = true;
     });
   }
@@ -446,7 +445,7 @@ function createJudgeMobileCard(judge, { showMaster, welcome, disabled }) {
   }
 
   const footer = document.createElement('div');
-  footer.className = 'judge-mobile-card__footer';
+  footer.className = 'judge-mobile-card__footer btn-group';
   footer.append(
     createJudgeMobileAction({ buttonClass: 'btn-edit-judge', iconClass: 'bi-pencil', label: t('edit', 'Edit'), variant: 'primary', disabled }),
     createJudgeMobileAction({ buttonClass: 'btn-delete-judge', iconClass: 'bi-trash', label: t('delete', 'Delete'), variant: 'danger', disabled })
@@ -493,15 +492,23 @@ function renderJudges() {
       <td>${judge.username}</td>      
       <td class="text-center align-middle">
         <div class="btn-group" role="group">
-          <button type="button" class="btn btn-outline-primary btn-sm btn-edit-judge" title="Edit" ${btnDisabled}>
+          <button type="button" class="btn btn-outline-primary btn-sm btn-edit-judge" ${btnDisabled}>
             <i class="bi bi-pencil"></i>
           </button>
-          <button type="button" class="btn btn-outline-danger btn-sm btn-delete-judge" title="Delete" ${btnDisabled}>
+          <button type="button" class="btn btn-outline-danger btn-sm btn-delete-judge" ${btnDisabled}>
             <i class="bi bi-trash"></i>
           </button>
         </div>
       </td>
     `;
+    const editButton = row.querySelector('.btn-edit-judge');
+    const deleteButton = row.querySelector('.btn-delete-judge');
+    const editLabel = t('edit', 'Edit');
+    const deleteLabel = t('delete', 'Delete');
+    editButton.title = editLabel;
+    editButton.setAttribute('aria-label', editLabel);
+    deleteButton.title = deleteLabel;
+    deleteButton.setAttribute('aria-label', deleteLabel);
     judgesTable.appendChild(row);
 
     if (mobileCards) {
@@ -561,8 +568,10 @@ function setWelcomeInfo(judgeData = {}) {
 
 function showModal(message) {
   return new Promise((resolve) => {
-  const modal = new bootstrap.Modal(document.getElementById('confirmSend'));
+  const modalElement = document.getElementById('confirmSend');
+  const modal = new bootstrap.Modal(modalElement);
   document.getElementById('sendModalMessage').textContent = message;
+  modalElement.addEventListener('hidden.bs.modal', () => resolve(false), { once: true });
   
   const confirmBtn = document.getElementById('confirmSendBtn');
   confirmBtn.onclick = () => {

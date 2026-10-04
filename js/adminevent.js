@@ -398,6 +398,7 @@ function updateEventStatusUI(status) {
     toggleBtn.textContent = status === 'FIN'
       ? t('event_status_open_btn')
       : t('event_status_finish_btn');
+    toggleBtn.classList.toggle('adminevent-status-open', status === 'FIN');
   }
 }
 
@@ -437,6 +438,12 @@ function createEventInfoEditor(selector) {
   });
 
   editor.root.setAttribute('spellcheck', 'true');
+  const labelIds = {
+    '#eventInfoDescriptionEditor': 'eventInfoDescriptionLabel',
+    '#eventInfoPaymentInstructionsEditor': 'eventInfoPaymentInstructionsLabel',
+    '#eventInfoRegistrationAcceptTextEditor': 'eventInfoRegistrationAcceptTextLabel'
+  };
+  if (labelIds[selector]) editor.root.setAttribute('aria-labelledby', labelIds[selector]);
   return editor;
 }
 
@@ -1365,12 +1372,13 @@ function showAlert(type, message) {
   if (!saveBtn) return;
 
   const alert = document.createElement('div');
-  alert.className = `alert alert-${type} alert-dismissible fade show mt-3`;
+  alert.className = `alert alert-${type} alert-dismissible fade show mt-3 lm-notice`;
   alert.role = 'alert';
   alert.innerHTML = `
     ${message}
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   `;
+  alert.querySelector('.btn-close').setAttribute('aria-label', t('close'));
 
   // Insertamos justo después del botón
   saveBtn.parentNode.insertBefore(alert, saveBtn.nextSibling);

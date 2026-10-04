@@ -515,8 +515,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   if (isFinishedEventReadOnly()) {
-    document.querySelectorAll('input, button').forEach(el => {
-      if (el.closest('#organizationSidebarToggle')) return;
+    document.querySelectorAll('#createNewDancerBtn, #openImportDancersBtn, #openBulkDeleteDancersBtn, .dancers-modal input, .dancers-modal select, .dancers-modal button:not([data-bs-dismiss])').forEach(el => {
       el.disabled = true;
     });
   }
@@ -941,15 +940,23 @@ function loadDancers() {
       ${showFlags ? `<td class="align-middle">${dancer.nationality || ''}</td>` : ''}
       <td class="text-center align-middle">
           <div class="btn-group" role="group">
-              <button type="button" class="btn btn-outline-primary btn-sm btn-edit-dancer" title="Edit" ${btnDisabled}>
+              <button type="button" class="btn btn-outline-primary btn-sm btn-edit-dancer" ${btnDisabled}>
                   <i class="bi bi-pencil"></i>
               </button>
-              <button type="button" class="btn btn-outline-danger btn-sm btn-delete-dancer" title="Delete" ${btnDisabled}>
+              <button type="button" class="btn btn-outline-danger btn-sm btn-delete-dancer" ${btnDisabled}>
                   <i class="bi bi-trash"></i>
               </button>
           </div>
       </td>
     `;
+    const editButton = row.querySelector('.btn-edit-dancer');
+    const deleteButton = row.querySelector('.btn-delete-dancer');
+    const editLabel = t('edit_dancer', 'Edit Dancer');
+    const deleteLabel = t('delete', 'Delete');
+    editButton.title = editLabel;
+    editButton.setAttribute('aria-label', editLabel);
+    deleteButton.title = deleteLabel;
+    deleteButton.setAttribute('aria-label', deleteLabel);
     dancersTable.appendChild(row);
 
     if (dancersMobileCards) {
@@ -986,7 +993,7 @@ function loadDancers() {
           </div>
           ${mobileDetails ? `<div class="dancer-mobile-card__details">${mobileDetails}</div>` : ''}
         </div>
-        <div class="dancer-mobile-card__actions">
+        <div class="dancer-mobile-card__actions btn-group" role="group">
           <button type="button" class="btn btn-outline-primary dancer-mobile-card__action btn-edit-dancer" title="${t('edit_dancer', 'Edit Dancer')}" ${btnDisabled}><i class="bi bi-pencil" aria-hidden="true"></i><span>${t('edit_dancer', 'Edit Dancer')}</span></button>
           <button type="button" class="btn btn-outline-danger dancer-mobile-card__action btn-delete-dancer" title="${t('delete', 'Delete')}" ${btnDisabled}><i class="bi bi-trash" aria-hidden="true"></i><span>${t('delete', 'Delete')}</span></button>
         </div>`;

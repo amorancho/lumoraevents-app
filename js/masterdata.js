@@ -30,8 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (isFinishedEventReadOnly()) {
-        document.querySelectorAll('input, button').forEach(el => {
-            if (el.closest('#organizationSidebarToggle')) return;
+        document.querySelectorAll('#masterdataTabContent input, #masterdataTabContent button, .masterdata-modal input, .masterdata-modal button').forEach(el => {
             el.disabled = true;
         });
     }
@@ -138,7 +137,7 @@ function renderTable(table, fullData) {
         let actionsDiv = null;
         if (table === "categories" || table === "styles") {
             actionsDiv = document.createElement("div");
-            actionsDiv.className = "d-flex align-items-center gap-3";
+            actionsDiv.className = "d-flex align-items-center gap-2";
 
             const participantsBadge = document.createElement("span");
             participantsBadge.className = "badge bg-secondary rounded-pill";
@@ -152,22 +151,27 @@ function renderTable(table, fullData) {
 
             // botón eliminar
             actionsDiv = actionsDiv || document.createElement("div");
-            actionsDiv.className = "d-flex align-items-center gap-3";
+            actionsDiv.className = "d-flex align-items-center gap-2";
+            const buttonGroup = document.createElement("div");
+            buttonGroup.className = "btn-group btn-group-sm";
+            buttonGroup.setAttribute('role', 'group');
 
             const editBtn = document.createElement("button");
             editBtn.type = "button";
-            editBtn.className = "btn btn-link text-primary p-0 edit-btn item-action-btn";
+            editBtn.className = "btn btn-outline-primary edit-btn item-action-btn";
             editBtn.title = t('edit', 'Edit');
+            editBtn.setAttribute('aria-label', editBtn.title);
             editBtn.innerHTML = '<i class="bi bi-pencil"></i>';
             editBtn.onclick = () => {
                 openEntryEditModal(table, item);
             };
-            actionsDiv.appendChild(editBtn);
+            buttonGroup.appendChild(editBtn);
 
             const deleteBtn = document.createElement("button");
             deleteBtn.type = "button";
-            deleteBtn.className = "btn btn-link text-danger p-0 delete-btn item-action-btn";
+            deleteBtn.className = "btn btn-outline-danger delete-btn item-action-btn";
             deleteBtn.title = t('delete');
+            deleteBtn.setAttribute('aria-label', deleteBtn.title);
             deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
 
             deleteBtn.onclick = async () => {
@@ -196,7 +200,8 @@ function renderTable(table, fullData) {
                     }
                 }
             };
-            actionsDiv.appendChild(deleteBtn);
+            buttonGroup.appendChild(deleteBtn);
+            actionsDiv.appendChild(buttonGroup);
             li.appendChild(actionsDiv);
         } else if (actionsDiv) {
             li.appendChild(actionsDiv);
@@ -504,6 +509,7 @@ function setupClubsTab() {
 
     const showClubs = shouldShowClubsTab();
     tab.classList.toggle('d-none', !showClubs);
+    tab.closest('.nav-item')?.classList.toggle('d-none', !showClubs);
     pane.classList.toggle('d-none', !showClubs);
 }
 
@@ -524,6 +530,7 @@ function setupPenaltiesTab() {
 
     const showPenalties = shouldShowPenaltiesTab();
     tab.classList.toggle('d-none', !showPenalties);
+    tab.closest('.nav-item')?.classList.toggle('d-none', !showPenalties);
     pane.classList.toggle('d-none', !showPenalties);
 }
 
@@ -751,7 +758,7 @@ function createMasterdataMobileCard({ id, name, subtitle, status, metrics, actio
     metrics.forEach((metric) => metricsEl.appendChild(createMasterdataMobileMetric(metric.icon, metric.label, metric.value)));
 
     const footer = document.createElement('div');
-    footer.className = 'masterdata-mobile-card__footer';
+    footer.className = 'masterdata-mobile-card__footer btn-group';
     actions.forEach((action) => footer.appendChild(createMasterdataMobileAction(action)));
 
     card.append(header, metricsEl, footer);
@@ -1359,9 +1366,11 @@ function setupCriteriaConfigTab() {
     const pane = document.getElementById('tab-criteria-config');
     if (!tab || !pane) return;
 
-    if (!shouldShowCriteriaConfigTab()) {
-        tab.classList.add('d-none');
-        pane.classList.add('d-none');
+    const showConfig = shouldShowCriteriaConfigTab();
+    tab.classList.toggle('d-none', !showConfig);
+    tab.closest('.nav-item')?.classList.toggle('d-none', !showConfig);
+    pane.classList.toggle('d-none', !showConfig);
+    if (!showConfig) {
         return;
     }
 
@@ -1545,6 +1554,7 @@ function renderCriteriaConfigCheckboxes(containerId, items, namePrefix) {
         input.className = 'form-check-input';
         input.id = `criteria-config-${namePrefix}-${item.id}`;
         input.value = item.id;
+        input.disabled = isFinishedEventReadOnly();
 
         const label = document.createElement('label');
         label.className = 'form-check-label';
@@ -1698,9 +1708,11 @@ function renderCriteriaConfigTable() {
             actionsCell.className = 'text-center';
             const deleteBtn = document.createElement('button');
             deleteBtn.type = 'button';
-            deleteBtn.className = 'btn btn-link text-danger p-0 btn-delete-criteria-config';
+            deleteBtn.className = 'btn btn-outline-danger btn-sm btn-delete-criteria-config';
             deleteBtn.dataset.id = item.id;
+            deleteBtn.setAttribute('aria-label', t('delete'));
             deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
+            deleteBtn.disabled = isFinishedEventReadOnly();
             actionsCell.appendChild(deleteBtn);
             tr.appendChild(actionsCell);
 
@@ -1719,7 +1731,7 @@ function renderCriteriaConfigTable() {
     const deleteFilteredBtn = document.getElementById('criteria-config-delete-filtered');
     if (deleteFilteredBtn) {
         const hasFilters = Boolean(selectedCategory || selectedStyle || selectedCriteria);
-        deleteFilteredBtn.disabled = !hasFilters || filteredList.length === 0;
+        deleteFilteredBtn.disabled = isFinishedEventReadOnly() || !hasFilters || filteredList.length === 0;
     }
 
 }
@@ -1838,6 +1850,7 @@ async function addCriteriaConfig() {
 }
 
 async function deleteCriteriaConfig(ids) {
+    if (isFinishedEventReadOnly()) return;
     try {
         const res = await lumoraApiFetch(
             `${API_BASE_URL}/api/criteria/config`,

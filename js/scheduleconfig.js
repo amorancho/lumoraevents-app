@@ -483,22 +483,26 @@ function renderCompetitionsList() {
     const maxTimeSeconds = getCompetitionMaxTimeSeconds(comp);
     const hasMaxTime = Number.isFinite(maxTimeSeconds) && maxTimeSeconds > 0;
     const maxTimeBadge = hasMaxTime
-      ? `<span class="badge text-bg-light border"><i class="bi bi-stopwatch me-1"></i>${secondsToMmSs(maxTimeSeconds)}</span>`
+      ? `<span class="badge text-bg-light"><i class="bi bi-stopwatch" aria-hidden="true"></i>${secondsToMmSs(maxTimeSeconds)}</span>`
       : `<span class="badge text-bg-warning text-dark">${t('time_not_defined', 'TIME NOT DEFINED')}</span>`;
 
     const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between align-items-center';
+    li.className = 'list-group-item scheduleconfig-competition-item';
     li.innerHTML = `
-      <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="fw-semibold">${comp.category_name || comp.category}</span>
-        <span class="text-muted">${comp.style_name || comp.style}</span>
-        ${scenarioBadge}
-        ${buildCompetitionStatusBadge(comp.status)}
-        ${maxTimeBadge}
-        <span class="badge bg-secondary">${comp.num_dancers ?? comp.dancers ?? 0}</span>
+      <div class="scheduleconfig-competition-info">
+        <div class="scheduleconfig-competition-name">
+          <span>${escapeScheduleConfigHtml(comp.category_name || comp.category || '')}</span>
+          <span class="scheduleconfig-competition-style">${escapeScheduleConfigHtml(comp.style_name || comp.style || '')}</span>
+        </div>
+        <div class="scheduleconfig-competition-meta">
+          ${scenarioBadge}
+          ${buildCompetitionStatusBadge(comp.status)}
+          ${maxTimeBadge}
+          <span class="badge bg-secondary"><i class="bi bi-people" aria-hidden="true"></i>${comp.num_dancers ?? comp.dancers ?? 0}</span>
+        </div>
       </div>
-      <button class="btn btn-sm btn-outline-primary btn-add-competition" data-id="${comp.id}" ${blockSelected ? '' : 'disabled'}>
-        ${t('add_competition')}
+      <button type="button" class="btn btn-sm btn-outline-primary btn-add-competition" data-id="${comp.id}" ${blockSelected ? '' : 'disabled'}>
+        <i class="bi bi-plus-lg" aria-hidden="true"></i><span>${t('add_competition')}</span>
       </button>
     `;
     list.appendChild(li);
@@ -546,7 +550,7 @@ function renderPreviewSchedule() {
   const dayKeys = Array.from(groupedByDay.keys()).sort();
   dayKeys.forEach(dayKey => {
     const header = document.createElement('li');
-    header.className = 'list-group-item fw-semibold bg-light';
+    header.className = 'list-group-item scheduleconfig-preview-day';
     header.textContent = dayKey;
     list.appendChild(header);
 
@@ -557,7 +561,7 @@ function renderPreviewSchedule() {
 
   if (withoutStart.length) {
     const header = document.createElement('li');
-    header.className = 'list-group-item fw-semibold bg-warning-subtle';
+    header.className = 'list-group-item scheduleconfig-preview-day scheduleconfig-preview-day--unscheduled';
     header.textContent = t('preview_no_start');
     list.appendChild(header);
 
@@ -576,14 +580,8 @@ function renderPreviewItem(item, list) {
   const isBreak = item.type === 'BREAK';
 
   const li = document.createElement('li');
-  li.className = 'list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2';
-
-  const backgroundColor = !hasStart
-    ? '#ffe8a1'
-    : assigned?.blockColor
-      ? assigned.blockColor
-        : '#e9ecef';
-  li.style.backgroundColor = backgroundColor;
+  li.className = `list-group-item scheduleconfig-preview-item${!hasStart ? ' scheduleconfig-preview-item--no-start' : ''}${isBreak ? ' scheduleconfig-preview-item--break' : ''}`;
+  li.style.setProperty('--block-color', hasStart ? (assigned?.blockColor || '#65b6ff') : '#ffc54d');
 
   const category = comp?.category_name || comp?.category || t('category');
   const style = comp?.style_name || comp?.style || '';
@@ -597,12 +595,14 @@ function renderPreviewItem(item, list) {
   const badgeClass = assigned ? 'text-bg-light' : 'text-bg-secondary';
 
   li.innerHTML = `
-        <div class="d-flex flex-wrap align-items-center gap-2">
-          <span class="fw-semibold">${title}</span>
-          ${isBreak ? '' : `<span class="badge bg-secondary">${dancers}</span>`}
-          <span class="badge ${badgeClass}">${badgeText}</span>
+        <div class="scheduleconfig-preview-info">
+          <span class="scheduleconfig-preview-name">${escapeScheduleConfigHtml(title)}</span>
+          <span class="scheduleconfig-preview-badges">
+            ${isBreak ? '' : `<span class="badge bg-secondary"><i class="bi bi-people" aria-hidden="true"></i>${dancers}</span>`}
+            <span class="badge ${badgeClass}">${badgeText}</span>
+          </span>
         </div>
-        <div class="text-muted small">${t('estimated_start')}: ${estimatedText}</div>
+        <div class="scheduleconfig-preview-time">${t('estimated_start')}: <strong>${estimatedText}</strong></div>
       `;
 
   list.appendChild(li);
@@ -750,40 +750,39 @@ function renderDetails() {
 
     let numDancers = '';
     if (!isBreak) {
-      numDancers = `<span class="badge bg-secondary">${dancers}</span>`;
+      numDancers = `<span class="badge bg-secondary"><i class="bi bi-people" aria-hidden="true"></i>${dancers}</span>`;
     }
 
     const li = document.createElement('li');
-    li.className = 'list-group-item schedule-detail-item d-flex gap-3 align-items-start';
+    li.className = `list-group-item schedule-detail-item scheduleconfig-detail-item${isBreak ? ' scheduleconfig-detail-item--break' : ''}`;
     li.dataset.id = detail.id;
     li.style.setProperty('--block-color', block.color || '#e9ecef');
 
     li.innerHTML = `
-      <div class="drag-handle text-muted mt-1"><i class="bi bi-grip-vertical"></i></div>
-      <div class="flex-grow-1">
-        <div class="d-flex flex-wrap justify-content-between gap-2">
-          <div>
-            <div>
-              <span class="badge ${typeBadge} me-2">${typeLabel}</span>
-              ${isBreak ? '' : `${buildCompetitionStatusBadge(compInfo?.status, 'me-2')}`}
-              <span class="fw-semibold me-2">${title}</span>
+      <div class="drag-handle" aria-hidden="true"><i class="bi bi-grip-vertical"></i></div>
+      <div class="scheduleconfig-detail-content">
+        <div class="scheduleconfig-detail-top">
+          <div class="scheduleconfig-detail-summary">
+            <div class="scheduleconfig-detail-heading">
+              <span class="badge ${typeBadge} scheduleconfig-detail-type">${typeLabel}</span>
+              ${isBreak ? '' : buildCompetitionStatusBadge(compInfo?.status)}
+              <span class="scheduleconfig-detail-title">${escapeScheduleConfigHtml(title)}</span>
               ${visibilityBadge}
               ${numDancers}
             </div>
-            <div class="mt-2 text-muted small d-flex flex-wrap gap-3">
+            <div class="scheduleconfig-detail-meta">
               ${metaItems.map(item => `<span>${item}</span>`).join('')}
             </div>
           </div>
-          <div class="text-end">
-            <div class="fw-semibold">${t('estimated_start')}: ${estimatedText}</div>
-            <div class="mt-2 text-muted small">${t('duration')}: ${durationText}</div>
+          <div class="scheduleconfig-detail-time">
+            <div>${t('estimated_start')}: <strong>${estimatedText}</strong></div>
+            <div>${t('duration')}: <strong>${durationText}</strong></div>
           </div>
         </div>
-
       </div>
-      <div class="btn-group btn-group-sm">
-        <button class="btn btn-outline-primary btn-edit-detail" title="${t('edit')}"><i class="bi bi-pencil"></i></button>
-        <button class="btn btn-outline-danger btn-delete-detail" title="${t('delete')}"><i class="bi bi-trash"></i></button>
+      <div class="btn-group btn-group-sm scheduleconfig-detail-actions">
+        <button type="button" class="btn btn-outline-primary btn-edit-detail" title="${t('edit')}" aria-label="${t('edit')}"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+        <button type="button" class="btn btn-outline-danger btn-delete-detail" title="${t('delete')}" aria-label="${t('delete')}"><i class="bi bi-trash" aria-hidden="true"></i></button>
       </div>
     `;
 

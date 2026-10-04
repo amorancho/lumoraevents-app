@@ -1319,7 +1319,6 @@ function loadCompetitions() {
       const mobileAlerts = hasOpenErrors
         ? `<i class="bi bi-exclamation-triangle-fill text-warning" aria-hidden="true"></i><span>${t('alerts_status_has_errors', 'Open alerts')}</span>`
         : `<i class="bi bi-patch-check-fill text-success" aria-hidden="true"></i><span>${t('alerts_status_ok', 'No alerts')}</span>`;
-      const mobileActionCount = showCriteriaPerJudgeUi ? 5 : 4;
       card.innerHTML = `
         <div class="competition-mobile-card__body">
           <div class="competition-mobile-card__header">
@@ -1339,7 +1338,7 @@ function loadCompetitions() {
           </div>
           <div class="competition-mobile-card__judges"><div class="competition-mobile-card__judges-label"><i class="bi bi-people" aria-hidden="true"></i>${t('col_judges', 'Judges')}</div><div class="competition-mobile-card__judges-list">${judgesNames}</div></div>
         </div>
-        <div class="competition-mobile-card__actions" style="--competition-action-count: ${mobileActionCount}">
+        <div class="competition-mobile-card__actions">
           ${mobileStatusAction}
           ${mobileCriteriaAction}
           <button type="button" class="btn btn-outline-secondary competition-mobile-card__action btn-dancers-order" ${btnDisabled}><i class="bi bi-list-ol"></i><span>${t('dancers_order_modal_title')}</span></button>

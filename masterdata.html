@@ -8,194 +8,30 @@
   <title data-i18n="title">Master Data</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20261002-2">
+  <link rel="stylesheet" href="css/masterdata.css?v=20261002-4">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
-  <style>
-    .list-group-item .item-action-btn {
-      visibility: hidden;
-    }
 
-    .list-group-item:hover .item-action-btn,
-    .list-group-item:focus-within .item-action-btn {
-      visibility: visible;
-    }
-
-    .criteria-config-list {
-      max-height: 220px;
-      overflow: auto;
-    }
-
-    .masterdata-mobile-list {
-      display: none;
-    }
-
-    @media (max-width: 767.98px) {
-      #tab-penalties .masterdata-desktop-table,
-      #tab-clubs .masterdata-desktop-table {
-        display: none;
-      }
-
-      #tab-penalties .masterdata-mobile-list,
-      #tab-clubs .masterdata-mobile-list {
-        display: grid;
-        gap: 1rem;
-      }
-
-      .masterdata-mobile-card {
-        position: relative;
-        overflow: hidden;
-        border: 1px solid rgba(var(--bs-primary-rgb), 0.14);
-        border-radius: 1rem;
-        background: var(--bs-body-bg);
-        box-shadow: 0 0.35rem 1.2rem rgba(15, 23, 42, 0.08);
-      }
-
-      .masterdata-mobile-card::before {
-        position: absolute;
-        top: 0;
-        right: 0;
-        left: 0;
-        height: 0.25rem;
-        content: '';
-        background: linear-gradient(90deg, var(--bs-primary), #6f42c1);
-      }
-
-      .masterdata-mobile-card__header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.75rem;
-        padding: 0.9rem 0.85rem 0.65rem;
-      }
-
-      .masterdata-mobile-card__identity {
-        min-width: 0;
-        flex: 1 1 auto;
-      }
-
-      .masterdata-mobile-card__name {
-        margin: 0;
-        overflow-wrap: anywhere;
-        color: var(--bs-emphasis-color);
-        font-size: 1rem;
-        font-weight: 750;
-        line-height: 1.25;
-      }
-
-      .masterdata-mobile-card__subtitle {
-        display: flex;
-        align-items: center;
-        gap: 0.35rem;
-        margin-top: 0.3rem;
-        color: var(--bs-secondary-color);
-        font-size: 0.76rem;
-      }
-
-      .masterdata-mobile-card__subtitle--highlight {
-        margin-top: 0.45rem;
-        color: var(--bs-emphasis-color);
-        font-size: 0.8rem;
-        font-weight: 400;
-      }
-
-      .masterdata-mobile-card__subtitle--highlight > i {
-        color: var(--bs-primary);
-      }
-
-      .masterdata-mobile-card__subtitle .badge {
-        font-size: 0.66rem;
-      }
-
-      .masterdata-mobile-card__status {
-        max-width: 45%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .masterdata-mobile-card__metrics {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
-        padding: 0 0.85rem 0.7rem;
-      }
-
-      .masterdata-mobile-card__metric {
-        display: flex;
-        min-width: 0;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 0.6rem;
-        border-radius: 0.7rem;
-        background: var(--bs-tertiary-bg);
-      }
-
-      .masterdata-mobile-card__metric > i {
-        flex: 0 0 auto;
-        color: var(--bs-primary);
-      }
-
-      .masterdata-mobile-card__metric-copy {
-        min-width: 0;
-      }
-
-      .masterdata-mobile-card__metric-label,
-      .masterdata-mobile-card__metric-value {
-        display: block;
-      }
-
-      .masterdata-mobile-card__metric-label {
-        color: var(--bs-secondary-color);
-        font-size: 0.62rem;
-        font-weight: 700;
-        letter-spacing: 0.035em;
-        line-height: 1.1;
-        text-transform: uppercase;
-      }
-
-      .masterdata-mobile-card__metric-value {
-        margin-top: 0.08rem;
-        overflow-wrap: anywhere;
-        color: var(--bs-emphasis-color);
-        font-size: 0.84rem;
-        font-weight: 750;
-      }
-
-      .masterdata-mobile-card__footer {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
-        padding: 0.65rem 0.85rem 0.75rem;
-        border-top: 1px solid var(--bs-border-color-translucent);
-      }
-
-      .masterdata-mobile-card__action {
-        min-height: 2.35rem;
-        border-radius: 0.65rem;
-        font-size: 0.76rem;
-        font-weight: 650;
-      }
-    }
-
-  </style>
 
 </head>
 
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 masterdata-page">
 
   <div id="header"></div>
 
-  <div class="container-fluid py-4">
+  <div class="container-fluid lm-page lm-org-shell flex-grow-1">
     <div id="organizationSidebarToggle" class="d-lg-none"></div>
 
-  <div class="row g-4 align-items-start">
-    <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+  <div class="row g-4 align-items-start lm-org-layout">
+    <aside class="col-lg-3 col-xl-2 d-none d-lg-block lm-org-sidebar-column">
       <div id="organizationSidebarMount"></div>
     </aside>
 
-    <main class="col-12 col-lg-9 col-xl-10">
+    <main class="col-12 col-lg-9 col-xl-10 lm-org-main masterdata-main">
+      <h1 class="visually-hidden" data-i18n="title">Master Data</h1>
       <!-- Panel de alerta -->
     <div id="alertPanel" class="mb-4" style="display: none;">
-      <div class="alert alert-warning d-flex align-items-center" role="alert">
+      <div class="alert alert-warning d-flex align-items-center lm-notice" role="alert">
         <i class="bi bi-info-circle-fill me-2"></i>
         <div data-i18n="alert_start_event">
           El festival ha dado comienzo. Si modifica estos datos puede provocar inconsistencias en los datos.
@@ -204,7 +40,7 @@
     </div>
 
     <div id="closedPanel" class="mb-4" style="display: none;">
-      <div class="alert alert-danger d-flex align-items-center" role="alert">
+      <div class="alert alert-danger d-flex align-items-center lm-notice" role="alert">
         <i class="bi bi-info-circle-fill me-2"></i>
         <div data-i18n="alert_end_event">
           El festival ha finalizado. No se pueden modificar los datos.
@@ -212,29 +48,32 @@
       </div>
     </div>
 
-    <ul class="nav nav-tabs mb-4" id="masterdataTabs" role="tablist">
+    <ul class="nav nav-tabs mb-4 masterdata-tabs" id="masterdataTabs" role="tablist">
       <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="tab-general-tab" data-bs-toggle="tab" data-bs-target="#tab-general" type="button"
-          role="tab" aria-controls="tab-general" aria-selected="true" data-i18n="tab_general">General
+        <button class="nav-link active" id="tab-general-tab" data-bs-toggle="tab" data-bs-target="#tab-general" type="button" role="tab" aria-controls="tab-general" aria-selected="true">
+          <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i><span data-i18n="tab_general">General</span>
         </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-criteria-config-tab" data-bs-toggle="tab" data-bs-target="#tab-criteria-config" type="button"
-          role="tab" aria-controls="tab-criteria-config" aria-selected="false" data-i18n="tab_criteria_config">ConfiguraciÃ³n de criterios</button>
+        <button class="nav-link" id="tab-criteria-config-tab" data-bs-toggle="tab" data-bs-target="#tab-criteria-config" type="button" role="tab" aria-controls="tab-criteria-config" aria-selected="false">
+          <i class="bi bi-sliders2" aria-hidden="true"></i><span data-i18n="tab_criteria_config">Criteria configuration</span>
+        </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-penalties-tab" data-bs-toggle="tab" data-bs-target="#tab-penalties" type="button"
-          role="tab" aria-controls="tab-penalties" aria-selected="true" data-i18n="tab_penalties">Penalizaciones</button>
+        <button class="nav-link" id="tab-penalties-tab" data-bs-toggle="tab" data-bs-target="#tab-penalties" type="button" role="tab" aria-controls="tab-penalties" aria-selected="false">
+          <i class="bi bi-shield-exclamation" aria-hidden="true"></i><span data-i18n="tab_penalties">Penalties</span>
+        </button>
       </li>
       <li class="nav-item" role="presentation">
-        <button class="nav-link" id="tab-clubs-tab" data-bs-toggle="tab" data-bs-target="#tab-clubs" type="button" role="tab"
-          aria-controls="tab-clubs" aria-selected="false" data-i18n="tab_clubs">Clubs / Escuelas</button>
+        <button class="nav-link" id="tab-clubs-tab" data-bs-toggle="tab" data-bs-target="#tab-clubs" type="button" role="tab" aria-controls="tab-clubs" aria-selected="false">
+          <i class="bi bi-buildings" aria-hidden="true"></i><span data-i18n="tab_clubs">Clubs / Schools</span>
+        </button>
       </li>
-      </ul>
+    </ul>
 
     <div class="tab-content" id="masterdataTabContent">
       <div class="tab-pane fade show active" id="tab-general" role="tabpanel" aria-labelledby="tab-general-tab" tabindex="0">
-        <div class="row g-4">
+        <div class="row">
           <!-- Category -->
           <div class="col-12 col-lg-4" id="category_box">
             <div class="card shadow-sm bg-light" id="category-card">
@@ -290,28 +129,15 @@
       </div>
 
       <div class="tab-pane fade" id="tab-penalties" role="tabpanel" aria-labelledby="tab-penalties-tab" tabindex="0">
-        <div class="row align-items-start g-3 mb-3">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-body bg-light">
-                <div class="row g-2">
-                  <div class="col-12 col-md-6 col-lg-3">
-                    <button id="createNewPenaltyBtn" class="btn btn-primary w-100" data-i18n="penalty_create">
-                      Add penalty
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="row">
           <div class="col-12" id="penalty_box">
             <div class="card shadow-sm bg-light" id="penalty-card">
-              <div class="card-header d-flex align-items-center">
+              <div class="card-header d-flex align-items-center masterdata-list-header">
                 <h5 class="mb-0 me-auto" data-i18n="penalties">Penalties</h5>
-                <span id="count-penalties" class="badge bg-secondary rounded-pill">0</span>
+                <div class="masterdata-list-header__actions">
+                  <button id="createNewPenaltyBtn" type="button" class="btn btn-primary btn-sm" data-i18n="penalty_create">Add penalty</button>
+                  <span id="count-penalties" class="badge bg-secondary rounded-pill">0</span>
+                </div>
               </div>
               <div class="card-body p-2">
                 <div class="table-responsive masterdata-desktop-table">
@@ -342,28 +168,15 @@
       </div>
 
       <div class="tab-pane fade" id="tab-clubs" role="tabpanel" aria-labelledby="tab-clubs-tab" tabindex="0">
-        <div class="row align-items-start g-3 mb-3">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-body bg-light">
-                <div class="row g-2">
-                  <div class="col-12 col-md-6 col-lg-3">
-                    <button id="createNewSchoolBtn" class="btn btn-primary w-100" data-i18n="school_create">
-                      AÃ±adir escuela
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="row">
           <div class="col-12" id="clubs_box">
             <div class="card shadow-sm bg-light" id="club-card">
-              <div class="card-header d-flex align-items-center">
+              <div class="card-header d-flex align-items-center masterdata-list-header">
                 <h5 class="mb-0 me-auto" data-i18n="clubs">Clubs / Escuelas</h5>
-                <span id="count-clubs" class="badge bg-secondary rounded-pill">0</span>
+                <div class="masterdata-list-header__actions">
+                  <button id="createNewSchoolBtn" type="button" class="btn btn-primary btn-sm" data-i18n="school_create">Añadir escuela</button>
+                  <span id="count-clubs" class="badge bg-secondary rounded-pill">0</span>
+                </div>
               </div>
               <div class="card-body p-2">
                 <div class="table-responsive masterdata-desktop-table">
@@ -395,7 +208,7 @@
       </div>
 
       <div class="tab-pane fade" id="tab-criteria-config" role="tabpanel" aria-labelledby="tab-criteria-config-tab" tabindex="0">
-        <div class="row g-4">
+        <div class="row masterdata-config-grid">
           <div class="col-12 col-lg-4">
             <div class="card shadow-sm bg-light">
               <div class="card-body">
@@ -509,7 +322,7 @@
 
   </div>
 
-  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal masterdata-modal" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -527,7 +340,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="entryEditModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal masterdata-modal" id="entryEditModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-sm">
       <div class="modal-content">
         <div class="modal-header">
@@ -550,7 +363,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="schoolModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal masterdata-modal" id="schoolModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -597,7 +410,7 @@
   </div>
 
 
-  <div class="modal fade" id="penaltyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal masterdata-modal" id="penaltyModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -647,7 +460,7 @@
   <script src="js/header.js?v=20261002-1"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
-  <script src="js/sidebar.js?v=20261002-1"></script>
-  <script src="js/masterdata.js"></script>
+  <script src="js/sidebar.js?v=20261002-2"></script>
+  <script src="js/masterdata.js?v=20261002-2"></script>
 </body>
 </html>

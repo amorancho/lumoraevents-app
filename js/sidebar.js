@@ -138,7 +138,7 @@ function getOrganizationSidebarTitle() {
 }
 
 function buildOrganizationSidebarItemsMarkup(copy, activeKey, options = {}) {
-  const itemClassName = options.itemClassName || 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3';
+  const itemClassName = options.itemClassName || 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3 lm-org-sidebar-link';
   const currentEvent = typeof getEvent === 'function' ? getEvent() : null;
 
   return ORGANIZATION_SIDEBAR_ITEMS.filter((item) => {
@@ -159,18 +159,18 @@ function buildOrganizationSidebarItemsMarkup(copy, activeKey, options = {}) {
 
 function buildOrganizationSidebarDesktopMarkup(copy, activeKey) {
   return `
-    <div class="sticky-lg-top">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body border-bottom">
-          <div class="small text-uppercase text-body-secondary fw-semibold mb-2">${copy.subtitle}</div>
-          <div class="h5 mb-1" id="organizationSidebarTitleDesktop">${getOrganizationSidebarTitle()}</div>
-          <div class="small text-body-secondary">${copy.section}</div>
+    <div class="sticky-lg-top lm-org-sidebar-sticky">
+      <div class="card border-0 shadow-sm lm-org-sidebar">
+        <div class="card-body border-bottom lm-org-sidebar-header">
+          <div class="small text-uppercase text-body-secondary fw-semibold mb-2 lm-org-sidebar-kicker">${copy.subtitle}</div>
+          <div class="h5 mb-1 lm-org-sidebar-title" id="organizationSidebarTitleDesktop">${getOrganizationSidebarTitle()}</div>
+          <div class="small text-body-secondary lm-org-sidebar-subtitle">${copy.section}</div>
         </div>
-        <div class="list-group list-group-flush">
+        <nav class="list-group list-group-flush lm-org-sidebar-nav" aria-label="${copy.section}">
           ${buildOrganizationSidebarItemsMarkup(copy, activeKey, {
-            itemClassName: 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3 border-0 border-bottom'
+            itemClassName: 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3 border-0 border-bottom lm-org-sidebar-link'
           })}
-        </div>
+        </nav>
       </div>
     </div>
   `;
@@ -182,18 +182,18 @@ function buildOrganizationSidebarMobileMarkup(copy, activeKey, useHeaderMenu = f
       <i class="bi bi-list"></i>
       <span>${copy.menuButton}</span>
     </button>`}
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="organizationSidebarOffcanvas" aria-labelledby="organizationSidebarTitleMobile">
-      <div class="offcanvas-header border-bottom">
+    <div class="offcanvas offcanvas-start lm-org-sidebar-offcanvas" tabindex="-1" id="organizationSidebarOffcanvas" aria-labelledby="organizationSidebarTitleMobile">
+      <div class="offcanvas-header border-bottom lm-org-sidebar-header">
         <div>
-          <div class="h5 mb-1" id="organizationSidebarTitleMobile">${getOrganizationSidebarTitle()}</div>
-          <div class="small text-body-secondary js-organization-mobile-section">${copy.section}</div>
+          <div class="h5 mb-1 lm-org-sidebar-title" id="organizationSidebarTitleMobile">${getOrganizationSidebarTitle()}</div>
+          <div class="small text-body-secondary js-organization-mobile-section lm-org-sidebar-subtitle">${copy.section}</div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="${copy.closeButton}"></button>
       </div>
       <div class="offcanvas-body p-0">
-        <div class="list-group list-group-flush js-organization-mobile-links">
+        <nav class="list-group list-group-flush js-organization-mobile-links lm-org-sidebar-nav" aria-label="${copy.section}">
           ${buildOrganizationSidebarItemsMarkup(copy, activeKey)}
-        </div>
+        </nav>
       </div>
     </div>
   `;
@@ -255,7 +255,9 @@ function renderOrganizationSidebar() {
       if (existingOffcanvas) {
         existingOffcanvas.querySelector('#organizationSidebarTitleMobile').textContent = getOrganizationSidebarTitle();
         existingOffcanvas.querySelector('.js-organization-mobile-section').textContent = copy.section;
-        existingOffcanvas.querySelector('.js-organization-mobile-links').innerHTML = buildOrganizationSidebarItemsMarkup(copy, activeKey);
+        const mobileLinks = existingOffcanvas.querySelector('.js-organization-mobile-links');
+        mobileLinks.innerHTML = buildOrganizationSidebarItemsMarkup(copy, activeKey);
+        mobileLinks.setAttribute('aria-label', copy.section);
         existingOffcanvas.querySelector('.btn-close').setAttribute('aria-label', copy.closeButton);
       } else {
         mobileMount.innerHTML = buildOrganizationSidebarMobileMarkup(copy, activeKey, true);

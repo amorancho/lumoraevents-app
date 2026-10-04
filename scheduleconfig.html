@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,120 +7,30 @@
   <title data-i18n="title">Schedule Configurator</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20261002-2">
+  <link rel="stylesheet" href="css/scheduleconfig.css?v=20261004-4">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
-  <style>
-    .schedule-detail-item {
-      border-left: 6px solid var(--block-color, #e9ecef);
-    }
-    .drag-handle {
-      cursor: grab;
-    }
-    .drag-handle i {
-      font-size: 1.4rem;
-    }
-    .color-preview {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 1px solid #dee2e6;
-    }
-    .btn-loading-overlay {
-      position: relative;
-    }
-    .btn-loading-overlay .btn-loading-label {
-      visibility: hidden;
-    }
-    .btn-loading-overlay .btn-loading-spinner {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .schedule-blocks-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 1rem;
-    }
-    .schedule-blocks-toolbar-group {
-      flex: 1 1 auto;
-      min-width: 0;
-    }
-    .schedule-blocks-inline-field {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .schedule-blocks-inline-field .form-label {
-      margin-bottom: 0;
-      white-space: nowrap;
-    }
-    .schedule-blocks-inline-field .form-select,
-    .schedule-blocks-inline-field .form-control {
-      min-width: 0;
-    }
-    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-select {
-      flex: 1 1 18rem;
-    }
-    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-start {
-      flex: 1 1 19rem;
-    }
-    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-color {
-      flex: 0 1 15rem;
-    }
-    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-actions,
-    .schedule-blocks-toolbar-group.schedule-blocks-toolbar-group-secondary {
-      flex: 0 1 auto;
-      min-width: 0;
-    }
-    .schedule-blocks-button-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-    }
-    .schedule-blocks-inline-field .color-preview {
-      flex: 0 0 auto;
-    }
-    @media (min-width: 1200px) {
-      .scheduleconfig-sidebar-col {
-        width: 35%;
-      }
-      .scheduleconfig-details-col {
-        width: 65%;
-      }
-    }
-    @media (min-width: 1400px) {
-      .schedule-blocks-toolbar {
-        flex-wrap: nowrap;
-      }
-      .schedule-blocks-toolbar-group {
-        min-width: 0;
-      }
-    }
-  </style>
 </head>
 
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 scheduleconfig-page">
     
   <div id="header"></div>
 
-  <div class="container-fluid py-4">
+  <div class="container-fluid lm-page lm-org-shell flex-grow-1">
     <div id="organizationSidebarToggle" class="d-lg-none"></div>
 
-    <div class="row g-4 align-items-start">
-      <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+    <div class="row g-4 align-items-start lm-org-layout">
+      <aside class="col-lg-3 col-xl-2 d-none d-lg-block lm-org-sidebar-column">
         <div id="organizationSidebarMount"></div>
       </aside>
 
-      <main class="col-12 col-lg-9 col-xl-10">
-        <div class="row g-4 align-items-start">
+      <main class="col-12 col-lg-9 col-xl-10 lm-org-main scheduleconfig-main">
+        <h1 class="visually-hidden" data-i18n="title">Schedule Configurator</h1>
+        <div class="row g-3 align-items-start scheduleconfig-workspace">
           <div class="col-12">
-            <div class="card shadow-sm">
-              <div class="card-header">
-                <h5 class="mb-0" data-i18n="schedule_blocks_title">Schedule Blocks</h5>
+            <div class="card scheduleconfig-panel scheduleconfig-blocks-panel">
+              <div class="card-header scheduleconfig-panel-header">
+                <h2 class="scheduleconfig-panel-title"><i class="bi bi-calendar-range" aria-hidden="true"></i><span data-i18n="schedule_blocks_title">Schedule Blocks</span></h2>
               </div>
               <div class="card-body">
                 <div class="schedule-blocks-toolbar">
@@ -143,7 +53,7 @@
                   <div class="schedule-blocks-toolbar-group schedule-blocks-toolbar-group-color">
                     <div class="schedule-blocks-inline-field">
                       <label class="form-label fw-semibold" for="blockColor" data-i18n="block_color_label">Color</label>
-                      <div class="d-flex align-items-center gap-2 flex-grow-1">
+                      <div class="scheduleconfig-color-field">
                         <select class="form-select" id="blockColor"></select>
                         <span class="color-preview" id="blockColorPreview" aria-hidden="true"></span>
                       </div>
@@ -152,16 +62,16 @@
 
                   <div class="schedule-blocks-toolbar-group schedule-blocks-toolbar-group-actions">
                     <div class="schedule-blocks-button-group">
-                      <button class="btn btn-primary" id="addBlockBtn" data-i18n="block_add">Add block</button>
-                      <button class="btn btn-outline-primary" id="updateBlockBtn" data-i18n="block_update">Update block</button>
-                      <button class="btn btn-outline-danger" id="deleteBlockBtn" data-i18n="block_delete">Delete block</button>
+                      <button type="button" class="btn btn-primary" id="addBlockBtn"><i class="bi bi-plus-lg" aria-hidden="true"></i><span data-i18n="block_add">Add block</span></button>
+                      <button type="button" class="btn btn-outline-primary" id="updateBlockBtn"><i class="bi bi-floppy" aria-hidden="true"></i><span data-i18n="block_update">Update block</span></button>
+                      <button type="button" class="btn btn-outline-danger" id="deleteBlockBtn"><i class="bi bi-trash" aria-hidden="true"></i><span data-i18n="block_delete">Delete block</span></button>
                     </div>
                   </div>
 
                   <div class="schedule-blocks-toolbar-group schedule-blocks-toolbar-group-secondary">
                     <div class="schedule-blocks-button-group">
-                      <button class="btn btn-outline-info" id="previewScheduleBtn" data-i18n="preview_full_schedule">Previsualizar Schedule Completo</button>
-                      <button class="btn btn-outline-info" id="exportPdfBtn" data-i18n="export_pdf">Export PDF</button>
+                      <button type="button" class="btn btn-outline-info" id="previewScheduleBtn"><i class="bi bi-eye" aria-hidden="true"></i><span data-i18n="preview_full_schedule">Previsualizar Schedule Completo</span></button>
+                      <button type="button" class="btn btn-outline-info" id="exportPdfBtn"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i><span data-i18n="export_pdf">Export PDF</span></button>
                     </div>
                   </div>
                 </div>
@@ -170,41 +80,39 @@
           </div>
 
           <div class="col-12 col-xl-4 scheduleconfig-sidebar-col">
-            <div class="d-grid">
-              <button class="btn btn-warning" id="addBreakBtn" data-i18n="add_break">Add Break</button>
+            <div class="d-grid scheduleconfig-break-action">
+              <button type="button" class="btn btn-warning" id="addBreakBtn"><i class="bi bi-pause-circle" aria-hidden="true"></i><span data-i18n="add_break">Add Break</span></button>
             </div>
 
-            <div class="card shadow-sm mt-3">
-              <div class="card-header">
-                <h5 class="mb-0" data-i18n="competitions_title">Competitions</h5>
+            <div class="card scheduleconfig-panel scheduleconfig-competitions-panel">
+              <div class="card-header scheduleconfig-panel-header">
+                <h2 class="scheduleconfig-panel-title"><i class="bi bi-trophy" aria-hidden="true"></i><span data-i18n="competitions_title">Competitions</span></h2>
               </div>
-              <div class="card-body p-2">
-                <div id="competitionsEmpty" class="text-center text-muted py-3" data-i18n="competitions_empty">
+              <div class="card-body">
+                <div id="competitionsEmpty" class="scheduleconfig-empty" data-i18n="competitions_empty">
                   No competitions available
                 </div>
-                <ul class="list-group list-group-flush" id="competitionsList"></ul>
+                <ul class="list-group scheduleconfig-competitions-list" id="competitionsList"></ul>
               </div>
             </div>
           </div>
 
           <div class="col-12 col-xl-8 scheduleconfig-details-col">
-            <div class="card shadow-sm">
-              <div class="card-header">
-                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="card scheduleconfig-panel scheduleconfig-details-panel">
+              <div class="card-header scheduleconfig-panel-header scheduleconfig-details-header">
+                <div class="scheduleconfig-details-heading">
                   <div>
-                    <h5 class="mb-1" data-i18n="details_title">Schedule Details</h5>
-                    <div class="text-muted small" id="selectedBlockMeta"></div>
+                    <h2 class="scheduleconfig-panel-title"><i class="bi bi-list-ol" aria-hidden="true"></i><span data-i18n="details_title">Schedule Details</span></h2>
+                    <div class="scheduleconfig-selected-meta" id="selectedBlockMeta"></div>
                   </div>
-                  <div class="d-flex align-items-center gap-2">
-                    <span class="badge text-bg-light" id="dragHint" data-i18n="drag_hint">Drag to reorder</span>
-                  </div>
+                  <span class="badge text-bg-light scheduleconfig-drag-hint" id="dragHint"><i class="bi bi-grip-vertical" aria-hidden="true"></i><span data-i18n="drag_hint">Drag to reorder</span></span>
                 </div>
               </div>
               <div class="card-body">
-                <div id="detailsEmpty" class="text-center text-muted py-5" data-i18n="details_empty_no_block">
+                <div id="detailsEmpty" class="scheduleconfig-empty" data-i18n="details_empty_no_block">
                   Select a block to start building the schedule.
                 </div>
-                <ul class="list-group list-group-flush" id="detailsList"></ul>
+                <ul class="list-group scheduleconfig-details-list" id="detailsList"></ul>
               </div>
             </div>
           </div>
@@ -215,7 +123,7 @@
 
   <div id="footer"></div>
 
-  <div class="modal fade" id="competitionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal scheduleconfig-modal" id="competitionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -244,7 +152,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="breakModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal scheduleconfig-modal" id="breakModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -273,7 +181,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal scheduleconfig-modal" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -289,7 +197,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="previewScheduleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal scheduleconfig-modal scheduleconfig-preview-modal" id="previewScheduleModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -302,10 +210,10 @@
             <span class="badge text-bg-secondary" id="previewLegendUnassigned" data-i18n="preview_unassigned">Sin bloque</span>
             <span class="badge text-bg-warning" id="previewLegendNoStart" data-i18n="preview_no_start">Sin hora</span>
           </div>
-          <div id="previewScheduleEmpty" class="text-center text-muted py-3" data-i18n="preview_empty">
+          <div id="previewScheduleEmpty" class="scheduleconfig-empty" data-i18n="preview_empty">
             No competitions available
           </div>
-          <ul class="list-group list-group-flush" id="previewScheduleList"></ul>
+          <ul class="list-group scheduleconfig-preview-list" id="previewScheduleList"></ul>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
@@ -314,7 +222,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="exportScheduleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal scheduleconfig-modal" id="exportScheduleModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -340,7 +248,7 @@
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
   <script src="js/sidebar.js?v=20261002-1"></script>
-  <script src="js/scheduleconfig.js"></script>
+  <script src="js/scheduleconfig.js?v=20261004-2"></script>
 
 </body>
 </html>

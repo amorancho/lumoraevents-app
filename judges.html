@@ -8,208 +8,56 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
-  <style>
-    .judges-mobile-list {
-      display: none;
-    }
-
-    @media (max-width: 767.98px) {
-      .judges-desktop-table {
-        display: none;
-      }
-
-      .judges-mobile-list {
-        display: grid;
-        gap: 1rem;
-      }
-
-      .judge-mobile-card {
-        position: relative;
-        overflow: hidden;
-        border: 1px solid rgba(var(--bs-primary-rgb), 0.14);
-        border-radius: 1rem;
-        background: var(--bs-body-bg);
-        box-shadow: 0 0.35rem 1.2rem rgba(15, 23, 42, 0.08);
-      }
-
-      .judge-mobile-card::before {
-        position: absolute;
-        top: 0;
-        right: 0;
-        left: 0;
-        height: 0.25rem;
-        content: '';
-        background: linear-gradient(90deg, var(--bs-primary), #6f42c1);
-      }
-
-      .judge-mobile-card__header {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 0.75rem;
-        padding: 0.9rem 0.85rem 0.65rem;
-      }
-
-      .judge-mobile-card__identity {
-        min-width: 0;
-        flex: 1 1 auto;
-      }
-
-      .judge-mobile-card__name {
-        margin: 0;
-        overflow-wrap: anywhere;
-        color: var(--bs-emphasis-color);
-        font-size: 1rem;
-        font-weight: 750;
-        line-height: 1.25;
-      }
-
-      .judge-mobile-card__welcome {
-        max-width: 45%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .judge-mobile-card__metrics {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0.5rem;
-        padding: 0 0.85rem 0.7rem;
-      }
-
-      .judge-mobile-card__metric {
-        display: flex;
-        min-width: 0;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 0.6rem;
-        border-radius: 0.7rem;
-        background: var(--bs-tertiary-bg);
-      }
-
-      .judge-mobile-card__metric > i {
-        flex: 0 0 auto;
-        color: var(--bs-primary);
-      }
-
-      .judge-mobile-card__metric-copy {
-        min-width: 0;
-      }
-
-      .judge-mobile-card__metric-label,
-      .judge-mobile-card__metric-value {
-        display: block;
-      }
-
-      .judge-mobile-card__metric-label {
-        color: var(--bs-secondary-color);
-        font-size: 0.62rem;
-        font-weight: 700;
-        letter-spacing: 0.035em;
-        line-height: 1.1;
-        text-transform: uppercase;
-      }
-
-      .judge-mobile-card__metric-value {
-        margin-top: 0.08rem;
-        overflow-wrap: anywhere;
-        color: var(--bs-emphasis-color);
-        font-size: 0.84rem;
-        font-weight: 750;
-      }
-
-      .judge-mobile-card__footer {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.5rem;
-        padding: 0.65rem 0.85rem 0.75rem;
-        border-top: 1px solid var(--bs-border-color-translucent);
-      }
-
-      .judge-mobile-card__action {
-        min-height: 2.35rem;
-        border-radius: 0.65rem;
-        font-size: 0.76rem;
-        font-weight: 650;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20261002-2">
+  <link rel="stylesheet" href="css/judges.css?v=20261002-1">
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 judges-page">
   <div id="header"></div>
-  <div class="container-fluid py-4">
+  <div class="container-fluid lm-page lm-org-shell flex-grow-1">
     <div id="organizationSidebarToggle" class="d-lg-none"></div>
 
-    <div class="row g-4 align-items-start">
-      <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+    <div class="row g-4 align-items-start lm-org-layout">
+      <aside class="col-lg-3 col-xl-2 d-none d-lg-block lm-org-sidebar-column">
         <div id="organizationSidebarMount"></div>
       </aside>
 
-      <main class="col-12 col-lg-9 col-xl-10">
-        <div class="row align-items-start g-3 mb-3">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-body bg-light">
-                <div class="row g-2">
-                  <div class="col-4 col-md-6 col-lg-3">
-                    <button id="createNewJudgeBtn" class="btn btn-primary w-100" data-i18n="create_judge">
-                      Create New Judge
-                    </button>
-                  </div>
-                  <div class="col-8 col-md-6 col-lg-3">
-                    <button 
-                      type="button" 
-                      class="btn btn-warning w-100" 
-                      id="sendWelcomeAll" 
-                      data-bs-toggle="tooltip" 
-                      data-bs-placement="bottom" 
-                      title="Enviar Email de bienvenida a todos los jueces"
-                      data-i18n="welcome_send_all"
-                      data-i18n-title="welcome_send_all_tooltip">
-                      Enviar Bienvenida
-                    </button>
-                  </div>
-                </div>
-              </div>
+      <main class="col-12 col-lg-9 col-xl-10 lm-org-main judges-main">
+        <h1 class="visually-hidden" data-i18n="title">Judges</h1>
+        <div id="closedPanel" class="mb-3" style="display: none;">
+          <div class="alert alert-danger d-flex align-items-center lm-notice" role="alert">
+            <i class="bi bi-info-circle-fill me-2"></i>
+            <div data-i18n="alert_end_event">
+              El festival ha finalizado. No se pueden modificar los datos.
             </div>
           </div>
         </div>
 
-    <div class="row">
-      <div id="closedPanel" class="mb-4 col-12" style="display: none;">
-        <div class="alert alert-danger d-flex align-items-center" role="alert">
-          <i class="bi bi-info-circle-fill me-2"></i>
-          <div data-i18n="alert_end_event">
-            El festival ha finalizado. No se pueden modificar los datos.
+        <section class="card judges-card" aria-labelledby="judgesCardTitle">
+          <div class="card-header judges-card__header">
+            <h2 class="judges-card__title" id="judgesCardTitle">
+              <i class="bi bi-people" aria-hidden="true"></i>
+              <span data-i18n="table_title">Judges</span>
+            </h2>
+            <div class="judges-card__actions">
+              <button id="createNewJudgeBtn" type="button" class="btn btn-primary" data-i18n="create_judge">Create New Judge</button>
+              <button type="button" class="btn btn-warning" id="sendWelcomeAll"
+                data-bs-toggle="tooltip" data-bs-placement="bottom"
+                title="Enviar Email de bienvenida a todos los jueces"
+                data-i18n="welcome_send_all" data-i18n-title="welcome_send_all_tooltip">Enviar Bienvenida</button>
+              <span id="count-judges" class="badge bg-secondary rounded-pill">0</span>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-
-    <!-- Tabla jueces -->
-    <div class="row">
-      <div class="col-12">
-        <div class="card shadow-sm">
-          <div class="card-header d-flex align-items-center">
-            <h5 class="mb-0 me-auto" data-i18n="table_title">
-              <i class="bi bi-list-ul me-2"></i>
-              Judges
-            </h5>
-            <span id="count-judges" class="badge bg-secondary rounded-pill">0</span>
-          </div>
-          <div class="card-body p-2">
+          <div class="card-body">
             <div class="table-responsive judges-desktop-table">
               <table class="table table-hover mb-0">
                 <thead class="table">
                   <tr>
-                    <th scope="col" style="width: 25%;" data-i18n="col_name">Name</th>
-                    <th scope="col" style="width: 25%;" data-i18n="col_email">Email</th>
-                    <th id="masterColumnHeader" scope="col" style="width: 10%;" class="text-center" data-i18n="col_master">Master</th>
-                    <th scope="col" style="width: 15%;" class="text-center" data-i18n="col_welcome">Welcome</th>
-                    <th scope="col" style="width: 15%;" data-i18n="col_username">Username</th>                    
-                    <th scope="col" style="width: 10%;" class="text-center" data-i18n="col_actions">Actions</th>
+                    <th scope="col" data-i18n="col_name">Name</th>
+                    <th scope="col" data-i18n="col_email">Email</th>
+                    <th id="masterColumnHeader" scope="col" class="text-center" data-i18n="col_master">Master</th>
+                    <th scope="col" class="text-center" data-i18n="col_welcome">Welcome</th>
+                    <th scope="col" data-i18n="col_username">Username</th>
+                    <th scope="col" class="text-center" data-i18n="col_actions">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="judgesTable">
@@ -218,28 +66,23 @@
             </div>
             <div id="judgesMobileCards" class="judges-mobile-list" aria-live="polite"></div>
               
-            <!-- Mensaje cuando no hay competiciones -->
-            <div id="emptyState" class="text-center py-5 d-none">
-                <i class="bi bi-person-workspace text-muted" style="font-size: 3rem;"></i>
-                <h5 class="text-muted mt-3" data-i18n="no_judges_alert">No judges created yet</h5>
-                <p class="text-muted" data-i18n="no_judges_alert_subt">Create your first judges using the form above.</p>
+            <div id="emptyState" class="judges-empty d-none">
+              <i class="bi bi-person-workspace" aria-hidden="true"></i>
+              <h3 data-i18n="no_judges_alert">No judges created yet</h3>
+              <p data-i18n="no_judges_alert_subt">Create your first judges using the button above.</p>
             </div>
           </div>
-              
-        </div>
-      </div>
-    </div>
+        </section>
       </main>
     </div>
   </div>
 
-  <!-- Modal de ediciÃ³n -->
-  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal fade lm-modal judges-modal" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">
-            <span class="fw-bold text-primary" data-i18n="edit_judge">Edit Judge</span>
+          <h5 class="modal-title" id="editModalLabel">
+            <span data-i18n="edit_judge">Edit Judge</span>
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
@@ -247,11 +90,11 @@
           <form id="editForm" data-action="create">
             <div class="row">
               <div id="judgeNameField" class="col-9 mb-3">
-                <label class="form-label" data-i18n="col_name">Name</label>
+                <label class="form-label" for="judgeName" data-i18n="col_name">Name</label>
                 <input type="text" class="form-control" id="judgeName">
               </div>
               <div id="judgeMasterField" class="col-3 mb-3 d-flex flex-column align-items-center justify-content-end">
-                <label class="form-label" data-i18n="col_master">Master</label>
+                <label class="form-label" for="judgeMaster" data-i18n="col_master">Master</label>
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" id="judgeMaster">
                 </div>
@@ -259,17 +102,17 @@
             </div>
              <div class="row">
               <div class="col-md-12 mb-3">
-                <label class="form-label" data-i18n="col_email">Email</label>
+                <label class="form-label" for="judgeEmail" data-i18n="col_email">Email</label>
                 <input type="text" class="form-control" id="judgeEmail">
               </div>              
             </div>
             <div class="row">
               <div class="col-md-9 mb-3">
-                <label class="form-label" data-i18n="col_username">Username</label>
+                <label class="form-label" for="judgeUsername" data-i18n="col_username">Username</label>
                 <input type="text" class="form-control" id="judgeUsername">
               </div>  
               <div class="col-md-3 mb-3">
-                <label class="form-label" data-i18n="col_language">Language</label>
+                <label class="form-label" for="judgeLanguage" data-i18n="col_language">Language</label>
                 <select class="form-select" id="judgeLanguage">
                   <option value="es">ES</option>
                   <option value="en">EN</option>
@@ -281,31 +124,31 @@
             </div>
             <div class="row" id="welcomeSendDiv">
               <div class="col-md-6 mb-3">
-                <label class="form-label" data-i18n="welcome_status">Welcome Email Status</label>
+                <label class="form-label" for="judgeWelcomeStatus" data-i18n="welcome_status">Welcome Email Status</label>
                 <input type="text" class="form-control bg-light" id="judgeWelcomeStatus" readonly>
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label" data-i18n="welcome_sended">Welcome Email Send Date</label>
+                <label class="form-label" for="judgeWelcomeSendDate" data-i18n="welcome_sended">Welcome Email Send Date</label>
                 <input type="text" class="form-control bg-light" id="judgeWelcomeSendDate" readonly>
                 <input type="hidden" id="judgeWelcomeSended">
               </div>
             </div>
             
             <div class="row">
-              <div class="col-md-12 my-4" id="actionsCard">
-                <div class="card">
+              <div class="col-12 mb-3" id="actionsCard">
+                <div class="card judges-modal__actions-card">
                   <div class="card-header" data-i18n="col_acciones">
                     Actions
                   </div>                  
                   <div class="card-body">
-                    <div class="row">
-                      <div class="col-12 col-lg-6">
-                        <button type="button" class="btn btn-warning text-white w-100 mb-3 mb-lg-0" id="sendEmail" data-i18n="send_welcome_email">
+                    <div class="row g-2">
+                      <div class="col-12 col-sm-6">
+                        <button type="button" class="btn btn-warning w-100" id="sendEmail" data-i18n="send_welcome_email">
                           Send Welcome Email
                         </button>
                       </div>
-                      <div class="col-12 col-lg-6">
-                        <button type="button" class="btn btn-warning text-white w-100 mb-3 mb-lg-0" id="resetPassword" data-i18n="reset_password">
+                      <div class="col-12 col-sm-6">
+                        <button type="button" class="btn btn-warning w-100" id="resetPassword" data-i18n="reset_password">
                           Reset Access PIN
                         </button>
                       </div>
@@ -317,7 +160,7 @@
             </div>
             <div class="row">
               <div class="col-12">
-                <div id="actionFeedback" class="alert alert-info alert-dismissible fade d-none mt-3" role="alert">
+                <div id="actionFeedback" class="alert alert-info alert-dismissible fade d-none lm-notice" role="alert">
                   <span id="actionFeedbackText"></span>
                   <button type="button" class="btn-close" id="actionFeedbackClose" aria-label="Close"></button>
                 </div>
@@ -333,11 +176,11 @@
     </div>
   </div>
 
-  <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal judges-modal" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalTitle" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" data-i18n="delete_confirm">Delete Confirm</h5>
+          <h5 class="modal-title" id="deleteModalTitle" data-i18n="delete_confirm">Delete Confirm</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -351,22 +194,22 @@
     </div>
   </div>
 
-  <div class="modal fade" id="confirmSend" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal judges-modal" id="confirmSend" tabindex="-1" aria-labelledby="confirmSendTitle" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" data-i18n="">Send Welcome Emails Confirm</h5>
+          <h5 class="modal-title" id="confirmSendTitle" data-i18n="welcome_send_all">Send Welcome Emails</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <p id="sendModalMessage" data-i18n="">Are you sure you want to send the welcome email to all judges who have not received it?</p>
+          <p id="sendModalMessage" data-i18n="confirm_send_email_to_all">Are you sure you want to send the welcome email to all judges who have not received it?</p>
           <p class="mb-0 small text-muted" data-i18n="confirm_send_email_to_all_note">
             Si deseas volver a enviar el email de bienvenida a un juez (por olvido o porque se cambió el email), deberás hacerlo desde su ficha.
           </p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="">Cancel</button>
-          <button type="button" class="btn btn-danger" id="confirmSendBtn" data-i18n="">Confirm</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button>
+          <button type="button" class="btn btn-warning" id="confirmSendBtn" data-i18n="welcome_send_all">Send Welcome Emails</button>
         </div>
       </div>
     </div>
@@ -380,8 +223,8 @@
   <script src="js/header.js?v=20261002-1"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
-  <script src="js/sidebar.js?v=20261002-1"></script>
-  <script src="js/judges.js"></script>
+  <script src="js/sidebar.js?v=20261002-2"></script>
+  <script src="js/judges.js?v=20261002-1"></script>
 
 </body>
 </html>

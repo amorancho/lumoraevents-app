@@ -13,10 +13,7 @@ async function renderDashboardOverview() {
   const currentEvent = getEvent();
   if (!currentEvent) return;
 
-  updateElementProperty('dashboardEventName', 'textContent', currentEvent.name || '-');
-  updateElementProperty('dashboardEventCode', 'textContent', currentEvent.code || eventId || '-');
   updateElementProperty('dashboardDateValue', 'textContent', formatDashboardDateRange(currentEvent.start, currentEvent.end));
-  updateElementProperty('dashboardLanguageValue', 'textContent', formatDashboardLanguage(currentEvent.language));
 
   setDashboardBadge(
     'dashboardStatusValue',
@@ -70,7 +67,7 @@ function setDashboardBadge(elementId, text, className) {
   if (!element) return;
 
   element.textContent = text || '-';
-  element.className = `badge rounded-pill ${className}`;
+  element.className = `lm-status ${className}`;
 }
 
 function getDashboardStatusLabel(status) {
@@ -81,10 +78,10 @@ function getDashboardStatusLabel(status) {
 }
 
 function getDashboardStatusBadgeClass(status) {
-  if (status === 'upcoming') return 'text-bg-warning';
-  if (status === 'ongoing') return 'text-bg-primary';
-  if (status === 'finished') return 'text-bg-dark';
-  return 'text-bg-secondary';
+  if (status === 'upcoming') return 'lm-status-warning';
+  if (status === 'ongoing') return 'lm-status-live';
+  if (status === 'finished') return 'lm-status-success';
+  return 'lm-status-neutral';
 }
 
 function getDashboardVisibilityLabel(rawVisibility) {
@@ -92,7 +89,7 @@ function getDashboardVisibilityLabel(rawVisibility) {
 }
 
 function getDashboardVisibilityBadgeClass(rawVisibility) {
-  return isDashboardVisibilityEnabled(rawVisibility) ? 'text-bg-success' : 'text-bg-secondary';
+  return isDashboardVisibilityEnabled(rawVisibility) ? 'lm-status-success' : 'lm-status-neutral';
 }
 
 function isDashboardVisibilityEnabled(rawVisibility) {
@@ -131,11 +128,6 @@ function formatDashboardDate(dateValue) {
     month: 'short',
     day: 'numeric'
   });
-}
-
-function formatDashboardLanguage(language) {
-  if (!language) return '-';
-  return String(language).toUpperCase();
 }
 
 const dashboardEntityOrder = [
@@ -190,17 +182,17 @@ function renderDashboardEntityCounts(currentEvent, countMap) {
 
   entities.forEach((entity) => {
     const item = document.createElement('div');
-    item.className = 'col-6 col-md-6 col-lg-4 col-xl';
+    item.className = 'dashboard-entity-item';
 
     const body = document.createElement('div');
     body.className = 'dashboard-stat-box';
 
     const label = document.createElement('div');
-    label.className = 'small text-uppercase text-body-secondary fw-semibold mb-1';
+    label.className = 'dashboard-stat-label';
     label.textContent = t(`dashboard_count_${entity}`, entity);
 
     const value = document.createElement('div');
-    value.className = 'h5 fw-semibold mb-0';
+    value.className = 'dashboard-entity-value';
     const entityCount = countMap.get(entity);
     value.textContent = entityCount !== undefined ? String(entityCount) : '-';
 
@@ -306,8 +298,6 @@ function setDashboardProgress(progressBarId, progressTextId, completed, total) {
   progressBar.classList.add(isComplete ? 'bg-success' : 'bg-warning');
   progressBar.textContent = '';
 
-  progressText.classList.remove('text-dark', 'text-white');
-  progressText.classList.add(isComplete ? 'text-white' : 'text-dark');
   progressText.textContent = `${fractionText} (${percentText})`;
 
   if (wrapperProgress) {
@@ -332,7 +322,7 @@ function setDashboardCompetitionStatusBadge(statusCode) {
   const className = getDashboardCompetitionStatusBadgeClass(normalizedStatus);
 
   element.textContent = label;
-  element.className = `badge rounded-pill dashboard-competition-status-badge ${className}`;
+  element.className = `lm-status dashboard-competition-status-badge ${className}`;
 }
 
 function getDashboardCompetitionStatusLabel(statusCode) {
@@ -344,10 +334,10 @@ function getDashboardCompetitionStatusLabel(statusCode) {
 }
 
 function getDashboardCompetitionStatusBadgeClass(statusCode) {
-  if (statusCode === 'OPE') return 'text-bg-warning';
-  if (statusCode === 'CLO') return 'text-bg-primary';
-  if (statusCode === 'FIN') return 'text-bg-success';
-  return 'text-bg-light';
+  if (statusCode === 'OPE') return 'lm-status-warning';
+  if (statusCode === 'CLO') return 'lm-status-info';
+  if (statusCode === 'FIN') return 'lm-status-success';
+  return 'lm-status-neutral';
 }
 
 function formatDashboardCompletion(completed, total) {

@@ -43,6 +43,7 @@
   "school_modal_edit": "Edit School",
   "school_name": "Name",
   "school_location": "Location",
+  "field_email": "Email",
   "school_statistics": "Statistics",
   "school_statistics_status": "Statistics email status",
   "school_statistics_send_date": "Statistics email send date",

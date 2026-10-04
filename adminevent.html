@@ -10,77 +10,31 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css">
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20261002-2">
+  <link rel="stylesheet" href="css/adminevent.css?v=20261002-2">
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
-  <style>
-    #eventInfoModal .event-info-rich-text-field + .event-info-rich-text-field {
-      margin-top: 1.5rem;
-    }
-
-    #eventInfoModal .ql-container.ql-snow {
-      height: auto;
-      min-height: 240px;
-    }
-
-    #eventInfoModal .ql-editor {
-      min-height: 240px;
-    }
-
-    #eventInfoModal .ql-toolbar.ql-snow,
-    #eventInfoModal .ql-container.ql-snow {
-      border-color: var(--bs-border-color);
-    }
-
-    #eventInfoModal.event-info-loading .modal-body,
-    #eventInfoModal.event-info-loading .modal-footer {
-      opacity: 0.65;
-      pointer-events: none;
-    }
-
-    @media (max-width: 575.98px) {
-      .event-card-header {
-        align-items: stretch !important;
-      }
-
-      .event-header-actions {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) auto;
-        width: 100%;
-        margin-left: 0 !important;
-      }
-
-      .event-header-actions #toggleEventStatusBtn {
-        grid-column: 1 / -1;
-      }
-
-      .event-header-actions .btn {
-        min-width: 0;
-      }
-    }
-  </style>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
 
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 adminevent-page">
 
   <div id="header"></div>
 
-  <div class="container-fluid py-4">
+  <div class="container-fluid lm-page lm-org-shell flex-grow-1">
     <div id="organizationSidebarToggle" class="d-lg-none"></div>
 
-    <div class="row g-4 align-items-start">
-      <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+    <div class="row g-4 align-items-start lm-org-layout">
+      <aside class="col-lg-3 col-xl-2 d-none d-lg-block lm-org-sidebar-column">
         <div id="organizationSidebarMount"></div>
       </aside>
 
-      <main class="col-12 col-lg-9 col-xl-10">
+      <main class="col-12 col-lg-9 col-xl-10 lm-org-main adminevent-main">
         <div class="row g-4" id="dataEvent">
       <div class="col-12">
-        <div class="card shadow-sm border-0">
+        <div class="card shadow-sm border-0 adminevent-card">
           <div class="card-header event-card-header bg-primary text-white fw-semibold d-flex flex-wrap justify-content-between align-items-center">
-            <div class="me-2" data-i18n="card_title">
-              <i class="bi bi-gear me-2"></i>Event Information
-            </div>
-            <div class="event-header-actions d-flex align-items-center gap-2 ms-auto" style="min-width: 0;">
+            <h1 class="adminevent-title"><i class="bi bi-gear" aria-hidden="true"></i><span data-i18n="card_title">Event Information</span></h1>
+            <div class="event-header-actions d-flex align-items-center gap-2 ms-auto">
               <button type="button" class="btn btn-warning btn-sm fw-semibold text-nowrap" id="toggleEventStatusBtn" data-i18n="event_status_finish_btn">
                 Marcar evento como finalizado
               </button>
@@ -93,7 +47,7 @@
             </div>
           </div>
           <div class="card-body">
-            <form id="eventForm" class="row g-3">
+            <form id="eventForm" class="row g-3 adminevent-form">
 
               <div class="col-md-4">
                 <label for="code" class="form-label" data-i18n="prop_code">Code</label>
@@ -147,10 +101,10 @@
               </div>
 
               <!-- Configuracion de Inscripciones -->
-              <div class="card shadow-sm border-0 mt-4 d-none" id="registrationConfigSection">
-              <div class="card-header bg-secondary text-white fw-semibold">
-                <i class="bi bi-calendar-event me-2"></i><span data-i18n="registration_config_title">Configuracion de Inscripciones</span>
-              </div>
+              <div class="card shadow-sm border-0 mt-4 d-none adminevent-section adminevent-registration" id="registrationConfigSection">
+              <h2 class="card-header bg-secondary text-white fw-semibold">
+                <i class="bi bi-calendar-event me-2" aria-hidden="true"></i><span data-i18n="registration_config_title">Configuracion de Inscripciones</span>
+              </h2>
               <div class="card-body">
                 <div class="row g-3">
                   <div class="col-6 col-md-3">
@@ -177,7 +131,7 @@
               </div>
 
               <div class="col-12">
-                <div class="row g-3 align-items-end">
+                <div class="row g-3 align-items-end adminevent-url-row">
                   
                   <!-- Inputs URL y Logo -->
                   <div class="col-md-9">
@@ -193,26 +147,26 @@
 
                   <!-- Preview a la derecha -->
                   <div class="col-md-3 text-center">
-                    <img id="previewLogo" src="" alt="Event logo" class="img-fluid rounded shadow-sm d-none" style="max-height:150px;">
+                    <img id="previewLogo" src="" alt="Event logo" class="img-fluid rounded shadow-sm d-none">
                   </div>
 
                 </div>
               </div>
 
               <!-- Visibilidad -->
-              <div class="row mt-4 g-3">
+              <div class="row mt-4 g-3 adminevent-settings-grid">
                 <div class="col-12 col-lg-10">
-              <div class="card shadow-sm border-0 h-100">
-                <div class="card-header bg-secondary text-white fw-semibold">
-                  <i class="bi bi-eye me-2"></i><span data-i18n="prop_visibility">Visibility</span>
-                </div>
+              <div class="card shadow-sm border-0 h-100 adminevent-section adminevent-visibility">
+                <h2 class="card-header bg-secondary text-white fw-semibold">
+                  <i class="bi bi-eye me-2" aria-hidden="true"></i><span data-i18n="prop_visibility">Visibility</span>
+                </h2>
                 <div class="card-body">
 
-                  <div class="row row-cols-1 row-cols-md-5 g-3">
+                  <div class="row row-cols-1 row-cols-md-5 g-3 adminevent-visibility-options">
                     <div class="col">
                       <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="visible_judges">
-                        <label class="form-check-label" data-i18n="visible_judges">
+                        <label class="form-check-label" for="visible_judges" data-i18n="visible_judges">
                           Menú Jueces
                         </label>
                       </div>
@@ -221,7 +175,7 @@
                     <div class="col">
                       <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="visible_participants">
-                        <label class="form-check-label" data-i18n="visible_participants">
+                        <label class="form-check-label" for="visible_participants" data-i18n="visible_participants">
                           Menú Participantes
                         </label>
                       </div>
@@ -230,7 +184,7 @@
                     <div class="col">
                       <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="visible_schedule">
-                        <label class="form-check-label" data-i18n="visible_schedule">
+                        <label class="form-check-label" for="visible_schedule" data-i18n="visible_schedule">
                           Menú Programación
                         </label>
                       </div>
@@ -239,7 +193,7 @@
                     <div class="col">
                       <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="visible_results">
-                        <label class="form-check-label" data-i18n="visible_results">
+                        <label class="form-check-label" for="visible_results" data-i18n="visible_results">
                           Menú Resultados
                         </label>
                       </div>
@@ -248,7 +202,7 @@
                     <div class="col">
                       <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="visible_statistics">
-                        <label class="form-check-label" data-i18n="visible_statistics">
+                        <label class="form-check-label" for="visible_statistics" data-i18n="visible_statistics">
                           Menú Estadísticas
                         </label>
                       </div>
@@ -260,10 +214,10 @@
                 </div>
 
                 <div class="col-12 col-lg-2">
-                  <div class="card shadow-sm border-0 h-100">
-                    <div class="card-header bg-secondary text-white fw-semibold">
+                  <div class="card shadow-sm border-0 h-100 adminevent-section adminevent-restrictions">
+                    <h2 class="card-header bg-secondary text-white fw-semibold">
                       <span data-i18n="voting_restrictions_title">Voting Restrictions</span>
-                    </div>
+                    </h2>
                     <div class="card-body">
                       <div class="d-flex align-items-center justify-content-between gap-2">
                         <input type="number" class="form-control" id="restrict_voting" min="0" step="1">
@@ -285,10 +239,10 @@
               </div>
 
               <!-- Avisos -->
-              <div class="card shadow-sm border-0 mt-4">
-                <div class="card-header bg-secondary text-white fw-semibold">
-                  <i class="bi bi-exclamation-triangle me-2"></i><span data-i18n="notices">Avisos</span>
-                </div>
+              <div class="card shadow-sm border-0 mt-4 adminevent-section adminevent-notices">
+                <h2 class="card-header bg-secondary text-white fw-semibold">
+                  <i class="bi bi-exclamation-triangle me-2" aria-hidden="true"></i><span data-i18n="notices">Avisos</span>
+                </h2>
                 <div class="card-body">
                   <div class="row gx-3 gy-3 align-items-md-center">
                     <div class="col-12 col-md-3 col-lg-2">
@@ -313,7 +267,7 @@
               </div>
 
               <!-- Botones -->
-              <div class="col-12 text-center mt-3">
+              <div class="col-12 text-center mt-3 adminevent-save-actions">
                 <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold" id="saveEventBtn" data-i18n="save_changes">
                   <i class="bi bi-save me-2"></i>Save Changes
                 </button>
@@ -329,7 +283,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="visibilityModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal adminevent-modal" id="visibilityModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
@@ -353,7 +307,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal adminevent-modal" id="qrModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-sm modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-body text-center">
@@ -367,7 +321,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="posterModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal adminevent-modal" id="posterModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -409,7 +363,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="exportEventModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal adminevent-modal" id="exportEventModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -437,7 +391,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="eventInfoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal adminevent-modal" id="eventInfoModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -528,21 +482,21 @@
               >
             </div>
             <div class="col-12 event-info-rich-text-field">
-              <label class="form-label" data-i18n="event_info_description">Descripcion</label>
+              <label class="form-label" id="eventInfoDescriptionLabel" data-i18n="event_info_description">Descripcion</label>
               <div id="eventInfoDescriptionEditor"></div>
               <div class="form-text" data-i18n="event_info_description_help">
                 Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.
               </div>
             </div>
             <div class="col-12 event-info-rich-text-field">
-              <label class="form-label" data-i18n="event_info_payment_instructions">Instrucciones de pago</label>
+              <label class="form-label" id="eventInfoPaymentInstructionsLabel" data-i18n="event_info_payment_instructions">Instrucciones de pago</label>
               <div id="eventInfoPaymentInstructionsEditor"></div>
               <div class="form-text" data-i18n="event_info_description_help">
                 Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.
               </div>
             </div>
             <div class="col-12 event-info-rich-text-field">
-              <label class="form-label" data-i18n="event_info_registration_accept_text">Texto de aceptacion de registro</label>
+              <label class="form-label" id="eventInfoRegistrationAcceptTextLabel" data-i18n="event_info_registration_accept_text">Texto de aceptacion de registro</label>
               <div id="eventInfoRegistrationAcceptTextEditor"></div>
               <div class="form-text" data-i18n="event_info_description_help">
                 Solo se guardan formatos seguros: titulos, parrafos, negrita, cursiva, subrayado, listas y enlaces.
@@ -558,7 +512,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="eventStatusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade lm-modal adminevent-modal" id="eventStatusModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -585,11 +539,11 @@
   <script src="js/header.js?v=20261002-1"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
-  <script src="js/sidebar.js?v=20261002-1"></script>
+  <script src="js/sidebar.js?v=20261002-2"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
-  <script src="js/adminevent.js"></script>
+  <script src="js/adminevent.js?v=20261002-1"></script>
 </body>
 
 </html>

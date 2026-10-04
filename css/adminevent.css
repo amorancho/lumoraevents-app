@@ -1,0 +1,124 @@
+.adminevent-page { color: var(--lm-text); background: var(--lm-bg); }
+.adminevent-main, .adminevent-main #dataEvent, .adminevent-main #dataEvent > * { min-width: 0; }
+.adminevent-card.card { overflow: hidden; border: 1px solid var(--lm-border) !important; border-radius: var(--lm-radius-lg); color: var(--lm-text); background: var(--lm-bg-elevated); box-shadow: var(--lm-shadow-sm) !important; }
+.adminevent-card > .card-header.event-card-header { min-height: 66px; gap: .85rem; padding: 1rem; border-bottom: 1px solid var(--lm-border); color: var(--lm-text) !important; background: var(--lm-surface) !important; }
+.adminevent-title { display: flex; min-width: 0; align-items: center; gap: .6rem; margin: 0; color: var(--lm-text); font-size: 1rem; font-weight: 800; line-height: 1.3; }
+.adminevent-title i { display: inline-grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border: 1px solid #376e9a; border-radius: var(--lm-radius-sm); color: var(--lm-cyan); background: #122b42; }
+.adminevent-card > .card-body { padding: 1rem; }
+.event-header-actions { min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+.event-header-actions .btn { min-width: 0; white-space: normal !important; text-align: center; }
+
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-label { margin-bottom: .35rem; color: var(--lm-text-muted); font-size: .74rem; font-weight: 700; line-height: 1.35; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-control, :where(.adminevent-main, .adminevent-modal, #messageModal) .form-select { min-width: 0; min-height: 44px; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-sm); color: var(--lm-text); background-color: var(--lm-surface); color-scheme: dark; font-size: .85rem; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-control::placeholder { color: var(--lm-text-soft); opacity: 1; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-control:focus, :where(.adminevent-main, .adminevent-modal, #messageModal) .form-select:focus { border-color: var(--lm-cyan); color: var(--lm-text); background-color: var(--lm-surface-raised); box-shadow: 0 0 0 .2rem rgba(38, 215, 232, .14); }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-control:disabled, :where(.adminevent-main, .adminevent-modal, #messageModal) .form-select:disabled { border-color: var(--lm-border); color: var(--lm-text-muted); background-color: var(--lm-bg-elevated); opacity: .8; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .input-group > .form-control { min-width: 0; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .input-group > :first-child:not(:last-child) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .input-group > :not(:first-child):not(:last-child) { border-radius: 0; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .input-group > :last-child:not(:first-child) { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .input-group-text { min-height: 44px; border-color: var(--lm-border-strong); color: var(--lm-text-muted); background: var(--lm-surface-raised) !important; font-size: .75rem; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-check-label { color: var(--lm-text); font-size: .78rem; line-height: 1.4; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-check-input { border-color: var(--lm-border-strong); background-color: var(--lm-bg-elevated); cursor: pointer; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-check-input:checked { border-color: #159d80; background-color: var(--lm-green); }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-check-input:focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 2px; box-shadow: none; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .form-text, :where(.adminevent-main, .adminevent-modal, #messageModal) .text-muted { color: var(--lm-text-muted) !important; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) :is(button, a, input, select, textarea):focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 2px; }
+
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: .25rem; border-radius: var(--lm-radius-sm); font-size: .77rem; font-weight: 700; line-height: 1.2; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn:disabled { opacity: .55; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-primary { border-color: #278dc7; color: #061622; background: var(--lm-primary); }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-primary:hover { border-color: var(--lm-cyan); color: #061622; background: #70caff; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-secondary, :where(.adminevent-main, .adminevent-modal, #messageModal) .btn-light { border-color: var(--lm-border-strong); color: var(--lm-text); background: var(--lm-surface-raised); }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-secondary:hover, :where(.adminevent-main, .adminevent-modal, #messageModal) .btn-light:hover { border-color: var(--lm-primary); color: var(--lm-text); background: var(--lm-surface-hover); }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-warning { border-color: #9b762b; color: var(--lm-warning); background: #302817; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-warning:hover { border-color: var(--lm-warning); color: #ffe2a5; background: #44341a; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-warning.adminevent-status-open { border-color: #197d68; color: var(--lm-green); background: #0b302e; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-warning.adminevent-status-open:hover { border-color: var(--lm-green); color: #d0fff0; background: #174b42; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-outline-primary { border-color: #376e9a; color: var(--lm-blue); background: #122b42; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-outline-primary:hover { border-color: var(--lm-cyan); color: var(--lm-text); background: #193e55; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-success { border-color: #159d80; color: #061d1a; background: var(--lm-green); }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-success:hover { border-color: #65edca; color: #061d1a; background: #65edca; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-outline-danger { border-color: #934148; color: #ffb7bd; background: #351e29; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-outline-danger:hover { border-color: var(--lm-danger); color: #fff; background: #4a2632; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-outline-success { border-color: #197d68; color: var(--lm-green); background: #0b302e; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn-outline-success:hover { border-color: var(--lm-green); color: #d0fff0; background: #174b42; }
+:where(.adminevent-main, .adminevent-modal, #messageModal) .btn:focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 2px; box-shadow: none; }
+
+.adminevent-form > * { min-width: 0; }
+.adminevent-form > .adminevent-section.card { width: calc(100% - var(--lm-space-4)); margin-inline: var(--lm-space-2); padding: 0; }
+.adminevent-form .adminevent-section.card { min-width: 0; overflow: hidden; border: 1px solid var(--lm-border) !important; border-radius: var(--lm-radius-md); color: var(--lm-text); background: var(--lm-surface); box-shadow: none !important; }
+.adminevent-section > .card-header { display: flex; min-height: 48px; align-items: center; margin: 0; padding: .7rem .9rem; border-bottom: 1px solid var(--lm-border); color: var(--lm-text) !important; background: var(--lm-surface-raised) !important; font-size: .79rem; font-weight: 750 !important; line-height: 1.3; }
+.adminevent-section > .card-header i { color: var(--lm-cyan); }
+.adminevent-notices > .card-header i { color: var(--lm-warning); }
+.adminevent-section > .card-body { padding: .85rem; }
+.adminevent-settings-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: .85rem; margin-inline: 0; }
+.adminevent-settings-grid > * { width: auto; min-width: 0; padding: 0; }
+.adminevent-visibility-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); margin: 0; gap: .55rem; }
+.adminevent-visibility-options > * { width: auto; min-width: 0; padding: 0; }
+.adminevent-visibility-options .form-check { height: 100%; min-height: 55px; padding: .7rem .55rem .7rem 2.8rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-sm); background: var(--lm-bg-elevated); }
+.adminevent-visibility-options .form-check-input { margin-left: -2.15rem; }
+.adminevent-restrictions .card-body > .d-flex { flex-direction: column-reverse; align-items: stretch !important; }
+.adminevent-restrictions .form-label { display: flex; justify-content: space-between; }
+.adminevent-restrictions .form-label i { color: var(--lm-blue); cursor: help; }
+.adminevent-url-row #previewLogo { max-height: 150px; padding: .35rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md) !important; background: var(--lm-surface); box-shadow: none !important; }
+.adminevent-save-actions { display: flex; flex-direction: column; align-items: stretch; gap: .65rem; padding-top: .5rem; border-top: 1px solid var(--lm-border); }
+.adminevent-save-actions #saveEventBtn { min-height: 44px; align-self: flex-end; padding-inline: 1.3rem !important; }
+.adminevent-save-actions .alert { width: 100%; margin: 0 !important; text-align: left; }
+
+.adminevent-modal .modal-content { color: var(--lm-text); }
+.adminevent-modal .modal-body { color: var(--lm-text); font-size: .86rem; }
+.adminevent-modal .modal-title { font-size: 1rem; }
+.adminevent-modal .modal-footer { gap: .45rem; }
+.adminevent-modal .modal-footer .btn { min-width: 90px; }
+.adminevent-modal .form-check-label { font-size: .82rem; }
+.adminevent-modal #eventStatusModalDetails { padding: .8rem; border: 1px solid #735a2d; border-radius: var(--lm-radius-sm); color: #ffe2a5 !important; background: #302817; }
+.adminevent-modal #eventStatusModalDetails li + li { margin-top: .4rem; }
+.adminevent-modal #exportEventFormatButtons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.adminevent-modal #exportEventFormatButtons .btn { min-height: 48px; }
+.adminevent-modal #qrImage { padding: .5rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: #fff; }
+.adminevent-page #messageModal .modal-content { overflow: hidden; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-lg); color: var(--lm-text); background: var(--lm-bg-elevated); box-shadow: var(--lm-shadow-md); }
+.adminevent-page #messageModal .modal-header, .adminevent-page #messageModal .modal-footer { border-color: var(--lm-border); background: var(--lm-surface); }
+.adminevent-page #messageModal .modal-header.bg-danger { color: #ffd5d9 !important; background: #351e29 !important; }
+.adminevent-page #messageModal .modal-header.bg-success { color: #d0fff0 !important; background: #17342f !important; }
+.adminevent-page #messageModal .modal-header.bg-warning { color: #ffe2a5 !important; background: #302817 !important; }
+.adminevent-page #messageModal .modal-header.bg-primary { color: #c5f5ff !important; background: #102f3a !important; }
+#eventInfoModal .event-info-rich-text-field + .event-info-rich-text-field { margin-top: 1.5rem; }
+#eventInfoModal .ql-toolbar.ql-snow, #eventInfoModal .ql-container.ql-snow { border-color: var(--lm-border-strong); color: var(--lm-text); background: var(--lm-surface); }
+#eventInfoModal .ql-container.ql-snow { height: auto; min-height: 240px; border-radius: 0 0 var(--lm-radius-sm) var(--lm-radius-sm); }
+#eventInfoModal .ql-toolbar.ql-snow { border-radius: var(--lm-radius-sm) var(--lm-radius-sm) 0 0; background: var(--lm-surface-raised); }
+#eventInfoModal .ql-editor { min-height: 240px; color: var(--lm-text); }
+#eventInfoModal .ql-editor.ql-blank::before { color: var(--lm-text-soft); }
+#eventInfoModal .ql-snow .ql-stroke { stroke: var(--lm-text-muted); }
+#eventInfoModal .ql-snow .ql-fill { fill: var(--lm-text-muted); }
+#eventInfoModal .ql-snow .ql-picker { color: var(--lm-text-muted); }
+#eventInfoModal .ql-snow .ql-picker-options { border-color: var(--lm-border-strong); background: var(--lm-surface-raised); }
+#eventInfoModal .ts-control { min-height: 44px; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-sm); color: var(--lm-text); background: var(--lm-surface); box-shadow: none; }
+#eventInfoModal .ts-wrapper.focus .ts-control { border-color: var(--lm-cyan); box-shadow: 0 0 0 .2rem rgba(38, 215, 232, .14); }
+#eventInfoModal .ts-control input { color: var(--lm-text); }
+#eventInfoModal .ts-control input::placeholder { color: var(--lm-text-soft); }
+#eventInfoModal .ts-dropdown { border-color: var(--lm-border-strong); color: var(--lm-text); background: var(--lm-bg-elevated); }
+#eventInfoModal .ts-dropdown .option { color: var(--lm-text); background: var(--lm-bg-elevated); }
+#eventInfoModal .ts-dropdown .active { background: var(--lm-surface-hover); }
+#eventInfoModal.event-info-loading .modal-body, #eventInfoModal.event-info-loading .modal-footer { opacity: .65; pointer-events: none; }
+
+@media (max-width: 575px) {
+  .adminevent-card > .card-header.event-card-header { align-items: stretch !important; }
+  .adminevent-card > .card-body { padding: .85rem; }
+  .event-header-actions { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; margin-left: 0 !important; }
+  .event-header-actions #toggleEventStatusBtn { grid-column: 1 / -1; }
+  .event-header-actions .btn { width: 100%; }
+  .adminevent-save-actions #saveEventBtn { width: 100%; }
+  .adminevent-modal .modal-dialog { margin: .5rem; }
+}
+@media (max-width: 420px) {
+  .adminevent-form .col-6 { width: 100%; }
+}
+@media (min-width: 768px) {
+  .adminevent-card > .card-header.event-card-header { padding: 1rem 1.25rem; }
+  .adminevent-card > .card-body { padding: 1.2rem 1.25rem; }
+  .adminevent-section > .card-body { padding: 1rem; }
+}
+@media (min-width: 1150px) {
+  .adminevent-settings-grid { grid-template-columns: minmax(0, 1fr) minmax(190px, .28fr); }
+}
