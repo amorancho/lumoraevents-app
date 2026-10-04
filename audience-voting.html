@@ -7,99 +7,74 @@
   <title data-i18n="title">Audience voting</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <style>
-    .audience-vote-countdown { font-size: clamp(2.75rem, 9vw, 5.5rem); font-variant-numeric: tabular-nums; letter-spacing: .04em; }
-    .audience-vote-qr { min-height: 196px; }
-    .audience-vote-qr img, .audience-vote-qr canvas { max-width: 100%; height: auto !important; margin: 0 auto; }
-    .audience-vote-session-item {
-      cursor: pointer;
-      position: relative;
-      border-right: 0;
-      background-color: var(--bs-body-bg);
-      color: inherit;
-    }
-    .audience-vote-session-item.active {
-      background-color: var(--bs-body-bg);
-      color: inherit;
-      border-color: var(--bs-border-color-translucent);
-      box-shadow: none;
-      z-index: 1;
-    }
-    .audience-vote-session-item.active::before {
-      content: "";
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: .35rem;
-      background-color: var(--bs-primary);
-      border-radius: 0 .2rem .2rem 0;
-    }
-    .audience-vote-session-item.active .text-body-secondary { color: var(--bs-secondary-color) !important; }
-    .audience-vote-ranking-position { width: 3rem; height: 3rem; flex: 0 0 3rem; }
-    .audience-vote-min-width-0 { min-width: 0; }
-  </style>
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20261002-2">
+  <link rel="stylesheet" href="css/audience-voting.css?v=20261004-1">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 audience-vote-page">
   <div id="header"></div>
 
-  <div class="container-fluid py-4">
-    <div id="organizationSidebarToggle" class="d-lg-none mb-3"></div>
+  <div class="container-fluid lm-page lm-org-shell flex-grow-1">
+    <div id="organizationSidebarToggle" class="d-lg-none"></div>
 
-    <div class="row g-4 align-items-start">
-      <aside class="col-lg-3 col-xl-2 d-none d-lg-block">
+    <div class="row g-4 align-items-start lm-org-layout audience-vote-org-layout">
+      <aside class="col-lg-3 col-xl-2 d-none d-lg-block lm-org-sidebar-column">
         <div id="organizationSidebarMount"></div>
       </aside>
 
-      <main class="col-12 col-lg-9 col-xl-10">
-        <div class="d-flex flex-column flex-sm-row gap-3 align-items-sm-center justify-content-between mb-4">
-          <div>
-            <h1 class="h3 mb-1" data-i18n="page_heading">Audience voting</h1>
-            <p class="text-body-secondary mb-0" data-i18n="page_intro">Create and manage public voting sessions for this event.</p>
+      <main class="col-12 col-lg-9 col-xl-10 lm-org-main audience-vote-main">
+        <header class="audience-vote-page-header">
+          <div class="audience-vote-page-heading">
+            <span class="audience-vote-page-icon"><i class="bi bi-megaphone" aria-hidden="true"></i></span>
+            <div>
+              <h1 data-i18n="page_heading">Audience voting</h1>
+              <p data-i18n="page_intro">Create and manage public voting sessions for this event.</p>
+            </div>
           </div>
-          <button type="button" class="btn btn-primary flex-shrink-0" id="newSessionBtn">
-            <i class="bi bi-plus-lg me-1"></i><span data-i18n="new_session">New session</span>
+          <button type="button" class="btn btn-primary" id="newSessionBtn">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i><span data-i18n="new_session">New session</span>
           </button>
-        </div>
+        </header>
 
         <div id="pageAlert" class="alert d-none" role="alert"></div>
 
-        <div class="row g-4">
-          <section class="col-12 col-xl-4 col-xxl-3" aria-labelledby="sessionsHeading">
-            <div class="card shadow-sm">
-              <div class="card-header d-flex align-items-center gap-2">
-                <h2 class="h5 mb-0 me-auto" id="sessionsHeading" data-i18n="sessions">Sessions</h2>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="refreshSessionsBtn" data-i18n-title="refresh" title="Refresh" aria-label="Refresh">
-                  <i class="bi bi-arrow-clockwise"></i>
+        <div class="row g-3 audience-vote-columns">
+          <section class="col-12 col-xl-4 col-xxl-3 audience-vote-sessions-column" aria-labelledby="sessionsHeading">
+            <div class="card audience-vote-panel audience-vote-sessions-panel">
+              <div class="card-header audience-vote-card-header">
+                <h2 class="audience-vote-card-title" id="sessionsHeading"><i class="bi bi-collection" aria-hidden="true"></i><span data-i18n="sessions">Sessions</span></h2>
+                <button type="button" class="btn btn-sm btn-outline-secondary audience-vote-icon-button" id="refreshSessionsBtn" data-i18n-title="refresh" data-i18n-aria-label="refresh" title="Refresh" aria-label="Refresh">
+                  <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                 </button>
               </div>
               <div class="card-body p-0">
-                <div id="sessionsLoading" class="text-center py-5">
-                  <div class="spinner-border text-primary" role="status"><span class="visually-hidden" data-i18n="loading">Loading...</span></div>
-                  <p class="small text-body-secondary mt-3 mb-0" data-i18n="loading_sessions">Loading sessions...</p>
+                <div id="sessionsLoading" class="audience-vote-placeholder">
+                  <div class="spinner-border" role="status"><span class="visually-hidden" data-i18n="loading">Loading...</span></div>
+                  <p data-i18n="loading_sessions">Loading sessions...</p>
                 </div>
-                <div id="sessionsEmpty" class="text-center py-5 px-3 d-none">
-                  <i class="bi bi-megaphone text-body-secondary" style="font-size: 2.75rem"></i>
-                  <h3 class="h6 mt-3" data-i18n="empty_title">No voting sessions yet</h3>
-                  <p class="small text-body-secondary mb-3" data-i18n="empty_text">Create the first audience voting session.</p>
+                <div id="sessionsEmpty" class="audience-vote-placeholder d-none">
+                  <i class="bi bi-megaphone" aria-hidden="true"></i>
+                  <h3 data-i18n="empty_title">No voting sessions yet</h3>
+                  <p data-i18n="empty_text">Create the first audience voting session.</p>
                   <button type="button" class="btn btn-sm btn-primary" id="emptyNewSessionBtn" data-i18n="new_session">New session</button>
                 </div>
-                <div id="sessionsList" class="list-group list-group-flush d-none"></div>
+                <div id="sessionsList" class="list-group audience-vote-sessions-list d-none"></div>
               </div>
             </div>
           </section>
 
-          <section class="col-12 col-xl-8 col-xxl-9" aria-live="polite">
-            <div id="workspaceLoading" class="card shadow-sm d-none">
-              <div class="card-body text-center py-5">
-                <div class="spinner-border text-primary" role="status"><span class="visually-hidden" data-i18n="loading">Loading...</span></div>
-                <p class="text-body-secondary mt-3 mb-0" data-i18n="loading_detail">Loading session...</p>
+          <section class="col-12 col-xl-8 col-xxl-9 audience-vote-workspace-column" aria-live="polite">
+            <div id="workspaceLoading" class="card audience-vote-panel d-none">
+              <div class="card-body audience-vote-placeholder">
+                <div class="spinner-border" role="status"><span class="visually-hidden" data-i18n="loading">Loading...</span></div>
+                <p data-i18n="loading_detail">Loading session...</p>
               </div>
             </div>
-            <div id="workspaceEmpty" class="card shadow-sm">
-              <div class="card-body text-center py-5 px-3">
-                <i class="bi bi-hand-index-thumb text-body-secondary" style="font-size: 3rem"></i>
-                <h2 class="h5 mt-3" data-i18n="select_session_title">Select a session</h2>
-                <p class="text-body-secondary mb-0" data-i18n="select_session_text">Choose a session to see its details and available controls.</p>
+            <div id="workspaceEmpty" class="card audience-vote-panel">
+              <div class="card-body audience-vote-placeholder">
+                <i class="bi bi-hand-index-thumb" aria-hidden="true"></i>
+                <h2 data-i18n="select_session_title">Select a session</h2>
+                <p data-i18n="select_session_text">Choose a session to see its details and available controls.</p>
               </div>
             </div>
             <div id="workspaceContent" class="d-none"></div>
@@ -109,7 +84,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="sessionFormModal" tabindex="-1" aria-labelledby="sessionFormModalLabel" aria-hidden="true">
+  <div class="modal fade lm-modal audience-vote-modal" id="sessionFormModal" tabindex="-1" aria-labelledby="sessionFormModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -120,7 +95,7 @@
           <form id="sessionForm" novalidate>
             <div class="mb-4">
               <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
-                <label class="form-label fw-semibold mb-0" data-i18n="competitions">Competitions</label>
+                <span class="form-label fw-semibold mb-0" data-i18n="competitions">Competitions</span>
                 <button type="button" class="btn btn-sm btn-outline-primary" id="addCompetitionBtn">
                   <i class="bi bi-plus-lg me-1"></i><span data-i18n="add_competition">Add competition</span>
                 </button>
@@ -167,7 +142,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionModalLabel" aria-hidden="true">
+  <div class="modal fade lm-modal audience-vote-modal" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -183,7 +158,7 @@
     </div>
   </div>
 
-  <div class="modal fade" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+  <div class="modal fade lm-modal audience-vote-modal" id="qrModal" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
@@ -191,7 +166,7 @@
           <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="close" aria-label="Close"></button>
         </div>
         <div class="modal-body text-center">
-          <div id="qrModalCode" class="audience-vote-qr d-flex align-items-center justify-content-center"></div>
+          <div id="qrModalCode" class="audience-vote-qr audience-vote-qr-large"></div>
           <p id="qrModalLink" class="small text-break text-body-secondary mt-3 mb-0"></p>
         </div>
       </div>
@@ -208,6 +183,6 @@
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
   <script src="js/sidebar.js?v=20261002-2"></script>
-  <script src="js/audience-voting.js"></script>
+  <script src="js/audience-voting.js?v=20261004-1"></script>
 </body>
 </html>

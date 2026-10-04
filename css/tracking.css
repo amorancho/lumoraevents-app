@@ -1086,7 +1086,7 @@
 }
 @media (min-width: 1200px) {
   .tracking-columns.row { display: grid; grid-template-columns: minmax(390px, 440px) minmax(0, 1fr); gap: .8rem; margin: 0; }
-  .tracking-columns.row > * { width: auto; min-width: 0; padding: 0; }
+  .tracking-columns.row > * { width: auto; min-width: 0; margin-top: 0; padding: 0; }
 }
 @container tracking-center (min-width: 760px) {
   .tracking-summary-layout { flex-direction: row; align-items: center; gap: .65rem; }

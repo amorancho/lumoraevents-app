@@ -233,32 +233,26 @@ function renderAudienceVoteSessionList() {
   list.innerHTML = audienceVoteState.sessions.map(session => {
     const isActive = Number(session.id) === Number(audienceVoteState.selectedSessionId);
     return `
-      <article class="list-group-item audience-vote-session-item p-3${isActive ? ' active' : ''}" data-session-id="${Number(session.id)}" tabindex="0">
-        <div class="d-flex align-items-start gap-2 mb-2 audience-vote-min-width-0">
-          <div class="flex-grow-1 audience-vote-min-width-0">
-            <h3 class="h6 mb-1 text-break">${escapeAudienceVoteHtml(session.name)}</h3>
-            <div class="d-flex flex-wrap gap-1">${renderAudienceVoteStatusBadge(session)}</div>
-          </div>
-          <span class="small text-nowrap"><i class="bi bi-clock me-1"></i>${formatAudienceVoteDuration(session.duration_seconds)}</span>
+      <article class="list-group-item audience-vote-session-item${isActive ? ' active' : ''}">
+        <button type="button" class="audience-vote-session-select" data-session-id="${Number(session.id)}" aria-current="${isActive ? 'true' : 'false'}">
+          <span class="audience-vote-session-top">
+            <span class="audience-vote-session-identity">
+              <strong class="audience-vote-session-name">${escapeAudienceVoteHtml(session.name)}</strong>
+              ${renderAudienceVoteStatusBadge(session)}
+            </span>
+            <span class="audience-vote-session-duration"><i class="bi bi-clock" aria-hidden="true"></i>${formatAudienceVoteDuration(session.duration_seconds)}</span>
+          </span>
+          <span class="audience-vote-session-meta">
+            ${session.opened_at ? `<span><i class="bi bi-calendar3" aria-hidden="true"></i>${escapeAudienceVoteHtml(t('opened_at', 'Opened'))}: ${escapeAudienceVoteHtml(formatAudienceVoteDate(session.opened_at))}</span>` : ''}
+            <span><i class="bi ${isAudienceVotePublished(session) ? 'bi-eye-fill' : 'bi-eye-slash'}" aria-hidden="true"></i>${escapeAudienceVoteHtml(isAudienceVotePublished(session) ? t('results_published', 'Results published') : t('results_hidden', 'Results hidden'))}</span>
+          </span>
+        </button>
+        <div class="audience-vote-session-actions">
+          ${renderAudienceVoteListActions(session)}
         </div>
-        ${session.opened_at ? `<div class="small mb-2"><span class="opacity-75">${escapeAudienceVoteHtml(t('opened_at', 'Opened'))}:</span> ${escapeAudienceVoteHtml(formatAudienceVoteDate(session.opened_at))}</div>` : ''}
-        <div class="small mb-3">
-          <i class="bi ${isAudienceVotePublished(session) ? 'bi-eye-fill' : 'bi-eye-slash'} me-1"></i>
-          ${escapeAudienceVoteHtml(isAudienceVotePublished(session) ? t('results_published', 'Results published') : t('results_hidden', 'Results hidden'))}
-        </div>
-        <div class="d-flex flex-wrap gap-2">${renderAudienceVoteListActions(session)}</div>
       </article>
     `;
   }).join('');
-
-  list.querySelectorAll('[data-session-id]').forEach(item => {
-    item.addEventListener('keydown', async event => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        await selectAudienceVoteSession(Number(item.dataset.sessionId));
-      }
-    });
-  });
 }
 
 function renderAudienceVoteListActions(session) {
@@ -399,13 +393,13 @@ function renderAudienceVoteDetail(detail) {
   const isCancelled = detail.status === 'CAN';
 
   showAudienceVoteWorkspace(`
-    <div class="card shadow-sm mb-4">
-      <div class="card-header d-flex flex-column flex-md-row gap-2 align-items-md-center">
-        <div class="me-auto audience-vote-min-width-0">
-          <div class="d-flex flex-wrap gap-2 align-items-center mb-1">${renderAudienceVoteStatusBadge(detail)}</div>
-          <h2 class="h4 mb-0 text-break">${escapeAudienceVoteHtml(detail.name)}</h2>
+    <div class="card audience-vote-panel audience-vote-detail-panel mb-3">
+      <div class="card-header audience-vote-workspace-header">
+        <div class="audience-vote-workspace-heading">
+          <h2>${escapeAudienceVoteHtml(detail.name)}</h2>
+          ${renderAudienceVoteStatusBadge(detail)}
         </div>
-        <div class="d-flex flex-wrap gap-2">
+        <div class="audience-vote-workspace-actions">
           ${isDraft ? `<button type="button" class="btn btn-outline-primary" data-session-action="edit" data-session-id="${Number(detail.id)}"><i class="bi bi-pencil me-1"></i>${escapeAudienceVoteHtml(t('edit', 'Edit'))}</button>` : ''}
           ${isDraft ? `<button type="button" class="btn btn-success" data-session-action="open" data-session-id="${Number(detail.id)}"><i class="bi bi-play-fill me-1"></i>${escapeAudienceVoteHtml(t('open_voting', 'Open voting'))}</button>` : ''}
         </div>
@@ -434,21 +428,17 @@ function renderAudienceVoteCompetitions(competitions) {
   return `<div class="vstack gap-3">${competitions.map(competition => {
     const candidates = Array.isArray(competition.candidates) ? competition.candidates : [];
     return `
-      <section class="border rounded p-3">
-        <div class="d-flex flex-column flex-sm-row gap-2 justify-content-between mb-3">
-          <div>
-            <h3 class="h6 mb-1">${escapeAudienceVoteHtml(competition.category_name)} · ${escapeAudienceVoteHtml(competition.style_name)}</h3>
-            <span class="small text-body-secondary">${candidates.length} ${escapeAudienceVoteHtml(t('candidates_lower', 'candidates'))}</span>
-          </div>
+      <section class="audience-vote-competition">
+        <div class="audience-vote-competition-header">
+          <h3>${escapeAudienceVoteHtml(competition.category_name)} &middot; ${escapeAudienceVoteHtml(competition.style_name)}</h3>
+          <span>${candidates.length} ${escapeAudienceVoteHtml(t('candidates_lower', 'candidates'))}</span>
         </div>
-        ${candidates.length ? `<div class="list-group">${candidates.map(candidate => `
-          <div class="list-group-item">
-            <div class="d-flex align-items-start gap-3">
-              <span class="badge rounded-pill text-bg-light border text-dark">${Number(candidate.position) || '–'}</span>
-              <div class="flex-grow-1 audience-vote-min-width-0">
-                <div class="fw-semibold text-break">${escapeAudienceVoteHtml(candidate.dancer_name)}</div>
-                <div class="small text-body-secondary">${escapeAudienceVoteHtml(candidate.club_name || t('no_school', 'No school'))}</div>
-              </div>
+        ${candidates.length ? `<div class="audience-vote-candidates">${candidates.map(candidate => `
+          <div class="audience-vote-candidate">
+            <span class="audience-vote-candidate-position">${Number(candidate.position) || '&ndash;'}</span>
+            <div class="audience-vote-candidate-copy">
+              <strong>${escapeAudienceVoteHtml(candidate.dancer_name)}</strong>
+              <span>${escapeAudienceVoteHtml(candidate.club_name || t('no_school', 'No school'))}</span>
             </div>
           </div>`).join('')}</div>` : `<div class="alert alert-warning mb-0">${escapeAudienceVoteHtml(t('competition_no_candidates', 'This competition has no candidates.'))}</div>`}
       </section>`;
@@ -458,22 +448,22 @@ function renderAudienceVoteCompetitions(competitions) {
 function renderAudienceVoteControl(detail, totalVotes) {
   const publicUrl = getAudienceVotePublicUrl(detail.public_code);
   showAudienceVoteWorkspace(`
-    <div class="card border-success shadow-sm mb-4">
-      <div class="card-header bg-success text-white d-flex flex-column flex-md-row align-items-md-center gap-2">
-        <div class="me-auto">
-          <div class="small text-uppercase fw-semibold"><i class="bi bi-broadcast me-2"></i>${escapeAudienceVoteHtml(t('voting_open', 'Voting open'))}</div>
-          <h2 class="h4 mb-0 mt-1 text-break">${escapeAudienceVoteHtml(detail.name)}</h2>
+    <div class="card audience-vote-panel audience-vote-control-panel mb-3">
+      <div class="card-header audience-vote-workspace-header">
+        <div class="audience-vote-workspace-heading">
+          <h2>${escapeAudienceVoteHtml(detail.name)}</h2>
+          <span class="lm-status lm-status-success"><i class="bi bi-broadcast" aria-hidden="true"></i>${escapeAudienceVoteHtml(t('voting_open', 'Voting open'))}</span>
         </div>
-        <span class="badge text-bg-light fs-6" id="openVotesBadge">${Number(totalVotes) || 0} ${escapeAudienceVoteHtml(t('votes', 'votes'))}</span>
+        <span class="audience-vote-count-badge" id="openVotesBadge">${Number(totalVotes) || 0} ${escapeAudienceVoteHtml(t('votes', 'votes'))}</span>
       </div>
-      <div class="card-body text-center py-4 py-lg-5">
-        <div class="small text-uppercase text-body-secondary fw-semibold" data-i18n="time_remaining">${escapeAudienceVoteHtml(t('time_remaining', 'Time remaining'))}</div>
-        <div class="audience-vote-countdown fw-bold text-success lh-1 my-3" id="audienceVoteCountdown">--:--</div>
-        <div class="text-body-secondary">
+      <div class="card-body audience-vote-control-body">
+        <div class="audience-vote-countdown-label" data-i18n="time_remaining">${escapeAudienceVoteHtml(t('time_remaining', 'Time remaining'))}</div>
+        <div class="audience-vote-countdown text-success" id="audienceVoteCountdown">--:--</div>
+        <div class="audience-vote-scheduled-close">
           ${escapeAudienceVoteHtml(t('scheduled_close', 'Scheduled close'))}: <strong>${escapeAudienceVoteHtml(formatAudienceVoteDate(detail.closes_at))}</strong>
         </div>
       </div>
-      <div class="card-footer bg-body d-flex flex-column flex-sm-row gap-2 justify-content-center py-3">
+      <div class="card-footer audience-vote-control-actions">
         <button type="button" class="btn btn-warning" data-session-action="close" data-session-id="${Number(detail.id)}"><i class="bi bi-stop-fill me-1"></i>${escapeAudienceVoteHtml(t('close_voting', 'Close voting'))}</button>
         <button type="button" class="btn btn-outline-danger" data-session-action="cancel" data-session-id="${Number(detail.id)}"><i class="bi bi-x-octagon me-1"></i>${escapeAudienceVoteHtml(t('cancel_voting', 'Cancel voting'))}</button>
       </div>
@@ -492,15 +482,15 @@ function renderAudienceVoteResults(detail, results) {
   const publicUrl = getAudienceVotePublicUrl(detail.public_code);
 
   showAudienceVoteWorkspace(`
-    <div class="card shadow-sm mb-4">
-      <div class="card-header d-flex flex-column flex-md-row gap-3 align-items-md-center">
-        <div class="me-auto audience-vote-min-width-0">
-          <div class="d-flex flex-wrap gap-2 align-items-center mb-1">${renderAudienceVoteStatusBadge({ ...detail, results_published: published ? 1 : 0 })}</div>
-          <h2 class="h4 mb-0 text-break">${escapeAudienceVoteHtml(detail.name)}</h2>
+    <div class="card audience-vote-panel audience-vote-results-panel mb-3">
+      <div class="card-header audience-vote-workspace-header">
+        <div class="audience-vote-workspace-heading">
+          <h2>${escapeAudienceVoteHtml(detail.name)}</h2>
+          ${renderAudienceVoteStatusBadge({ ...detail, results_published: published ? 1 : 0 })}
         </div>
-        <div class="text-md-end">
-          <div class="display-6 fw-bold">${totalVotes}</div>
-          <div class="small text-body-secondary">${escapeAudienceVoteHtml(t('total_votes', 'Total votes'))}</div>
+        <div class="audience-vote-total-votes">
+          <strong>${totalVotes}</strong>
+          <span>${escapeAudienceVoteHtml(t('total_votes', 'Total votes'))}</span>
         </div>
       </div>
       <div class="card-body">
@@ -508,7 +498,7 @@ function renderAudienceVoteResults(detail, results) {
         ${renderAudienceVoteRanking(rankedCandidates, maxVotes, totalVotes)}
       </div>
     </div>
-    <div class="alert ${published ? 'alert-success' : 'alert-warning'} d-flex flex-column flex-md-row align-items-md-center gap-3">
+    <div class="alert audience-vote-publication ${published ? 'alert-success' : 'alert-warning'} d-flex flex-column flex-md-row align-items-md-center gap-3">
       <div class="me-auto"><i class="bi ${published ? 'bi-check-circle-fill' : 'bi-eye-slash-fill'} me-2"></i><strong>${escapeAudienceVoteHtml(published ? t('results_published', 'Results published') : t('results_not_published', 'Results not published yet'))}</strong></div>
       ${published ? '' : `<button type="button" class="btn btn-success flex-shrink-0" data-session-action="publish" data-session-id="${Number(detail.id)}"><i class="bi bi-eye-fill me-1"></i>${escapeAudienceVoteHtml(t('publish_results', 'Publish results'))}</button>`}
     </div>
@@ -558,9 +548,9 @@ function renderAudienceVoteRanking(candidates, maxVotes, totalVotes) {
   return `<div class="vstack gap-3">${candidates.map(candidate => {
     const isWinner = totalVotes > 0 && candidate.votes === maxVotes;
     return `
-      <article class="border rounded p-3 ${isWinner ? 'border-warning bg-warning-subtle' : ''}">
+      <article class="audience-vote-ranking-item ${isWinner ? 'audience-vote-ranking-item--winner' : ''}">
         <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-3">
-          <div class="audience-vote-ranking-position rounded-circle d-flex align-items-center justify-content-center fw-bold ${isWinner ? 'text-bg-warning' : 'text-bg-light border'}">${candidate.rank}</div>
+          <div class="audience-vote-ranking-position">${candidate.rank}</div>
           <div class="flex-grow-1 audience-vote-min-width-0">
             <div class="d-flex flex-wrap gap-2 align-items-center">
               <h3 class="h6 mb-0 text-break">${escapeAudienceVoteHtml(candidate.dancer_name)}</h3>
@@ -569,9 +559,9 @@ function renderAudienceVoteRanking(candidates, maxVotes, totalVotes) {
             <div class="small text-body-secondary mt-1">${escapeAudienceVoteHtml(candidate.club_name || t('no_school', 'No school'))}</div>
             <div class="small mt-1">${escapeAudienceVoteHtml(candidate.category_name)} · ${escapeAudienceVoteHtml(candidate.style_name)}</div>
           </div>
-          <div class="text-sm-end">
-            <div class="h4 mb-0">${candidate.votes}</div>
-            <div class="small text-body-secondary">${escapeAudienceVoteHtml(formatAudienceVotePercentage(candidate.percentage))}</div>
+          <div class="audience-vote-ranking-score">
+            <strong>${candidate.votes}</strong>
+            <span>${escapeAudienceVoteHtml(formatAudienceVotePercentage(candidate.percentage))}</span>
           </div>
         </div>
       </article>`;
@@ -581,34 +571,34 @@ function renderAudienceVoteRanking(candidates, maxVotes, totalVotes) {
 function renderAudienceVoteMetric(label, value, icon) {
   return `
     <div class="col-12 col-sm-4">
-      <div class="border rounded h-100 p-3">
-        <div class="small text-body-secondary"><i class="bi ${icon} me-1"></i>${escapeAudienceVoteHtml(label)}</div>
-        <div class="h5 mb-0 mt-1">${escapeAudienceVoteHtml(value)}</div>
+      <div class="audience-vote-metric h-100">
+        <span><i class="bi ${icon}" aria-hidden="true"></i>${escapeAudienceVoteHtml(label)}</span>
+        <strong>${escapeAudienceVoteHtml(value)}</strong>
       </div>
     </div>`;
 }
 
 function renderAudienceVotePublicAccess(publicUrl, publicCode, qrElementId) {
   return `
-    <div class="card shadow-sm">
-      <div class="card-header"><h2 class="h5 mb-0"><i class="bi bi-qr-code me-2"></i>${escapeAudienceVoteHtml(t('public_access', 'Public access'))}</h2></div>
+    <div class="card audience-vote-panel audience-vote-public-card">
+      <div class="card-header audience-vote-card-header"><h2 class="audience-vote-card-title"><i class="bi bi-qr-code" aria-hidden="true"></i>${escapeAudienceVoteHtml(t('public_access', 'Public access'))}</h2></div>
       <div class="card-body">
-        <div class="row g-4 align-items-center">
+        <div class="row g-3 align-items-center">
           <div class="col-12 col-md-8">
             <label class="form-label" for="${qrElementId}Link">${escapeAudienceVoteHtml(t('public_link', 'Public link'))}</label>
-            <div class="input-group mb-3">
+            <div class="input-group audience-vote-link-group mb-3">
               <input type="text" class="form-control" id="${qrElementId}Link" value="${escapeAudienceVoteAttribute(publicUrl)}" readonly>
               <button type="button" class="btn btn-outline-primary" data-copy-public-link="${escapeAudienceVoteAttribute(publicUrl)}"><i class="bi bi-copy me-1"></i>${escapeAudienceVoteHtml(t('copy', 'Copy'))}</button>
             </div>
-            <div class="d-flex flex-wrap gap-2">
+            <div class="audience-vote-public-actions">
               <a class="btn btn-outline-secondary" href="${escapeAudienceVoteAttribute(publicUrl)}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right me-1"></i>${escapeAudienceVoteHtml(t('open_new_tab', 'Open in new tab'))}</a>
               <button type="button" class="btn btn-outline-secondary" data-enlarge-qr="${escapeAudienceVoteAttribute(publicUrl)}"><i class="bi bi-arrows-fullscreen me-1"></i>${escapeAudienceVoteHtml(t('enlarge_qr', 'Enlarge QR'))}</button>
             </div>
-            <div class="small text-body-secondary text-break mt-3">${escapeAudienceVoteHtml(t('public_code', 'Public code'))}: ${escapeAudienceVoteHtml(publicCode)}</div>
+            <div class="audience-vote-public-code">${escapeAudienceVoteHtml(t('public_code', 'Public code'))}: <strong>${escapeAudienceVoteHtml(publicCode)}</strong></div>
           </div>
-          <div class="col-12 col-md-4 text-center">
-            <button type="button" class="btn p-2 border bg-white" data-enlarge-qr="${escapeAudienceVoteAttribute(publicUrl)}" aria-label="${escapeAudienceVoteAttribute(t('enlarge_qr', 'Enlarge QR'))}">
-              <span id="${qrElementId}" class="audience-vote-qr d-flex align-items-center justify-content-center"></span>
+          <div class="col-12 col-md-4 audience-vote-qr-column">
+            <button type="button" class="audience-vote-qr-button" data-enlarge-qr="${escapeAudienceVoteAttribute(publicUrl)}" aria-label="${escapeAudienceVoteAttribute(t('enlarge_qr', 'Enlarge QR'))}">
+              <span id="${qrElementId}" class="audience-vote-qr"></span>
             </button>
           </div>
         </div>
@@ -853,7 +843,7 @@ function renderCompetitionSelectors(selectedIds = ['']) {
   container.innerHTML = normalized.map((selectedId, index) => {
     const competition = audienceVoteState.competitions.find(item => String(item.id) === selectedId);
     return `
-      <div class="audience-competition-row border rounded p-3">
+      <div class="audience-competition-row">
         <div class="d-flex gap-2 align-items-start">
           <div class="flex-grow-1">
             <select class="form-select audience-competition-select" aria-label="${escapeAudienceVoteAttribute(t('competition', 'Competition'))}" required>
