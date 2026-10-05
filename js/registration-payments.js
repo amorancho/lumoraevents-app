@@ -2060,6 +2060,8 @@ function initPaymentsTab(role) {
   window.addEventListener('registration:panel-changed', (event) => {
     if (event?.detail?.key === 'payments') {
       fetchDocumentTables({ showError: true });
+    } else if (event?.detail?.key === 'dashboard' && !isOrganizer) {
+      fetchDocumentTables({ showError: false });
     }
   });
 

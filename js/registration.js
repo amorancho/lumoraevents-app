@@ -51,6 +51,14 @@ const REGISTRATION_NAV_ITEMS = [
     fallbackLabel: 'School details'
   },
   {
+    key: 'schools',
+    paneId: 'schools',
+    roles: ['organizer'],
+    icon: 'bi-buildings',
+    labelKey: 'registration_tab_schools',
+    fallbackLabel: 'Schools / Individuals'
+  },
+  {
     key: 'participants',
     paneId: 'participants',
     roles: ['school', 'organizer'],
@@ -65,14 +73,6 @@ const REGISTRATION_NAV_ITEMS = [
     icon: 'bi-trophy',
     labelKey: 'registration_tab_competitions',
     fallbackLabel: 'Competition registrations'
-  },
-  {
-    key: 'schools',
-    paneId: 'schools',
-    roles: ['organizer'],
-    icon: 'bi-buildings',
-    labelKey: 'registration_tab_schools',
-    fallbackLabel: 'Schools'
   },
   {
     key: 'org-registrations',
@@ -1699,39 +1699,6 @@ function initOrganizerDashboard() {
     }
   };
 
-  const buildDashboardFinanceMetrics = (registrations, participants, categoryById) => {
-    const validatedRegistrations = registrations.filter((registration) => isRegistrationValidated(registration));
-    const registrationFinance = buildRegistrationFinanceMetrics(registrations, {
-      categoryById,
-      validatedOnly: true
-    });
-    const registeredParticipantsCount = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
-    const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
-    const totalFee = registrationFeeCost * registeredParticipantsCount;
-    const paymentRows = (Array.isArray(registrationState.paymentDocuments) ? registrationState.paymentDocuments : [])
-      .filter((row) => `${row?.payment_type ?? ''}`.trim().toUpperCase() === 'PAY');
-    const validatedPayments = paymentRows.filter((row) => `${row?.status ?? ''}`.trim().toUpperCase() === 'VAL');
-    const pendingValidationPayments = paymentRows.filter((row) => {
-      const status = `${row?.status ?? ''}`.trim().toUpperCase();
-      return status === 'PEN' || status === 'REJ';
-    });
-    const paidAmount = validatedPayments.reduce(
-      (sum, row) => sum + (normalizeRegistrationNumber(row?.amount) ?? 0),
-      0
-    );
-    const totalAmount = totalFee + registrationFinance.totalAmount;
-
-    return {
-      totalAmount,
-      paidAmount,
-      pendingAmount: totalAmount - paidAmount,
-      pendingValidationPaymentsCount: pendingValidationPayments.length,
-      registeredParticipantsCount,
-      totalRegistrationsCount: registrationFinance.totalRegistrationsCount,
-      validatedPaymentsCount: validatedPayments.length
-    };
-  };
-
   const renderChart = (key, element, options) => {
     if (!element || typeof ApexCharts === 'undefined') {
       return;
@@ -1885,11 +1852,7 @@ function initOrganizerDashboard() {
       totalSchools: schools.length,
       totalParticipants: participants.length,
       totalRegistrations: registrations.length,
-      finance: buildRegistrationFinanceMetrics(registrations, {
-        categoryById: categoriesById,
-        validatedOnly: true
-      }),
-      dashboardFinance: buildDashboardFinanceMetrics(registrations, participants, categoriesById),
+      dashboardFinance: buildRegistrationDashboardFinanceMetrics(registrations, categoriesById),
       categoriesWithoutRegistrations: categories.filter((category) => !categoryIdsWithRegistrations.has(`${category.id}`)).length,
       stylesWithoutRegistrations: styles.filter((style) => !styleIdsWithRegistrations.has(`${style.id}`)).length,
       categoriesWithoutRegistrationItems: sortDashboardItems(
@@ -2273,10 +2236,7 @@ function initSchoolDashboard() {
     return {
       totalParticipants: participants.length,
       totalRegistrations: registrations.length,
-      finance: buildRegistrationFinanceMetrics(registrations, {
-        categoryById: categoriesById,
-        validatedOnly: true
-      }),
+      finance: buildRegistrationDashboardFinanceMetrics(registrations, categoriesById),
       registrationsWithoutMusic: registrations.filter((registration) => !hasMusic(registration)).length,
       status: statusCounts.reduce((summary, item) => {
         summary[item.code] = item.count;
@@ -2302,15 +2262,15 @@ function initSchoolDashboard() {
     if (statElements.statusRej) statElements.statusRej.textContent = formatInteger(metrics.status.REJ);
     if (statElements.totalAmount) statElements.totalAmount.textContent = formatRegistrationCurrency(metrics.finance.totalAmount);
     if (statElements.totalAmountMeta) {
-      statElements.totalAmountMeta.textContent = `${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
+      statElements.totalAmountMeta.textContent = `${formatInteger(metrics.finance.registeredParticipantsCount)} ${t('registration_dashboard_kpi_participants', 'Participants')} / ${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
     if (statElements.paidAmount) statElements.paidAmount.textContent = formatRegistrationCurrency(metrics.finance.paidAmount);
     if (statElements.paidAmountMeta) {
-      statElements.paidAmountMeta.textContent = `${formatInteger(metrics.finance.paidRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
+      statElements.paidAmountMeta.textContent = `${formatInteger(metrics.finance.validatedPaymentsCount)} ${t('registration_payments_validated', 'Validated payments')}`;
     }
     if (statElements.pendingAmount) statElements.pendingAmount.textContent = formatRegistrationCurrency(metrics.finance.pendingAmount);
     if (statElements.pendingAmountMeta) {
-      statElements.pendingAmountMeta.textContent = `${formatInteger(metrics.finance.pendingRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
+      statElements.pendingAmountMeta.textContent = `${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
     if (statElements.pendingValidationPayments) {
       statElements.pendingValidationPayments.textContent = formatInteger(metrics.finance.pendingValidationPaymentsCount);
@@ -2353,6 +2313,7 @@ function initSchoolDashboard() {
 
   window.addEventListener('registration:participants-updated', scheduleRender);
   window.addEventListener('registration:school-registrations-updated', scheduleRender);
+  window.addEventListener('registration:payment-documents-updated', scheduleRender);
   window.addEventListener('registration:config-updated', scheduleRender);
   window.addEventListener('registration:panel-changed', (event) => {
     if (event?.detail?.key !== 'dashboard') {
@@ -4941,6 +4902,41 @@ function buildRegistrationFinanceMetrics(registrations, options = {}) {
 
   summary.paidRatio = summary.totalAmount > 0 ? summary.paidAmount / summary.totalAmount : 0;
   return summary;
+}
+
+function buildRegistrationDashboardFinanceMetrics(registrations, categoryById) {
+  const validatedRegistrations = (Array.isArray(registrations) ? registrations : [])
+    .filter((registration) => isRegistrationValidated(registration));
+  const registrationFinance = buildRegistrationFinanceMetrics(registrations, {
+    categoryById,
+    validatedOnly: true,
+    useStoredTotalAmount: true
+  });
+  const registeredParticipantsCount = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
+  const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
+  const totalFee = registrationFeeCost * registeredParticipantsCount;
+  const paymentRows = (Array.isArray(registrationState.paymentDocuments) ? registrationState.paymentDocuments : [])
+    .filter((row) => `${row?.payment_type ?? ''}`.trim().toUpperCase() === 'PAY');
+  const validatedPayments = paymentRows.filter((row) => `${row?.status ?? ''}`.trim().toUpperCase() === 'VAL');
+  const pendingValidationPayments = paymentRows.filter((row) => {
+    const status = `${row?.status ?? ''}`.trim().toUpperCase();
+    return status === 'PEN' || status === 'REJ';
+  });
+  const paidAmount = validatedPayments.reduce(
+    (sum, row) => sum + (normalizeRegistrationNumber(row?.amount) ?? 0),
+    0
+  );
+  const totalAmount = totalFee + registrationFinance.totalAmount;
+
+  return {
+    totalAmount,
+    paidAmount,
+    pendingAmount: totalAmount - paidAmount,
+    pendingValidationPaymentsCount: pendingValidationPayments.length,
+    registeredParticipantsCount,
+    totalRegistrationsCount: registrationFinance.totalRegistrationsCount,
+    validatedPaymentsCount: validatedPayments.length
+  };
 }
 
 function initSchoolsTab() {

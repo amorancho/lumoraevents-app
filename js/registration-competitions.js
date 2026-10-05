@@ -2,6 +2,7 @@
   const tableBody = document.getElementById('registrationsTable');
   const mobileCards = document.getElementById('registrationsMobileCards');
   const countEl = document.getElementById('registrationsCount');
+  const feeTotalEl = document.getElementById('registrationsFeeTotal');
   const emptyEl = document.getElementById('registrationsEmpty');
   const createBtn = document.getElementById('createRegistrationBtn');
   const copyTsvBtn = document.getElementById('competitionsCopyTsvBtn');
@@ -1420,6 +1421,12 @@
     if (countEl) {
       countEl.textContent = `${registrations.length}`;
     }
+    if (feeTotalEl) {
+      const validatedRegistrations = registrations.filter((registration) => isRegistrationValidated(registration));
+      const registeredParticipantsCount = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
+      const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
+      feeTotalEl.textContent = formatRegistrationCurrency(registrationFeeCost * registeredParticipantsCount);
+    }
 
     if (!registrations.length) {
       if (emptyEl) emptyEl.classList.remove('d-none');
@@ -1659,6 +1666,7 @@
     mobileError.textContent = message;
     mobileCards.appendChild(mobileError);
     if (countEl) countEl.textContent = '0';
+    if (feeTotalEl) feeTotalEl.textContent = formatRegistrationCurrency(0);
     if (emptyEl) emptyEl.classList.add('d-none');
   };
 

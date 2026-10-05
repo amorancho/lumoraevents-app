@@ -699,6 +699,25 @@
     .org-registrations-summary {
       order: 2;
     }
+    .school-registrations-fee {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.7rem;
+      border: 1px solid rgba(var(--bs-primary-rgb), 0.25);
+      border-radius: 0.7rem;
+      color: var(--bs-primary-text-emphasis);
+      background: rgba(var(--bs-primary-rgb), 0.08);
+      white-space: nowrap;
+    }
+    .school-registrations-fee-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .school-registrations-fee-value {
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
     .org-registrations-filter-panel {
       display: contents;
     }
@@ -1253,7 +1272,7 @@
       }
       #competitions .school-registrations-controls {
         display: grid !important;
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-columns: minmax(0, 1fr) auto;
         gap: 0.5rem !important;
         margin-bottom: 0.75rem !important;
       }
@@ -1270,7 +1289,9 @@
         white-space: nowrap;
       }
       #competitions .school-registrations-summary {
-        order: 2;
+        order: 3;
+        grid-column: 1 / -1;
+        justify-self: end;
         margin-left: 0 !important;
       }
       #competitions .school-registrations-summary-icon {
@@ -1284,7 +1305,7 @@
         display: inline-flex;
         width: 2.5rem;
         min-height: 2.5rem;
-        order: 3;
+        order: 2;
         align-items: center;
         justify-content: center;
         padding: 0;
@@ -2789,7 +2810,7 @@
                         <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                           <div class="registration-dashboard-kpi-copy">
                             <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_paid_label">Pagado</div>
-                            <div class="registration-dashboard-kpi-meta" id="schoolDashboardPaidAmountMeta">0 Inscripciones</div>
+                            <div class="registration-dashboard-kpi-meta" id="schoolDashboardPaidAmountMeta">0 Pagos validados</div>
                           </div>
                           <span class="registration-dashboard-kpi-icon"><i class="bi bi-check2-circle"></i></span>
                         </div>
@@ -3209,6 +3230,10 @@
                       </button>
                     </div>
                     <div class="school-registrations-summary d-flex align-items-center gap-3 ms-sm-auto flex-wrap">
+                      <div class="school-registrations-fee" aria-live="polite">
+                        <span class="school-registrations-fee-label" data-i18n="registration_payments_total_fee">Total fee</span>
+                        <strong class="school-registrations-fee-value" id="registrationsFeeTotal">0,00&nbsp;€</strong>
+                      </div>
                       <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-card-checklist school-registrations-summary-icon" aria-hidden="true"></i>
                         <span class="text-muted school-registrations-summary-label" data-i18n="registration_competitions_total">Total inscripciones</span>
@@ -3350,7 +3375,7 @@
                 <div class="col-12 col-md-6 col-xl-3">
                   <div class="card shadow-sm h-100">
                     <div class="card-body p-4 d-flex flex-column">
-                      <h5 class="card-title mb-3" data-i18n="registration_tab_schools">Escuelas</h5>
+                      <h5 class="card-title mb-3" data-i18n="registration_tab_schools">Escuelas / Particulares</h5>
                       <div id="eventSyncSchoolsSummary" class="flex-grow-1"></div>
                       <button type="button" class="btn btn-outline-primary mt-3" id="eventSyncSchoolsBtn" data-i18n="event_sync_action_sync">Sincronizar</button>
                     </div>
@@ -4700,9 +4725,9 @@
   <script src="js/common.js?v=20260917"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js"></script>
-  <script src="js/registration-competitions.js"></script>
-  <script src="js/registration-payments.js"></script>
+  <script src="js/registration.js?v=20261005-3"></script>
+  <script src="js/registration-competitions.js?v=20261005-1"></script>
+  <script src="js/registration-payments.js?v=20261005-1"></script>
 
 </body></html>
 
