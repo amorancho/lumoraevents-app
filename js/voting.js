@@ -2007,8 +2007,7 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
     if (shouldShowJudgeFeedbackColumn()) {
       // Columna Feedback (ultima)
       const tdComments = document.createElement('td');
-      const hasFeedbackActions = d.status === 'Completed'
-        && (shouldJudgeTextFeedback() || shouldJudgeAudioFeedback());
+      const hasFeedbackActions = shouldJudgeTextFeedback() || shouldJudgeAudioFeedback();
       tdComments.className = hasFeedbackActions
         ? 'voting-cell-feedback'
         : 'voting-cell-feedback is-unavailable';
@@ -2016,49 +2015,44 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
 
       const hasComments = typeof d.comments === 'string' && d.comments.trim().length > 0;
       const hasAudioFeedback = parseJudgeFlag(d?.has_feedback);
-      if (d.status === 'Completed') {
-        const feedbackActions = document.createElement('div');
-        feedbackActions.className = 'feedback-actions';
+      const feedbackActions = document.createElement('div');
+      feedbackActions.className = 'feedback-actions';
 
-        if (shouldJudgeTextFeedback()) {
+      if (shouldJudgeTextFeedback()) {
 
-          const btnComments = document.createElement('button');
-          btnComments.type = 'button';
-          btnComments.className = `voting-feedback-btn voting-feedback-btn--comments ${hasComments ? 'is-present' : ''}`;
-          btnComments.dataset.role = 'comments-btn';
-          btnComments.dataset.hasComments = hasComments ? 'true' : 'false';
-          btnComments.addEventListener('click', () => {
-            if (!commentsModal) return;
-            commentsContext = { competitionId: d.competition_id, dancerId: d.id };
-            commentsTextarea.value = d.comments || '';
-            commentsModal.show();
-          });
-          feedbackActions.appendChild(btnComments);
+        const btnComments = document.createElement('button');
+        btnComments.type = 'button';
+        btnComments.className = `voting-feedback-btn voting-feedback-btn--comments ${hasComments ? 'is-present' : ''}`;
+        btnComments.dataset.role = 'comments-btn';
+        btnComments.dataset.hasComments = hasComments ? 'true' : 'false';
+        btnComments.addEventListener('click', () => {
+          if (!commentsModal) return;
+          commentsContext = { competitionId: d.competition_id, dancerId: d.id };
+          commentsTextarea.value = d.comments || '';
+          commentsModal.show();
+        });
+        feedbackActions.appendChild(btnComments);
 
-        }
-
-        if (shouldJudgeAudioFeedback()) {
-          const btnAudioFeedback = document.createElement('button');
-          btnAudioFeedback.type = 'button';
-          btnAudioFeedback.className = `voting-feedback-btn voting-feedback-btn--audio ${hasAudioFeedback ? 'is-present' : ''}`;
-          btnAudioFeedback.dataset.role = 'audio-feedback-btn';
-          btnAudioFeedback.dataset.hasFeedback = hasAudioFeedback ? 'true' : 'false';
-          btnAudioFeedback.addEventListener('click', async () => {
-            await openAudioFeedbackModal({
-              competitionId: d?.competition_id ?? selectedCompetition?.id ?? selectedCompetitionId,
-              dancerId: d?.id,
-              dancerName: d?.name || t('col_dancer', 'Dancer'),
-              competitionLabel
-            });
-          });
-          feedbackActions.appendChild(btnAudioFeedback);
-        }
-
-        tdComments.appendChild(feedbackActions);
-      } else {
-        tdComments.textContent = '-';
       }
 
+      if (shouldJudgeAudioFeedback()) {
+        const btnAudioFeedback = document.createElement('button');
+        btnAudioFeedback.type = 'button';
+        btnAudioFeedback.className = `voting-feedback-btn voting-feedback-btn--audio ${hasAudioFeedback ? 'is-present' : ''}`;
+        btnAudioFeedback.dataset.role = 'audio-feedback-btn';
+        btnAudioFeedback.dataset.hasFeedback = hasAudioFeedback ? 'true' : 'false';
+        btnAudioFeedback.addEventListener('click', async () => {
+          await openAudioFeedbackModal({
+            competitionId: d?.competition_id ?? selectedCompetition?.id ?? selectedCompetitionId,
+            dancerId: d?.id,
+            dancerName: d?.name || t('col_dancer', 'Dancer'),
+            competitionLabel
+          });
+        });
+        feedbackActions.appendChild(btnAudioFeedback);
+      }
+
+      tdComments.appendChild(feedbackActions);
       tr.appendChild(tdComments);
     }
 
