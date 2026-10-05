@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon32.png" type="image/png">
+  <title data-i18n="title">Accreditations</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
+  <link rel="stylesheet" href="css/accreditations.css?v=20261005-2">
+</head>
+<body class="d-flex flex-column min-vh-100 accreditations-page">
+  <div id="header"></div>
+  <div class="container-fluid lm-page lm-org-shell flex-grow-1">
+    <div id="organizationSidebarToggle" class="d-lg-none"></div>
+    <div class="row g-4 align-items-start lm-org-layout">
+      <aside class="col-lg-3 col-xl-2 d-none d-lg-block lm-org-sidebar-column">
+        <div id="organizationSidebarMount"></div>
+      </aside>
+      <main class="col-12 col-lg-9 col-xl-10 lm-org-main accreditations-main">
+        <h1 id="accredWorkspaceTitle" class="visually-hidden" data-i18n="title">Accreditations</h1>
+        <section class="accred-workspace lm-card" aria-labelledby="accredWorkspaceTitle">
+          <div class="accred-workspace-head">
+            <div class="accred-header-actions" id="accredOrganizerActions" hidden>
+              <button type="button" class="lm-btn lm-btn-primary" id="addPersonBtn"><i class="bi bi-person-plus" aria-hidden="true"></i><span data-i18n="add_person">Add person</span></button>
+              <button type="button" class="lm-btn lm-btn-secondary" id="importBtn" disabled title="Coming soon" data-i18n-title="coming_soon"><i class="bi bi-upload" aria-hidden="true"></i><span data-i18n="import">Import</span></button>
+            </div>
+            <div class="accred-summary" role="group" aria-label="Accreditation summary" data-i18n-aria-label="summary_label">
+              <div class="accred-summary-primary">
+                <div><strong id="summaryTotal">—</strong><span data-i18n="total">Total</span></div>
+                <div class="accred-summary-success"><strong id="summaryAccredited">—</strong><span data-i18n="accredited">Accredited</span></div>
+                <div><strong id="summaryPending">—</strong><span data-i18n="pending">Pending</span></div>
+              </div>
+              <div class="accred-summary-types">
+                <span><b id="summaryParticipants">—</b> <span data-i18n="participants">Participants</span></span>
+                <span><b id="summaryStaff">—</b> <span data-i18n="staff">Staff</span></span>
+                <span><b id="summaryGuests">—</b> <span data-i18n="guests">Guests</span></span>
+              </div>
+            </div>
+            <div class="accred-view-switch" role="group" aria-label="View" data-i18n-aria-label="view_label">
+              <button type="button" class="accred-view-btn active" id="peopleViewBtn" aria-pressed="true"><i class="bi bi-people" aria-hidden="true"></i><span data-i18n="people">People</span></button>
+              <button type="button" class="accred-view-btn" id="groupsViewBtn" aria-pressed="false"><i class="bi bi-collection" aria-hidden="true"></i><span data-i18n="groups">Groups</span></button>
+            </div>
+          </div>
+
+          <div class="accred-controls">
+            <label class="accred-search" for="accredSearch">
+              <i class="bi bi-search" aria-hidden="true"></i>
+              <span class="visually-hidden" data-i18n="search_label">Search people or groups</span>
+              <input type="search" id="accredSearch" class="form-control lm-input" maxlength="200" placeholder="Search people or groups" data-i18n-placeholder="search_placeholder" autocomplete="off">
+            </label>
+            <div class="accred-filters" id="peopleFilters">
+              <label><span class="visually-hidden" data-i18n="type_label">Person type</span><select id="typeFilter" class="form-select lm-input"><option value="" data-i18n="all_types">All types</option><option value="PARTICIPANT" data-i18n="participants">Participants</option><option value="STAFF" data-i18n="staff">Staff</option><option value="GUEST" data-i18n="guests">Guests</option></select></label>
+              <label><span class="visually-hidden" data-i18n="status_label">Status</span><select id="statusFilter" class="form-select lm-input"><option value="" data-i18n="all_statuses">All statuses</option><option value="true" data-i18n="accredited">Accredited</option><option value="false" data-i18n="pending">Pending</option></select></label>
+              <label><span class="visually-hidden" data-i18n="group_label">Group</span><select id="groupFilter" class="form-select lm-input"><option value="" data-i18n="all_groups">All groups</option></select></label>
+            </div>
+          </div>
+
+          <div id="accredFeedback" class="accred-feedback" role="alert" hidden></div>
+          <div id="accredListState" class="accred-list-state" role="status" aria-live="polite"></div>
+          <div id="peopleList" class="accred-person-list" aria-live="polite"></div>
+          <div id="groupsList" class="accred-group-list" hidden></div>
+
+          <section id="groupDetail" class="accred-group-detail" aria-labelledby="groupDetailTitle" hidden>
+            <div class="accred-group-detail-head">
+              <button type="button" class="accred-back" id="backToGroupsBtn"><i class="bi bi-arrow-left" aria-hidden="true"></i><span data-i18n="back_to_groups">All groups</span></button>
+              <h3 id="groupDetailTitle"></h3>
+              <p id="groupDetailMeta"></p>
+            </div>
+            <div id="groupPeopleList" class="accred-person-list"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal fade lm-modal accred-modal" id="personDetailModal" tabindex="-1" aria-labelledby="personDetailTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header"><h2 class="modal-title fs-5" id="personDetailTitle" data-i18n="person_details">Person details</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria-label="close"></button></div>
+        <div class="modal-body" id="personDetailBody"></div>
+        <div class="modal-footer accred-detail-actions">
+          <button type="button" class="lm-btn lm-btn-danger" id="deletePersonBtn" hidden><i class="bi bi-trash" aria-hidden="true"></i><span data-i18n="delete">Delete</span></button>
+          <button type="button" class="lm-btn lm-btn-secondary" id="editPersonBtn" hidden><i class="bi bi-pencil" aria-hidden="true"></i><span data-i18n="edit">Edit</span></button>
+          <button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="close">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade lm-modal accred-modal" id="personFormModal" tabindex="-1" aria-labelledby="personFormTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <form id="personForm">
+          <div class="modal-header"><h2 class="modal-title fs-5" id="personFormTitle" data-i18n="add_person">Add person</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria-label="close"></button></div>
+          <div class="modal-body">
+            <div class="accred-form-grid">
+              <label><span data-i18n="type_label">Person type</span><select id="personType" class="form-select lm-input" required><option value="PARTICIPANT" data-i18n="participant">Participant</option><option value="STAFF" data-i18n="staff">Staff</option><option value="GUEST" data-i18n="guest">Guest</option></select></label>
+              <label><span data-i18n="first_name">First name</span><input id="personFirstName" class="form-control lm-input" maxlength="100" required></label>
+              <label><span data-i18n="last_name">Last name</span><input id="personLastName" class="form-control lm-input" maxlength="150"></label>
+              <label><span data-i18n="birth_date">Birth date</span><input id="personBirthDate" type="date" class="form-control lm-input"></label>
+              <label><span data-i18n="document">Document</span><input id="personDocument" class="form-control lm-input" maxlength="50"></label>
+              <label class="accred-form-full"><span data-i18n="notes">Notes</span><textarea id="personNotes" class="form-control lm-input" maxlength="500" rows="3"></textarea></label>
+            </div>
+            <fieldset class="accred-form-groups"><legend data-i18n="groups">Groups</legend><div id="personGroupChoices" class="accred-group-choices"></div></fieldset>
+          </div>
+          <div class="modal-footer"><button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button><button type="submit" class="lm-btn lm-btn-primary" id="savePersonBtn" data-i18n="save">Save</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade lm-modal accred-modal" id="accredConfirmModal" tabindex="-1" aria-labelledby="accredConfirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+      <div class="modal-header"><h2 class="modal-title fs-5" id="accredConfirmTitle"></h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" data-i18n-aria-label="close"></button></div>
+      <div class="modal-body"><p class="mb-0" id="accredConfirmMessage"></p></div>
+      <div class="modal-footer"><button type="button" class="lm-btn lm-btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancel</button><button type="button" class="lm-btn lm-btn-danger-solid" id="accredConfirmBtn"></button></div>
+    </div></div>
+  </div>
+
+  <div id="footer"></div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/header.js?v=20261002-1"></script>
+  <script src="js/footer.js"></script>
+  <script src="js/common.js?v=20261005-2"></script>
+  <script src="js/sidebar.js?v=20261005-3"></script>
+  <script src="js/accreditations.js?v=20261005-2"></script>
+</body>
+</html>

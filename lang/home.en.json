@@ -29,5 +29,7 @@
   "home_schedule_description": "Times, categories and running order.",
   "home_results_description": "Rankings and scores.",
   "home_statistics_description": "Event data and metrics.",
-  "home_audience_vote_description": "Take part in the event voting."
+  "home_audience_vote_description": "Take part in the event voting.",
+  "home_accreditations_title": "Accreditations",
+  "home_accreditations_description": "Deliver and manage event accreditations."
 }

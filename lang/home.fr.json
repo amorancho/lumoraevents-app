@@ -29,5 +29,7 @@
   "home_schedule_description": "Horaires, catégories et ordre de passage.",
   "home_results_description": "Classements et scores.",
   "home_statistics_description": "Données et indicateurs de l'événement.",
-  "home_audience_vote_description": "Participez au vote de l'événement."
+  "home_audience_vote_description": "Participez au vote de l'événement.",
+  "home_accreditations_title": "Accréditations",
+  "home_accreditations_description": "Remettez et gérez les accréditations de l'événement."
 }

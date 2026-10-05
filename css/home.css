@@ -105,6 +105,11 @@
   --home-accent-rgb: 38, 215, 232;
 }
 
+.home-access-card--accreditations {
+  --home-accent: var(--lm-blue);
+  --home-accent-rgb: 101, 182, 255;
+}
+
 .home-access-card--public,
 .home-access-card--audience {
   --home-accent: #f071c5;

@@ -804,7 +804,7 @@ function buildEventFormTabs(){
       appendNodeToTabContent(welcomeContent,node);
       return;
     }
-    if(nodeContainsIds(node,['visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','show_flags','send_stats_code','hide_judges','has_penalties','has_clubs','hide_school_info','criteria_per_judge','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','registration_start','registration_end','music_extra_time','registration_fee_cost','registration_min_age','registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc','min_styles','category_class_type','score_type','criteria_config','total_system','can_decide_positions','restrict_voting','results_filter','tied_positions'])){
+    if(nodeContainsIds(node,['visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','show_flags','send_stats_code','hide_judges','has_penalties','has_clubs','hide_school_info','criteria_per_judge','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','has_accreditations','registration_start','registration_end','music_extra_time','registration_fee_cost','registration_min_age','registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc','min_styles','category_class_type','score_type','criteria_config','total_system','can_decide_positions','restrict_voting','results_filter','tied_positions'])){
       appendNodeToTabContent(configContent,node);
       return;
     }
@@ -847,7 +847,7 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
   const fieldIds=[
     'visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics',
     'show_flags','send_stats_code','hide_judges','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters',
-    'has_penalties','has_clubs','hide_school_info','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','registration_start','registration_end','music_extra_time','registration_fee_cost','registration_min_age',
+    'has_penalties','has_clubs','hide_school_info','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','has_accreditations','registration_start','registration_end','music_extra_time','registration_fee_cost','registration_min_age',
     'registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc',
     'category_class_type','score_type','criteria_config','total_system','criteria_per_judge',
     'min_styles','can_decide_positions','restrict_voting','results_filter',
@@ -867,8 +867,8 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
     fields.has_penalties,fields.has_clubs,fields.hide_school_info,fields.has_registrations,fields.has_audience_voting
   ],'col-12 col-md-6 col-lg');
   appendConfigRow(configContent,[
-    fields.has_multiple_scenarios,fields.show_results_details,fields.show_only_podium
-  ],'col-12 col-md-6 col-lg-4');
+    fields.has_multiple_scenarios,fields.show_results_details,fields.show_only_podium,fields.has_accreditations
+  ],'col-12 col-md-6 col-lg-3');
   appendConfigRow(configContent,[
     fields.category_class_type,fields.score_type,fields.criteria_config,fields.total_system,fields.criteria_per_judge
   ],'col-12 col-md-6 col-lg');
@@ -1334,7 +1334,7 @@ function populateEventForm(eventObj){
   document.getElementById('tied_positions').value=normalizeTiedPositionsValue(eventObj.tied_positions);
   document.getElementById('send_stats_code').value=normalizeSendStatsCodeValue(eventObj.send_stats_code);
   document.getElementById('judge_feedback').value=eventObj.judge_feedback;
-  ['visible','trial','visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','has_clubs','hide_school_info','has_penalties','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','judges_vis_results','judges_can_change_votes','has_masters','show_flags','hide_judges','notice_active','registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc'].forEach((id)=>{document.getElementById(id).checked=Number(eventObj[id])===1;});
+  ['visible','trial','visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','has_clubs','hide_school_info','has_penalties','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','has_accreditations','judges_vis_results','judges_can_change_votes','has_masters','show_flags','hide_judges','notice_active','registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc'].forEach((id)=>{document.getElementById(id).checked=Number(eventObj[id])===1;});
   document.getElementById('registration_start').value=eventObj.registration_start?String(eventObj.registration_start).slice(0,10):'';
   document.getElementById('registration_end').value=eventObj.registration_end?String(eventObj.registration_end).slice(0,10):'';
   document.getElementById('music_extra_time').value=eventObj.music_extra_time??0;
@@ -1356,6 +1356,7 @@ function resetEventForm(){
   form.reset();
   document.getElementById('show_results_details').checked=true;
   document.getElementById('show_only_podium').checked=false;
+  document.getElementById('has_accreditations').checked=false;
   form.dataset.action='create';
   form.removeAttribute('data-id');
   document.getElementById('eventId').value='';
@@ -1494,6 +1495,7 @@ function collectEventFormData(){
     has_multiple_scenarios:document.getElementById('has_multiple_scenarios').checked?1:0,
     show_results_details:document.getElementById('show_results_details').checked?1:0,
     show_only_podium:document.getElementById('show_only_podium').checked?1:0,
+    has_accreditations:document.getElementById('has_accreditations').checked?1:0,
     tied_positions:normalizeTiedPositionsValue(document.getElementById('tied_positions').value),
     judge_feedback:document.getElementById('judge_feedback').value,
     judges_vis_results:document.getElementById('judges_vis_results').checked?1:0,

@@ -1,0 +1,16 @@
+{
+  "title": "Acreditações", "eyebrow": "Operações do evento", "intro": "Gere a entrega de acreditações a participantes, equipa e convidados.",
+  "add_person": "Adicionar pessoa", "edit_person": "Editar pessoa", "import": "Importar", "coming_soon": "Em breve",
+  "summary_label": "Resumo das acreditações", "total": "Total", "accredited": "Acreditados", "pending": "Pendentes",
+  "accredited_status": "Acreditação entregue", "pending_status": "Pendente",
+  "participants": "Participantes", "participant": "Participante", "staff": "Equipa", "guests": "Convidados", "guest": "Convidado",
+  "workspace_title": "Diretório", "view_label": "Vista", "people": "Pessoas", "groups": "Grupos",
+  "search_label": "Pesquisar pessoas ou grupos", "search_placeholder": "Pesquisar pessoas ou grupos", "type_label": "Tipo de pessoa",
+  "all_types": "Todos os tipos", "status_label": "Estado", "all_statuses": "Todos os estados", "group_label": "Grupo", "all_groups": "Todos os grupos", "back_to_groups": "Todos os grupos",
+  "person_details": "Detalhes da pessoa", "delete": "Eliminar", "edit": "Editar", "close": "Fechar", "first_name": "Nome", "last_name": "Apelido", "birth_date": "Data de nascimento", "document": "Documento", "notes": "Notas", "save": "Guardar", "cancel": "Cancelar",
+  "unnamed": "Pessoa sem nome", "note": "Nota", "revoke": "Revogar", "accredit": "Acreditar", "details": "Detalhes",
+  "no_people": "Nenhuma acreditação encontrada.", "no_people_match": "Nenhuma pessoa corresponde à pesquisa ou aos filtros.", "no_people_yet": "As pessoas aparecerão aqui quando forem adicionadas.",
+  "no_groups": "Nenhum grupo encontrado.", "no_groups_match": "Nenhum grupo corresponde à pesquisa.", "no_groups_yet": "Os grupos aparecerão aqui quando forem adicionados.", "no_category": "Sem categoria", "people_count": "pessoas", "loading": "A carregar…", "request_error": "Não foi possível concluir o pedido.", "load_error": "Não foi possível carregar as acreditações.", "group_empty": "Não há pessoas neste grupo.",
+  "revoke_question": "Remover a acreditação de", "delivered_success": "Acreditação entregue.", "revoked_success": "Acreditação removida.", "accredited_by": "Acreditado por", "delivered": "Entregue", "revoked": "Revogada", "no_history": "Ainda sem atividade.", "history": "Histórico", "save_notes": "Guardar nota", "notes_saved": "Nota guardada.",
+  "person_updated": "Pessoa atualizada.", "person_created": "Pessoa adicionada.", "delete_person": "Eliminar pessoa", "delete_question": "Eliminar", "person_deleted": "Pessoa eliminada."
+}

@@ -8,6 +8,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     general: 'General Configuration',
     masterdata: 'Master Data',
     judges: 'Judges',
+    accreditations: 'Accreditations',
     participants: 'Participants',
     competitions: 'Competitions',
     scheduleconfig: 'Schedule Configurator',
@@ -23,6 +24,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     general: 'Configuracion General',
     masterdata: 'Datos Maestros',
     judges: 'Jueces',
+    accreditations: 'Acreditaciones',
     participants: 'Participantes',
     competitions: 'Competiciones',
     scheduleconfig: 'Configurador de Programacion',
@@ -38,6 +40,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     general: 'Configurazione Generale',
     masterdata: 'Dati Principali',
     judges: 'Giudici',
+    accreditations: 'Accreditamenti',
     participants: 'Partecipanti',
     competitions: 'Competizioni',
     scheduleconfig: 'Configuratore Programmazione',
@@ -53,6 +56,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     general: 'Configuracao Geral',
     masterdata: 'Dados Mestres',
     judges: 'Jurados',
+    accreditations: 'Acreditações',
     participants: 'Participantes',
     competitions: 'Competicoes',
     scheduleconfig: 'Configurador de Programacao',
@@ -68,6 +72,7 @@ const ORGANIZATION_SIDEBAR_COPY = {
     general: 'Configuration Generale',
     masterdata: 'Donnees Maitres',
     judges: 'Juges',
+    accreditations: 'Accréditations',
     participants: 'Participants',
     competitions: 'Competitions',
     scheduleconfig: 'Configurateur de planning',
@@ -85,11 +90,12 @@ const ORGANIZATION_SIDEBAR_ITEMS = [
   { key: 'competitions', href: 'competitions.html', icon: 'bi-trophy', labelKey: 'competitions' },
   { key: 'scheduleconfig', href: 'scheduleconfig.html', icon: 'bi-calendar3', labelKey: 'scheduleconfig' },
   { key: 'tracking', href: 'tracking.html', icon: 'bi-activity', labelKey: 'tracking' },
-  { key: 'audienceVoting', href: 'audience-voting.html', icon: 'bi-megaphone', labelKey: 'audienceVoting' }
+  { key: 'audienceVoting', href: 'audience-voting.html', icon: 'bi-megaphone', labelKey: 'audienceVoting' },
+  { key: 'accreditations', href: 'accreditations.html', icon: 'bi-person-check', labelKey: 'accreditations' }
 ];
 
 const ORGANIZATION_HEADER_MENU_PAGES = new Set([
-  'dashboard', 'adminevent', 'masterdata', 'judges', 'dancers',
+  'dashboard', 'adminevent', 'masterdata', 'judges', 'accreditations', 'dancers',
   'competitions', 'scheduleconfig', 'tracking', 'audience-voting'
 ]);
 
@@ -119,6 +125,7 @@ function getOrganizationSidebarActiveKey() {
     adminevent: 'general',
     masterdata: 'masterdata',
     judges: 'judges',
+    accreditations: 'accreditations',
     dancers: 'participants',
     competitions: 'competitions',
     scheduleconfig: 'scheduleconfig',
@@ -142,6 +149,9 @@ function buildOrganizationSidebarItemsMarkup(copy, activeKey, options = {}) {
   const currentEvent = typeof getEvent === 'function' ? getEvent() : null;
 
   return ORGANIZATION_SIDEBAR_ITEMS.filter((item) => {
+    if (item.key === 'accreditations') {
+      return currentEvent?.hasAccreditations === true && ['admin', 'organizer'].includes(getUserFromToken()?.role);
+    }
     return item.key !== 'audienceVoting' || currentEvent?.hasAudienceVoting === true;
   }).map((item) => {
     const isActive = item.key === activeKey;
@@ -200,6 +210,7 @@ function buildOrganizationSidebarMobileMarkup(copy, activeKey, useHeaderMenu = f
 }
 
 function updateOrganizationHeaderMenu(copy = getOrganizationSidebarCopy()) {
+  if (pageName === 'accreditations' && getUserFromToken()?.role === 'staff') return;
   if (!usesOrganizationHeaderMenu()) return;
 
   const toggle = document.getElementById('organizationSidebarHeaderToggle');
@@ -226,6 +237,7 @@ function updateOrganizationSidebarTitles() {
 }
 
 function renderOrganizationSidebar() {
+  if (pageName === 'accreditations' && getUserFromToken()?.role === 'staff') return;
   const desktopMount = document.getElementById('organizationSidebarMount');
   let mobileMount = document.getElementById('organizationSidebarToggle');
 

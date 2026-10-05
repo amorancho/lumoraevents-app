@@ -250,7 +250,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hasAuthorization: data.registration_authorizations === 1,
         hasAuthorizations: data.registration_authorizations === 1,
         showIdentificationDocument: data.registration_show_id_doc === 1,
-        showResultsDetails: data.show_results_details === 1
+        showResultsDetails: data.show_results_details === 1,
+        hasAccreditations: data.has_accreditations === 1,
       };
 
     }
@@ -400,6 +401,10 @@ async function changeLanguage(lang, page = null) {
   } else if (pageName === 'audience-voting') {
     if (window.renderAudienceVotePage) {
       window.renderAudienceVotePage();
+    }
+  } else if (pageName === 'accreditations') {
+    if (window.renderAccreditationsPage) {
+      window.renderAccreditationsPage();
     }
   } else if (pageName === 'public-votes') {
     if (window.renderPublicVotesPage) {

@@ -1,0 +1,16 @@
+{
+  "title": "Accréditations", "eyebrow": "Opérations de l'événement", "intro": "Gérez la remise des accréditations aux participants, à l'équipe et aux invités.",
+  "add_person": "Ajouter une personne", "edit_person": "Modifier la personne", "import": "Importer", "coming_soon": "Bientôt disponible",
+  "summary_label": "Résumé des accréditations", "total": "Total", "accredited": "Accrédités", "pending": "En attente",
+  "accredited_status": "Accréditation remise", "pending_status": "En attente",
+  "participants": "Participants", "participant": "Participant", "staff": "Équipe", "guests": "Invités", "guest": "Invité",
+  "workspace_title": "Répertoire", "view_label": "Vue", "people": "Personnes", "groups": "Groupes",
+  "search_label": "Rechercher des personnes ou des groupes", "search_placeholder": "Rechercher des personnes ou des groupes", "type_label": "Type de personne",
+  "all_types": "Tous les types", "status_label": "Statut", "all_statuses": "Tous les statuts", "group_label": "Groupe", "all_groups": "Tous les groupes", "back_to_groups": "Tous les groupes",
+  "person_details": "Détails de la personne", "delete": "Supprimer", "edit": "Modifier", "close": "Fermer", "first_name": "Prénom", "last_name": "Nom", "birth_date": "Date de naissance", "document": "Document", "notes": "Notes", "save": "Enregistrer", "cancel": "Annuler",
+  "unnamed": "Personne sans nom", "note": "Note", "revoke": "Révoquer", "accredit": "Accréditer", "details": "Détails",
+  "no_people": "Aucune accréditation trouvée.", "no_people_match": "Aucune personne ne correspond à la recherche ou aux filtres.", "no_people_yet": "Les personnes apparaîtront ici après leur ajout.",
+  "no_groups": "Aucun groupe trouvé.", "no_groups_match": "Aucun groupe ne correspond à la recherche.", "no_groups_yet": "Les groupes apparaîtront ici après leur ajout.", "no_category": "Sans catégorie", "people_count": "personnes", "loading": "Chargement…", "request_error": "Impossible de terminer la demande.", "load_error": "Impossible de charger les accréditations.", "group_empty": "Ce groupe ne contient aucune personne.",
+  "revoke_question": "Retirer l'accréditation de", "delivered_success": "Accréditation remise.", "revoked_success": "Accréditation retirée.", "accredited_by": "Accrédité par", "delivered": "Remise", "revoked": "Révoquée", "no_history": "Aucune activité.", "history": "Historique", "save_notes": "Enregistrer la note", "notes_saved": "Note enregistrée.",
+  "person_updated": "Personne mise à jour.", "person_created": "Personne ajoutée.", "delete_person": "Supprimer la personne", "delete_question": "Supprimer", "person_deleted": "Personne supprimée."
+}

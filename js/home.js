@@ -7,6 +7,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const currentEvent = getEvent();
     const currentUser = getUserFromToken();
+    const sameAccreditationEvent = (
+        (Boolean(eventId && currentUser?.eventId) && String(currentUser.eventId).toLowerCase() === String(eventId).toLowerCase()) ||
+        (Number(currentEvent?.id) > 0 && Number(currentUser?.event_id) === Number(currentEvent.id))
+    );
+    const canAccessAccreditations = currentEvent?.hasAccreditations === true && (
+        currentUser?.role === "admin" || (["organizer", "staff"].includes(currentUser?.role) && sameAccreditationEvent)
+    );
     const now = new Date();
     const storedLang = localStorage.getItem("lang");
     const eventLanguage = String(currentEvent?.language || "").toLowerCase();
@@ -33,6 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateElementProperty("resultsUrl", "href", `?eventId=${eventId}`, false);
     updateElementProperty("statisticsUrl", "href", `?eventId=${eventId}`, false);
     updateElementProperty("audienceVoteUrl", "href", `?eventId=${encodeURIComponent(currentEvent.code || eventId)}`, false);
+    updateElementProperty("accreditationsUrl", "href", `?eventId=${encodeURIComponent(eventId)}`, false);
 
     const principalContainer = document.getElementById("principalContainer");
     const hiddenMessage = document.getElementById("eventHiddenMessage");
@@ -45,6 +53,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const publicRow = document.getElementById("home-public-row");
     const publicCol = document.getElementById("col-publicAccess");
     const configCol = document.getElementById("col-configUrl");
+    const accreditationsCol = document.getElementById("col-accreditationsUrl");
     const votingCol = document.getElementById("col-votingUrl");
     const participantsCol = document.getElementById("col-participantsUrl");
     const scheduleCol = document.getElementById("col-scheduleUrl");
@@ -143,11 +152,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
             showColumn(registrationCol);
         }
-    } else {
+    } else if (!canAccessAccreditations) {
         principalContainer.classList.add("d-none");
         hiddenMessage.classList.remove("d-none");
         return;
     }
+
+    if (!currentEvent.visible && canAccessAccreditations) {
+        Array.from(publicRow.children).forEach(removeColumn);
+    }
+
+    if (canAccessAccreditations) showColumn(accreditationsCol);
 
     if (currentEvent.hasAudienceVoting) {
         showColumn(audienceVoteCol);

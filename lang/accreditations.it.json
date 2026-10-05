@@ -1,0 +1,16 @@
+{
+  "title": "Accreditamenti", "eyebrow": "Operazioni evento", "intro": "Gestisci la consegna degli accrediti a partecipanti, staff e ospiti.",
+  "add_person": "Aggiungi persona", "edit_person": "Modifica persona", "import": "Importa", "coming_soon": "Prossimamente",
+  "summary_label": "Riepilogo accrediti", "total": "Totale", "accredited": "Accreditati", "pending": "In attesa",
+  "accredited_status": "Accredito consegnato", "pending_status": "In attesa",
+  "participants": "Partecipanti", "participant": "Partecipante", "staff": "Staff", "guests": "Ospiti", "guest": "Ospite",
+  "workspace_title": "Elenco", "view_label": "Vista", "people": "Persone", "groups": "Gruppi",
+  "search_label": "Cerca persone o gruppi", "search_placeholder": "Cerca persone o gruppi", "type_label": "Tipo di persona",
+  "all_types": "Tutti i tipi", "status_label": "Stato", "all_statuses": "Tutti gli stati", "group_label": "Gruppo", "all_groups": "Tutti i gruppi", "back_to_groups": "Tutti i gruppi",
+  "person_details": "Dettagli persona", "delete": "Elimina", "edit": "Modifica", "close": "Chiudi", "first_name": "Nome", "last_name": "Cognome", "birth_date": "Data di nascita", "document": "Documento", "notes": "Note", "save": "Salva", "cancel": "Annulla",
+  "unnamed": "Persona senza nome", "note": "Nota", "revoke": "Revoca", "accredit": "Accredita", "details": "Dettagli",
+  "no_people": "Nessun accredito trovato.", "no_people_match": "Nessuna persona corrisponde alla ricerca o ai filtri.", "no_people_yet": "Le persone appariranno qui dopo essere state aggiunte.",
+  "no_groups": "Nessun gruppo trovato.", "no_groups_match": "Nessun gruppo corrisponde alla ricerca.", "no_groups_yet": "I gruppi appariranno qui dopo essere stati aggiunti.", "no_category": "Senza categoria", "people_count": "persone", "loading": "Caricamento…", "request_error": "Impossibile completare la richiesta.", "load_error": "Impossibile caricare gli accrediti.", "group_empty": "Nessuna persona in questo gruppo.",
+  "revoke_question": "Rimuovere l'accredito a", "delivered_success": "Accredito consegnato.", "revoked_success": "Accredito rimosso.", "accredited_by": "Accreditato da", "delivered": "Consegnato", "revoked": "Revocato", "no_history": "Nessuna attività.", "history": "Cronologia", "save_notes": "Salva nota", "notes_saved": "Nota salvata.",
+  "person_updated": "Persona aggiornata.", "person_created": "Persona aggiunta.", "delete_person": "Elimina persona", "delete_question": "Eliminare", "person_deleted": "Persona eliminata."
+}
