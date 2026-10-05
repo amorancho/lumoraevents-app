@@ -113,6 +113,8 @@
 .competitions-modal .table { min-width: 560px; }
 .competitions-page :is(.competitions-main, .competitions-modal) .table > :not(caption) > * > * { padding: .7rem .6rem; border-color: var(--lm-border); color: inherit; background: transparent; box-shadow: none; overflow-wrap: anywhere; }
 .competitions-page :is(.competitions-main, .competitions-modal) .table thead th { color: var(--lm-text-muted); background: var(--lm-surface-raised) !important; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; vertical-align: middle; }
+.competitions-main .competitions-desktop-table #criteriaColumnHeader { min-width: 100px; white-space: nowrap; }
+.competitions-main .competitions-desktop-table th[data-i18n="col_actions"] { min-width: 190px; white-space: nowrap; }
 .competitions-page :is(.competitions-main, .competitions-modal) .table tbody tr:hover > * { background: var(--lm-surface-hover); }
 .competitions-page :is(.competitions-main, .competitions-modal) .table td { vertical-align: middle; }
 .competitions-main .table .btn-group .btn { min-width: 34px; min-height: 34px; padding: .3rem; border-radius: 0; }
