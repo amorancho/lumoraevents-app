@@ -105,6 +105,7 @@
 .competitions-page :is(.competitions-main, .competitions-modal) .form-check-input:focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 2px; box-shadow: none; }
 .competitions-modal .input-group-text { min-height: 44px; border-color: var(--lm-border-strong); color: var(--lm-text-muted); background: var(--lm-surface-raised); }
 .competitions-modal .form-select option { color: var(--lm-text); background: var(--lm-surface); }
+.competitions-modal .form-select option:checked { color: #061622; background: var(--lm-cyan); }
 
 .competitions-main .table-responsive, .competitions-modal .table-responsive { min-width: 0; max-width: 100%; overflow-x: auto; border: 1px solid var(--lm-border) !important; border-radius: var(--lm-radius-md) !important; scrollbar-color: var(--lm-border-strong) var(--lm-bg-elevated); }
 .competitions-page :is(.competitions-main, .competitions-modal) .table { --bs-table-bg: transparent; --bs-table-color: var(--lm-text); --bs-table-border-color: var(--lm-border); margin: 0; color: var(--lm-text); }
