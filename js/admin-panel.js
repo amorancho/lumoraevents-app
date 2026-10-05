@@ -1354,6 +1354,8 @@ function populateEventForm(eventObj){
 function resetEventForm(){
   const form=document.getElementById('eventForm');
   form.reset();
+  document.getElementById('show_results_details').checked=true;
+  document.getElementById('show_only_podium').checked=false;
   form.dataset.action='create';
   form.removeAttribute('data-id');
   document.getElementById('eventId').value='';
