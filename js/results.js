@@ -920,8 +920,10 @@ function updateResultsSelectionUi() {
   }
 
   if (infoText) {
-    infoText.classList.toggle('d-none', !hasCompleteSelection);
-    infoText.classList.toggle('d-block', hasCompleteSelection);
+    const canShowDetails = getEvent()?.showResultsDetails === true;
+    const shouldShowInfoText = hasCompleteSelection && canShowDetails;
+    infoText.classList.toggle('d-none', !shouldShowInfoText);
+    infoText.classList.toggle('d-block', shouldShowInfoText);
   }
 
   if (refreshBtn) {
@@ -1113,40 +1115,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     await runResultsSearch();
   });
 
-  document.addEventListener('click', (event) => {
-    const styleDetailsBtn = event.target.closest('.style-details-btn');
-    if (styleDetailsBtn) {
-      if (!window.resultsData || !styleVotingModal || !styleDetailsContainer) return;
+  if (getEvent()?.showResultsDetails === true) {
+    document.addEventListener('click', (event) => {
+      const styleDetailsBtn = event.target.closest('.style-details-btn');
+      if (styleDetailsBtn) {
+        if (!window.resultsData || !styleVotingModal || !styleDetailsContainer) return;
 
-      const styleBlock = styleDetailsBtn.closest('.style-block');
+        const styleBlock = styleDetailsBtn.closest('.style-block');
+        if (!styleBlock) return;
+
+        const styleId = Number(styleDetailsBtn.dataset.styleId || styleBlock.dataset.styleId);
+        const styleObj = getResultsStyleById(styleId);
+        if (!styleObj) return;
+
+        showStyleVotingDetailsModal(styleObj, styleVotingModalEl, styleVotingModal, styleDetailsContainer);
+        return;
+      }
+
+      const dancerEl = event.target.closest('.dancer-result');
+      if (!dancerEl) return;
+
+      const styleBlock = dancerEl.closest('.style-block');
       if (!styleBlock) return;
 
-      const styleId = Number(styleDetailsBtn.dataset.styleId || styleBlock.dataset.styleId);
+      if (!window.resultsData || !votingModal || !detailsContainer) return;
+
+      const styleId = Number(styleBlock.dataset.styleId);
+      const dancerId = Number(dancerEl.dataset.dancerId);
       const styleObj = getResultsStyleById(styleId);
       if (!styleObj) return;
 
-      showStyleVotingDetailsModal(styleObj, styleVotingModalEl, styleVotingModal, styleDetailsContainer);
-      return;
-    }
+      const dancerData = getStyleDancerById(styleObj, dancerId);
+      if (!dancerData) return;
 
-    const dancerEl = event.target.closest('.dancer-result');
-    if (!dancerEl) return;
-
-    const styleBlock = dancerEl.closest('.style-block');
-    if (!styleBlock) return;
-
-    if (!window.resultsData || !votingModal || !detailsContainer) return;
-
-    const styleId = Number(styleBlock.dataset.styleId);
-    const dancerId = Number(dancerEl.dataset.dancerId);
-    const styleObj = getResultsStyleById(styleId);
-    if (!styleObj) return;
-
-    const dancerData = getStyleDancerById(styleObj, dancerId);
-    if (!dancerData) return;
-
-    showDancerVotingDetailsModal(styleObj, dancerData, votingModalEl, votingModal, detailsContainer);
-  });
+      showDancerVotingDetailsModal(styleObj, dancerData, votingModalEl, votingModal, detailsContainer);
+    });
+  }
 
   loadCategories();
 });
@@ -1323,15 +1327,16 @@ function renderStyleClassification(style) {
     `;
   }
 
+  const canShowDetails = getEvent()?.showResultsDetails === true;
   const detailsLabel = t('details', 'Details');
 
   let html = `
     <section class="results-card style-block" data-style-id="${style.style_id}">
       <header class="results-card-header">
         <h2 class="results-card-heading"><i class="bi bi-lightning-charge-fill" aria-hidden="true"></i><span>${escapeHtml(style.style_name)}</span></h2>
-        <button type="button" class="results-details-btn style-details-btn" data-style-id="${style.style_id}">
+        ${canShowDetails ? `<button type="button" class="results-details-btn style-details-btn" data-style-id="${style.style_id}">
           ${escapeHtml(detailsLabel)} <i class="bi bi-table" aria-hidden="true"></i>
-        </button>
+        </button>` : ''}
       </header>
       <ol class="results-ranking-list">
   `;
@@ -1347,7 +1352,7 @@ function renderStyleClassification(style) {
 
     html += `
       <li>
-        <button type="button" class="results-rank-row${podiumClass} dancer-result" data-dancer-id="${dancer.dancer_id}">
+        <${canShowDetails ? 'button' : 'div'} ${canShowDetails ? 'type="button"' : ''} class="results-rank-row${podiumClass}${canShowDetails ? ' dancer-result' : ''}" ${canShowDetails ? `data-dancer-id="${dancer.dancer_id}"` : ''}>
           <span class="results-place">${escapeHtml(displayPosition)}</span>
           <span class="results-person">
             ${getDancerFlagImgHtml(dancer.dancer_nationality)}
@@ -1359,9 +1364,9 @@ function renderStyleClassification(style) {
           <span class="results-row-values">
             <span class="results-score">${formatScoreValue(dancer.total_score, { fixedDecimals: totalScoreFixedDecimals })}</span>
             ${shouldShowAvgPlaceBadge() ? `<span class="results-average">${formatAvgPlace(dancer.avg_place)}</span>` : ''}
-            <i class="bi bi-chevron-right results-row-chevron" aria-hidden="true"></i>
+            ${canShowDetails ? '<i class="bi bi-chevron-right results-row-chevron" aria-hidden="true"></i>' : ''}
           </span>
-        </button>
+        </${canShowDetails ? 'button' : 'div'}>
       </li>
     `;
   });

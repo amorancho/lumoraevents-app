@@ -250,6 +250,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hasAuthorization: data.registration_authorizations === 1,
         hasAuthorizations: data.registration_authorizations === 1,
         showIdentificationDocument: data.registration_show_id_doc === 1,
+        showResultsDetails: data.show_results_details === 1
       };
 
     }
