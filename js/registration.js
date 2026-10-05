@@ -2399,6 +2399,17 @@ function initSchoolTab() {
     alert: document.getElementById('schoolSaveAlert')
   };
 
+  const updateRepresentativeState = () => {
+    if (!elements.representative) return;
+    const isIndividual = elements.userTypeIndividual?.checked === true;
+    elements.representative.disabled = isIndividual;
+    elements.representative.classList.toggle('bg-light', isIndividual);
+  };
+
+  [elements.userTypeSchool, elements.userTypeIndividual].forEach((input) => {
+    input?.addEventListener('change', updateRepresentativeState);
+  });
+
   if (elements.username) elements.username.setAttribute('readonly', 'readonly');
 
   if (elements.alert) {
@@ -2434,6 +2445,7 @@ function initSchoolTab() {
       const userType = String(schoolRecord.user_type || 'SCH').toUpperCase() === 'PAR' ? 'PAR' : 'SCH';
       if (elements.userTypeSchool) elements.userTypeSchool.checked = userType === 'SCH';
       if (elements.userTypeIndividual) elements.userTypeIndividual.checked = userType === 'PAR';
+      updateRepresentativeState();
 
       if (elements.username) elements.username.value = schoolRecord.username || '';
 
@@ -2442,11 +2454,7 @@ function initSchoolTab() {
       if (elements.language) elements.language.value = schoolRecord.language || 'es';
       if (elements.city) elements.city.value = schoolRecord.city || '';
       if (elements.phone) elements.phone.value = schoolRecord.phone || '';
-      if (elements.representative) {
-        elements.representative.value = schoolRecord.representative || '';
-        elements.representative.disabled = userType === 'PAR';
-        elements.representative.classList.toggle('bg-light', userType === 'PAR');
-      }
+      if (elements.representative) elements.representative.value = schoolRecord.representative || '';
       if (elements.document) elements.document.value = schoolRecord.document || '';
 
       if (elements.country) {
@@ -2479,7 +2487,7 @@ function initSchoolTab() {
       event_id: schoolRecord.event_id,
       name: elements.name.value.trim(),
       username: schoolRecord.username,
-      user_type: String(schoolRecord.user_type || 'SCH').toUpperCase() === 'PAR' ? 'PAR' : 'SCH',
+      user_type: elements.userTypeIndividual?.checked ? 'PAR' : 'SCH',
       language: elements.language.value,
       email: schoolRecord.email,
       city: elements.city.value.trim(),

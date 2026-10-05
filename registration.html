@@ -2486,6 +2486,26 @@
         white-space: nowrap;
       }
     }
+    #schoolForm .school-user-type-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding-top: 0.35rem;
+    }
+    #schoolForm .school-user-type-option {
+      display: inline-flex;
+      min-width: 8.5rem;
+      min-height: 2.75rem;
+      flex: 1 1 auto;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border-radius: 0.65rem;
+      font-weight: 600;
+    }
+    #schoolForm .school-user-type-option i {
+      font-size: 1rem;
+    }
     @media (max-width: 991.98px) {
       .registration-dashboard-panel-wide {
         grid-column: span 1;
@@ -2858,20 +2878,18 @@
                 <div class="card-body p-4">
                   <form id="schoolForm" novalidate>
                     <fieldset class="border rounded-3 bg-light p-3 mb-4 d-inline-block">
-                      <legend class="float-none w-auto px-2 mb-0 fs-6 fw-semibold" data-i18n="field_user_type">Tipo de usuario</legend>
-                      <div class="d-flex flex-column flex-sm-row gap-3 pt-1">
-                        <div class="form-check">
-                          <input class="form-check-input" type="radio" name="schoolUserType" id="schoolUserTypeSchool" value="SCH" disabled>
-                          <label class="form-check-label" for="schoolUserTypeSchool" data-i18n="user_type_school">Escuela</label>
-                        </div>
-                        <div class="form-check">
-                          <input class="form-check-input" type="radio" name="schoolUserType" id="schoolUserTypeIndividual" value="PAR" disabled>
-                          <label class="form-check-label" for="schoolUserTypeIndividual" data-i18n="user_type_individual">Particular</label>
-                        </div>
-                      </div>
-                      <div class="small text-muted mt-2 d-flex align-items-baseline gap-1">
-                        <i class="bi bi-info-circle" aria-hidden="true"></i>
-                        <span data-i18n="school_user_type_change_notice">Si deseas modificar el tipo de usuario, solicítalo a través de nuestro soporte.</span>
+                      <legend id="schoolUserTypeLegend" class="float-none w-auto px-2 mb-0 fs-6 fw-semibold" data-i18n="field_user_type">Tipo de usuario</legend>
+                      <div class="school-user-type-options" role="group" aria-labelledby="schoolUserTypeLegend">
+                        <input class="btn-check" type="radio" name="schoolUserType" id="schoolUserTypeSchool" value="SCH" autocomplete="off">
+                        <label class="btn btn-outline-primary school-user-type-option" for="schoolUserTypeSchool">
+                          <i class="bi bi-building" aria-hidden="true"></i>
+                          <span data-i18n="user_type_school">Escuela</span>
+                        </label>
+                        <input class="btn-check" type="radio" name="schoolUserType" id="schoolUserTypeIndividual" value="PAR" autocomplete="off">
+                        <label class="btn btn-outline-primary school-user-type-option" for="schoolUserTypeIndividual">
+                          <i class="bi bi-person" aria-hidden="true"></i>
+                          <span data-i18n="user_type_individual">Particular</span>
+                        </label>
                       </div>
                     </fieldset>
 
