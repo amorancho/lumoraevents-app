@@ -2643,8 +2643,6 @@ function initParticipantsTab(role) {
     name: document.getElementById('participantName'),
     dob: document.getElementById('participantDob'),
     identificationDocument: document.getElementById('participantIdentificationDocument'),
-    identificationDocumentEditBtn: document.getElementById('participantIdentificationDocumentEditBtn'),
-    identificationDocumentEditHelp: document.getElementById('participantIdentificationDocumentEditHelp'),
     gender: document.getElementById('participantGender'),
     genderField: document.getElementById('participantGender')?.closest('.col-12'),
     country: document.getElementById('participantCountry'),
@@ -2660,35 +2658,6 @@ function initParticipantsTab(role) {
     : new Map();
 
   let participantCountrySelect = null;
-  let identificationDocumentOriginalValue = '';
-  let isEditingIdentificationDocument = false;
-
-  const setIdentificationDocumentEditState = ({ value = '', editable = true, showEditButton = false } = {}) => {
-    identificationDocumentOriginalValue = value;
-    isEditingIdentificationDocument = editable && Boolean(value);
-
-    if (elements.identificationDocument) {
-      elements.identificationDocument.value = value;
-      elements.identificationDocument.readOnly = !editable;
-      elements.identificationDocument.required = isEditingIdentificationDocument;
-      elements.identificationDocument.classList.toggle('bg-light', !editable);
-    }
-    elements.identificationDocumentEditBtn?.classList.toggle('d-none', !showEditButton);
-    elements.identificationDocumentEditHelp?.classList.toggle('d-none', !isEditingIdentificationDocument);
-  };
-
-  elements.identificationDocumentEditBtn?.addEventListener('click', () => {
-    isEditingIdentificationDocument = true;
-    if (elements.identificationDocument) {
-      elements.identificationDocument.value = '';
-      elements.identificationDocument.readOnly = false;
-      elements.identificationDocument.required = true;
-      elements.identificationDocument.classList.remove('bg-light');
-      elements.identificationDocument.focus();
-    }
-    elements.identificationDocumentEditBtn.classList.add('d-none');
-    elements.identificationDocumentEditHelp?.classList.remove('d-none');
-  });
 
   if (elements.country && Array.isArray(countries)) {
     countries.forEach(c => {
@@ -3539,7 +3508,7 @@ function initParticipantsTab(role) {
     if (elements.id) elements.id.value = '';
     if (elements.name) elements.name.value = '';
     if (elements.dob) elements.dob.value = '';
-    setIdentificationDocumentEditState();
+    if (elements.identificationDocument) elements.identificationDocument.value = '';
     if (elements.gender) elements.gender.value = '';
     setCountryValue(defaultCountry);
   };
@@ -3572,12 +3541,7 @@ function initParticipantsTab(role) {
         if (elements.id) elements.id.value = participant.id || '';
         if (elements.name) elements.name.value = participant.name || '';
         if (elements.dob) elements.dob.value = getDateOnlyValue(participant.date_of_birth);
-        const identificationDocument = participant.identification_document || '';
-        setIdentificationDocumentEditState({
-          value: identificationDocument,
-          editable: !identificationDocument,
-          showEditButton: Boolean(identificationDocument)
-        });
+        if (elements.identificationDocument) elements.identificationDocument.value = participant.identification_document || '';
         if (elements.gender) elements.gender.value = shouldShowGender ? (participant.gender || '') : '';
         setCountryValue(participant.country || '');
       }
@@ -4176,11 +4140,7 @@ function initParticipantsTab(role) {
       date_of_birth: elements.dob ? elements.dob.value : '',
       ...(showIdentificationDocument
         ? {
-          identification_document: elements.identificationDocument
-            ? ((isEditingIdentificationDocument || !identificationDocumentOriginalValue)
-              ? elements.identificationDocument.value.trim()
-              : identificationDocumentOriginalValue)
-            : ''
+          identification_document: elements.identificationDocument ? elements.identificationDocument.value.trim() : ''
         }
         : {}),
       country: elements.country ? elements.country.value : '',

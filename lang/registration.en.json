@@ -260,8 +260,6 @@
   "registration_participants_gender": "Gender",
   "registration_participants_birth": "Date of birth",
   "registration_participants_identification_document": "Identification document",
-  "registration_participants_identification_document_edit": "Edit",
-  "registration_participants_identification_document_edit_help": "To change it, enter the complete identification document.",
   "registration_participants_age": "Age",
   "registration_participants_minor": "MINOR",
   "registration_participants_age_tooltip": "Age is calculated using the event start date ({date}).",

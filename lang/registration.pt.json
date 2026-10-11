@@ -202,8 +202,6 @@
   "registration_participants_gender": "Género",
   "registration_participants_birth": "Data de nascimento",
   "registration_participants_identification_document": "Documento de identificação",
-  "registration_participants_identification_document_edit": "Modificar",
-  "registration_participants_identification_document_edit_help": "Para o alterar, introduza o documento de identificação completo.",
   "registration_participants_age": "Idade",
   "registration_participants_minor": "MENOR",
   "registration_participants_age_tooltip": "A idade é calculada com base na data de início do evento ({date}).",
