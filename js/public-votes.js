@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await ensureTranslationsReady();
 
   const rawEventCode = (new URLSearchParams(window.location.search).get('eventId') || '').trim();
+  setPublicVotesHomeLinks(rawEventCode);
   if (!rawEventCode) {
     showPublicVotesError(t('invalid_event', 'The event identifier is missing or invalid.'), false);
     return;
@@ -25,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (!currentEvent?.id) return;
   publicVotesState.eventId = currentEvent.id;
   publicVotesState.eventCode = currentEvent.code || rawEventCode;
+  setPublicVotesHomeLinks(publicVotesState.eventCode);
   if (!ensureAudienceVotingEnabled()) return;
   document.getElementById('retryPublicVotesBtn').addEventListener('click', () => loadPublicVotes({ initial: true }));
   publicVotesState.countdownTimer = window.setInterval(updatePublicVotesCountdowns, 1000);
@@ -32,6 +34,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 window.addEventListener('beforeunload', stopPublicVotesPolling);
+
+function setPublicVotesHomeLinks(eventCode) {
+  if (!eventCode) return;
+  const homeUrl = `home.html?eventId=${encodeURIComponent(eventCode)}`;
+  document.querySelectorAll('[data-event-home-link]').forEach(link => { link.href = homeUrl; });
+}
 
 async function fetchPublicVotes() {
   const response = await fetch(`${API_BASE_URL}/api/public/audience-votes?event_id=${encodeURIComponent(publicVotesState.eventId)}`, {
