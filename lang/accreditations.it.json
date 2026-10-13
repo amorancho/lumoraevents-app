@@ -1,6 +1,6 @@
 {
   "title": "Accreditamenti", "eyebrow": "Operazioni evento", "intro": "Gestisci la consegna degli accrediti a partecipanti, staff e ospiti.",
-  "add_person": "Aggiungi persona", "edit_person": "Modifica persona", "import": "Importa", "coming_soon": "Prossimamente",
+  "add_person": "Aggiungi persona", "edit_person": "Modifica persona", "import": "Importa", "import_from_registrations": "Importa dalle iscrizioni", "import_from_excel": "Importa da Excel", "coming_soon": "Prossimamente",
   "summary_label": "Riepilogo accrediti", "total": "Totale", "accredited": "Accreditati", "pending": "In attesa",
   "accredited_status": "Accredito consegnato", "pending_status": "In attesa",
   "participants": "Partecipanti", "participant": "Partecipante", "staff": "Staff", "guests": "Ospiti", "guest": "Ospite",

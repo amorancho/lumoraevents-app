@@ -1,6 +1,6 @@
 {
   "title": "Acreditações", "eyebrow": "Operações do evento", "intro": "Gere a entrega de acreditações a participantes, equipa e convidados.",
-  "add_person": "Adicionar pessoa", "edit_person": "Editar pessoa", "import": "Importar", "coming_soon": "Em breve",
+  "add_person": "Adicionar pessoa", "edit_person": "Editar pessoa", "import": "Importar", "import_from_registrations": "Importar das Inscrições", "import_from_excel": "Importar do Excel", "coming_soon": "Em breve",
   "summary_label": "Resumo das acreditações", "total": "Total", "accredited": "Acreditados", "pending": "Pendentes",
   "accredited_status": "Acreditação entregue", "pending_status": "Pendente",
   "participants": "Participantes", "participant": "Participante", "staff": "Equipa", "guests": "Convidados", "guest": "Convidado",

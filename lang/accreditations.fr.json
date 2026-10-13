@@ -1,6 +1,6 @@
 {
   "title": "Accréditations", "eyebrow": "Opérations de l'événement", "intro": "Gérez la remise des accréditations aux participants, à l'équipe et aux invités.",
-  "add_person": "Ajouter une personne", "edit_person": "Modifier la personne", "import": "Importer", "coming_soon": "Bientôt disponible",
+  "add_person": "Ajouter une personne", "edit_person": "Modifier la personne", "import": "Importer", "import_from_registrations": "Importer depuis les inscriptions", "import_from_excel": "Importer depuis Excel", "coming_soon": "Bientôt disponible",
   "summary_label": "Résumé des accréditations", "total": "Total", "accredited": "Accrédités", "pending": "En attente",
   "accredited_status": "Accréditation remise", "pending_status": "En attente",
   "participants": "Participants", "participant": "Participant", "staff": "Équipe", "guests": "Invités", "guest": "Invité",

@@ -5,6 +5,8 @@
   "add_person": "Add person",
   "edit_person": "Edit person",
   "import": "Import",
+  "import_from_registrations": "Import from Registrations",
+  "import_from_excel": "Import from Excel",
   "coming_soon": "Coming soon",
   "summary_label": "Accreditation summary",
   "total": "Total",

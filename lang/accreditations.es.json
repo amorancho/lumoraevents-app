@@ -5,6 +5,8 @@
   "add_person": "Añadir persona",
   "edit_person": "Editar persona",
   "import": "Importar",
+  "import_from_registrations": "Importar de Inscripciones",
+  "import_from_excel": "Importar de Excel",
   "coming_soon": "Próximamente",
   "summary_label": "Resumen de acreditaciones",
   "total": "Total",
