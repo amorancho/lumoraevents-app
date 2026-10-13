@@ -157,14 +157,25 @@ function renderAccreditationGroupDetail() {
 
 function renderAccreditationSummary(summary) {
   if (!summary) return;
-  for (const [key, id] of Object.entries({ total: 'summaryTotal', accredited: 'summaryAccredited', pending: 'summaryPending', participants: 'summaryParticipants', staff: 'summaryStaff', guests: 'summaryGuests' })) {
+  for (const [key, id] of Object.entries({ total: 'summaryTotal', accredited: 'summaryAccredited', pending: 'summaryPending' })) {
     accredEl(id).textContent = Number(summary[key]) || 0;
   }
+
+  const typeIds = { participants: 'Participants', staff: 'Staff', guests: 'Guests' };
+  const statusIds = { total: 'Total', accredited: 'Accredited', pending: 'Pending' };
+  Object.entries(statusIds).forEach(([status, statusSuffix]) => {
+    Object.entries(typeIds).forEach(([type, typeSuffix]) => {
+      accredEl(`summary${statusSuffix}${typeSuffix}`).textContent = Number(summary.by_status?.[status]?.[type]) || 0;
+    });
+  });
 }
 
 async function loadAccreditationSummary() {
-  try { renderAccreditationSummary(await accreditationApi('/summary')); }
-  catch (error) { accreditationFeedback(error.message); }
+  try {
+    renderAccreditationSummary(await accreditationApi('/summary'));
+  } catch (error) {
+    accreditationFeedback(error.message);
+  }
 }
 
 async function loadAccreditationGroups() {
