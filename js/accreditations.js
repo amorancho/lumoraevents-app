@@ -219,6 +219,35 @@ async function loadAccreditationGroupDetail(id) {
   }
 }
 
+async function importAccreditationRegistrations() {
+  if (!accreditationState.canManage) return;
+  const button = accredEl('importFromRegistrationsBtn');
+  if (button.disabled) return;
+
+  accreditationFeedback('');
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
+  try {
+    const result = await accreditationApi('/import-registration', { method: 'POST' });
+    if (result?.success !== true) {
+      throw new Error(result?.error || accredText('request_error', 'Could not complete the request.'));
+    }
+    await Promise.all([
+      loadAccreditationPeople(),
+      loadAccreditationGroups(),
+      loadAccreditationSummary(),
+      accreditationState.groupDetail
+        ? loadAccreditationGroupDetail(accreditationState.groupDetail.id)
+        : Promise.resolve()
+    ]);
+  } catch (error) {
+    accreditationFeedback(error.message);
+  } finally {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+  }
+}
+
 function showAccreditationView(view) {
   accreditationState.view = view;
   const groups = view === 'groups';
@@ -512,6 +541,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (event.target.closest('#saveNotesBtn')) saveAccreditationNotes();
   });
   accredEl('addPersonBtn').addEventListener('click', () => { if (accreditationState.canManage) openAccreditationForm('create'); });
+  accredEl('importFromRegistrationsBtn').addEventListener('click', importAccreditationRegistrations);
   accredEl('editPersonBtn').addEventListener('click', () => { if (accreditationState.canManage) openAccreditationForm('edit'); });
   accredEl('deletePersonBtn').addEventListener('click', deleteAccreditationPerson);
   accredEl('personForm').addEventListener('submit', saveAccreditationPerson);
