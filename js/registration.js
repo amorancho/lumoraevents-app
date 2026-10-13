@@ -7431,6 +7431,8 @@ function initOrganizerRegistrationsTab() {
   const membersElements = {
     table: document.getElementById('registrationMembersTable'),
     count: document.getElementById('registrationMembersCount'),
+    outOfRangeInfo: document.getElementById('registrationMembersOutOfRangeInfo'),
+    belowRangeNote: document.getElementById('registrationMembersBelowRangeNote'),
     empty: document.getElementById('registrationMembersEmpty'),
     ruleInfo: document.getElementById('registrationMembersRuleInfo'),
     choreo: document.getElementById('registrationMembersChoreo'),
@@ -7980,9 +7982,44 @@ function initOrganizerRegistrationsTab() {
     }
   };
 
-  const renderMembersTable = (members) => {
+  const renderMembersTable = (members, category = null) => {
     if (!membersElements.table) return;
     membersElements.table.innerHTML = '';
+
+    const minYears = normalizeNumber(category?.min_years);
+    const maxYears = normalizeNumber(category?.max_years);
+    const hasAgeRange = minYears !== null || maxYears !== null;
+    const aboveRangeCount = hasAgeRange
+      ? members.filter(member => {
+        const age = calculateAge(getDateOnlyValue(member?.date_of_birth), getRegistrationAgeReferenceDate());
+        return age !== '-' && maxYears !== null && age > maxYears;
+      }).length
+      : 0;
+    const allowedOutOfRange = normalizeNumber(category?.max_outofrange) ?? 0;
+
+    if (membersElements.outOfRangeInfo) {
+      if (!hasAgeRange) {
+        membersElements.outOfRangeInfo.textContent = '';
+        membersElements.outOfRangeInfo.classList.add('d-none');
+        membersElements.outOfRangeInfo.classList.remove('text-danger', 'fw-semibold', 'text-warning-emphasis');
+        membersElements.outOfRangeInfo.classList.add('text-muted');
+      } else {
+        membersElements.outOfRangeInfo.textContent = formatTemplate(
+          t('registration_competitions_members_outofrange_count', 'Por encima del rango: {count}'),
+          { count: aboveRangeCount }
+        );
+        membersElements.outOfRangeInfo.classList.remove('d-none', 'text-muted', 'text-warning-emphasis', 'text-danger', 'fw-semibold');
+        if (aboveRangeCount > allowedOutOfRange) {
+          membersElements.outOfRangeInfo.classList.add('text-danger', 'fw-semibold');
+        } else if (aboveRangeCount > 0) {
+          membersElements.outOfRangeInfo.classList.add('text-warning-emphasis');
+        } else {
+          membersElements.outOfRangeInfo.classList.add('text-muted');
+        }
+      }
+    }
+    membersElements.belowRangeNote?.classList.toggle('d-none', minYears === null);
+    membersElements.belowRangeNote?.classList.toggle('d-flex', minYears !== null);
 
     if (membersElements.count) {
       membersElements.count.textContent = `${members.length}`;
@@ -7998,6 +8035,11 @@ function initOrganizerRegistrationsTab() {
     members.forEach(member => {
       const row = document.createElement('tr');
       row.dataset.id = member.id;
+      const memberAge = calculateAge(getDateOnlyValue(member?.date_of_birth), getRegistrationAgeReferenceDate());
+      const isBelowRange = hasAgeRange && minYears !== null && memberAge !== '-' && memberAge < minYears;
+      const isAboveRange = hasAgeRange && maxYears !== null && memberAge !== '-' && memberAge > maxYears;
+      if (isAboveRange) row.classList.add('table-warning');
+      else if (isBelowRange) row.classList.add('table-info');
 
       const nameCell = document.createElement('td');
       nameCell.textContent = member.name || '';
@@ -8015,10 +8057,9 @@ function initOrganizerRegistrationsTab() {
       row.appendChild(dobCell);
 
       const ageCell = document.createElement('td');
-      appendRegistrationAgeWithMinorBadge(
-        ageCell,
-        calculateAge(dobValue, getRegistrationAgeReferenceDate())
-      );
+      appendRegistrationAgeWithMinorBadge(ageCell, memberAge);
+      if (isAboveRange) ageCell.classList.add('fw-semibold', 'text-warning-emphasis');
+      else if (isBelowRange) ageCell.classList.add('fw-semibold', 'text-info-emphasis');
       row.appendChild(ageCell);
 
       if (getEvent()?.hasAuthorizations === true) {
@@ -8159,7 +8200,7 @@ function initOrganizerRegistrationsTab() {
 
     membersModalEl.dataset.viewOnly = 'true';
     setMembersViewMode(true);
-    renderMembersTable(members);
+    renderMembersTable(members, category);
     membersModal.show();
   };
 
