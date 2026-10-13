@@ -31,11 +31,7 @@
 .voting-reserve-info { margin-bottom: 1rem; text-align: left; font-size: .8rem; }
 
 .voting-dancers { min-width: 0; }
-.voting-table-toolbar { display: flex; justify-content: flex-end; margin-bottom: .65rem; }
-.voting-toggle-btn { min-height: 38px; padding: .35rem .65rem; color: var(--lm-blue); font-size: .74rem; }
-.voting-toggle-btn[aria-pressed="true"] { border-color: #287a91; color: var(--lm-cyan); background: #102f3a; }
 .voting-table-scroll { max-width: 100%; overflow-x: auto; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-lg); background: var(--lm-surface); box-shadow: var(--lm-shadow-sm); }
-.dancers-table-collapsed .voting-table-scroll { max-width: 850px; margin-inline: auto; }
 .voting-table { min-width: 650px; font-size: .78rem; }
 .voting-table > :not(caption) > * > * { padding: .72rem .6rem; vertical-align: middle; }
 .voting-table tbody tr:nth-child(even) > * { background: var(--lm-bg-elevated); }
@@ -155,7 +151,6 @@
   .voting-content { width: min(100% - 1rem, 600px); }
   .voting-picker .lm-rich-select-tags .lm-badge, .voting-picker .lm-rich-select-tags .lm-status { padding: .25rem .43rem; font-size: .65rem; }
   .voting-table-scroll { overflow: visible; border: 0; background: transparent; box-shadow: none; }
-  .dancers-table-collapsed .voting-table-scroll { max-width: none; }
   .voting-table, .voting-table tbody, .voting-table tr { display: block; width: 100%; min-width: 0; }
   .voting-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
   .voting-table tbody { display: grid; gap: .7rem; }
@@ -176,7 +171,6 @@
   .voting-actions, .feedback-actions { justify-content: flex-start; }
   .voting-cell-actions:empty { display: none !important; }
   .voting-cell-actions .voting-action-btn { min-width: 0; max-width: 100%; min-height: 44px; line-height: 1.2; text-align: center; white-space: normal; }
-  .voting-toggle-btn { min-height: 44px; }
   .voting-feedback-btn { width: 44px; height: 44px; }
   .voting-table tbody tr.voting-dancer-row > td.voting-cell-feedback { grid-column: 2; align-self: stretch; padding-top: .65rem; border-top: 1px solid var(--lm-border); }
   .voting-table tbody tr.voting-dancer-row > td.voting-cell-feedback.is-unavailable { display: none; }

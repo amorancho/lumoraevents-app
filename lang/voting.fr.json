@@ -46,8 +46,6 @@
   "audio_feedback_constraints_error": "Le navigateur n'a pas pu initialiser l'enregistrement audio avec cet appareil.",
   "audio_feedback_microphone_error": "Impossible d'accéder au microphone.",
   "audio_feedback_delete_confirm": "Voulez-vous vraiment supprimer ce feedback audio ?",
-  "show_scores_table": "Afficher les scores",
-  "hide_scores_table": "Masquer les scores",
   "total": "Total",
   "details": "Détails",
   "details_change_votes": "Details/modifier les votes",

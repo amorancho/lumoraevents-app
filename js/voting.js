@@ -8,9 +8,6 @@ const AUDIO_FEEDBACK_HELP_URLS = {
 
 let criteriaList = [];
 
-let criteriaColumnsVisible = false;
-const CRITERIA_COL_VIS_STORAGE_PREFIX = 'lumora.voting.criteriaColumnsVisible';
-
 let modal, criteriaContainer;
 let commentsModal, clearCommentsConfirmModal, commentsTextarea, saveCommentsBtn, clearCommentsBtn, confirmClearCommentsBtn;
 let commentsContext = { competitionId: null, dancerId: null };
@@ -96,25 +93,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   messageModalCloseBtn?.classList.remove('btn', 'btn-primary');
   messageModalCloseBtn?.classList.add('lm-btn', 'lm-btn-primary');
 
-  criteriaColumnsVisible = loadCriteriaColumnsVisibility();
-
   competitionSelect = document.getElementById('competitionSelect');
   competitionInfo = document.getElementById('competitionInfo');
   dancersTableContainer = document.getElementById('dancersTableContainer');
   refreshBtn = document.getElementById('refreshBtn');
   previousCompetitionBtn = document.getElementById('previousCompetitionBtn');
   nextCompetitionBtn = document.getElementById('nextCompetitionBtn');
-  const toggleCriteriaBtn = document.getElementById('toggleCriteriaBtn');
-
   refreshBtn.disabled = true;
   if (previousCompetitionBtn) previousCompetitionBtn.disabled = true;
   if (nextCompetitionBtn) nextCompetitionBtn.disabled = true;
-
-  if (toggleCriteriaBtn) {
-    toggleCriteriaBtn.addEventListener('click', () => {
-      setCriteriaColumnsVisibility(!criteriaColumnsVisible, { persist: true });
-    });
-  }
 
   await ensureTranslationsReady();
 
@@ -142,8 +129,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   await reloadCompetitionsAndSelectFirstOpen();
 
-  syncCriteriaToggleButtonState();
-
   const modalEl = document.getElementById('detailsModal');
   modal = new bootstrap.Modal(modalEl);
   criteriaContainer = document.getElementById('criteriaContainer');
@@ -153,64 +138,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPenaltyAssignmentModal();
 
 });
-
-function getCriteriaColumnsVisibilityStorageKey() {
-  const eventId = typeof getEvent === 'function' ? (getEvent()?.id ?? 'no_event') : 'no_event';
-  const userId = typeof getUserId === 'function' ? (getUserId() ?? 'no_user') : 'no_user';
-  return `${CRITERIA_COL_VIS_STORAGE_PREFIX}:${eventId}:${userId}`;
-}
-
-function loadCriteriaColumnsVisibility() {
-  try {
-    const raw = localStorage.getItem(getCriteriaColumnsVisibilityStorageKey());
-    if (raw === null) return true;
-    return raw === 'true';
-  } catch {
-    return true;
-  }
-}
-
-function saveCriteriaColumnsVisibility(visible) {
-  try {
-    localStorage.setItem(getCriteriaColumnsVisibilityStorageKey(), String(Boolean(visible)));
-  } catch {
-    // ignore
-  }
-}
-
-function syncCriteriaToggleButtonState() {
-  const toggleCriteriaBtn = document.getElementById('toggleCriteriaBtn');
-  if (toggleCriteriaBtn) {
-    toggleCriteriaBtn.disabled = !(Array.isArray(criteriaList) && criteriaList.length > 0);
-  }
-  setCriteriaColumnsVisibility(criteriaColumnsVisible, { persist: false });
-  syncCommentsColumnPresentation();
-}
-
-function setCriteriaColumnsVisibility(visible, { persist = false } = {}) {
-  criteriaColumnsVisible = Boolean(visible);
-
-  const dancersTableContainer = document.getElementById('dancersTableContainer');
-  if (dancersTableContainer) {
-    dancersTableContainer.classList.toggle('dancers-table-expanded', criteriaColumnsVisible);
-    dancersTableContainer.classList.toggle('dancers-table-collapsed', !criteriaColumnsVisible);
-  }
-
-  document.querySelectorAll('#dancersTableContainer .criteria-col').forEach(el => {
-    el.classList.toggle('d-none', !criteriaColumnsVisible);
-  });
-
-  syncCommentsColumnPresentation();
-
-  const toggleCriteriaBtnText = document.getElementById('toggleCriteriaBtnText');
-  const toggleCriteriaBtn = document.getElementById('toggleCriteriaBtn');
-  const labelKey = criteriaColumnsVisible ? 'hide_scores_table' : 'show_scores_table';
-  const fallback = criteriaColumnsVisible ? 'Hide scores' : 'Show scores';
-  if (toggleCriteriaBtnText) toggleCriteriaBtnText.textContent = t(labelKey, fallback);
-  if (toggleCriteriaBtn) toggleCriteriaBtn.setAttribute('aria-pressed', criteriaColumnsVisible ? 'true' : 'false');
-
-  if (persist) saveCriteriaColumnsVisibility(criteriaColumnsVisible);
-}
 
 function shouldShowJudgeFeedbackColumn() {
   return Boolean(getEvent()?.JudgeFeedback != 'NO');
@@ -1085,7 +1012,6 @@ async function loadCompetitionAndDancers() {
   criteriaList = loadedCriteria
     .slice()
     .sort((a, b) => (Number(a.position) || 0) - (Number(b.position) || 0));
-  syncCriteriaToggleButtonState();
   renderCompetitionInfo(data.competition);
 
   // Si data.competition.judge_reserve es true, mostrar texto indicando que es juez reserva
@@ -1909,8 +1835,6 @@ async function fetchVoting(category, style) {
 function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
   renderDancersTableHeader();
   dancersTableBody.innerHTML = ''; // limpiar
-  syncCriteriaToggleButtonState();
-
   const allowCompletedVoteChanges = canJudgeChangeVotes();
   const canShowPenaltiesButton = getEvent()?.status !== 'finished' && Boolean(isJudgeHead);
   const selectedCompetitionId = getSelectedCompetitionId();
@@ -2116,7 +2040,7 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
     dancersTableBody.appendChild(tr);
   });
 
-  setCriteriaColumnsVisibility(criteriaColumnsVisible, { persist: false });
+  syncCommentsColumnPresentation();
 }
 
 function renderDancersTableHeader() {

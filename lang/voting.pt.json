@@ -46,8 +46,6 @@
   "audio_feedback_constraints_error": "O navegador nao conseguiu iniciar a gravacao de audio com este dispositivo.",
   "audio_feedback_microphone_error": "Não foi possível aceder ao microfone.",
   "audio_feedback_delete_confirm": "Tens a certeza de que queres eliminar este feedback por audio?",
-  "show_scores_table": "Mostrar pontuações",
-  "hide_scores_table": "Ocultar pontuações",
   "total": "Total",
   "details": "Detalhes",
   "details_change_votes": "Detalhes/alterar votos",
