@@ -38,7 +38,7 @@
             </div>
             <div class="card-body p-0">
               <div class="tracking-sidebar-filters">
-                <div class="row g-1">
+                <div class="row g-1" id="trackingSidebarFilterRows">
                   <div class="col-4">
                     <select class="form-select form-select-sm" id="trackingCategoryFilter" aria-label="Categoría" title="Categoría" data-i18n-aria-label="category" data-i18n-title="category">
                       <option value="">Todas Categorías</option>
@@ -47,6 +47,11 @@
                   <div class="col-4">
                     <select class="form-select form-select-sm" id="trackingStyleFilter" aria-label="Estilo" title="Estilo" data-i18n-aria-label="style" data-i18n-title="style">
                       <option value="">Todos Estilos</option>
+                    </select>
+                  </div>
+                  <div class="col-4 d-none" id="trackingScenarioFilterColumn">
+                    <select class="form-select form-select-sm" id="trackingScenarioFilter" aria-label="Escenario" title="Escenario" data-i18n-aria-label="scenario" data-i18n-title="scenario">
+                      <option value="">Todos los escenarios</option>
                     </select>
                   </div>
                   <div class="col-4">

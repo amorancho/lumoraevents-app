@@ -22,6 +22,7 @@ const trackingUiState = {
   sidebarFilters: {
     category: '',
     style: '',
+    scenario: '',
     status: ''
   }
 };
@@ -81,6 +82,7 @@ function normalizeTrackingSidebarFilters(filters) {
   return {
     category: typeof filters?.category === 'string' ? filters.category : '',
     style: typeof filters?.style === 'string' ? filters.style : '',
+    scenario: typeof filters?.scenario === 'string' ? filters.scenario : '',
     status: typeof filters?.status === 'string' ? filters.status : ''
   };
 }
@@ -2532,6 +2534,7 @@ function getSidebarCompetitionStatusKey(comp) {
 function syncSidebarFilterLabels() {
   const categorySelect = document.getElementById('trackingCategoryFilter');
   const styleSelect = document.getElementById('trackingStyleFilter');
+  const scenarioSelect = document.getElementById('trackingScenarioFilter');
   const statusSelect = document.getElementById('trackingStatusFilter');
 
   if (categorySelect) {
@@ -2548,6 +2551,11 @@ function syncSidebarFilterLabels() {
     const label = t('status', 'Estado');
     statusSelect.setAttribute('aria-label', label);
     statusSelect.setAttribute('title', label);
+  }
+  if (scenarioSelect) {
+    const label = t('scenario', 'Escenario');
+    scenarioSelect.setAttribute('aria-label', label);
+    scenarioSelect.setAttribute('title', label);
   }
 }
 
@@ -2615,8 +2623,15 @@ function getDistinctSidebarStatusOptions(list) {
 function renderSidebarFilters(competitions = trackingUiState.sidebarCompetitions) {
   const categorySelect = document.getElementById('trackingCategoryFilter');
   const styleSelect = document.getElementById('trackingStyleFilter');
+  const scenarioSelect = document.getElementById('trackingScenarioFilter');
   const statusSelect = document.getElementById('trackingStatusFilter');
+  const scenarioColumn = document.getElementById('trackingScenarioFilterColumn');
+  const filterRows = document.getElementById('trackingSidebarFilterRows');
   if (!categorySelect || !styleSelect || !statusSelect) return;
+
+  const showScenario = shouldShowTrackingScenario();
+  scenarioColumn?.classList.toggle('d-none', !showScenario);
+  filterRows?.classList.toggle('tracking-sidebar-filters--scenarios', showScenario);
 
   syncSidebarFilterLabels();
 
@@ -2631,6 +2646,11 @@ function renderSidebarFilters(competitions = trackingUiState.sidebarCompetitions
     getSidebarCompetitionStyleLabel
   );
   const statuses = getDistinctSidebarStatusOptions(competitions);
+  const scenarios = getDistinctSidebarOptions(
+    competitions,
+    comp => String(comp?.scenario ?? '').trim(),
+    comp => String(comp?.scenario ?? '').trim()
+  );
   const statusFilterOptions = [
     {
       value: SIDEBAR_STATUS_FILTER_NOT_FINISHED,
@@ -2641,13 +2661,16 @@ function renderSidebarFilters(competitions = trackingUiState.sidebarCompetitions
   const allCategoriesLabel = t('tracking_filters_all_categories', 'Todas Categorías');
   const allStylesLabel = t('tracking_filters_all_styles', 'Todos Estilos');
   const allStatusesLabel = t('tracking_filters_all_statuses', 'Todos Estados');
+  const allScenariosLabel = t('tracking_filters_all_scenarios', 'Todos los escenarios');
 
   populateSidebarFilterSelect(categorySelect, categories, trackingUiState.sidebarFilters.category, allCategoriesLabel);
   populateSidebarFilterSelect(styleSelect, styles, trackingUiState.sidebarFilters.style, allStylesLabel);
+  populateSidebarFilterSelect(scenarioSelect, scenarios, trackingUiState.sidebarFilters.scenario, allScenariosLabel);
   populateSidebarFilterSelect(statusSelect, statusFilterOptions, trackingUiState.sidebarFilters.status, allStatusesLabel);
 
   trackingUiState.sidebarFilters.category = categorySelect.value || '';
   trackingUiState.sidebarFilters.style = styleSelect.value || '';
+  trackingUiState.sidebarFilters.scenario = showScenario ? (scenarioSelect?.value || '') : '';
   trackingUiState.sidebarFilters.status = statusSelect.value || '';
   saveTrackingSidebarFilters();
 }
@@ -2655,15 +2678,17 @@ function renderSidebarFilters(competitions = trackingUiState.sidebarCompetitions
 function bindSidebarFilters() {
   const categorySelect = document.getElementById('trackingCategoryFilter');
   const styleSelect = document.getElementById('trackingStyleFilter');
+  const scenarioSelect = document.getElementById('trackingScenarioFilter');
   const statusSelect = document.getElementById('trackingStatusFilter');
   if (!categorySelect || !styleSelect || !statusSelect) return;
 
   syncSidebarFilterLabels();
 
-  [categorySelect, styleSelect, statusSelect].forEach(select => {
+  [categorySelect, styleSelect, scenarioSelect, statusSelect].filter(Boolean).forEach(select => {
     select.addEventListener('change', () => {
       trackingUiState.sidebarFilters.category = categorySelect.value || '';
       trackingUiState.sidebarFilters.style = styleSelect.value || '';
+      trackingUiState.sidebarFilters.scenario = shouldShowTrackingScenario() ? (scenarioSelect?.value || '') : '';
       trackingUiState.sidebarFilters.status = statusSelect.value || '';
       saveTrackingSidebarFilters();
       renderCompetitionSidebar();
@@ -2676,6 +2701,7 @@ function getFilteredSidebarCompetitions(competitions = trackingUiState.sidebarCo
   return (Array.isArray(competitions) ? competitions : []).filter(comp => {
     if (filters.category && getSidebarCompetitionCategoryKey(comp) !== filters.category) return false;
     if (filters.style && getSidebarCompetitionStyleKey(comp) !== filters.style) return false;
+    if (shouldShowTrackingScenario() && filters.scenario && String(comp?.scenario ?? '').trim() !== filters.scenario) return false;
     if (filters.status) {
       const competitionStatus = getSidebarCompetitionStatusKey(comp);
       if (filters.status === SIDEBAR_STATUS_FILTER_NOT_FINISHED) {

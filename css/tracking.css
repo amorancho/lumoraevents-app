@@ -972,6 +972,8 @@
 .tracking-sidebar-filters { padding: .7rem; border-bottom: 1px solid var(--lm-border); background: var(--lm-bg-elevated); }
 .tracking-sidebar-filters .row { --bs-gutter-x: .4rem; --bs-gutter-y: .4rem; }
 .tracking-sidebar-filters .col-4 { min-width: 0; }
+.tracking-sidebar-filters--scenarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tracking-sidebar-filters--scenarios .col-4 { width: auto; }
 .tracking-main .form-select, .tracking-modal .form-select, .tracking-modal .form-control { min-width: 0; min-height: 40px; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-sm); color: var(--lm-text); background-color: var(--lm-surface); color-scheme: dark; font-size: .78rem; }
 .tracking-main .form-select, .tracking-modal .form-select { --bs-form-select-bg-img: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23b6c7da' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e"); }
 .tracking-main .form-select:focus, .tracking-modal .form-select:focus, .tracking-modal .form-control:focus { border-color: var(--lm-cyan); color: var(--lm-text); background-color: var(--lm-surface-raised); box-shadow: 0 0 0 .2rem rgba(38, 215, 232, .14); }
@@ -1122,6 +1124,7 @@
   .tracking-sidebar-filters .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tracking-sidebar-filters .col-4 { width: auto; }
   .tracking-sidebar-filters .col-4:last-child { grid-column: 1 / -1; }
+  .tracking-sidebar-filters--scenarios .col-4:last-child { grid-column: auto; }
   #competitionsContainer .tracking-dancer-card__header { flex-wrap: wrap; }
 }
 
