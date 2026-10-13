@@ -139,7 +139,21 @@
   "event_info_loading_error": "Errore durante il caricamento della scheda evento",
   "event_info_saving_error": "Errore durante il salvataggio della scheda evento",
   "event_info_saved": "Scheda evento salvata correttamente",
-  "event_info_editor_unavailable": "L editor della scheda evento non e disponibile."
+  "event_info_editor_unavailable": "L editor della scheda evento non e disponibile.",
+  "staff_button": "Staff",
+  "staff_title": "Gestione dello staff",
+  "staff_name": "Nome",
+  "staff_username": "Nome utente",
+  "staff_password": "Password",
+  "staff_password_help": "Inserisci un codice numerico di 6 cifre.",
+  "staff_actions": "Azioni",
+  "staff_save": "Salva membro dello staff",
+  "staff_add": "Aggiungi staff",
+  "staff_empty": "Non ci sono ancora membri dello staff.",
+  "staff_request_error": "Impossibile completare la richiesta.",
+  "staff_edit": "Modifica",
+  "staff_delete": "Elimina",
+  "staff_delete_confirm": "Eliminare questo membro dello staff?"
 }
 
 

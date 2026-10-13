@@ -5,6 +5,8 @@
 .accreditations-page:not(.accreditations-page--manager) #organizationSidebarToggle { display: none !important; }
 .accreditations-page:not(.accreditations-page--manager) .lm-org-layout { display: block; max-width: 1240px; margin-inline: auto; }
 .accreditations-page:not(.accreditations-page--manager) .lm-org-main { width: 100%; }
+.accreditations-page:not(.accreditations-page--manager).accreditations-page--staff .lm-org-layout { width: 100%; max-width: none; margin-inline: 0; }
+.accreditations-page:not(.accreditations-page--manager).accreditations-page--staff .lm-org-main { width: 100%; max-width: none; }
 .accred-header-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
 .accred-header-actions .lm-btn { min-height: 42px; }
 .accred-header-actions .lm-btn:disabled { cursor: not-allowed; }
@@ -47,23 +49,25 @@
 .accred-empty strong { color: var(--lm-text); font-size: .95rem; }
 .accred-empty span { max-width: 25rem; color: var(--lm-text-muted); }
 .accred-person-list { display: grid; gap: .55rem; }
-.accred-person-card { display: grid; gap: .65rem; min-width: 0; padding: .8rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-bg-elevated); }
+.accred-person-card { display: grid; gap: .7rem; min-width: 0; padding: .8rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-bg-elevated); }
 .accred-person-card.is-accredited { border-color: #1e665d; background: #0b262a; }
-.accred-person-main { display: flex; align-items: flex-start; gap: .65rem; min-width: 0; }
+.accred-person-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-areas: "identity identity" "facts facts" "groups groups"; gap: .55rem .85rem; min-width: 0; }
+.accred-person-field { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; gap: .18rem; }
+.accred-person-field--identity { grid-area: identity; flex-direction: row; align-items: flex-start; gap: .55rem; }
+.accred-person-field--groups { grid-area: groups; }
+.accred-person-facts { display: grid; grid-area: facts; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; min-width: 0; }
+.accred-person-copy { display: grid; min-width: 0; gap: .2rem; }
 .accred-person-mark { display: grid; width: 2.3rem; height: 2.3rem; flex: 0 0 2.3rem; place-items: center; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-pill); color: var(--lm-text-soft); background: var(--lm-surface); font-size: 1rem; }
 .is-accredited .accred-person-mark { border-color: #197d68; color: var(--lm-green); background: #0b302e; }
 .accred-person-name { display: block; padding: 0; border: 0; color: var(--lm-text); background: transparent; font-size: .95rem; font-weight: 750; line-height: 1.25; text-align: left; overflow-wrap: anywhere; }
 .accred-person-name:hover { color: var(--lm-cyan); }
-.accred-person-copy { min-width: 0; }
-.accred-person-type { display: block; margin-top: .2rem; color: var(--lm-text-muted); font-size: .72rem; }
-.accred-person-details { display: grid; gap: .45rem; min-width: 0; }
-.accred-person-facts { display: flex; flex-wrap: wrap; gap: .35rem .9rem; }
-.accred-person-fact { display: inline-flex; align-items: baseline; gap: .3rem; min-width: 0; color: var(--lm-text); font-size: .73rem; overflow-wrap: anywhere; }
+.accred-person-type { color: var(--lm-text-muted); font-size: .72rem; }
+.accred-person-field > strong { min-width: 0; color: var(--lm-text); font-size: .73rem; font-weight: 650; overflow-wrap: anywhere; }
 .accred-person-fact-label { color: var(--lm-text-soft); font-size: .68rem; font-weight: 650; }
-.accred-person-fact strong { min-width: 0; font-weight: 650; overflow-wrap: anywhere; }
-.accred-person-groups { display: flex; flex-wrap: wrap; gap: .3rem; min-width: 0; }
+.accred-person-group-values { display: flex; min-width: 0; flex-wrap: wrap; align-content: flex-start; gap: .3rem; }
 .accred-group-chip { display: inline-flex; max-width: 100%; padding: .25rem .5rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-pill); color: var(--lm-text-muted); background: var(--lm-surface); font-size: .68rem; line-height: 1.2; overflow-wrap: anywhere; }
-.accred-note-chip { display: inline-flex; align-items: center; gap: .3rem; color: var(--lm-warning); font-size: .72rem; font-weight: 700; }
+.accred-note-indicator { display: inline-flex; width: 2rem; min-height: 2rem; flex: 0 0 2rem; align-items: center; justify-content: center; border: 1px solid #8c681e; border-radius: var(--lm-radius-sm); color: var(--lm-warning); background: #302817; }
+.accred-note-indicator i { font-size: .85rem; }
 .accred-person-meta { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .55rem; }
 .accred-person-status { display: inline-flex; align-items: center; gap: .35rem; color: var(--lm-text-muted); font-size: .76rem; font-weight: 700; }
 .is-accredited .accred-person-status { color: var(--lm-green); }
@@ -117,8 +121,10 @@
   .accred-controls { grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); align-items: start; }
   .accred-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .accred-filters label:last-child { grid-column: auto; }
-  .accred-person-card { grid-template-columns: minmax(155px, 1fr) minmax(220px, 1.35fr) minmax(190px, auto); align-items: center; gap: 1rem; }
-  .accred-person-meta { justify-content: flex-end; }
+  .accred-person-card { grid-template-columns: minmax(0, 1fr) minmax(190px, auto); align-items: center; gap: 1rem; }
+  .accred-person-grid { grid-column: 1; }
+  .accred-person-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: repeat(2, minmax(0, auto)); grid-template-areas: "identity facts groups" "identity facts groups"; }
+  .accred-person-meta { grid-column: 2; justify-content: flex-end; }
   .accred-group-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 1200px) {
@@ -142,6 +148,10 @@
   .accred-summary-breakdown > span { font-size: .56rem; }
   .accred-summary-breakdown b { font-size: .64rem; }
   .accred-form-grid, .accred-detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .accred-person-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto auto auto; grid-template-areas: "identity identity" "facts facts" "groups groups"; gap: .55rem .65rem; }
+  .accred-person-card { grid-template-columns: minmax(0, 1fr); }
+  .accred-person-grid, .accred-person-meta { grid-column: 1; }
+  .accred-person-meta { justify-content: space-between; }
   .accred-person-actions { width: 100%; }
   .accred-person-actions .accred-action { flex: 1 1 auto; }
 }

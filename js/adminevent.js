@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPosterModal();
   initExportEventModal();
   initStatusToggleModal();
+  initStaffManagement();
   initEventInfoModal();
   initTooltips();
 
@@ -386,6 +387,189 @@ function initStatusToggleModal() {
       toggleBtn.disabled = false;
     }
   });
+}
+
+const staffManagementState = { members: [], loading: false, saving: false };
+
+function initStaffManagement() {
+  const event = getEvent();
+  const openButton = document.getElementById('manageStaffBtn');
+  const modalEl = document.getElementById('staffModal');
+  const form = document.getElementById('staffForm');
+  if (!openButton || !modalEl || !form) return;
+
+  openButton.hidden = !event?.hasAccreditations;
+  if (!event?.hasAccreditations) return;
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  document.getElementById('addStaffBtn').addEventListener('click', () => openStaffForm());
+  document.getElementById('cancelStaffEditBtn').addEventListener('click', closeStaffForm);
+  document.getElementById('staffPassword').addEventListener('input', (event) => {
+    event.target.value = event.target.value.replace(/\D/g, '').slice(0, 6);
+  });
+  openButton.addEventListener('click', async () => {
+    modal.show();
+    await loadStaffMembers();
+  });
+  form.addEventListener('submit', saveStaffMember);
+  document.getElementById('staffTableBody').addEventListener('click', handleStaffAction);
+}
+
+function staffText(key, fallback) {
+  return t(key, fallback);
+}
+
+function staffEscape(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[char]);
+}
+
+function staffApi(path, options = {}) {
+  const eventId = getEvent()?.id;
+  if (!eventId) throw new Error(staffText('error_event_not_loaded', 'Event not loaded'));
+  return lumoraApiFetch(`/api/events/${eventId}/staff${path}`, options, {
+    auth: 'required', eventContext: 'current'
+  }).then(async (response) => {
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(data?.error || data?.message || staffText('staff_request_error', 'Could not complete the request.'));
+    return data;
+  });
+}
+
+function staffJson(method, body) {
+  return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+}
+
+function staffFeedback(message = '') {
+  const feedback = document.getElementById('staffFeedback');
+  feedback.textContent = message;
+  feedback.hidden = !message;
+}
+
+function renderStaffMembers() {
+  const body = document.getElementById('staffTableBody');
+  const wrap = document.getElementById('staffTableWrap');
+  const state = document.getElementById('staffListState');
+  body.innerHTML = '';
+  wrap.hidden = !staffManagementState.members.length;
+  state.textContent = staffManagementState.members.length
+    ? ''
+    : staffText('staff_empty', 'No staff members yet.');
+  body.innerHTML = staffManagementState.members.map((member) => {
+    const id = Number(member.id);
+    if (!Number.isSafeInteger(id) || id <= 0) return '';
+    return `<tr>
+      <td>${staffEscape(member.name || '—')}</td>
+      <td>${staffEscape(member.username || '—')}</td>
+      <td><code class="staff-password-value">${staffEscape(member.password ?? member.pin ?? '—')}</code></td>
+      <td class="staff-row-actions"><button type="button" class="btn btn-sm btn-outline-primary" data-staff-action="edit" data-staff-id="${id}">${staffEscape(staffText('staff_edit', 'Edit'))}</button><button type="button" class="btn btn-sm btn-outline-danger" data-staff-action="delete" data-staff-id="${id}">${staffEscape(staffText('staff_delete', 'Delete'))}</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadStaffMembers() {
+  if (staffManagementState.loading) return;
+  staffManagementState.loading = true;
+  staffFeedback('');
+  document.getElementById('staffTableWrap').hidden = true;
+  document.getElementById('staffListState').textContent = staffText('loading', 'Loading...');
+  try {
+    const result = await staffApi('');
+    staffManagementState.members = Array.isArray(result) ? result : (Array.isArray(result?.staff) ? result.staff : []);
+    renderStaffMembers();
+  } catch (error) {
+    staffManagementState.members = [];
+    renderStaffMembers();
+    staffFeedback(error.message);
+  } finally {
+    staffManagementState.loading = false;
+  }
+}
+
+function openStaffForm(member = null) {
+  const form = document.getElementById('staffForm');
+  form.reset();
+  document.getElementById('staffId').value = member?.id || '';
+  document.getElementById('staffName').value = member?.name || '';
+  document.getElementById('staffUsername').value = member?.username || '';
+  document.getElementById('staffPassword').value = member?.password ?? member?.pin ?? '';
+  form.hidden = false;
+  document.getElementById('staffName').focus();
+}
+
+function closeStaffForm() {
+  document.getElementById('staffForm').hidden = true;
+  document.getElementById('staffForm').reset();
+  document.getElementById('staffId').value = '';
+  staffFeedback('');
+}
+
+async function handleStaffAction(event) {
+  const button = event.target.closest('[data-staff-action]');
+  if (!button) return;
+  const id = Number(button.dataset.staffId);
+  if (!Number.isSafeInteger(id) || id <= 0) return;
+
+  if (button.dataset.staffAction === 'edit') {
+    staffFeedback('');
+    button.disabled = true;
+    try {
+      const member = await staffApi(`/${id}`);
+      openStaffForm(member);
+    } catch (error) {
+      staffFeedback(error.message);
+    } finally {
+      button.disabled = false;
+    }
+    return;
+  }
+
+  const member = staffManagementState.members.find((item) => Number(item.id) === id);
+  if (!window.confirm(`${staffText('staff_delete_confirm', 'Delete this staff member?')} ${member?.name || member?.username || ''}`)) return;
+  button.disabled = true;
+  staffFeedback('');
+  try {
+    await staffApi(`/${id}`, { method: 'DELETE' });
+    await loadStaffMembers();
+  } catch (error) {
+    staffFeedback(error.message);
+    button.disabled = false;
+  }
+}
+
+async function saveStaffMember(event) {
+  event.preventDefault();
+  if (staffManagementState.saving) return;
+  const form = event.currentTarget;
+  const passwordInput = document.getElementById('staffPassword');
+  if (!form.reportValidity() || !/^[1-9]\d{5}$/.test(passwordInput.value)) {
+    passwordInput.setCustomValidity(staffText('staff_password_help', 'Enter a 6-digit numeric code.'));
+    passwordInput.reportValidity();
+    passwordInput.addEventListener('input', () => passwordInput.setCustomValidity(''), { once: true });
+    return;
+  }
+
+  const id = Number(document.getElementById('staffId').value);
+  const payload = {
+    name: document.getElementById('staffName').value.trim(),
+    username: document.getElementById('staffUsername').value.trim(),
+    password: Number(passwordInput.value)
+  };
+  const saveButton = document.getElementById('saveStaffBtn');
+  staffManagementState.saving = true;
+  saveButton.disabled = true;
+  staffFeedback('');
+  try {
+    await staffApi(id ? `/${id}` : '', staffJson(id ? 'PUT' : 'POST', payload));
+    closeStaffForm();
+    await loadStaffMembers();
+  } catch (error) {
+    staffFeedback(error.message);
+  } finally {
+    staffManagementState.saving = false;
+    saveButton.disabled = false;
+  }
 }
 
 function updateEventStatusUI(status) {

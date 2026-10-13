@@ -74,6 +74,16 @@
 .adminevent-modal .form-check-label { font-size: .82rem; }
 .adminevent-modal #eventStatusModalDetails { padding: .8rem; border: 1px solid #735a2d; border-radius: var(--lm-radius-sm); color: #ffe2a5 !important; background: #302817; }
 .adminevent-modal #eventStatusModalDetails li + li { margin-top: .4rem; }
+.staff-form { padding: .9rem; margin-bottom: 1rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-surface); }
+.staff-form .form-control:focus-visible { outline: 0; outline-offset: 0; }
+.staff-form-actions { display: flex; justify-content: flex-end; gap: .55rem; margin-top: .9rem; }
+.staff-list-state { margin: 0; color: var(--lm-text-muted); font-size: .82rem; }
+.staff-table { margin-bottom: 0; color: var(--lm-text); --bs-table-color: var(--lm-text); --bs-table-bg: transparent; --bs-table-border-color: var(--lm-border); --bs-table-hover-color: var(--lm-text); --bs-table-hover-bg: var(--lm-surface-hover); }
+.staff-table th { color: var(--lm-text-muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .035em; white-space: nowrap; }
+.staff-table td { font-size: .82rem; }
+.staff-password-value { color: var(--lm-cyan); font-size: .9rem; letter-spacing: .08em; }
+.staff-row-actions { display: flex; justify-content: flex-end; gap: .4rem; }
+.staff-row-actions .btn { min-width: 58px; min-height: 34px; }
 .adminevent-modal #exportEventFormatButtons { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .adminevent-modal #exportEventFormatButtons .btn { min-height: 48px; }
 .adminevent-modal #qrImage { padding: .5rem; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: #fff; }
@@ -110,6 +120,8 @@
   .event-header-actions .btn { width: 100%; }
   .adminevent-save-actions #saveEventBtn { width: 100%; }
   .adminevent-modal .modal-dialog { margin: .5rem; }
+  .staff-form-actions { flex-direction: column-reverse; }
+  .staff-form-actions .btn { width: 100%; }
 }
 @media (max-width: 420px) {
   .adminevent-form .col-6 { width: 100%; }

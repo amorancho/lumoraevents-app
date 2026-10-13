@@ -138,7 +138,21 @@
   "event_info_loading_error": "Error cargando la ficha del evento",
   "event_info_saving_error": "Error guardando la ficha del evento",
   "event_info_saved": "Ficha del evento guardada correctamente",
-  "event_info_editor_unavailable": "El editor de la ficha del evento no esta disponible."
+  "event_info_editor_unavailable": "El editor de la ficha del evento no esta disponible.",
+  "staff_button": "Staff",
+  "staff_title": "Gestión del staff",
+  "staff_name": "Nombre",
+  "staff_username": "Usuario",
+  "staff_password": "Contraseña",
+  "staff_password_help": "Introduce un código numérico de 6 dígitos.",
+  "staff_actions": "Acciones",
+  "staff_save": "Guardar miembro del staff",
+  "staff_add": "Añadir staff",
+  "staff_empty": "Todavía no hay miembros del staff.",
+  "staff_request_error": "No se pudo completar la solicitud.",
+  "staff_edit": "Editar",
+  "staff_delete": "Eliminar",
+  "staff_delete_confirm": "¿Eliminar este miembro del staff?"
 }
 
 

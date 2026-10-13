@@ -86,8 +86,10 @@ function renderAccreditationPerson(person) {
   const groupMarkup = (Array.isArray(person.groups) ? person.groups : []).map((group) =>
     `<span class="accred-group-chip">${accredEscape(accreditationGroupLabel(group))}</span>`
   ).join('');
-  const noteMarkup = String(person.notes || '').trim()
-    ? `<span class="accred-note-chip"><i class="bi bi-sticky" aria-hidden="true"></i>${accredEscape(accredText('note', 'Note'))}</span>` : '';
+  const note = String(person.notes || '').trim();
+  const noteIndicator = note
+    ? `<span class="accred-note-indicator" role="img" aria-label="${accredEscape(accredText('note', 'Note'))}" title="${accredEscape(accredText('note', 'Note'))}"><i class="bi bi-sticky-fill" aria-hidden="true"></i></span>`
+    : '';
   const status = delivered
     ? `<i class="bi bi-check-circle-fill" aria-hidden="true"></i>${accredEscape(accredText('accredited_status', 'Accredited'))} ${accredEscape(accreditationTime(person.accredited_at))}`
     : `<i class="bi bi-circle" aria-hidden="true"></i>${accredEscape(accredText('pending_status', 'Pending'))}`;
@@ -95,15 +97,13 @@ function renderAccreditationPerson(person) {
     ? `<button type="button" class="accred-action accred-action--revoke" data-accred-action="revoke" data-person-id="${id}"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>${accredEscape(accredText('revoke', 'Revoke'))}</button>`
     : `<button type="button" class="accred-action accred-action--deliver" data-accred-action="deliver" data-person-id="${id}"><i class="bi bi-check2-circle" aria-hidden="true"></i>${accredEscape(accredText('accredit', 'Accredit'))}</button>`;
   return `<article class="accred-person-card${delivered ? ' is-accredited' : ''}" data-person-id="${id}">
-    <div class="accred-person-main"><span class="accred-person-mark" aria-hidden="true"><i class="bi ${delivered ? 'bi-check-lg' : 'bi-person'}"></i></span><div class="accred-person-copy"><button type="button" class="accred-person-name" data-accred-action="detail" data-person-id="${id}">${accredEscape(accreditationName(person))}</button><span class="accred-person-type">${accredEscape(accreditationType(person.person_type))}</span></div></div>
-    <div class="accred-person-details">
-      <div class="accred-person-facts">
-        <span class="accred-person-fact"><span class="accred-person-fact-label">${accredEscape(accredText('birth_date', 'Birth date'))}</span><strong>${accredEscape(accreditationDate(person.birth_date))}</strong></span>
-        <span class="accred-person-fact"><span class="accred-person-fact-label">${accredEscape(accredText('document', 'Document'))}</span><strong>${accredEscape(person.document_masked || '—')}</strong></span>
-      </div>
-      <div class="accred-person-groups"><span class="accred-person-fact-label">${accredEscape(accredText('group_label', 'Group'))}</span>${groupMarkup || '<span class="accred-group-chip">—</span>'}${noteMarkup}</div>
+    <div class="accred-person-grid">
+      <div class="accred-person-field accred-person-field--identity"><span class="accred-person-mark" aria-hidden="true"><i class="bi ${delivered ? 'bi-check-lg' : 'bi-person'}"></i></span><div class="accred-person-copy"><button type="button" class="accred-person-name" data-accred-action="detail" data-person-id="${id}">${accredEscape(accreditationName(person))}</button><span class="accred-person-type">${accredEscape(accreditationType(person.person_type))}</span></div></div>
+      <div class="accred-person-facts"><div class="accred-person-field accred-person-field--birth"><span class="accred-person-fact-label">${accredEscape(accredText('birth_date', 'Birth date'))}</span><strong>${accredEscape(accreditationDate(person.birth_date))}</strong></div>
+      <div class="accred-person-field accred-person-field--document"><span class="accred-person-fact-label">${accredEscape(accredText('document', 'Document'))}</span><strong>${accredEscape(person.document_masked || '—')}</strong></div></div>
+      <div class="accred-person-field accred-person-field--groups"><span class="accred-person-fact-label">${accredEscape(accredText('group_label', 'Group'))}</span><div class="accred-person-group-values">${groupMarkup || '<span class="accred-group-chip">—</span>'}</div></div>
     </div>
-    <div class="accred-person-meta"><span class="accred-person-status">${status}</span><div class="accred-person-actions">${action}<button type="button" class="accred-action" data-accred-action="detail" data-person-id="${id}" aria-label="${accredEscape(accredText('details', 'Details'))}: ${accredEscape(accreditationName(person))}"><i class="bi bi-chevron-right" aria-hidden="true"></i></button></div></div>
+    <div class="accred-person-meta"><span class="accred-person-status">${status}</span><div class="accred-person-actions">${noteIndicator}${action}<button type="button" class="accred-action" data-accred-action="detail" data-person-id="${id}" aria-label="${accredEscape(accredText('details', 'Details'))}: ${accredEscape(accreditationName(person))}"><i class="bi bi-chevron-right" aria-hidden="true"></i></button></div></div>
   </article>`;
 }
 
@@ -504,6 +504,7 @@ window.renderAccreditationsPage = renderAccreditationsPage;
 document.addEventListener('DOMContentLoaded', async () => {
   const user = getUserFromToken();
   if (user?.role === 'staff') {
+    document.body.classList.add('accreditations-page--staff');
     document.querySelector('.lm-org-sidebar-column')?.remove();
     accredEl('organizationSidebarToggle')?.remove();
   } else if (['admin', 'organizer'].includes(user?.role)) {

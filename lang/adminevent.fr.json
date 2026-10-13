@@ -139,7 +139,21 @@
   "event_info_loading_error": "Erreur lors du chargement de la fiche evenement",
   "event_info_saving_error": "Erreur lors de l enregistrement de la fiche evenement",
   "event_info_saved": "Fiche evenement enregistree avec succes",
-  "event_info_editor_unavailable": "L editeur de la fiche evenement n est pas disponible."
+  "event_info_editor_unavailable": "L editeur de la fiche evenement n est pas disponible.",
+  "staff_button": "Staff",
+  "staff_title": "Gestion du staff",
+  "staff_name": "Nom",
+  "staff_username": "Identifiant",
+  "staff_password": "Mot de passe",
+  "staff_password_help": "Saisissez un code numérique à 6 chiffres.",
+  "staff_actions": "Actions",
+  "staff_save": "Enregistrer le membre",
+  "staff_add": "Ajouter un membre",
+  "staff_empty": "Aucun membre du staff pour le moment.",
+  "staff_request_error": "Impossible de terminer la demande.",
+  "staff_edit": "Modifier",
+  "staff_delete": "Supprimer",
+  "staff_delete_confirm": "Supprimer ce membre du staff ?"
 }
 
 

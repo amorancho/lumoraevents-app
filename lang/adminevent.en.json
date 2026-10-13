@@ -138,7 +138,21 @@
   "event_info_loading_error": "Error loading the event sheet",
   "event_info_saving_error": "Error saving the event sheet",
   "event_info_saved": "Event sheet saved successfully",
-  "event_info_editor_unavailable": "The event sheet editor is not available."
+  "event_info_editor_unavailable": "The event sheet editor is not available.",
+  "staff_button": "Staff",
+  "staff_title": "Staff management",
+  "staff_name": "Name",
+  "staff_username": "Username",
+  "staff_password": "Password",
+  "staff_password_help": "Enter a 6-digit numeric code.",
+  "staff_actions": "Actions",
+  "staff_save": "Save staff member",
+  "staff_add": "Add staff",
+  "staff_empty": "No staff members yet.",
+  "staff_request_error": "Could not complete the request.",
+  "staff_edit": "Edit",
+  "staff_delete": "Delete",
+  "staff_delete_confirm": "Delete this staff member?"
 }
 
 
