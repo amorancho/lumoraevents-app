@@ -8,43 +8,45 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
+  <link rel="stylesheet" href="css/registration-access.css?v=20261014-1">
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 registration-access-page registration-signup-page">
   
   <div id="header"></div>  
-  <main class="flex-grow-1">
-    <div class="container py-5">
-      <div class="row justify-content-center">
-        <div class="col-12 col-lg-8">
-          <div class="card shadow-sm">
-            <div class="card-body p-4">
-              <div class="text-center mb-4">
-                <h1 class="h4 mb-2" data-i18n="signup_title">Create school account</h1>
-                <p class="text-muted mb-0" data-i18n="signup_subtitle">Complete the form to request access.</p>
+  <main class="lm-page flex-grow-1 registration-access-main">
+    <div class="registration-access-shell registration-signup-shell">
+      <header class="registration-access-intro registration-signup-intro">
+        <span class="registration-access-mark" aria-hidden="true"><i class="bi bi-person-plus"></i></span>
+        <h1 data-i18n="signup_title">Create school account</h1>
+        <p data-i18n="signup_subtitle">Complete the form to request access.</p>
+      </header>
+
+      <div class="registration-form-card lm-card">
+        <div class="registration-form-body">
+          <div class="registration-notice lm-notice alert-info" role="alert">
+            <i class="bi bi-envelope-check" aria-hidden="true"></i>
+            <span data-i18n="signup_notice">After creating the account, you will receive your access credentials by email in the next few minutes.</span>
+          </div>
+
+          <form id="signupForm" novalidate>
+            <fieldset class="registration-type-fieldset">
+              <legend data-i18n="field_user_type">Account type</legend>
+              <div class="registration-type-options">
+                <label class="registration-type-option" for="signupUserTypeSchool">
+                  <input class="form-check-input" type="radio" name="signupUserType" id="signupUserTypeSchool" value="SCH" checked>
+                  <i class="bi bi-building" aria-hidden="true"></i><span data-i18n="user_type_school">School</span>
+                </label>
+                <label class="registration-type-option" for="signupUserTypeIndividual">
+                  <input class="form-check-input" type="radio" name="signupUserType" id="signupUserTypeIndividual" value="PAR">
+                  <i class="bi bi-person" aria-hidden="true"></i><span data-i18n="user_type_individual">Individual</span>
+                </label>
               </div>
+            </fieldset>
 
-              <div class="alert alert-info" role="alert" data-i18n="signup_notice">
-                After creating the account, you will receive your access credentials by email in the next few minutes.
-              </div>
-
-              <form id="signupForm" novalidate>
-                <fieldset class="border border-primary rounded-3 bg-primary-subtle p-3 mb-4">
-                  <legend class="float-none w-auto px-2 mb-0 fs-6 fw-semibold text-primary" data-i18n="field_user_type">Account type</legend>
-                  <div class="d-flex flex-column flex-sm-row gap-3 pt-1">
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="signupUserType" id="signupUserTypeSchool" value="SCH" checked>
-                      <label class="form-check-label fw-semibold" for="signupUserTypeSchool" data-i18n="user_type_school">School</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="signupUserType" id="signupUserTypeIndividual" value="PAR">
-                      <label class="form-check-label fw-semibold" for="signupUserTypeIndividual" data-i18n="user_type_individual">Individual</label>
-                    </div>
-                  </div>
-                </fieldset>
-
-                <div class="row g-3">
+                <div class="row g-3 registration-fields">
                   <div class="col-12 col-md-6">
                     <label class="form-label" for="signupName" data-i18n="field_name">Name</label>
                     <input type="text" class="form-control" id="signupName" required>
@@ -95,13 +97,11 @@
                   </div>
                 </div>
 
-                <div class="d-flex flex-column flex-md-row gap-2 justify-content-end mt-4">
-                  <a id="cancelLink" class="btn btn-outline-secondary" href="registrationhome.html" data-i18n="cancel">Cancel</a>
-                  <button type="submit" class="btn btn-primary" id="signupSubmit" data-i18n="signup_submit">Create account</button>
+                <div class="registration-form-actions">
+                  <a id="cancelLink" class="lm-btn lm-btn-secondary" href="registrationhome.html" data-i18n="cancel">Cancel</a>
+                  <button type="submit" class="lm-btn lm-btn-primary" id="signupSubmit" data-i18n="signup_submit">Create account</button>
                 </div>
               </form>
-            </div>
-          </div>
         </div>
       </div>
     </div>
