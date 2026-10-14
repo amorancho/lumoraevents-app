@@ -21,7 +21,7 @@
   "registration_dashboard_badge_school": "Vue école",
   "registration_dashboard_title_school": "Dashboard école",
   "registration_dashboard_text_school": "Vue d'ensemble de vos participants et inscriptions.",
-  "registration_dashboard_kpi_schools": "Écoles",
+  "registration_dashboard_kpi_schools": "Écoles/Participants",
   "registration_dashboard_kpi_participants": "Participants",
   "registration_dashboard_kpi_registrations": "Inscriptions",
   "registration_dashboard_kpi_registrations_without_music": "Inscriptions sans musique",

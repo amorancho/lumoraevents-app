@@ -2762,7 +2762,8 @@
   .registration-content .tab-pane > .card > .card-body { padding: 1rem !important; }
   #participants .participants-primary-actions .btn { white-space: normal; line-height: 1.25; }
   .registration-page :is(.participants-mobile-list, .registrations-mobile-list, .schools-mobile-list, .registration-categories-mobile-list, .registration-payments-mobile-list, .registration-invoices-mobile-list, .registration-disciplines-list) { gap: .8rem !important; }
-  .registration-content :is(.registration-dashboard-summary-grid, .registration-dashboard-status-grid, .registration-dashboard-finance-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+  .registration-content .registration-dashboard-summary-grid { grid-template-columns: minmax(0, 1fr); gap: .55rem; }
+  .registration-content :is(.registration-dashboard-status-grid, .registration-dashboard-finance-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
   .registration-dashboard-stat-card .card-body { min-width: 0; }
   .registration-dashboard-kpi-value { font-size: clamp(1.05rem, 4vw, 1.3rem); white-space: normal; overflow-wrap: anywhere; }
   .registration-dashboard-kpi-label { font-size: .67rem; letter-spacing: .04em; }
