@@ -680,14 +680,6 @@ function getVisibleRegistrationNavItems(role = registrationNavigationState.role)
   return REGISTRATION_NAV_ITEMS.filter(item => item.roles.includes(role));
 }
 
-function getRegistrationSidebarTitle() {
-  const currentEvent = getEvent();
-  if (currentEvent?.name) {
-    return currentEvent.name;
-  }
-  return t('registration_sidebar_section', 'Registration');
-}
-
 function hasRegistrationPaymentInstructions() {
   return registrationState.paymentInstructionsAvailable;
 }
@@ -860,7 +852,6 @@ function renderRegistrationSidebar(role) {
   }
 
   const copy = getRegistrationSidebarCopy();
-  const title = getRegistrationSidebarTitle();
   const activeKey = registrationNavigationState.activeKey;
   const heroMarkup = buildRegistrationSidebarHeroMarkup();
 
@@ -868,7 +859,6 @@ function renderRegistrationSidebar(role) {
     <div class="sticky-lg-top">
       <div class="card border-0 shadow-sm registration-sidebar-card">
         <div class="card-body border-bottom">
-          <div class="h5 mb-1">${title}</div>
           ${heroMarkup}
         </div>
         <div class="list-group list-group-flush">
@@ -890,11 +880,8 @@ function renderRegistrationSidebar(role) {
       <i class="bi bi-list"></i>
       <span>${copy.menuButton}</span>
     </button>
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="registrationSidebarOffcanvas" aria-labelledby="registrationSidebarTitleMobile">
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="registrationSidebarOffcanvas" aria-label="${copy.menuButton}">
       <div class="offcanvas-header border-bottom">
-        <div>
-          <div class="h5 mb-1" id="registrationSidebarTitleMobile">${title}</div>
-        </div>
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="${copy.closeButton}"></button>
       </div>
       <div class="offcanvas-body p-0">
@@ -1039,10 +1026,10 @@ function initRegistrationDashboard(role) {
 }
 
 const REGISTRATION_DASHBOARD_STATUS_ORDER = [
-  { code: 'CRE', label: 'registration_status_creation', fallback: 'Draft', color: '#0d6efd', dataLabelColor: '#ffffff' },
-  { code: 'PEN', label: 'registration_status_pending', fallback: 'Pending validation', color: '#ffc107', dataLabelColor: '#212529' },
-  { code: 'REJ', label: 'registration_status_rejected', fallback: 'Rejected', color: '#dc3545', dataLabelColor: '#ffffff' },
-  { code: 'VAL', label: 'registration_status_validated', fallback: 'Validated', color: '#198754', dataLabelColor: '#ffffff' }
+  { code: 'CRE', label: 'registration_status_creation', fallback: 'Draft', color: '#65b6ff', dataLabelColor: '#061622' },
+  { code: 'PEN', label: 'registration_status_pending', fallback: 'Pending validation', color: '#ffc54d', dataLabelColor: '#061622' },
+  { code: 'REJ', label: 'registration_status_rejected', fallback: 'Rejected', color: '#ff747e', dataLabelColor: '#061622' },
+  { code: 'VAL', label: 'registration_status_validated', fallback: 'Validated', color: '#22d8ab', dataLabelColor: '#061622' }
 ];
 const REGISTRATION_DASHBOARD_COMBINED_CHART = {
   minHeight: 140,
@@ -1406,11 +1393,14 @@ function initOrganizerDashboard() {
   );
 
   const getUiColors = () => {
-    const styles = getComputedStyle(document.documentElement);
+    const styles = getComputedStyle(document.body);
     return {
-      text: (styles.getPropertyValue('--bs-body-color') || '#212529').trim(),
-      muted: (styles.getPropertyValue('--bs-secondary-color') || '#6c757d').trim(),
-      border: 'rgba(33, 37, 41, 0.08)',
+      text: (styles.getPropertyValue('--bs-body-color') || '#f3f7fd').trim(),
+      muted: (styles.getPropertyValue('--bs-secondary-color') || '#b6c7da').trim(),
+      border: (styles.getPropertyValue('--lm-border') || '#244057').trim(),
+      primary: (styles.getPropertyValue('--bs-primary') || '#0d6efd').trim(),
+      warning: '#fd7e14',
+      purple: '#6f42c1',
       fontFamily: (styles.getPropertyValue('--bs-body-font-family') || 'inherit').trim()
     };
   };
@@ -1542,6 +1532,7 @@ function initOrganizerDashboard() {
       toolbar: { show: false },
       zoom: { enabled: false },
       animations: { speed: 260 },
+      background: 'transparent',
       fontFamily: ui.fontFamily
     },
     dataLabels: { enabled: false },
@@ -1553,9 +1544,8 @@ function initOrganizerDashboard() {
     noData: {
       text: t('registration_dashboard_no_data', 'No data available')
     },
-    tooltip: {
-      theme: 'light'
-    }
+    theme: { mode: 'dark' },
+    tooltip: { theme: 'dark' }
   });
 
   const buildTodayAnnotation = (series) => {
@@ -2163,11 +2153,14 @@ function initSchoolDashboard() {
   };
 
   const getUiColors = () => {
-    const styles = getComputedStyle(document.documentElement);
+    const styles = getComputedStyle(document.body);
     return {
-      text: (styles.getPropertyValue('--bs-body-color') || '#212529').trim(),
-      muted: (styles.getPropertyValue('--bs-secondary-color') || '#6c757d').trim(),
-      border: 'rgba(33, 37, 41, 0.08)',
+      text: (styles.getPropertyValue('--bs-body-color') || '#f3f7fd').trim(),
+      muted: (styles.getPropertyValue('--bs-secondary-color') || '#b6c7da').trim(),
+      border: (styles.getPropertyValue('--lm-border') || '#244057').trim(),
+      primary: (styles.getPropertyValue('--lm-blue') || '#65b6ff').trim(),
+      warning: (styles.getPropertyValue('--lm-warning') || '#ffc54d').trim(),
+      purple: (styles.getPropertyValue('--lm-purple') || '#b68aff').trim(),
       fontFamily: (styles.getPropertyValue('--bs-body-font-family') || 'inherit').trim()
     };
   };
@@ -2191,6 +2184,7 @@ function initSchoolDashboard() {
       toolbar: { show: false },
       zoom: { enabled: false },
       animations: { speed: 260 },
+      background: 'transparent',
       fontFamily: ui.fontFamily
     },
     dataLabels: { enabled: false },
@@ -2202,9 +2196,8 @@ function initSchoolDashboard() {
     noData: {
       text: t('registration_dashboard_no_data', 'No data available')
     },
-    tooltip: {
-      theme: 'light'
-    }
+    theme: { mode: 'dark' },
+    tooltip: { theme: 'dark' }
   });
 
   const renderChart = (key, element, options) => {
@@ -4935,14 +4928,22 @@ function initSchoolsTab() {
     ? new Map(countries.map(c => [c.code, c.name]))
     : new Map();
 
-  if (Array.isArray(countries)) {
-    countries.forEach(c => {
+  const updateCountryOptions = (schools) => {
+    const selectedCountry = filterCountry.value;
+    const countryValues = [...new Set((Array.isArray(schools) ? schools : [])
+      .map((school) => `${school?.country ?? ''}`.trim())
+      .filter(Boolean))]
+      .sort((left, right) => getCountryName(left, countryMap).localeCompare(getCountryName(right, countryMap)));
+
+    filterCountry.replaceChildren(filterCountry.options[0]);
+    countryValues.forEach((code) => {
       const option = document.createElement('option');
-      option.value = c.code;
-      option.textContent = `${c.code} - ${c.name}`;
+      option.value = code;
+      option.textContent = `${code} - ${getCountryName(code, countryMap) || code}`;
       filterCountry.appendChild(option);
     });
-  }
+    filterCountry.value = countryValues.includes(selectedCountry) ? selectedCountry : '';
+  };
 
   const detailModal = new bootstrap.Modal(modalEl);
   const resetPasswordModal = resetPasswordModalEl
@@ -5289,6 +5290,7 @@ function initSchoolsTab() {
   const loadSchools = async () => {
     try {
       await fetchEventSchools();
+      updateCountryOptions(registrationState.schools);
       applyFilters();
       notifyRegistrationSchoolsUpdate();
     } catch (err) {
