@@ -6931,9 +6931,13 @@ function initRegistrationDisciplinesTab() {
   const countEl = document.getElementById('count-registration-disciplines');
   const inputEl = document.getElementById('input-registration-disciplines');
   const addBtn = document.getElementById('registrationDisciplinesAddBtn');
+  const editModalEl = document.getElementById('registrationDisciplineEditModal');
+  const editForm = document.getElementById('registrationDisciplineEditForm');
+  const editNameInput = document.getElementById('registrationDisciplineEditName');
+  const editSaveBtn = document.getElementById('registrationDisciplineEditSaveBtn');
   const deleteModalEl = document.getElementById('registrationDisciplineDeleteModal');
 
-  if (!listEl || !inputEl || !addBtn || !deleteModalEl) {
+  if (!listEl || !inputEl || !addBtn || !editModalEl || !editForm || !editNameInput || !editSaveBtn || !deleteModalEl) {
     return;
   }
 
@@ -6942,7 +6946,9 @@ function initRegistrationDisciplinesTab() {
     confirmDeleteBtn: document.getElementById('confirmDeleteRegistrationDisciplineBtn')
   };
 
+  const editModal = new bootstrap.Modal(editModalEl);
   const deleteModal = new bootstrap.Modal(deleteModalEl);
+  let disciplineToEdit = null;
   let disciplineToDelete = null;
   let sortableInstance = null;
   let disciplinesTooltipInstances = [];
@@ -6999,9 +7005,28 @@ function initRegistrationDisciplinesTab() {
       statuses.appendChild(syncroBadge);
       rightDiv.appendChild(statuses);
 
+      const buttonGroup = document.createElement('div');
+      buttonGroup.className = 'registration-discipline-mobile-card__actions btn-group btn-group-sm';
+      buttonGroup.setAttribute('role', 'group');
+      buttonGroup.setAttribute('aria-label', t('registration_disciplines_actions', 'Acciones'));
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'registration-discipline-mobile-card__action btn btn-outline-primary';
+      const editTitle = t('edit', 'Editar');
+      editBtn.title = editTitle;
+      editBtn.setAttribute('aria-label', editTitle);
+      editBtn.innerHTML = '<i class="bi bi-pencil" aria-hidden="true"></i>';
+      editBtn.addEventListener('click', () => {
+        disciplineToEdit = discipline;
+        editNameInput.value = discipline.name || '';
+        editModal.show();
+      });
+      buttonGroup.appendChild(editBtn);
+
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
-      deleteBtn.className = 'registration-discipline-mobile-card__delete btn btn-link text-danger p-0';
+      deleteBtn.className = 'registration-discipline-mobile-card__action btn btn-outline-danger';
       const deleteTitle = t('delete', 'Delete');
       deleteBtn.title = deleteTitle;
       deleteBtn.setAttribute('aria-label', deleteTitle);
@@ -7015,7 +7040,8 @@ function initRegistrationDisciplinesTab() {
         deleteModal.show();
       });
 
-      leftDiv.appendChild(deleteBtn);
+      buttonGroup.appendChild(deleteBtn);
+      rightDiv.appendChild(buttonGroup);
       li.appendChild(rightDiv);
       listEl.appendChild(li);
     });
@@ -7108,7 +7134,11 @@ function initRegistrationDisciplinesTab() {
     }
 
     try {
-      const payload = { name: value };
+      const nextPosition = registrationState.registrationDisciplines.reduce((max, discipline) => {
+        const position = Number(discipline.position);
+        return Number.isFinite(position) ? Math.max(max, position) : max;
+      }, registrationState.registrationDisciplines.length) + 1;
+      const payload = { name: value, position: nextPosition };
       const eventIdValue = getEvent()?.id;
       if (eventIdValue) {
         payload.event_id = eventIdValue;
@@ -7146,6 +7176,54 @@ function initRegistrationDisciplinesTab() {
         addBtn.textContent = originalText;
       }
       inputEl.focus();
+    }
+  };
+
+  const saveDisciplineEdit = async (event) => {
+    event.preventDefault();
+    if (!disciplineToEdit) return;
+
+    const name = editNameInput.value.trim();
+    if (!name) {
+      editNameInput.value = '';
+      editNameInput.reportValidity();
+      editNameInput.focus();
+      return;
+    }
+
+    editSaveBtn.disabled = true;
+    const originalText = editSaveBtn.textContent;
+    editSaveBtn.textContent = t('saving', 'Guardando...');
+
+    try {
+      const currentPosition = disciplineToEdit.position;
+      const payload = {
+        name,
+        position: currentPosition == null || currentPosition === '' ? null : Number(currentPosition)
+      };
+      const eventIdValue = getEvent()?.id;
+      if (eventIdValue) payload.event_id = eventIdValue;
+
+      const res = await fetch(`${API_BASE_URL}/api/registrations/styles/${disciplineToEdit.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || data.message || t('registration_disciplines_save_error', 'Error saving discipline.'));
+      }
+
+      editModal.hide();
+      await fetchRegistrationStyles({ force: true });
+      renderDisciplines();
+      notifyRegistrationConfigUpdate();
+    } catch (err) {
+      showMessageModal(err.message || t('registration_disciplines_save_error', 'Error saving discipline.'), t('error_title', 'Error'));
+    } finally {
+      editSaveBtn.disabled = false;
+      editSaveBtn.textContent = originalText;
     }
   };
 
@@ -7189,6 +7267,12 @@ function initRegistrationDisciplinesTab() {
   };
 
   addBtn.addEventListener('click', addDiscipline);
+  editForm.addEventListener('submit', saveDisciplineEdit);
+  editModalEl.addEventListener('shown.bs.modal', () => editNameInput.focus());
+  editModalEl.addEventListener('hidden.bs.modal', () => {
+    editForm.reset();
+    disciplineToEdit = null;
+  });
   inputEl.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();

@@ -830,6 +830,64 @@
 .registration-disciplines-add-icon {
   display: none;
 }
+#registration-disciplines .registration-disciplines-list {
+  overflow: hidden;
+  gap: 0;
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius-md);
+  background: var(--lm-surface);
+}
+#registration-disciplines .registration-discipline-mobile-card {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  padding: 0.7rem 0.75rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--lm-surface) !important;
+  box-shadow: none;
+  font-size: var(--lm-font-card-body);
+}
+#registration-disciplines .registration-discipline-mobile-card + .registration-discipline-mobile-card {
+  border-top: 1px solid var(--lm-border) !important;
+}
+.registration-discipline-mobile-card__header {
+  min-width: 0;
+  flex: 1 1 10rem;
+}
+.registration-discipline-mobile-card__handle {
+  flex: 0 0 auto;
+  color: var(--lm-text-soft) !important;
+  cursor: grab;
+  touch-action: none;
+}
+.registration-discipline-mobile-card__name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: inherit;
+}
+.registration-discipline-mobile-card__content {
+  min-width: 0;
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  margin-left: auto !important;
+}
+.registration-discipline-mobile-card__statuses {
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.registration-discipline-mobile-card__actions {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.registration-page #registration-disciplines .registration-discipline-mobile-card__action {
+  display: inline-grid;
+  width: 34px;
+  min-height: 34px;
+  place-items: center;
+  padding: 0.3rem;
+}
 .registration-payments-mobile-list,
 .registration-invoices-mobile-list {
   display: none;
@@ -2162,83 +2220,9 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
   }
-  #registration-disciplines .registration-disciplines-list {
-    display: grid;
-    gap: 2rem;
-  }
-  #registration-disciplines .registration-discipline-mobile-card {
-    position: relative;
-    display: block !important;
-    overflow: hidden;
-    padding: 0;
-    border: 1px solid rgba(var(--bs-primary-rgb), 0.14);
-    border-radius: 1rem !important;
-    background: var(--bs-body-bg);
-    box-shadow: 0 0.35rem 1.2rem rgba(15, 23, 42, 0.08);
-  }
-  #registration-disciplines .registration-discipline-mobile-card::before {
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    height: 0.25rem;
-    content: '';
-    background: linear-gradient(90deg, var(--bs-primary), #6f42c1);
-  }
-  .registration-discipline-mobile-card__header {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.95rem 0.85rem 0.7rem;
-  }
-  .registration-discipline-mobile-card__handle {
-    display: inline-flex;
-    width: 2rem;
-    height: 2rem;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.55rem;
-    background: var(--bs-tertiary-bg);
-    touch-action: none;
-  }
-  .registration-discipline-mobile-card__name {
-    min-width: 0;
-    flex: 1 1 auto;
-    overflow-wrap: anywhere;
-    color: var(--bs-emphasis-color);
-    font-size: 0.95rem;
-    font-weight: 750;
-    line-height: 1.25;
-  }
-  .registration-discipline-mobile-card__content {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between;
-    gap: 0.65rem !important;
-    margin-left: 0 !important;
-    padding: 0.65rem 0.85rem 0.75rem;
-    border-top: 1px solid var(--bs-border-color-translucent);
-    background: linear-gradient(135deg, rgba(var(--bs-primary-rgb), 0.035), transparent);
-  }
-  .registration-discipline-mobile-card__statuses {
-    display: flex;
-    min-width: 0;
-    flex: 1 1 auto;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  }
-  .registration-discipline-mobile-card__delete {
-    display: inline-flex;
+  .registration-page #registration-disciplines .registration-discipline-mobile-card__action {
     width: 2.5rem;
-    height: 2.5rem;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    padding: 0 !important;
-    border: 1px solid rgba(var(--bs-danger-rgb), 0.3);
-    border-radius: 0.65rem;
-    background: var(--bs-body-bg);
+    min-height: 2.5rem;
   }
   #payments .registration-dashboard-shell {
     gap: 0.85rem;
@@ -2778,15 +2762,15 @@
 .registration-page .ts-wrapper .ts-dropdown .option.selected { background: #16384b; }
 
 /* Cards built by registration.js, registration-competitions.js and registration-payments.js. */
-.registration-page :is(.participant-mobile-card, .registration-mobile-card, .school-mobile-card, .registration-category-mobile-card, .registration-discipline-mobile-card, .registration-document-mobile-card) { border: 1px solid var(--lm-border) !important; border-radius: var(--lm-radius-lg) !important; color: var(--lm-text); background: var(--lm-bg-elevated) !important; box-shadow: var(--lm-shadow-sm); }
-.registration-page :is(.participant-mobile-card, .registration-mobile-card, .school-mobile-card, .registration-category-mobile-card, .registration-discipline-mobile-card, .registration-document-mobile-card)::before { background: linear-gradient(90deg, var(--lm-cyan), var(--lm-purple)); }
+.registration-page :is(.participant-mobile-card, .registration-mobile-card, .school-mobile-card, .registration-category-mobile-card, .registration-document-mobile-card) { border: 1px solid var(--lm-border) !important; border-radius: var(--lm-radius-lg) !important; color: var(--lm-text); background: var(--lm-bg-elevated) !important; box-shadow: var(--lm-shadow-sm); }
+.registration-page :is(.participant-mobile-card, .registration-mobile-card, .school-mobile-card, .registration-category-mobile-card, .registration-document-mobile-card)::before { background: linear-gradient(90deg, var(--lm-cyan), var(--lm-purple)); }
 .registration-page :is(.participant-mobile-card__name, .registration-mobile-card__name, .school-mobile-card__name, .registration-category-mobile-card__name, .registration-discipline-mobile-card__name, .registration-document-mobile-card__title) { color: var(--lm-text); }
 .registration-page :is(.participant-mobile-card__country, .school-mobile-card__country, .registration-mobile-card__classification-item, .registration-mobile-card__metric, .school-mobile-card__metric, .registration-category-mobile-card__metric, .registration-document-mobile-card__icon, .registration-discipline-mobile-card__handle) { border-color: var(--lm-border); color: var(--lm-blue); background: var(--lm-surface-raised); }
 .registration-page .registration-discipline-mobile-card__handle { border-color: transparent; color: var(--lm-blue); background: transparent; }
-.registration-page :is(.participant-mobile-card__details, .participant-mobile-card__registrations, .participant-mobile-card__actions, .registration-mobile-card__classification, .registration-mobile-card__metrics, .registration-mobile-card__checks, .registration-mobile-card__actions, .school-mobile-card__metrics, .school-mobile-card__choreographies, .school-mobile-card__footer, .registration-category-mobile-card__metrics, .registration-category-mobile-card__commercial, .registration-category-mobile-card__status, .registration-category-mobile-card__actions, .registration-discipline-mobile-card__content, .registration-document-mobile-card__amount, .registration-document-mobile-card__rejection, .registration-document-mobile-card__actions) { border-color: var(--lm-border); }
+.registration-page :is(.participant-mobile-card__details, .participant-mobile-card__registrations, .participant-mobile-card__actions, .registration-mobile-card__classification, .registration-mobile-card__metrics, .registration-mobile-card__checks, .registration-mobile-card__actions, .school-mobile-card__metrics, .school-mobile-card__choreographies, .school-mobile-card__footer, .registration-category-mobile-card__metrics, .registration-category-mobile-card__commercial, .registration-category-mobile-card__status, .registration-category-mobile-card__actions, .registration-document-mobile-card__amount, .registration-document-mobile-card__rejection, .registration-document-mobile-card__actions) { border-color: var(--lm-border); }
 .registration-page :is(.participant-mobile-card__detail-label, .participant-mobile-card__section-title, .registration-mobile-card__classification-label, .registration-mobile-card__metric-label, .school-mobile-card__metric-label, .registration-category-mobile-card__metric-label, .registration-category-mobile-card__section-label, .registration-document-mobile-card__amount-label) { color: var(--lm-text-muted); }
 .registration-page :is(.participant-mobile-card__detail-value, .registration-mobile-card__classification-value, .registration-mobile-card__metric-value, .school-mobile-card__metric-value, .registration-category-mobile-card__metric-value, .registration-document-mobile-card__amount-value) { color: var(--lm-text); }
-.registration-page :is(.registration-document-mobile-card__amount, .registration-discipline-mobile-card__content) { background: var(--lm-surface); }
+.registration-page .registration-document-mobile-card__amount { background: var(--lm-surface); }
 .registration-page .registration-document-mobile-card__rejection { background: #351e29; }
 .registration-page .registration-document-mobile-card__rejection-label { color: var(--lm-danger); }
 .registration-page .registration-category-info-card { border-color: var(--lm-border); color: var(--lm-text); background: var(--lm-surface); }
@@ -2815,7 +2799,7 @@
   .registration-shell { padding: .75rem .75rem 2.5rem; }
   .registration-content .tab-pane > .card > .card-body { padding: 1rem !important; }
   #participants .participants-primary-actions .btn { white-space: normal; line-height: 1.25; }
-  .registration-page :is(.participants-mobile-list, .registrations-mobile-list, .schools-mobile-list, .registration-categories-mobile-list, .registration-payments-mobile-list, .registration-invoices-mobile-list, .registration-disciplines-list) { gap: .8rem !important; }
+  .registration-page :is(.participants-mobile-list, .registrations-mobile-list, .schools-mobile-list, .registration-categories-mobile-list, .registration-payments-mobile-list, .registration-invoices-mobile-list) { gap: .8rem !important; }
   .registration-content .registration-dashboard-summary-grid { grid-template-columns: minmax(0, 1fr); gap: .55rem; }
   .registration-content :is(.registration-dashboard-status-grid, .registration-dashboard-finance-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
   .registration-dashboard-stat-card .card-body { min-width: 0; }
