@@ -107,6 +107,30 @@ const REGISTRATION_NAV_ITEMS = [
     fallbackLabel: 'Payments / Invoices'
   },
   {
+    key: 'extras-workshops', paneId: 'extras-workshops', roles: ['school', 'organizer'],
+    icon: 'bi-calendar-event', labelKey: 'extras_workshops', fallbackLabel: 'Workshops', extras: true
+  },
+  {
+    key: 'extras-packs', paneId: 'extras-packs', roles: ['organizer'],
+    icon: 'bi-collection', labelKey: 'extras_packs', fallbackLabel: 'Packs', extras: true
+  },
+  {
+    key: 'extras-services', paneId: 'extras-services', roles: ['school', 'organizer'],
+    icon: 'bi-bag', labelKey: 'extras_services', fallbackLabel: 'Services', extras: true
+  },
+  {
+    key: 'extras-discounts', paneId: 'extras-discounts', roles: ['organizer'],
+    icon: 'bi-ticket-perforated', labelKey: 'extras_discounts', fallbackLabel: 'Discounts', extras: true
+  },
+  {
+    key: 'extras-bookings', paneId: 'extras-bookings', roles: ['organizer'],
+    icon: 'bi-journal-bookmark', labelKey: 'extras_bookings', fallbackLabel: 'Bookings', extras: true
+  },
+  {
+    key: 'extras-my-bookings', paneId: 'extras-my-bookings', roles: ['school'],
+    icon: 'bi-journal-bookmark', labelKey: 'extras_my_bookings', fallbackLabel: 'My bookings', extras: true
+  },
+  {
     key: 'support',
     paneId: 'support',
     roles: ['school'],
@@ -517,6 +541,21 @@ function notifyRegistrationParticipantsUpdate() {
   window.dispatchEvent(new CustomEvent('registration:participants-updated'));
 }
 
+// Shared by the Participants tab and extras; competition enrolment is irrelevant.
+async function fetchRegistrationParticipants(schoolId = null) {
+  const params = new URLSearchParams();
+  if (schoolId != null) params.set('school_id', schoolId);
+  const eventId = getEvent()?.id;
+  if (eventId) params.set('event_id', eventId);
+  const query = params.toString();
+  const res = await fetch(`${API_BASE_URL}/api/participants${query ? `?${query}` : ''}`);
+  if (!res.ok) {
+    throw new Error(t('registration_participants_load_error', 'Error loading participants.'));
+  }
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
 function notifySchoolRegistrationsUpdate() {
   window.dispatchEvent(new CustomEvent('registration:school-registrations-updated'));
 }
@@ -537,6 +576,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initRegistrationBasesDocumentLinks();
   const user = getUserFromToken();
   const role = getRegistrationRole(user);
+  window.RegistrationExtras?.init(role);
   setupRegistrationNavigation(role);
   if (role === 'school') {
     initSchoolTab();
@@ -677,7 +717,8 @@ function setupRegistrationNavigation(role) {
 }
 
 function getVisibleRegistrationNavItems(role = registrationNavigationState.role) {
-  return REGISTRATION_NAV_ITEMS.filter(item => item.roles.includes(role));
+  return REGISTRATION_NAV_ITEMS.filter(item => item.roles.includes(role)
+    && (!item.extras || getEvent()?.hasWorkshopsServices === true));
 }
 
 function hasRegistrationPaymentInstructions() {
@@ -918,13 +959,14 @@ function showRegistrationPanel(panelKey) {
     return false;
   }
 
-  REGISTRATION_NAV_ITEMS.forEach(({ key, paneId, roles }) => {
+  REGISTRATION_NAV_ITEMS.forEach(({ key, paneId, roles, extras }) => {
     const pane = document.getElementById(paneId);
     if (!pane) {
       return;
     }
 
-    const allowedForRole = roles.includes(registrationNavigationState.role);
+    const allowedForRole = roles.includes(registrationNavigationState.role)
+      && (!extras || getEvent()?.hasWorkshopsServices === true);
     const isActive = allowedForRole && key === activeItem.key;
     pane.classList.toggle('d-none', !allowedForRole);
     pane.classList.toggle('show', isActive);
@@ -954,13 +996,13 @@ function showRegistrationPanel(panelKey) {
 }
 
 function applyRegistrationRoleVisibility(role) {
-  REGISTRATION_NAV_ITEMS.forEach(({ paneId, roles }) => {
+  REGISTRATION_NAV_ITEMS.forEach(({ paneId, roles, extras }) => {
     const pane = document.getElementById(paneId);
     if (!pane) {
       return;
     }
 
-    const shouldShow = roles.includes(role);
+    const shouldShow = roles.includes(role) && (!extras || getEvent()?.hasWorkshopsServices === true);
     pane.classList.toggle('d-none', !shouldShow);
     pane.classList.remove('show', 'active');
   });
@@ -1709,7 +1751,7 @@ function initOrganizerDashboard() {
     if (statElements.statusPen) statElements.statusPen.textContent = formatInteger(metrics.status.PEN);
     if (statElements.statusVal) statElements.statusVal.textContent = formatInteger(metrics.status.VAL);
     if (statElements.statusRej) statElements.statusRej.textContent = formatInteger(metrics.status.REJ);
-    if (statElements.totalAmount) statElements.totalAmount.textContent = formatRegistrationCurrency(metrics.dashboardFinance.totalAmount);
+    if (statElements.totalAmount) statElements.totalAmount.textContent = metrics.dashboardFinance.totalAmount == null ? '—' : formatRegistrationCurrency(metrics.dashboardFinance.totalAmount);
     if (statElements.totalAmountMeta) {
       statElements.totalAmountMeta.textContent = `${formatInteger(metrics.dashboardFinance.registeredParticipantsCount)} ${t('registration_dashboard_kpi_participants', 'Participants')} / ${formatInteger(metrics.dashboardFinance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
@@ -1717,7 +1759,7 @@ function initOrganizerDashboard() {
     if (statElements.paidAmountMeta) {
       statElements.paidAmountMeta.textContent = `${formatInteger(metrics.dashboardFinance.validatedPaymentsCount)} ${t('registration_payments_validated', 'Validated payments')}`;
     }
-    if (statElements.pendingAmount) statElements.pendingAmount.textContent = formatRegistrationCurrency(metrics.dashboardFinance.pendingAmount);
+    if (statElements.pendingAmount) statElements.pendingAmount.textContent = metrics.dashboardFinance.pendingAmount == null ? '—' : formatRegistrationCurrency(metrics.dashboardFinance.pendingAmount);
     if (statElements.pendingAmountMeta) {
       statElements.pendingAmountMeta.textContent = `${formatInteger(metrics.dashboardFinance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
@@ -2100,6 +2142,7 @@ function initOrganizerDashboard() {
     scheduleRender();
   });
   window.addEventListener('registration:payment-documents-updated', scheduleRender);
+  window.addEventListener('registration:extras-finance-updated', scheduleRender);
   window.addEventListener('registration:config-updated', scheduleRender);
   statElements.categoriesWithoutAction?.addEventListener('click', () => openMissingItemsModal('categories'));
   statElements.stylesWithoutAction?.addEventListener('click', () => openMissingItemsModal('styles'));
@@ -2253,7 +2296,7 @@ function initSchoolDashboard() {
     if (statElements.statusPen) statElements.statusPen.textContent = formatInteger(metrics.status.PEN);
     if (statElements.statusVal) statElements.statusVal.textContent = formatInteger(metrics.status.VAL);
     if (statElements.statusRej) statElements.statusRej.textContent = formatInteger(metrics.status.REJ);
-    if (statElements.totalAmount) statElements.totalAmount.textContent = formatRegistrationCurrency(metrics.finance.totalAmount);
+    if (statElements.totalAmount) statElements.totalAmount.textContent = metrics.finance.totalAmount == null ? '—' : formatRegistrationCurrency(metrics.finance.totalAmount);
     if (statElements.totalAmountMeta) {
       statElements.totalAmountMeta.textContent = `${formatInteger(metrics.finance.registeredParticipantsCount)} ${t('registration_dashboard_kpi_participants', 'Participants')} / ${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
@@ -2261,7 +2304,7 @@ function initSchoolDashboard() {
     if (statElements.paidAmountMeta) {
       statElements.paidAmountMeta.textContent = `${formatInteger(metrics.finance.validatedPaymentsCount)} ${t('registration_payments_validated', 'Validated payments')}`;
     }
-    if (statElements.pendingAmount) statElements.pendingAmount.textContent = formatRegistrationCurrency(metrics.finance.pendingAmount);
+    if (statElements.pendingAmount) statElements.pendingAmount.textContent = metrics.finance.pendingAmount == null ? '—' : formatRegistrationCurrency(metrics.finance.pendingAmount);
     if (statElements.pendingAmountMeta) {
       statElements.pendingAmountMeta.textContent = `${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
@@ -2307,6 +2350,7 @@ function initSchoolDashboard() {
   window.addEventListener('registration:participants-updated', scheduleRender);
   window.addEventListener('registration:school-registrations-updated', scheduleRender);
   window.addEventListener('registration:payment-documents-updated', scheduleRender);
+  window.addEventListener('registration:extras-finance-updated', scheduleRender);
   window.addEventListener('registration:config-updated', scheduleRender);
   window.addEventListener('registration:panel-changed', (event) => {
     if (event?.detail?.key !== 'dashboard') {
@@ -4009,27 +4053,7 @@ function initParticipantsTab(role) {
 
   const loadParticipants = async () => {
     try {
-      const params = new URLSearchParams();
-      if (role === 'school') {
-        params.set('school_id', user.id);
-      }
-
-      const eventObj = getEvent();
-      if (eventObj && eventObj.id) {
-        params.set('event_id', eventObj.id);
-      }
-
-      const url = params.toString()
-        ? `${API_BASE_URL}/api/participants?${params.toString()}`
-        : `${API_BASE_URL}/api/participants`;
-
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(t('registration_participants_load_error', 'Error loading participants.'));
-      }
-
-      const data = await res.json();
-      registrationState.participants = Array.isArray(data) ? data : [];
+      registrationState.participants = await fetchRegistrationParticipants(role === 'school' ? user.id : null);
       notifyRegistrationParticipantsUpdate();
       renderParticipants();
     } catch (err) {
@@ -4887,12 +4911,15 @@ function buildRegistrationDashboardFinanceMetrics(registrations, categoryById) {
     (sum, row) => sum + (normalizeRegistrationNumber(row?.amount) ?? 0),
     0
   );
-  const totalAmount = totalFee + registrationFinance.totalAmount;
+  const extrasSummary = window.RegistrationExtras?.getFinanceSummary();
+  const totalAmount = window.RegistrationExtras?.enabled()
+    ? (extrasSummary?.total_amount ?? null)
+    : totalFee + registrationFinance.totalAmount;
 
   return {
     totalAmount,
     paidAmount,
-    pendingAmount: totalAmount - paidAmount,
+    pendingAmount: totalAmount == null ? null : totalAmount - paidAmount,
     pendingValidationPaymentsCount: pendingValidationPayments.length,
     registeredParticipantsCount,
     totalRegistrationsCount: registrationFinance.totalRegistrationsCount,
@@ -5315,6 +5342,7 @@ function initSchoolsTab() {
     if (detailElements.phone) detailElements.phone.value = school?.phone || '';
     if (detailElements.representative) detailElements.representative.value = school?.representative || '';
     if (detailElements.document) detailElements.document.value = school?.document || '';
+    window.dispatchEvent(new CustomEvent('registration:account-opened', { detail: { account: school } }));
     detailModal.show();
   };
 

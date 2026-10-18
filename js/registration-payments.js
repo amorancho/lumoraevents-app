@@ -328,11 +328,16 @@ function initPaymentsTab(role) {
       (sum, invoice) => sum + getDocumentAmountValue(invoice),
       0
     );
-    const pendingAmount = totalFee + finance.totalAmount - totalPaidAmount;
-    const totalAmount = totalFee + finance.totalAmount;
+    const summaryAccountId = getSelectedSchoolFilter() ? (getSelectedSchoolFilterId() || '__unresolved__') : null;
+    const extrasSummary = window.RegistrationExtras?.getFinanceSummary(summaryAccountId);
+    const extrasEnabled = window.RegistrationExtras?.enabled() === true;
+    const totalAmount = extrasEnabled ? (extrasSummary?.total_amount ?? null) : totalFee + finance.totalAmount;
+    const pendingAmount = totalAmount == null ? null : totalAmount - totalPaidAmount;
 
     return {
       finance,
+      extrasSummary,
+      extrasEnabled,
       registeredParticipantsCount,
       totalFee,
       totalAmount,
@@ -352,13 +357,14 @@ function initPaymentsTab(role) {
       summaryElements.feeMeta.textContent = `${formatInteger(metrics.registeredParticipantsCount)} ${t('registration_dashboard_kpi_participants', 'Participants')}`;
     }
     if (summaryElements.amountValue) {
-      summaryElements.amountValue.textContent = formatRegistrationCurrency(metrics.finance.totalAmount);
+      summaryElements.amountValue.textContent = metrics.extrasEnabled && !metrics.extrasSummary ? '—'
+        : formatRegistrationCurrency(metrics.extrasSummary?.registrations_amount ?? metrics.finance.totalAmount);
     }
     if (summaryElements.amountMeta) {
       summaryElements.amountMeta.textContent = `${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }
     if (summaryElements.totalValue) {
-      summaryElements.totalValue.textContent = formatRegistrationCurrency(metrics.totalAmount);
+      summaryElements.totalValue.textContent = metrics.totalAmount == null ? '—' : formatRegistrationCurrency(metrics.totalAmount);
     }
     if (summaryElements.paidValue) {
       summaryElements.paidValue.textContent = formatRegistrationCurrency(metrics.totalPaidAmount);
@@ -373,7 +379,7 @@ function initPaymentsTab(role) {
       summaryElements.invoicedMeta.textContent = `${formatInteger(metrics.totalInvoicesCount)} ${t('registration_tab_invoices', 'Invoices')}`;
     }
     if (summaryElements.pendingValue) {
-      summaryElements.pendingValue.textContent = formatRegistrationCurrency(metrics.pendingAmount);
+      summaryElements.pendingValue.textContent = metrics.pendingAmount == null ? '—' : formatRegistrationCurrency(metrics.pendingAmount);
     }
   };
 
@@ -2051,6 +2057,7 @@ function initPaymentsTab(role) {
   window.addEventListener('registration:config-updated', () => {
     renderSummary();
   });
+  window.addEventListener('registration:extras-finance-updated', renderSummary);
   window.addEventListener('registration:school-registrations-updated', () => {
     fetchDocumentTables({ showError: false });
   });

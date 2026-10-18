@@ -252,6 +252,7 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         showIdentificationDocument: data.registration_show_id_doc === 1,
         showResultsDetails: data.show_results_details === 1,
         hasAccreditations: data.has_accreditations === 1,
+        hasWorkshopsServices: data.has_workshops_services === 1,
       };
 
     }

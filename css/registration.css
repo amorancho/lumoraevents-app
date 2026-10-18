@@ -1,6 +1,57 @@
 .alerts-tooltip .tooltip-inner {
   text-align: left;
 }
+
+/* Workshops, packs and generic services reuse Registration and shared lm-* surfaces. */
+.registration-extras { min-width: 0; overflow-wrap: anywhere; }
+.registration-extras .modal-content > form { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
+.registration-extras .modal-content > form > .modal-body { overflow-y: auto; }
+.registration-extras .modal-footer { flex-shrink: 0; }
+.extras-heading, .extras-actions, .extras-pagination { display: flex; align-items: center; gap: var(--lm-space-2); flex-wrap: wrap; }
+.extras-heading { justify-content: space-between; margin-bottom: var(--lm-space-4); }
+.extras-actions .btn { min-height: 38px; }
+.extras-filters, .extras-form-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--lm-space-3); }
+.extras-filters > *, .extras-form-field { min-width: 0; }
+.extras-filters .form-label, .extras-form-field .form-label { color: var(--lm-text-muted); font-size: var(--lm-font-card-body); }
+.extras-mobile-list, .extras-catalog-grid { display: grid; gap: var(--lm-space-3); }
+.extras-desktop-table { display: none; }
+.extras-desktop-table th { white-space: nowrap; }
+.extras-desktop-table td { min-width: 95px; max-width: 260px; font-size: var(--lm-font-data); }
+.extras-desktop-table td .extras-actions { min-width: 170px; }
+.extras-detail-grid, .extras-finance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--lm-space-3); }
+.extras-detail-grid dt, .extras-finance-grid dt { margin-bottom: var(--lm-space-1); color: var(--lm-text-soft); font-size: var(--lm-font-card-meta); font-weight: 500; }
+.extras-detail-grid dd, .extras-finance-grid dd { margin: 0; font-size: var(--lm-font-card-body); }
+.extras-finance-grid dd { font-size: 1.1rem; font-weight: 700; }
+.extras-finance-grid > :last-child dd { color: var(--lm-cyan); }
+.extras-pagination { justify-content: space-between; margin-top: var(--lm-space-4); font-size: var(--lm-font-card-meta); }
+.extras-catalog-card { display: flex; min-width: 0; flex-direction: column; gap: var(--lm-space-2); }
+.extras-catalog-card h4 { color: var(--lm-text); }
+.extras-catalog-card-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--lm-space-2); margin-top: auto; padding-top: var(--lm-space-3); }
+.extras-description { white-space: pre-wrap; }
+.extras-occupancy { display: grid; gap: var(--lm-space-2); min-width: 0; font-size: var(--lm-font-card-meta); color: var(--lm-text-muted); }
+.extras-occupancy-track { height: 6px; overflow: hidden; border-radius: var(--lm-radius-pill); background: var(--lm-surface-raised); }
+.extras-occupancy-track > span { display: block; height: 100%; background: var(--lm-cyan); }
+.extras-workshop-selector { margin-top: var(--lm-space-4); padding: var(--lm-space-3); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); }
+.extras-workshop-options { display: grid; gap: var(--lm-space-2); max-height: 320px; overflow-y: auto; }
+.extras-workshop-option { display: flex; gap: var(--lm-space-3); padding: var(--lm-space-2); border-radius: var(--lm-radius-sm); cursor: pointer; }
+.extras-workshop-option:hover { background: var(--lm-surface-hover); }
+.extras-workshop-option input { flex-shrink: 0; }
+.extras-workshop-option small { display: block; color: var(--lm-text-soft); }
+.extras-workshop-summary { padding-left: var(--lm-space-4); color: var(--lm-text-muted); font-size: var(--lm-font-card-meta); }
+.extras-workshop-summary li + li { margin-top: var(--lm-space-2); }
+.extras-discount-form { display: flex; align-items: end; gap: var(--lm-space-3); flex-wrap: wrap; }
+.extras-discount-form > div { flex: 1 1 180px; min-width: 0; }
+.registration-extras :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 2px; }
+@media (min-width: 576px) {
+  .extras-form-grid, .extras-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .extras-finance-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+  .extras-catalog-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+}
+@media (min-width: 1200px) {
+  .extras-desktop-table { display: block; }
+  .extras-mobile-list { display: none; }
+  .extras-filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .alerts-tooltip .tooltip-inner ul {
   margin-bottom: 0;
   padding-left: 1rem;
