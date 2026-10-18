@@ -5980,6 +5980,7 @@ function initRegistrationCategoriesTab() {
     maxYears: document.getElementById('registrationCategoryMaxYears'),
     maxOutOfRange: document.getElementById('registrationCategoryMaxOutOfRange'),
     maxOutOfRangeInfo: modalEl.querySelector('[data-bs-toggle="tooltip"]'),
+    musicMinDuration: document.getElementById('registrationCategoryMusicMinDuration'),
     musicMaxDuration: document.getElementById('registrationCategoryMusicMaxDuration'),
     price: document.getElementById('registrationCategoryPrice'),
     applyFee: document.getElementById('registrationCategoryApplyFee'),
@@ -6015,6 +6016,7 @@ function initRegistrationCategoriesTab() {
     elements.minYears,
     elements.maxYears,
     elements.maxOutOfRange,
+    elements.musicMinDuration,
     elements.musicMaxDuration,
     elements.price
   ].filter(Boolean);
@@ -6056,6 +6058,7 @@ function initRegistrationCategoriesTab() {
   const getLanguage = () => getCurrentAppLanguage?.() || document.documentElement.getAttribute('lang') || 'es';
 
   const formatDurationValue = (value) => {
+    if (value === null || value === undefined || value === '') return '';
     const totalSeconds = Math.round(Number(value));
     if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '';
     const minutes = Math.floor(totalSeconds / 60);
@@ -6084,29 +6087,38 @@ function initRegistrationCategoriesTab() {
     return (minutes * 60) + seconds;
   };
 
-  const syncDurationFieldValidity = () => {
-    if (!elements.musicMaxDuration) return true;
-    const raw = `${elements.musicMaxDuration.value ?? ''}`.trim();
+  const syncDurationFieldValidity = (field, errorKey) => {
+    if (!field) return true;
+    const raw = `${field.value ?? ''}`.trim();
     const isValid = !raw || parseDurationValue(raw) !== null;
-    elements.musicMaxDuration.setCustomValidity(
-      isValid ? '' : t('registration_categories_field_music_max_duration_invalid', 'Use mm:ss format.')
-    );
+    field.setCustomValidity(isValid ? '' : t(errorKey, 'Use mm:ss format.'));
     return isValid;
   };
 
-  const normalizeDurationFieldDisplay = () => {
-    if (!elements.musicMaxDuration) return;
-    const totalSeconds = parseDurationValue(elements.musicMaxDuration.value);
+  const syncAllDurationFieldValidity = () => {
+    const minIsValid = syncDurationFieldValidity(
+      elements.musicMinDuration,
+      'registration_categories_field_music_min_duration_invalid'
+    );
+    const maxIsValid = syncDurationFieldValidity(
+      elements.musicMaxDuration,
+      'registration_categories_field_music_max_duration_invalid'
+    );
+    return minIsValid && maxIsValid;
+  };
+
+  const normalizeDurationFieldDisplay = (field) => {
+    if (!field) return;
+    const totalSeconds = parseDurationValue(field.value);
     if (totalSeconds === null) return;
-    elements.musicMaxDuration.value = formatDurationValue(totalSeconds);
+    field.value = formatDurationValue(totalSeconds);
   };
 
   const validateCategoryField = (field) => {
     if (!field) return true;
 
-    if (field === elements.musicMaxDuration) {
-      syncDurationFieldValidity();
-    }
+    if (field === elements.musicMinDuration) syncDurationFieldValidity(field, 'registration_categories_field_music_min_duration_invalid');
+    if (field === elements.musicMaxDuration) syncDurationFieldValidity(field, 'registration_categories_field_music_max_duration_invalid');
 
     const rawValue = `${field.value ?? ''}`.trim();
     const shouldValidate = field.required || rawValue !== '';
@@ -6293,10 +6305,11 @@ function initRegistrationCategoriesTab() {
     if (elements.minYears) elements.minYears.value = category?.min_years ?? '';
     if (elements.maxYears) elements.maxYears.value = category?.max_years ?? '';
     if (elements.maxOutOfRange) elements.maxOutOfRange.value = category?.max_outofrange ?? '';
+    if (elements.musicMinDuration) elements.musicMinDuration.value = formatDurationValue(category?.music_min_duration);
     if (elements.musicMaxDuration) elements.musicMaxDuration.value = formatDurationValue(category?.music_max_duration);
     if (elements.price) elements.price.value = formatCentsToCurrencyValue(category?.registration_price);
     if (elements.applyFee) elements.applyFee.checked = Number(category?.apply_fee ?? 1) === 1;
-    syncDurationFieldValidity();
+    syncAllDurationFieldValidity();
   };
 
   const openCategoryModal = (mode, category = null) => {
@@ -6401,7 +6414,12 @@ function initRegistrationCategoriesTab() {
       ),
       createCategoryMobileMetric(
         'bi-music-note-beamed',
-        t('registration_categories_header_music_duration', 'Music duration'),
+        t('registration_categories_header_music_min_duration', 'Music min.'),
+        formatDurationValue(category.music_min_duration) || '-'
+      ),
+      createCategoryMobileMetric(
+        'bi-music-note-beamed',
+        t('registration_categories_header_music_max_duration', 'Music max.'),
         formatDurationValue(category.music_max_duration) || '-'
       ),
       createCategoryMobileMetric(
@@ -6534,6 +6552,11 @@ function initRegistrationCategoriesTab() {
       maxOutOfRangeCell.textContent = category.max_outofrange ?? '-';
       row.appendChild(maxOutOfRangeCell);
 
+      const musicMinCell = document.createElement('td');
+      musicMinCell.className = 'text-center';
+      musicMinCell.textContent = formatDurationValue(category.music_min_duration) || '-';
+      row.appendChild(musicMinCell);
+
       const musicMaxCell = document.createElement('td');
       musicMaxCell.className = 'text-center';
       musicMaxCell.textContent = formatDurationValue(category.music_max_duration) || '-';
@@ -6636,7 +6659,7 @@ function initRegistrationCategoriesTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 12;
+    cell.colSpan = 13;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -6667,9 +6690,9 @@ function initRegistrationCategoriesTab() {
       return;
     }
 
-    if (syncDurationFieldValidity()) {
-      normalizeDurationFieldDisplay();
-    }
+    syncAllDurationFieldValidity();
+    normalizeDurationFieldDisplay(elements.musicMinDuration);
+    normalizeDurationFieldDisplay(elements.musicMaxDuration);
 
     if (elements.saveBtn) {
       elements.saveBtn.disabled = true;
@@ -6688,6 +6711,7 @@ function initRegistrationCategoriesTab() {
       min_years: normalizeNumber(elements.minYears?.value),
       max_years: normalizeNumber(elements.maxYears?.value),
       max_outofrange: normalizeNumber(elements.maxOutOfRange?.value),
+      music_min_duration: parseDurationValue(elements.musicMinDuration?.value),
       music_max_duration: parseDurationValue(elements.musicMaxDuration?.value),
       registration_price: parseCurrencyValueToCents(elements.price?.value),
       apply_fee: elements.applyFee?.checked ? 1 : 0
@@ -6879,11 +6903,19 @@ function initRegistrationCategoriesTab() {
     });
   });
 
-  elements.musicMaxDuration?.addEventListener('input', syncDurationFieldValidity);
-  elements.musicMaxDuration?.addEventListener('blur', () => {
-    if (syncDurationFieldValidity()) {
-      normalizeDurationFieldDisplay();
-    }
+  [elements.musicMinDuration, elements.musicMaxDuration].forEach((field) => {
+    field?.addEventListener('input', () => syncDurationFieldValidity(
+      field,
+      field === elements.musicMinDuration
+        ? 'registration_categories_field_music_min_duration_invalid'
+        : 'registration_categories_field_music_max_duration_invalid'
+    ));
+    field?.addEventListener('blur', () => {
+      const errorKey = field === elements.musicMinDuration
+        ? 'registration_categories_field_music_min_duration_invalid'
+        : 'registration_categories_field_music_max_duration_invalid';
+      if (syncDurationFieldValidity(field, errorKey)) normalizeDurationFieldDisplay(field);
+    });
   });
 
   window.addEventListener('beforeunload', () => {

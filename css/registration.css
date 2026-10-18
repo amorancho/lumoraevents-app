@@ -2709,6 +2709,9 @@
 #schoolForm .btn-check:checked + .school-user-type-option { border-color: var(--lm-cyan); color: var(--lm-text); background: #16384b; }
 #schoolForm .btn-check:focus-visible + .school-user-type-option { outline: 2px solid var(--lm-cyan); outline-offset: 2px; }
 .registration-page :where(.registration-main, .modal, #registrationSidebarOffcanvas) .btn { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: .25rem; border-radius: var(--lm-radius-sm); font-size: .76rem; font-weight: 700; line-height: 1.25; }
+#registrationCategoryModal .registration-category-max-outofrange-label { margin-bottom: .5rem; line-height: 1.5; }
+#registrationCategoryModal .registration-category-max-outofrange-label > .form-label { margin-bottom: 0; }
+#registrationCategoryModal .registration-category-field-help { min-height: 0; line-height: 1; vertical-align: baseline; }
 .registration-page .registration-sidebar-meta-row .btn-link { min-height: 0; justify-content: flex-start; padding: 0 !important; border: 0; border-radius: 0; color: var(--lm-blue); background: transparent; font-size: .72rem; line-height: 1.3; text-align: left; }
 .registration-page :where(.registration-main, .modal, #registrationSidebarOffcanvas) .btn-primary { border-color: #278dc7; color: #061622; background: var(--lm-primary); }
 .registration-page :where(.registration-main, .modal, #registrationSidebarOffcanvas) .btn-primary:hover { border-color: var(--lm-cyan); color: #061622; background: #70caff; }

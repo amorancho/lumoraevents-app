@@ -11,7 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
-  <link rel="stylesheet" href="css/registration.css?v=20261015-1">
+  <link rel="stylesheet" href="css/registration.css?v=20261018-5">
 </head>
 <body class="d-flex flex-column min-vh-100 registration-page" data-bs-theme="dark">
   
@@ -694,7 +694,8 @@
                           <th class="text-center" data-i18n="registration_categories_header_min_years">Edad mín.</th>
                           <th class="text-center" data-i18n="registration_categories_header_max_years">Edad máx.</th>
                           <th class="text-center" data-i18n="registration_categories_header_max_outofrange">Máx. fuera rango</th>
-                          <th class="text-center" data-i18n="registration_categories_header_music_duration">Dur. música</th>
+                          <th class="text-center" data-i18n="registration_categories_header_music_min_duration">Dur. mín.</th>
+                          <th class="text-center" data-i18n="registration_categories_header_music_max_duration">Dur. máx.</th>
                           <th class="text-center" data-i18n="registration_categories_price">Precio Hoy</th>
                           <th class="text-center" data-i18n="registration_categories_fee">Fee</th>
                           <th class="text-start" data-i18n="registration_categories_header_status">Estado insc.</th>
@@ -1420,13 +1421,13 @@
                 <input type="number" class="form-control" id="registrationCategoryMaxYears" min="0" step="1" required>
               </div>
               <div class="col-12 col-md-4">
-                <div class="d-flex align-items-center gap-1 mb-2">
+                <div class="registration-category-max-outofrange-label">
                   <label class="form-label mb-0" for="registrationCategoryMaxOutOfRange">
                     <span data-i18n="registration_categories_field_max_outofrange">Max. Fuera de rango</span>
                   </label>
                   <button
                     type="button"
-                    class="btn btn-link text-body-secondary p-0 border-0 lh-1 text-decoration-none"
+                    class="btn btn-link text-body-secondary p-0 border-0 lh-1 text-decoration-none registration-category-field-help"
                     title="Indica el numero maximo de personas que pueden quedar fuera del rango de edades permitidas."
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
@@ -1437,8 +1438,16 @@
                 </div>
                 <input type="number" class="form-control" id="registrationCategoryMaxOutOfRange" min="0" step="1">
               </div>
-              <div class="col-12 col-md-5">
-                <label class="form-label" for="registrationCategoryMusicMaxDuration" data-i18n="registration_categories_field_music_max_duration">Duracion musica</label>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="registrationCategoryMusicMinDuration" data-i18n="registration_categories_field_music_min_duration">Duración mínima música</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="registrationCategoryMusicMinDuration" inputmode="numeric" pattern="^[0-9]+:[0-9]{2}$">
+                  <span class="input-group-text">mm:ss</span>
+                </div>
+                <div class="invalid-feedback" data-i18n="registration_categories_field_music_min_duration_invalid">Usa el formato mm:ss.</div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="registrationCategoryMusicMaxDuration" data-i18n="registration_categories_field_music_max_duration">Duración máxima música</label>
                 <div class="input-group">
                   <input type="text" class="form-control" id="registrationCategoryMusicMaxDuration" inputmode="numeric" placeholder="03:30" pattern="^[0-9]+:[0-9]{2}$" required>
                   <span class="input-group-text">mm:ss</span>
@@ -1670,7 +1679,7 @@
           </div>
 
           <div class="row g-2 mt-2">
-            <div class="col-12 col-md-5">
+            <div class="col-12 col-md-4">
               <div class="text-muted small" data-i18n="registration_audio_file">Archivo</div>
               <div id="registrationAudioModalName" class="fw-semibold">-</div>
             </div>
@@ -1681,6 +1690,10 @@
             <div class="col-6 col-md-2">
               <div class="text-muted small" data-i18n="registration_audio_size">Tamano</div>
               <div id="registrationAudioModalSize" class="fw-semibold">-</div>
+            </div>
+            <div class="col-6 col-md-1">
+              <div class="text-muted small" data-i18n="registration_audio_min">Minimo</div>
+              <div id="registrationAudioModalMin" class="fw-semibold">-</div>
             </div>
             <div class="col-6 col-md-3">
               <div class="text-muted small" data-i18n="registration_audio_max">Maximo</div>
@@ -2242,9 +2255,9 @@
   <script src="js/common.js?v=20260917"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js?v=20261017-1"></script>
+  <script src="js/registration.js?v=20261018-1"></script>
   <script src="js/registration-extras.js?v=20261017-1"></script>
-  <script src="js/registration-competitions.js?v=20261005-1"></script>
+  <script src="js/registration-competitions.js?v=20261018-1"></script>
   <script src="js/registration-payments.js?v=20261015-1"></script>
 
 </body></html>

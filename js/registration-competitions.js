@@ -91,6 +91,7 @@
     name: document.getElementById('registrationAudioModalName'),
     duration: document.getElementById('registrationAudioModalDuration'),
     size: document.getElementById('registrationAudioModalSize'),
+    min: document.getElementById('registrationAudioModalMin'),
     max: document.getElementById('registrationAudioModalMax'),
     error: document.getElementById('registrationAudioModalError'),
     unsavedWarning: document.getElementById('registrationAudioModalUnsavedWarning'),
@@ -126,6 +127,7 @@
   let audioState = {
     file: null,
     duration: null,
+    minDuration: null,
     maxDuration: null,
     existingName: '',
     existingDuration: null,
@@ -431,6 +433,15 @@
     }
 
     const TIME_EXTRA = getEvent().musicExtraTime || 0;
+    if (audioState.minDuration != null && audioState.duration < audioState.minDuration) {
+      audioState.isValid = false;
+      const minError = t('registration_audio_min_duration_error', 'La duración no alcanza el mínimo permitido ({duration}).')
+        .replace('{duration}', formatDuration(audioState.minDuration));
+      setAudioError(minError);
+      if (audioElements.saveBtn) audioElements.saveBtn.disabled = true;
+      return false;
+    }
+
     const maxDuration = audioState.maxDuration != null ? audioState.maxDuration + TIME_EXTRA : null;
     if (maxDuration != null && audioState.duration > maxDuration) {
       audioState.isValid = false;
@@ -445,10 +456,15 @@
     return true;
   };
 
-  const updateAudioMaxDuration = (categoryId = null) => {
+  const updateAudioDurationLimits = (categoryId = null) => {
     const category = categoryId ? categoryById.get(`${categoryId}`) : null;
+    const minDuration = normalizeNumber(category?.music_min_duration);
     const maxDuration = normalizeNumber(category?.music_max_duration);
+    audioState.minDuration = minDuration;
     audioState.maxDuration = maxDuration;
+    if (audioElements.min) {
+      audioElements.min.textContent = minDuration == null ? '-' : formatDuration(minDuration);
+    }
     if (audioElements.max) {
       audioElements.max.textContent = maxDuration == null ? '-' : `${formatDuration(maxDuration)} (+${getEvent().musicExtraTime || 0} sec extra)`;
     }
@@ -500,6 +516,7 @@
     audioState = {
       file: null,
       duration: null,
+      minDuration: audioState.minDuration ?? null,
       maxDuration: audioState.maxDuration ?? null,
       existingName: '',
       existingDuration: null,
@@ -1247,7 +1264,7 @@
       audioElements.style.textContent = styleName;
     }
 
-    updateAudioMaxDuration(categoryId);
+    updateAudioDurationLimits(categoryId);
     resetAudioState();
     await fetchRegistrationAudioInfo(registration.id);
     registrationAudioModal.show();
