@@ -599,6 +599,12 @@
 #payments .registration-payments-summary-card--combined {
   grid-column: span 2;
 }
+#payments .registration-payments-summary-card--without-fee {
+  grid-column: span 1;
+}
+#payments .registration-payments-summary-card--without-fee .registration-payments-combined-metrics {
+  grid-template-columns: minmax(0, 1fr);
+}
 #payments .registration-payments-summary-card--combined .card-body > .d-flex {
   flex: 1 1 auto;
   align-items: stretch !important;
@@ -616,7 +622,7 @@
 #payments .registration-payments-summary-card--combined .registration-dashboard-kpi-icon {
   align-self: flex-start;
 }
-#payments .registration-payments-combined-metric + .registration-payments-combined-metric {
+#payments .registration-payments-combined-metric:not(.d-none) + .registration-payments-combined-metric {
   padding-left: 0.75rem;
   border-left: 1px solid rgba(253, 126, 20, 0.2);
 }
@@ -768,6 +774,8 @@
 }
 .school-registrations-fee {
   display: inline-flex;
+  max-width: 100%;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 0.7rem;
@@ -775,7 +783,7 @@
   border-radius: 0.7rem;
   color: var(--bs-primary-text-emphasis);
   background: rgba(var(--bs-primary-rgb), 0.08);
-  white-space: nowrap;
+  white-space: normal;
 }
 .school-registrations-fee-label {
   font-size: 0.72rem;
@@ -784,6 +792,7 @@
 .school-registrations-fee-value {
   font-size: 0.9rem;
   font-weight: 800;
+  white-space: nowrap;
 }
 .org-registrations-filter-panel {
   display: contents;
@@ -1093,7 +1102,7 @@
   #participants .participants-summary .badge {
     padding: 0.35em 0.55em;
   }
-  #participants .participants-summary > div + div::before {
+  #participants .participants-summary > div:not(.d-none) + div::before {
     margin-right: 0.45rem;
     color: var(--bs-border-color);
     content: '•';
@@ -2814,5 +2823,5 @@
   .registration-content :is(.registration-dashboard-summary-grid, .registration-dashboard-status-grid, .registration-dashboard-finance-grid) { grid-template-columns: minmax(0, 1fr); }
   #payments .registration-payments-summary-card--combined { grid-column: span 1; }
   #payments .registration-payments-combined-metrics { grid-template-columns: minmax(0, 1fr); }
-  #payments .registration-payments-combined-metric + .registration-payments-combined-metric { padding: .75rem 0 0; border-top: 1px solid var(--lm-border); border-left: 0; }
+  #payments .registration-payments-combined-metric:not(.d-none) + .registration-payments-combined-metric { padding: .75rem 0 0; border-top: 1px solid var(--lm-border); border-left: 0; }
 }

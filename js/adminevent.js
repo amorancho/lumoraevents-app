@@ -1465,6 +1465,11 @@ async function loadEventData(eventId) {
     if (f('registration_fee_cost')) {
       f('registration_fee_cost').value = formatCentsToCurrencyValue(data.registration_fee_cost);
     }
+    if (f('registration_fee_type')) {
+      f('registration_fee_type').value = ['NON', 'SCH', 'REG', 'PAR'].includes(data.registration_fee_type)
+        ? data.registration_fee_type
+        : (Number(data.registration_fee_cost) > 0 ? 'PAR' : 'NON');
+    }
 
     if (f('visible')) f('visible').checked = data.visible == 1;
 
@@ -1515,6 +1520,7 @@ async function saveEventData(eventId) {
     registration_start: f('registration_start').value || null,
     registration_end: f('registration_end').value || null,
     music_extra_time: Number(f('music_extra_time').value || 0),
+    registration_fee_type: f('registration_fee_type').value,
     registration_fee_cost: parseCurrencyValueToCents(f('registration_fee_cost').value)
   };
 

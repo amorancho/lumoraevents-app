@@ -3,6 +3,8 @@
   const mobileCards = document.getElementById('registrationsMobileCards');
   const countEl = document.getElementById('registrationsCount');
   const feeTotalEl = document.getElementById('registrationsFeeTotal');
+  const feeTypeEl = document.getElementById('registrationsFeeType');
+  const feeSummaryEl = feeTotalEl?.closest('.school-registrations-fee');
   const emptyEl = document.getElementById('registrationsEmpty');
   const createBtn = document.getElementById('createRegistrationBtn');
   const copyTsvBtn = document.getElementById('competitionsCopyTsvBtn');
@@ -350,6 +352,9 @@
     const economicsValue = categoryPrice === 0
       ? `<span>${freeRegistrationLabel}</span>`
       : `<span><strong>${pricePerPaxLabel}:</strong> ${formatCurrencyDisplay(categoryPrice)}</span>`;
+    const feeExemptionInfo = Number(category.apply_fee ?? 1) === 1
+      ? ''
+      : `<span aria-hidden="true">·</span><span>${t('registration_categories_no_fee', 'No aplica Fee')}</span>`;
     const economicsInfo = `
       <div class="registration-category-info-card registration-category-info-card--economics">
         <div class="registration-category-info-title">
@@ -358,6 +363,7 @@
         </div>
         <div class="registration-category-info-values">
           ${economicsValue}
+          ${feeExemptionInfo}
         </div>
       </div>
     `;
@@ -1428,6 +1434,17 @@
     elements.totalAmountWrapper.classList.remove('d-none');
   };
 
+  const updateRegistrationFeeInfo = (registrations) => {
+    const fee = buildRegistrationFeeMetrics(registrations, categoryById, { schoolId: user.id });
+    feeSummaryEl?.classList.toggle('d-none', fee.type === 'NON');
+    const feeTypeInfo = getRegistrationFeeTypeInfo(fee.type);
+    if (feeTypeEl && feeTypeInfo) {
+      feeTypeEl.dataset.i18n = feeTypeInfo.key;
+      feeTypeEl.textContent = feeTypeInfo.label;
+    }
+    if (feeTotalEl) feeTotalEl.textContent = formatRegistrationCurrency(fee.totalFee);
+  };
+
   const renderRegistrations = () => {
     disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
@@ -1438,12 +1455,7 @@
     if (countEl) {
       countEl.textContent = `${registrations.length}`;
     }
-    if (feeTotalEl) {
-      const validatedRegistrations = registrations.filter((registration) => isRegistrationValidated(registration));
-      const registeredParticipantsCount = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
-      const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
-      feeTotalEl.textContent = formatRegistrationCurrency(registrationFeeCost * registeredParticipantsCount);
-    }
+    updateRegistrationFeeInfo(registrations);
 
     if (!registrations.length) {
       if (emptyEl) emptyEl.classList.remove('d-none');
@@ -1683,7 +1695,7 @@
     mobileError.textContent = message;
     mobileCards.appendChild(mobileError);
     if (countEl) countEl.textContent = '0';
-    if (feeTotalEl) feeTotalEl.textContent = formatRegistrationCurrency(0);
+    updateRegistrationFeeInfo([]);
     if (emptyEl) emptyEl.classList.add('d-none');
   };
 
@@ -2293,6 +2305,7 @@
 
   updateMembersAgeHeaderTooltip();
   syncMembersGenderUi();
+  updateRegistrationFeeInfo([]);
   Promise.resolve()
     .then(loadRegistrationConfig)
     .then(loadRegistrations)

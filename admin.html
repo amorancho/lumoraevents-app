@@ -801,8 +801,17 @@
                     <label class="form-label">Tiempo extra música (seg.)</label>
                     <input type="number" class="form-control" id="music_extra_time" min="0">
                   </div>
-                  <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Cuota inscripcion</label>
+                  <div class="col-lg-2 col-md-6">
+                    <label class="form-label" for="registration_fee_type">Tipo de cuota</label>
+                    <select class="form-select" id="registration_fee_type">
+                      <option value="NON" selected>No FEE</option>
+                      <option value="SCH">Por Escuela</option>
+                      <option value="REG">Por Inscripción</option>
+                      <option value="PAR">Por Participante</option>
+                    </select>
+                  </div>
+                  <div class="col-lg-2 col-md-6">
+                    <label class="form-label" for="registration_fee_cost">Cuota inscripcion</label>
                     <div class="input-group">
                       <input type="number" class="form-control" id="registration_fee_cost" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
                       <span class="input-group-text">EUR</span>
@@ -1094,7 +1103,7 @@
   <script src="js/utils.js"></script>
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
-  <script src="js/admin-panel.js?v=20261005-1"></script>
+  <script src="js/admin-panel.js?v=20261018-1"></script>
 
 </body>
 </html>

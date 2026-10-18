@@ -11,7 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
-  <link rel="stylesheet" href="css/registration.css?v=20261018-7">
+  <link rel="stylesheet" href="css/registration.css?v=20261019-2">
 </head>
 <body class="d-flex flex-column min-vh-100 registration-page" data-bs-theme="dark">
   
@@ -523,8 +523,9 @@
                     </form>
                     <div id="participantsMobileActiveFilters" class="participants-mobile-active-filters"></div>
                     <div class="participants-summary d-flex align-items-center gap-3 ms-lg-auto flex-wrap">
-                      <div class="d-flex align-items-center gap-2" id="participantsFeeSummary">
+                      <div class="d-flex align-items-center gap-2 flex-wrap d-none" id="participantsFeeSummary">
                         <span class="text-muted" data-i18n="registration_categories_fee_cost">Cuota inscripcion</span>
+                        <span class="badge bg-info-subtle text-info-emphasis" id="participantsFeeType"></span>
                         <span class="badge bg-secondary-subtle text-secondary-emphasis" id="participantsFeeCost">0.00 EUR</span>
                       </div>
                       <div class="d-flex align-items-center gap-2">
@@ -673,8 +674,9 @@
                       <span data-i18n="registration_categories_add">Nueva categoria</span>
                     </button>
                     <div class="registration-categories-summary d-flex align-items-center gap-3 ms-sm-auto flex-wrap">
-                      <div class="d-flex align-items-center gap-2">
+                      <div class="d-flex align-items-center gap-2 flex-wrap d-none" id="registrationCategoriesFeeSummary">
                         <span class="text-muted" data-i18n="registration_categories_fee_cost">Cuota inscripcion</span>
+                        <span class="badge bg-info-subtle text-info-emphasis" id="registrationCategoriesFeeType"></span>
                         <span class="badge bg-info-subtle text-info-emphasis" id="registrationCategoriesFeeCost">0.00 EUR</span>
                       </div>
                       <div class="d-flex align-items-center gap-2">
@@ -750,8 +752,9 @@
                       </button>
                     </div>
                     <div class="school-registrations-summary d-flex align-items-center gap-3 ms-sm-auto flex-wrap">
-                      <div class="school-registrations-fee" aria-live="polite">
+                      <div class="school-registrations-fee d-none" aria-live="polite">
                         <span class="school-registrations-fee-label" data-i18n="registration_payments_total_fee">Total fee</span>
+                        <span class="badge bg-info-subtle text-info-emphasis" id="registrationsFeeType"></span>
                         <strong class="school-registrations-fee-value" id="registrationsFeeTotal">0,00&nbsp;€</strong>
                       </div>
                       <div class="d-flex align-items-center gap-2">
@@ -922,7 +925,7 @@
                     <div class="card-body">
                       <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
                         <div class="registration-payments-combined-metrics">
-                          <div class="registration-payments-combined-metric">
+                          <div class="registration-payments-combined-metric d-none" id="registrationPaymentsFeeSummary">
                             <div class="registration-dashboard-kpi-label" data-i18n="registration_payments_total_fee">Total fee</div>
                             <div class="registration-dashboard-kpi-meta" id="registrationPaymentsFeeMeta">0 Participants</div>
                             <div class="registration-dashboard-kpi-value" id="registrationPaymentsFeeValue">EUR 0.00</div>
@@ -2273,13 +2276,13 @@
   <script src="js/utils.js"></script>
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
-  <script src="js/common.js?v=20260917"></script>
+  <script src="js/common.js?v=20261018-1"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js?v=20261018-2"></script>
+  <script src="js/registration.js?v=20261019-1"></script>
   <script src="js/registration-extras.js?v=20261017-1"></script>
-  <script src="js/registration-competitions.js?v=20261018-1"></script>
-  <script src="js/registration-payments.js?v=20261015-1"></script>
+  <script src="js/registration-competitions.js?v=20261019-4"></script>
+  <script src="js/registration-payments.js?v=20261019-1"></script>
 
 </body></html>
 

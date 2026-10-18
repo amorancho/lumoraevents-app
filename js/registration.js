@@ -365,6 +365,38 @@ function getRegistrationFeeParticipantsCount(registrations, categoryById) {
   );
 }
 
+function getRegistrationFeeType() {
+  const event = getEvent();
+  return ['NON', 'PAR', 'SCH', 'REG'].includes(event?.registrationFeeType)
+    ? event.registrationFeeType
+    : (Number(event?.registrationFeeCost) > 0 ? 'PAR' : 'NON');
+}
+
+function buildRegistrationFeeMetrics(registrations, categoryById, options = {}) {
+  const type = getRegistrationFeeType();
+  const validatedRegistrations = (Array.isArray(registrations) ? registrations : [])
+    .filter(isRegistrationValidated);
+  let units = 0;
+
+  if (type === 'PAR') {
+    units = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
+  } else if (type === 'REG') {
+    units = validatedRegistrations.filter((registration) => registrationAppliesFee(registration, categoryById)).length;
+  } else if (type === 'SCH') {
+    const schools = new Set(validatedRegistrations.map((registration) => {
+      const schoolId = registration?.school_id ?? registration?.school?.id ?? options.schoolId;
+      if (schoolId != null && `${schoolId}`.trim()) return `id:${schoolId}`;
+      const schoolName = `${registration?.school_name ?? registration?.school?.name ?? ''}`.trim().toLowerCase();
+      // School-scoped responses can omit the account identity.
+      return schoolName ? `name:${schoolName}` : 'current-account';
+    }));
+    units = schools.size;
+  }
+
+  const cost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
+  return { type, units, totalFee: units * cost };
+}
+
 async function hydrateValidatedRegistrationMembers(registrations, options = {}) {
   const rows = Array.isArray(registrations) ? registrations : [];
   const eventId = getEvent()?.id;
@@ -2570,6 +2602,7 @@ function initParticipantsTab(role) {
   const mobileCards = document.getElementById('participantsMobileCards');
   const countEl = document.getElementById('participantsCount');
   const feeSummaryEl = document.getElementById('participantsFeeSummary');
+  const feeTypeEl = document.getElementById('participantsFeeType');
   const feeCostEl = document.getElementById('participantsFeeCost');
   const emptyEl = document.getElementById('participantsEmpty');
   const addBtn = document.getElementById('addParticipantBtn');
@@ -2627,9 +2660,6 @@ function initParticipantsTab(role) {
     'participants-table--organizer-without-authorization',
     showSchoolColumn && !showOrganizerAuthorizations
   );
-  if (feeSummaryEl) {
-    feeSummaryEl.classList.remove('d-none');
-  }
   if (showAuthorizations && authorizationNotice) {
     authorizationNotice.classList.remove('d-none');
     authorizationNotice.classList.add('d-flex');
@@ -3094,10 +3124,15 @@ function initParticipantsTab(role) {
   };
 
   const updateParticipantsFeeInfo = () => {
-    if (!feeCostEl) {
-      return;
+    const feeTypeInfo = getRegistrationFeeTypeInfo(getRegistrationFeeType());
+    feeSummaryEl?.classList.toggle('d-none', !feeTypeInfo);
+    if (!feeTypeInfo) return;
+
+    if (feeTypeEl) {
+      feeTypeEl.dataset.i18n = feeTypeInfo.key;
+      feeTypeEl.textContent = feeTypeInfo.label;
     }
-    feeCostEl.textContent = formatRegistrationCurrency(getEvent()?.registrationFeeCost ?? 0);
+    if (feeCostEl) feeCostEl.textContent = formatRegistrationCurrency(getEvent()?.registrationFeeCost ?? 0);
   };
 
   const normalizeImportPreviewErrors = (value) => {
@@ -4781,6 +4816,16 @@ function formatRegistrationCurrency(value) {
   }).format(amount);
 }
 
+function getRegistrationFeeTypeInfo(type) {
+  const labels = {
+    SCH: ['registration_fee_type_sch', 'Por Escuela/Particular'],
+    REG: ['registration_fee_type_reg', 'Por Inscripción'],
+    PAR: ['registration_fee_type_par', 'Por Participante']
+  };
+  const entry = labels[type];
+  return entry ? { key: entry[0], label: t(entry[0], entry[1]) } : null;
+}
+
 function formatRegistrationPercent(value) {
   const ratio = Number(value);
   return new Intl.NumberFormat(getRegistrationLanguage(), {
@@ -4898,8 +4943,7 @@ function buildRegistrationDashboardFinanceMetrics(registrations, categoryById) {
     useStoredTotalAmount: true
   });
   const registeredParticipantsCount = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
-  const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
-  const totalFee = registrationFeeCost * registeredParticipantsCount;
+  const { totalFee } = buildRegistrationFeeMetrics(validatedRegistrations, categoryById);
   const paymentRows = (Array.isArray(registrationState.paymentDocuments) ? registrationState.paymentDocuments : [])
     .filter((row) => `${row?.payment_type ?? ''}`.trim().toUpperCase() === 'PAY');
   const validatedPayments = paymentRows.filter((row) => `${row?.status ?? ''}`.trim().toUpperCase() === 'VAL');
@@ -5960,6 +6004,8 @@ function initRegistrationCategoriesTab() {
   const mobileCards = document.getElementById('registrationCategoriesMobileCards');
   const emptyEl = document.getElementById('registrationCategoriesEmpty');
   const countEl = document.getElementById('registrationCategoriesCount');
+  const feeSummaryEl = document.getElementById('registrationCategoriesFeeSummary');
+  const feeTypeEl = document.getElementById('registrationCategoriesFeeType');
   const feeCostEl = document.getElementById('registrationCategoriesFeeCost');
   const addBtn = document.getElementById('registrationCategoryAddBtn');
   const modalEl = document.getElementById('registrationCategoryModal');
@@ -6504,8 +6550,14 @@ function initRegistrationCategoriesTab() {
     if (countEl) {
       countEl.textContent = `${categories.length}`;
     }
-    if (feeCostEl) {
-      feeCostEl.textContent = formatCurrencyDisplay(getEvent()?.registrationFeeCost ?? 0);
+    const feeTypeInfo = getRegistrationFeeTypeInfo(getRegistrationFeeType());
+    feeSummaryEl?.classList.toggle('d-none', !feeTypeInfo);
+    if (feeTypeInfo) {
+      if (feeTypeEl) {
+        feeTypeEl.dataset.i18n = feeTypeInfo.key;
+        feeTypeEl.textContent = feeTypeInfo.label;
+      }
+      if (feeCostEl) feeCostEl.textContent = formatCurrencyDisplay(getEvent()?.registrationFeeCost ?? 0);
     }
 
     if (!categories.length) {

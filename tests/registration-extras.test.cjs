@@ -216,6 +216,117 @@ test('legacy finance remains unchanged when extras are disabled', async () => {
   } finally { h.close(); }
 });
 
+test('Payments applies every fee type for organizer and school, and hides only the fee metric for NON', async () => {
+  const categories = [{ id: 1, apply_fee: 1 }, { id: 2, apply_fee: 0 }];
+  const rows = [
+    { id: 1, school_id: 4, category_id: 1, status: 'VAL', total_amount: 3000, members: [{ participant_id: 11 }, { participant_id: 12 }, { participant_id: 13 }] },
+    { id: 2, school_id: 4, category_id: 1, status: 'VAL', total_amount: 2000, members: [{ participant_id: 11 }] },
+    { id: 3, school_id: 5, category_id: 2, status: 'VAL', total_amount: 4000, members: [{ participant_id: 21 }] },
+    { id: 4, school_id: 6, category_id: 1, status: 'PEN', total_amount: 9000, members: [{ participant_id: 31 }] },
+    { id: 5, school_id: 4, category_id: 1, status: 'VAL', total_amount: 1000, members: [{ participant_id: 14 }] }
+  ];
+  for (const role of ['organizer', 'school']) {
+    const h = harness({ role, flag: false });
+    try {
+      const state = h.w.eval('registrationState');
+      state.registrationCategories = categories;
+      state.schools = h.accounts;
+      state.organizerRegistrations = rows;
+      state.registrations = rows.filter(row => row.school_id === 4).map(row => ({ ...row, school_id: 2 }));
+      h.event.registrationFeeType = 'NON';
+      h.w.initPaymentsTab(role); await tick();
+      const feeSummary = h.w.document.getElementById('registrationPaymentsFeeSummary');
+      const card = feeSummary.closest('.registration-payments-summary-card');
+      for (const [type, expectedFee] of [['NON', 0], ['PAR', 4000], ['REG', 3000], ['SCH', role === 'school' ? 1000 : 2000]]) {
+        h.event.registrationFeeType = type;
+        h.w.dispatchEvent(new h.w.Event('registration:config-updated')); await tick();
+        const expectedRegistrations = role === 'school' ? 6000 : 10000;
+        assert.equal(h.w.document.getElementById('registrationPaymentsFeeValue').textContent, h.w.formatRegistrationCurrency(expectedFee));
+        assert.equal(h.w.document.getElementById('registrationPaymentsTotalValue').textContent, h.w.formatRegistrationCurrency(expectedRegistrations + expectedFee));
+        assert.equal(h.w.document.getElementById('registrationPaymentsAmountValue').textContent, h.w.formatRegistrationCurrency(expectedRegistrations));
+        assert.equal(feeSummary.classList.contains('d-none'), type === 'NON');
+        assert.equal(card.classList.contains('registration-payments-summary-card--without-fee'), type === 'NON');
+        assert.equal(card.classList.contains('d-none'), false);
+        assert.equal(feeSummary.nextElementSibling.classList.contains('d-none'), false);
+      }
+      assert.equal(h.messages.length, 0);
+    } finally { h.close(); }
+  }
+});
+
+test('Payments school filter charges SCH for an exempt-only school and respects category exemptions for REG', async () => {
+  const h = harness({ role: 'organizer', flag: false });
+  try {
+    const state = h.w.eval('registrationState');
+    state.schools = h.accounts;
+    state.registrationCategories = [{ id: 1, apply_fee: 1 }, { id: 2, apply_fee: 0 }];
+    state.organizerRegistrations = [
+      { id: 1, school_id: 4, category_id: 1, status: 'VAL', total_amount: 3000, members: [{ participant_id: 11 }] },
+      { id: 2, school_id: 4, category_id: 1, status: 'VAL', total_amount: 2000, members: [{ participant_id: 11 }] },
+      { id: 3, school_id: 5, category_id: 2, status: 'VAL', total_amount: 4000, members: [{ participant_id: 21 }] }
+    ];
+    h.event.registrationFeeType = 'SCH';
+    h.w.initPaymentsTab('organizer'); await tick();
+    const filter = h.w.document.getElementById('registrationPaymentsSharedSchoolFilter');
+    const select = async value => { filter.value = value; filter.dispatchEvent(new h.w.Event('change')); await tick(); };
+    await select('id:5');
+    assert.equal(h.w.document.getElementById('registrationPaymentsFeeValue').textContent, h.w.formatRegistrationCurrency(1000));
+    assert.match(h.w.document.getElementById('registrationPaymentsFeeMeta').textContent, /^1 /);
+    assert.equal(h.w.document.getElementById('registrationPaymentsTotalValue').textContent, h.w.formatRegistrationCurrency(5000));
+    h.event.registrationFeeType = 'REG';
+    h.w.dispatchEvent(new h.w.Event('registration:config-updated')); await tick();
+    assert.equal(h.w.document.getElementById('registrationPaymentsFeeValue').textContent, h.w.formatRegistrationCurrency(0));
+    await select('id:4');
+    assert.equal(h.w.document.getElementById('registrationPaymentsFeeValue').textContent, h.w.formatRegistrationCurrency(2000));
+    assert.match(h.w.document.getElementById('registrationPaymentsFeeMeta').textContent, /^2 /);
+    assert.equal(h.w.document.getElementById('registrationPaymentsTotalValue').textContent, h.w.formatRegistrationCurrency(7000));
+    await select('');
+    assert.equal(h.w.document.getElementById('registrationPaymentsTotalValue').textContent, h.w.formatRegistrationCurrency(11000));
+    assert.equal(h.messages.length, 0);
+  } finally { h.close(); }
+});
+
+test('Competitions shows the same school fee rules, including SCH with only exempt categories and NON visibility', async () => {
+  const h = harness({ flag: false });
+  try {
+    let rows = [
+      { id: 1, school_id: 2, category_id: 1, status: 'VAL', members: [{ participant_id: 11 }, { participant_id: 12 }, { participant_id: 13 }] },
+      { id: 2, school_id: 2, category_id: 1, status: 'VAL', members: [{ participant_id: 11 }] },
+      { id: 3, school_id: 2, category_id: 2, status: 'VAL', members: [{ participant_id: 21 }] }
+    ];
+    h.w.fetchRegistrationCategories = async () => [{ id: 1, apply_fee: 1 }, { id: 2, apply_fee: 0 }];
+    h.w.fetchRegistrationStyles = async () => [];
+    h.w.fetch = async () => ({ ok: true, json: async () => rows });
+    h.w.bootstrap.Tooltip = class { dispose() {} setContent() {} update() {} static getOrCreateInstance() { return new this(); } };
+    vm.runInContext(read('js/registration-competitions.js'), h.dom.getInternalVMContext(), { filename: 'js/registration-competitions.js' });
+    h.event.registrationFeeType = 'NON';
+    h.w.initCompetitionsTab(); await tick();
+    const feeValue = h.w.document.getElementById('registrationsFeeTotal');
+    const feeType = h.w.document.getElementById('registrationsFeeType');
+    const typeLabels = { PAR: 'Por Participante', REG: 'Por Inscripción', SCH: 'Por Escuela/Particular' };
+    const feeSummary = feeValue.closest('.school-registrations-fee');
+    for (const [type, expectedFee] of [['NON', 0], ['PAR', 3000], ['REG', 2000], ['SCH', 1000]]) {
+      h.event.registrationFeeType = type;
+      h.w.dispatchEvent(new h.w.Event('registration:config-updated')); await tick();
+      assert.equal(feeValue.textContent, h.w.formatRegistrationCurrency(expectedFee));
+      assert.equal(feeSummary.classList.contains('d-none'), type === 'NON');
+      if (type !== 'NON') assert.equal(feeType.textContent, typeLabels[type]);
+    }
+    assert.equal(feeType.nextElementSibling, feeValue);
+    h.w.localStorage.setItem('lang', 'en');
+    h.w.document.documentElement.lang = 'en'; await tick();
+    assert.equal(feeType.textContent, 'Per school/individual');
+    rows = rows.filter(row => row.category_id === 2);
+    h.w.document.getElementById('registrationModal').dispatchEvent(new h.w.Event('hidden.bs.modal')); await tick();
+    assert.equal(feeValue.textContent, h.w.formatRegistrationCurrency(1000));
+    rows = [];
+    h.w.document.getElementById('registrationModal').dispatchEvent(new h.w.Event('hidden.bs.modal')); await tick();
+    assert.equal(feeValue.textContent, h.w.formatRegistrationCurrency(0));
+    assert.equal(h.w.document.getElementById('registrationsCount').textContent, '0');
+    assert.equal(h.messages.length, 0);
+  } finally { h.close(); }
+});
+
 test('full workshops still allow pending bookings with exactly the contract fields', async () => {
   const h = harness();
   try {

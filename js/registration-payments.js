@@ -23,6 +23,7 @@ function initPaymentsTab(role) {
   window.addEventListener('registration:payment-instructions-updated', updatePaymentInstructionsVisibility);
 
   const summaryElements = {
+    feeSummary: document.getElementById('registrationPaymentsFeeSummary'),
     feeValue: document.getElementById('registrationPaymentsFeeValue'),
     feeMeta: document.getElementById('registrationPaymentsFeeMeta'),
     amountValue: document.getElementById('registrationPaymentsAmountValue'),
@@ -313,9 +314,10 @@ function initPaymentsTab(role) {
       validatedOnly: true,
       useStoredTotalAmount: true
     });
-    const registeredParticipantsCount = getRegistrationFeeParticipantsCount(validatedRegistrations, categoryById);
-    const registrationFeeCost = normalizeRegistrationNumber(getEvent()?.registrationFeeCost) ?? 0;
-    const totalFee = registrationFeeCost * registeredParticipantsCount;
+    const feeMetrics = buildRegistrationFeeMetrics(validatedRegistrations, categoryById, {
+      schoolId: isOrganizer ? getSelectedSchoolFilterId() : getUserFromToken()?.id
+    });
+    const totalFee = feeMetrics.totalFee;
     const validatedPayments = getSchoolScopedPaymentRows().filter(
       (payment) => getPaymentStatusValue(payment) === 'VAL'
     );
@@ -338,7 +340,7 @@ function initPaymentsTab(role) {
       finance,
       extrasSummary,
       extrasEnabled,
-      registeredParticipantsCount,
+      feeMetrics,
       totalFee,
       totalAmount,
       totalPaidAmount,
@@ -350,11 +352,20 @@ function initPaymentsTab(role) {
   };
 
   const updateSummary = (metrics) => {
+    const feeHidden = metrics.feeMetrics.type === 'NON';
+    summaryElements.feeSummary?.classList.toggle('d-none', feeHidden);
+    summaryElements.feeSummary?.closest('.registration-payments-summary-card')
+      ?.classList.toggle('registration-payments-summary-card--without-fee', feeHidden);
     if (summaryElements.feeValue) {
       summaryElements.feeValue.textContent = formatRegistrationCurrency(metrics.totalFee);
     }
     if (summaryElements.feeMeta) {
-      summaryElements.feeMeta.textContent = `${formatInteger(metrics.registeredParticipantsCount)} ${t('registration_dashboard_kpi_participants', 'Participants')}`;
+      const unitLabels = {
+        PAR: t('registration_dashboard_kpi_participants', 'Participants'),
+        REG: t('registration_dashboard_kpi_registrations', 'Registrations'),
+        SCH: t('registration_tab_schools', 'Schools / Individuals')
+      };
+      summaryElements.feeMeta.textContent = `${formatInteger(metrics.feeMetrics.units)} ${unitLabels[metrics.feeMetrics.type] || ''}`;
     }
     if (summaryElements.amountValue) {
       summaryElements.amountValue.textContent = metrics.extrasEnabled && !metrics.extrasSummary ? '—'

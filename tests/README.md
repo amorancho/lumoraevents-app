@@ -1,5 +1,9 @@
 Las pruebas de `registration-extras.test.cjs` verifican el comportamiento del DOM y las peticiones con una API simulada. No renderizan la página ni realizan comprobaciones visuales, previews o capturas.
 
+`registration-fees.test.cjs` comprueba los cálculos de NON, PAR, SCH y REG, las categorías exentas, los participantes únicos, la validación de inscripciones y los totales y saldos del Dashboard. Solo necesita Node.js y se ejecuta con `node --test tests/registration-fees.test.cjs`.
+
+Las pruebas de DOM de `registration-extras.test.cjs` también comprueban los cuatro tipos de fee en Payments y Competitions, la ocultación de NON, el filtro por escuela y la conservación de los totales suministrados por la API de extras.
+
 Requieren Node.js 20 o posterior y `jsdom` 26. Se puede instalar la dependencia en una carpeta temporal sin añadir dependencias ni un proceso de build a la aplicación:
 
 ```powershell

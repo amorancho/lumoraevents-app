@@ -244,6 +244,9 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hasMasters: data.has_masters === 1,
         judgesCanChangeVotes: data.judges_can_change_votes === 1,
         registrationFeeCost: data.registration_fee_cost || 0,
+        registrationFeeType: ['NON', 'SCH', 'REG', 'PAR'].includes(data.registration_fee_type)
+          ? data.registration_fee_type
+          : (Number(data.registration_fee_cost) > 0 ? 'PAR' : 'NON'),
         showGender: data.show_gender === 1,
         hasAudienceVoting: data.has_audience_voting === 1,
         hasMultipleScenarios: data.has_multiple_scenarios === 1,
