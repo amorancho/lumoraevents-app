@@ -544,7 +544,8 @@ function createScheduleBreakCard(item, { highlightLive = false } = {}) {
     card.className = `lm-card schedule-break${isLiveItem ? ' schedule-item-live' : ''}`;
     card.innerHTML = `
         <div class="lm-card-body schedule-break-body">
-            <i class="bi bi-cup-hot schedule-break-icon" aria-hidden="true"></i>
+            <time class="schedule-time">${escapeHtml(item?.time || '')}</time>
+            <i class="bi bi-clock schedule-break-icon" aria-hidden="true"></i>
             <div class="schedule-break-title">${escapeHtml(breakName)}</div>
             <div class="lm-badge lm-badge-warning schedule-break-duration">${escapeHtml(breakDuration)}</div>
         </div>
