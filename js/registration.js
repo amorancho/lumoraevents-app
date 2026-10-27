@@ -7524,6 +7524,9 @@ function createRegistrationMobileCard(options = {}) {
   if (actions.length) {
     const actionsEl = document.createElement('div');
     actionsEl.className = 'registration-mobile-card__actions';
+    if (actions.some(action => action.className === 'btn-registration-notes')) {
+      actionsEl.classList.add('registration-mobile-card__actions--with-notes');
+    }
     actionsEl.style.setProperty('--registration-action-count', `${actions.length}`);
     actions.forEach((action) => {
       const button = document.createElement('button');
@@ -7547,6 +7550,60 @@ function createRegistrationMobileCard(options = {}) {
   }
 
   return card;
+}
+
+let registrationNotesController;
+
+function openRegistrationNotesModal(registration, onSaved) {
+  if (!registrationNotesController) {
+    const modalEl = document.getElementById('registrationNotesModal');
+    const form = document.getElementById('registrationNotesForm');
+    const input = document.getElementById('registrationNotesInput');
+    const error = document.getElementById('registrationNotesError');
+    const save = document.getElementById('registrationNotesSave');
+    const modal = new bootstrap.Modal(modalEl);
+    let current = null;
+    let saving = false;
+
+    modalEl.addEventListener('hide.bs.modal', event => {
+      if (saving) event.preventDefault();
+    });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!current || saving) return;
+      saving = true;
+      save.disabled = true;
+      error.classList.add('d-none');
+      const notes = input.value;
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/registrations/choreographies/${encodeURIComponent(current.registration.id)}/notes`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notes })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || t('registration_notes_save_error', 'Error saving observations.'));
+        current.onSaved(notes);
+        saving = false;
+        modal.hide();
+      } catch (err) {
+        error.textContent = err.message || t('registration_notes_save_error', 'Error saving observations.');
+        error.classList.remove('d-none');
+      } finally {
+        saving = false;
+        save.disabled = false;
+      }
+    });
+    registrationNotesController = {
+      open(registration, onSaved) {
+        current = { registration, onSaved };
+        input.value = registration.notes ?? registration.observations ?? registration.observation ?? registration.observaciones ?? registration.remarks ?? '';
+        error.classList.add('d-none');
+        modal.show();
+      }
+    };
+  }
+  registrationNotesController.open(registration, onSaved);
 }
 
 function initOrganizerRegistrationsTab() {
@@ -7588,6 +7645,7 @@ function initOrganizerRegistrationsTab() {
     id: document.getElementById('registrationId'),
     choreographyName: document.getElementById('choreographyName'),
     participantsCountAddon: document.getElementById('registrationParticipantsCountAddon'),
+    choreoName: document.getElementById('registrationChoreoName'),
     choreographer: document.getElementById('choreographerName'),
     category: document.getElementById('registrationCategory'),
     style: document.getElementById('registrationStyle'),
@@ -8403,7 +8461,7 @@ function initOrganizerRegistrationsTab() {
   };
 
   const setModalViewMode = (isViewOnly) => {
-    const textInputs = [modalElements.choreographyName, modalElements.choreographer, modalElements.observations];
+    const textInputs = [modalElements.choreographyName, modalElements.choreoName, modalElements.choreographer, modalElements.observations];
     const selects = [modalElements.category, modalElements.style];
 
     textInputs.forEach(input => {
@@ -8446,6 +8504,7 @@ function initOrganizerRegistrationsTab() {
       modalElements.participantsCountAddon.textContent = formatParticipantsCountLabel(data);
       modalElements.participantsCountAddon.classList.remove('d-none');
     }
+    if (modalElements.choreoName) modalElements.choreoName.value = data.choreo_name || '';
     if (modalElements.choreographer) modalElements.choreographer.value = data.choreographer || '';
 
     const categoryId = data?.reg_category_id ?? data?.category_id ?? data?.reg_category?.id ?? '';
@@ -8575,6 +8634,7 @@ function initOrganizerRegistrationsTab() {
     const validateLabel = t('org_registrations_action_validate', 'Validar');
     const rejectLabel = t('org_registrations_action_reject', 'Rechazar');
     const membersLabel = t('org_registrations_action_members', 'Participantes');
+    const notesLabel = t('registration_notes_action', 'View/edit observations');
 
     registrations.forEach(registration => {
       const row = document.createElement('tr');
@@ -8724,6 +8784,15 @@ function initOrganizerRegistrationsTab() {
       detailsBtn.setAttribute('data-bs-placement', 'top');
       detailsBtn.innerHTML = '<i class="bi bi-search"></i>';
 
+      const notesBtn = document.createElement('button');
+      notesBtn.type = 'button';
+      notesBtn.className = 'btn btn-outline-info btn-sm btn-registration-notes';
+      notesBtn.dataset.id = registration.id;
+      notesBtn.title = notesLabel;
+      notesBtn.setAttribute('aria-label', notesLabel);
+      notesBtn.innerHTML = '<i class="bi bi-chat-left-text"></i>';
+
+      actionGroup.appendChild(notesBtn);
       actionGroup.appendChild(validateBtn);
       actionGroup.appendChild(rejectBtn);
       actionGroup.appendChild(membersBtn);
@@ -8749,6 +8818,7 @@ function initOrganizerRegistrationsTab() {
         syncroInfo,
         hasObservations,
         actions: [
+          { className: 'btn-registration-notes', variant: 'btn-outline-info', icon: 'bi-chat-left-text', label: t('registration_competitions_observations', 'Observations'), title: notesLabel },
           {
             className: 'btn-org-registration-validate',
             variant: 'btn-outline-success',
@@ -8872,6 +8942,15 @@ function initOrganizerRegistrationsTab() {
   }
 
   const handleOrganizerRegistrationAction = (event) => {
+    const notesBtn = event.target.closest('.btn-registration-notes');
+    if (notesBtn) {
+      const registration = registrationState.organizerRegistrations.find(item => `${item.id}` === `${notesBtn.dataset.id}`);
+      if (registration) openRegistrationNotesModal(registration, notes => {
+        registration.notes = notes;
+        renderRegistrations();
+      });
+      return;
+    }
     const detailsBtn = event.target.closest('.btn-org-registration-details');
     const membersBtn = event.target.closest('.btn-org-registration-members');
     const validateBtn = event.target.closest('.btn-org-registration-validate');

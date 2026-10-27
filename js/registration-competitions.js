@@ -31,6 +31,7 @@
     id: document.getElementById('registrationId'),
     choreographyName: document.getElementById('choreographyName'),
     participantsCountAddon: document.getElementById('registrationParticipantsCountAddon'),
+    choreoName: document.getElementById('registrationChoreoName'),
     choreographer: document.getElementById('choreographerName'),
     category: document.getElementById('registrationCategory'),
     style: document.getElementById('registrationStyle'),
@@ -1149,6 +1150,7 @@
       elements.participantsCountAddon.classList.add('d-none');
       elements.participantsCountAddon.textContent = formatParticipantsCountLabel(null);
     }
+    if (elements.choreoName) elements.choreoName.value = '';
     if (elements.choreographer) elements.choreographer.value = '';
     if (elements.category) elements.category.value = '';
     if (elements.style) elements.style.value = '';
@@ -1226,6 +1228,7 @@
       elements.participantsCountAddon.textContent = formatParticipantsCountLabel(registrationData);
       elements.participantsCountAddon.classList.remove('d-none');
     }
+    if (elements.choreoName) elements.choreoName.value = registrationData.choreo_name || '';
     elements.choreographer.value = registrationData.choreographer || '';
     elements.category.value = registrationData.reg_category_id ?? registrationData.category_id ?? registration.reg_category_id ?? '';
     elements.style.value = registrationData.reg_style_id ?? registrationData.style_id ?? registration.reg_style_id ?? '';
@@ -1465,6 +1468,7 @@
     if (emptyEl) emptyEl.classList.add('d-none');
 
     const editTitle = t('edit', 'Edit');
+    const notesLabel = t('registration_notes_action', 'View/edit observations');
     const deleteTitle = t('delete', 'Delete');
     const confirmTitle = t('registration_competitions_confirm', 'Confirmar');
     const cancelConfirmTitle = t('registration_competitions_cancel_confirm', 'Cancelar confirmacion');
@@ -1611,6 +1615,15 @@
       deleteBtn.setAttribute('aria-label', deleteTitle);
       deleteBtn.innerHTML = '<i class="bi bi-trash"></i>';
 
+      const notesBtn = document.createElement('button');
+      notesBtn.type = 'button';
+      notesBtn.className = 'btn btn-outline-info btn-sm btn-registration-notes';
+      notesBtn.dataset.id = registration.id;
+      notesBtn.title = notesLabel;
+      notesBtn.setAttribute('aria-label', notesLabel);
+      notesBtn.innerHTML = '<i class="bi bi-chat-left-text"></i>';
+
+      actionGroup.appendChild(notesBtn);
       actionGroup.appendChild(editBtn);
       actionGroup.appendChild(audioBtn);
       actionGroup.appendChild(membersBtn);
@@ -1635,6 +1648,7 @@
         musicInfo,
         hasObservations,
         actions: [
+          { className: 'btn-registration-notes', variant: 'btn-outline-info', icon: 'bi-chat-left-text', label: t('registration_competitions_observations', 'Observations'), title: notesLabel },
           {
             className: 'btn-edit-registration',
             variant: 'btn-outline-primary',
@@ -1909,6 +1923,7 @@
     const payload = {
       id: registrationId || undefined,
       name: elements.choreographyName ? elements.choreographyName.value.trim() : '',
+      choreo_name: elements.choreoName ? elements.choreoName.value.trim() : '',
       choreographer: elements.choreographer ? elements.choreographer.value.trim() : '',
       notes: elements.observations ? elements.observations.value.trim() : '',
       reg_category_id: elements.category ? elements.category.value : '',
@@ -2118,6 +2133,15 @@
   }
 
   const handleSchoolRegistrationAction = (event) => {
+    const notesBtn = event.target.closest('.btn-registration-notes');
+    if (notesBtn) {
+      const registration = registrationState.registrations.find(item => `${item.id}` === `${notesBtn.dataset.id}`);
+      if (registration) openRegistrationNotesModal(registration, notes => {
+        registration.notes = notes;
+        renderRegistrations();
+      });
+      return;
+    }
     const editBtn = event.target.closest('.btn-edit-registration');
     const audioBtn = event.target.closest('.btn-registration-audio');
     const membersBtn = event.target.closest('.btn-members-registration');

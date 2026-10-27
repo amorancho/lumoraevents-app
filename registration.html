@@ -11,7 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
-  <link rel="stylesheet" href="css/registration.css?v=20261019-2">
+  <link rel="stylesheet" href="css/registration.css?v=20261027-1">
 </head>
 <body class="d-flex flex-column min-vh-100 registration-page" data-bs-theme="dark">
   
@@ -1538,6 +1538,28 @@
     </div>
   </div>
 
+  <div class="modal fade" id="registrationNotesModal" tabindex="-1" aria-labelledby="registrationNotesModalTitle" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="registrationNotesModalTitle" data-i18n="registration_notes_action">Ver/modificar observaciones</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <form id="registrationNotesForm">
+          <div class="modal-body">
+            <label class="form-label" for="registrationNotesInput" data-i18n="registration_competitions_observations">Observaciones</label>
+            <textarea class="form-control" id="registrationNotesInput" rows="5"></textarea>
+            <div class="alert alert-danger mt-3 d-none" id="registrationNotesError" role="alert"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="registrationNotesSave" data-i18n="save">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="registrationModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
@@ -1551,14 +1573,18 @@
           <form id="registrationForm" data-mode="create" novalidate>
             <input type="hidden" id="registrationId">
             <div class="row g-3">
-              <div class="col-12 col-md-8">
+              <div class="col-12">
                 <label class="form-label" for="choreographyName" data-i18n="registration_competitions_choreography_name">Nombre coreografia</label>
                 <div class="input-group">
                   <input type="text" class="form-control" id="choreographyName" required>
                   <span class="input-group-text d-none" id="registrationParticipantsCountAddon">0 miembros</span>
                 </div>
               </div>
-              <div class="col-12 col-md-4">
+              <div class="col-12 col-md-6">
+                <label class="form-label" for="registrationChoreoName" data-i18n="registration_competitions_choreo_name">Nombre de la coreografía</label>
+                <input type="text" class="form-control" id="registrationChoreoName">
+              </div>
+              <div class="col-12 col-md-6">
                 <label class="form-label" for="choreographerName" data-i18n="registration_competitions_choreographer">Coreografo</label>
                 <input type="text" class="form-control" id="choreographerName">
               </div>
@@ -2279,9 +2305,9 @@
   <script src="js/common.js?v=20261018-1"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js?v=20261019-1"></script>
+  <script src="js/registration.js?v=20261027-2"></script>
   <script src="js/registration-extras.js?v=20261017-1"></script>
-  <script src="js/registration-competitions.js?v=20261019-4"></script>
+  <script src="js/registration-competitions.js?v=20261027-2"></script>
   <script src="js/registration-payments.js?v=20261019-1"></script>
 
 </body></html>
