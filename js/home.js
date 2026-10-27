@@ -145,7 +145,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const registrationClosed =
             !currentEvent.hasRegistration ||
-            currentEvent.status !== "upcoming";
+            currentEvent.status !== "upcoming" ||
+            currentUser?.role === "judge";
 
         if (registrationClosed) {
             removeColumn(registrationCol);
