@@ -49,8 +49,11 @@
 .voting-cell-status, .voting-cell-actions, .voting-cell-feedback { text-align: center; }
 .voting-cell-status .lm-status { white-space: normal; }
 .voting-actions, .feedback-actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .4rem; }
+.voting-actions { flex-wrap: nowrap; }
 .voting-action-btn { min-height: 36px; padding: .3rem .55rem; font-size: .72rem; white-space: nowrap; }
-.voting-main-action { flex: 1 0 100%; }
+.voting-actions .voting-action-btn { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+.voting-main-action { flex: 1 1 0; }
+.voting-actions .voting-action-btn:not(.voting-main-action) { flex: 0 1 auto; max-width: 50%; }
 .voting-main-action.lm-btn-secondary { border-color: var(--lm-blue); color: var(--lm-text); background: #173d5a; }
 .voting-main-action.lm-btn-secondary:hover { border-color: var(--lm-cyan); color: var(--lm-text); background: #205476; }
 .voting-penalty-btn { border-color: #8c681e; color: var(--lm-warning); background: #302817; }
