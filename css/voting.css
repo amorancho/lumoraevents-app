@@ -50,6 +50,9 @@
 .voting-cell-status .lm-status { white-space: normal; }
 .voting-actions, .feedback-actions { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: .4rem; }
 .voting-action-btn { min-height: 36px; padding: .3rem .55rem; font-size: .72rem; white-space: nowrap; }
+.voting-main-action { flex: 1 0 100%; }
+.voting-main-action.lm-btn-secondary { border-color: var(--lm-blue); color: var(--lm-text); background: #173d5a; }
+.voting-main-action.lm-btn-secondary:hover { border-color: var(--lm-cyan); color: var(--lm-text); background: #205476; }
 .voting-penalty-btn { border-color: #8c681e; color: var(--lm-warning); background: #302817; }
 .voting-penalty-btn:hover { border-color: var(--lm-warning); color: #ffe2a5; background: #473519; }
 .voting-feedback-btn { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-sm); background: var(--lm-surface-raised); font-size: 1rem; }
@@ -171,6 +174,7 @@
   .voting-actions, .feedback-actions { justify-content: flex-start; }
   .voting-cell-actions:empty { display: none !important; }
   .voting-cell-actions .voting-action-btn { min-width: 0; max-width: 100%; min-height: 44px; line-height: 1.2; text-align: center; white-space: normal; }
+  .voting-cell-actions .voting-main-action { font-size: .875rem; }
   .voting-feedback-btn { width: 44px; height: 44px; }
   .voting-table tbody tr.voting-dancer-row > td.voting-cell-feedback { grid-column: 2; align-self: stretch; padding-top: .65rem; border-top: 1px solid var(--lm-border); }
   .voting-table tbody tr.voting-dancer-row > td.voting-cell-feedback.is-unavailable { display: none; }

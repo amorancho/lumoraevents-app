@@ -1887,7 +1887,7 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
 
     if (d.status === 'Completed') {
       const btnDetails = document.createElement('button');
-      btnDetails.className = 'lm-btn lm-btn-secondary voting-action-btn';
+      btnDetails.className = 'lm-btn lm-btn-secondary voting-action-btn voting-main-action';
       btnDetails.textContent = allowCompletedVoteChanges
         ? t('details_change_votes', 'Details/change votes')
         : t('details');
@@ -1896,7 +1896,7 @@ function renderDancersTable(dancers, compStatus, isJudgeHead = false) {
       hasPrimaryAction = true;
     } else if (d.status === 'Pending' && (compStatus === 'OPE' || compStatus === 'PRO') && d.can_vote) {
       const btnVote = document.createElement('button');
-      btnVote.className = 'lm-btn lm-btn-primary voting-action-btn';
+      btnVote.className = 'lm-btn lm-btn-primary voting-action-btn voting-main-action';
       btnVote.dataset.action = 'vote';
       btnVote.textContent = t('vote');
       btnVote.addEventListener('click', () => showVotesModal(d, "vote"));
