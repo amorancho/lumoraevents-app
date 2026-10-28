@@ -1,5 +1,7 @@
 Las pruebas de `registration-extras.test.cjs` verifican el comportamiento del DOM y las peticiones con una API simulada. No renderizan la página ni realizan comprobaciones visuales, previews o capturas.
 
+`registration-wop-import.test.cjs` comprueba la selección de GEN/WOP y los permisos, el análisis automático al elegir un Excel válido, el límite de 5 MB, el envío multipart sin mapeo, los resultados y errores por fila, la conservación de fechas y documentos, la confirmación exclusiva de filas válidas, los errores de API, el bloqueo de envíos duplicados y la recarga tras el `201`. Usa la misma dependencia `jsdom` 26 y se ejecuta con `node --test tests/registration-wop-import.test.cjs`; todas las respuestas de API están simuladas.
+
 `registration-fees.test.cjs` comprueba los cálculos de NON, PAR, SCH y REG, las categorías exentas, los participantes únicos, la validación de inscripciones y los totales y saldos del Dashboard. Solo necesita Node.js y se ejecuta con `node --test tests/registration-fees.test.cjs`.
 
 Las pruebas de DOM de `registration-extras.test.cjs` también comprueban los cuatro tipos de fee en Payments y Competitions, la ocultación de NON, el filtro por escuela y la conservación de los totales suministrados por la API de extras.

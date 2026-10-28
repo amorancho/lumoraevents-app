@@ -1392,6 +1392,73 @@
     </div>
   </div>
 
+  <div class="modal fade lm-modal" id="importWopParticipantsModal" tabindex="-1" aria-labelledby="importWopParticipantsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="importWopParticipantsModalTitle" data-i18n="registration_participants_import_wop_title">Importar participantes desde WOP</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="close" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-body-secondary" data-i18n="registration_participants_import_wop_instructions">Selecciona el Excel de WOP para analizar los participantes antes de importarlos. Solo se importarán los válidos.</p>
+          <div class="mb-3">
+            <label class="form-label" for="importWopParticipantsFile" data-i18n="registration_participants_import_wop_file">Archivo Excel de WOP</label>
+            <input type="file" class="form-control lm-input" id="importWopParticipantsFile" accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-describedby="importWopParticipantsFileHint importWopParticipantsFileError">
+            <div class="form-text" id="importWopParticipantsFileHint" data-i18n="registration_participants_import_wop_file_hint">Formatos permitidos: .xls y .xlsx. Tamaño máximo: 5 MB.</div>
+            <div class="text-danger small mt-2 d-none" id="importWopParticipantsFileError" role="alert"></div>
+          </div>
+
+          <div id="importWopParticipantsAnalyzing" class="text-body-secondary mb-3 d-none" role="status" aria-live="polite">
+            <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span><span data-i18n="registration_participants_import_wop_analyzing">Analizando...</span>
+          </div>
+          <div id="importWopParticipantsFeedback" class="alert alert-danger d-none" role="alert"></div>
+          <div id="importWopParticipantsPreviewWrap" class="d-none">
+            <div class="row g-2 mb-3" aria-live="polite" aria-atomic="true">
+              <div class="col-12 col-sm-4">
+                <div class="lm-panel p-3 h-100">
+                  <div class="small text-body-secondary mb-2" data-i18n="registration_participants_import_preview_total">Total</div>
+                  <span id="importWopParticipantsPreviewTotal" class="badge text-bg-secondary">0</span>
+                </div>
+              </div>
+              <div class="col-6 col-sm-4">
+                <div class="lm-panel p-3 h-100">
+                  <div class="small text-body-secondary mb-2" data-i18n="registration_participants_import_preview_valid">Válidos</div>
+                  <span id="importWopParticipantsPreviewValid" class="badge text-bg-success">0</span>
+                </div>
+              </div>
+              <div class="col-6 col-sm-4">
+                <div class="lm-panel p-3 h-100">
+                  <div class="small text-body-secondary mb-2" data-i18n="registration_participants_import_preview_invalid">Inválidos</div>
+                  <span id="importWopParticipantsPreviewInvalid" class="badge text-bg-danger">0</span>
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-sm lm-table align-middle">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="registration_participants_name">Nombre</th>
+                    <th scope="col" data-i18n="registration_participants_import_wop_surnames">Apellidos</th>
+                    <th scope="col" data-i18n="registration_participants_import_column_birth">Fecha de nacimiento</th>
+                    <th scope="col" data-i18n="registration_participants_identification_document">Documento identificativo</th>
+                    <th scope="col" data-i18n="registration_participants_import_status">Estado</th>
+                    <th scope="col" data-i18n="registration_participants_import_errors">Errores</th>
+                  </tr>
+                </thead>
+                <tbody id="importWopParticipantsPreviewTableBody"></tbody>
+              </table>
+            </div>
+            <div id="importWopParticipantsPreviewEmpty" class="text-center text-body-secondary py-3 d-none" data-i18n="registration_participants_import_no_rows">No hay filas para previsualizar.</div>
+          </div>
+        </div>
+        <div class="modal-footer flex-wrap gap-2">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="confirmImportWopParticipantsBtn" data-i18n="registration_participants_import_confirm" disabled>Importar válidos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade registration-category-modal" id="registrationCategoryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -2305,7 +2372,7 @@
   <script src="js/common.js?v=20261018-1"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js?v=20261027-2"></script>
+  <script src="js/registration.js?v=20261028-3"></script>
   <script src="js/registration-extras.js?v=20261017-1"></script>
   <script src="js/registration-competitions.js?v=20261027-2"></script>
   <script src="js/registration-payments.js?v=20261019-1"></script>

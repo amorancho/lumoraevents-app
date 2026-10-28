@@ -3,5 +3,7 @@
   "registration_finance_label": "Finance des inscriptions",
   "registration_not_new_school_label": "Notifier Nouvelle Ã‰cole",
   "registration_not_new_group_label": "Notifier Nouveau Groupe",
-  "show_gender_label": "Afficher le genre"
+  "show_gender_label": "Afficher le genre",
+  "registration_import_source_label": "Source d’importation des participants",
+  "registration_import_source_general": "Général"
 }

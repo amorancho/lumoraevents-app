@@ -2626,6 +2626,7 @@ function initParticipantsTab(role) {
   const modalEl = document.getElementById('participantModal');
   const authorizationModalEl = document.getElementById('participantAuthorizationModal');
   const importModalEl = document.getElementById('importParticipantsModal');
+  const importWopModalEl = document.getElementById('importWopParticipantsModal');
   const deleteModalEl = document.getElementById('deleteParticipantModal');
   const duplicateModalEl = document.getElementById('duplicateParticipantModal');
 
@@ -2748,6 +2749,7 @@ function initParticipantsTab(role) {
     ? new bootstrap.Modal(authorizationModalEl)
     : null;
   const importParticipantsModal = importModalEl ? new bootstrap.Modal(importModalEl) : null;
+  const importWopParticipantsModal = importWopModalEl ? new bootstrap.Modal(importWopModalEl) : null;
   const deleteModal = new bootstrap.Modal(deleteModalEl);
   const duplicateModal = duplicateModalEl ? new bootstrap.Modal(duplicateModalEl) : null;
   let participantToDelete = null;
@@ -2791,6 +2793,221 @@ function initParticipantsTab(role) {
   const importPreviewState = {
     rawText: '',
     preview: null
+  };
+  const importWopElements = {
+    fileInput: document.getElementById('importWopParticipantsFile'),
+    fileError: document.getElementById('importWopParticipantsFileError'),
+    feedback: document.getElementById('importWopParticipantsFeedback'),
+    previewWrap: document.getElementById('importWopParticipantsPreviewWrap'),
+    total: document.getElementById('importWopParticipantsPreviewTotal'),
+    valid: document.getElementById('importWopParticipantsPreviewValid'),
+    invalid: document.getElementById('importWopParticipantsPreviewInvalid'),
+    tableBody: document.getElementById('importWopParticipantsPreviewTableBody'),
+    empty: document.getElementById('importWopParticipantsPreviewEmpty'),
+    analyzing: document.getElementById('importWopParticipantsAnalyzing'),
+    confirmBtn: document.getElementById('confirmImportWopParticipantsBtn')
+  };
+  const importWopState = { file: null, participants: [], eventId: null, busy: null };
+  const getValidImportWopParticipants = () => importWopState.participants.filter((participant) => participant.valid === true);
+
+  const syncImportWopParticipantsControls = () => {
+    const busy = Boolean(importWopState.busy);
+    if (importWopElements.fileInput) importWopElements.fileInput.disabled = busy;
+    importWopElements.analyzing?.classList.toggle('d-none', importWopState.busy !== 'analysis');
+    if (importWopElements.confirmBtn) {
+      importWopElements.confirmBtn.disabled = busy || getValidImportWopParticipants().length === 0;
+      const key = importWopState.busy === 'confirm'
+        ? 'registration_participants_import_confirm_loading'
+        : 'registration_participants_import_confirm';
+      importWopElements.confirmBtn.dataset.i18n = key;
+      importWopElements.confirmBtn.textContent = t(key, importWopState.busy === 'confirm' ? 'Importando...' : 'Importar válidos');
+    }
+    importWopModalEl?.setAttribute('aria-busy', `${busy}`);
+    importWopModalEl?.querySelectorAll('[data-bs-dismiss="modal"]').forEach((button) => {
+      button.disabled = busy;
+    });
+  };
+
+  const setImportWopParticipantsFeedback = (message = '') => {
+    if (!importWopElements.feedback) return;
+    importWopElements.feedback.textContent = message;
+    importWopElements.feedback.classList.toggle('d-none', !message);
+  };
+
+  const clearImportWopParticipantsAnalysis = () => {
+    importWopState.participants = [];
+    importWopState.eventId = null;
+    importWopElements.previewWrap?.classList.add('d-none');
+    importWopElements.tableBody?.replaceChildren();
+    importWopElements.empty?.classList.add('d-none');
+    [importWopElements.total, importWopElements.valid, importWopElements.invalid].forEach((element) => {
+      if (element) element.textContent = '0';
+    });
+    syncImportWopParticipantsControls();
+  };
+
+  const clearImportWopParticipantsFileError = () => {
+    importWopElements.fileInput?.removeAttribute('aria-invalid');
+    if (importWopElements.fileError) {
+      importWopElements.fileError.textContent = '';
+      importWopElements.fileError.classList.add('d-none');
+    }
+  };
+
+  const resetImportWopParticipantsState = () => {
+    if (importWopState.busy) return;
+    importWopState.file = null;
+    if (importWopElements.fileInput) importWopElements.fileInput.value = '';
+    clearImportWopParticipantsFileError();
+    setImportWopParticipantsFeedback();
+    clearImportWopParticipantsAnalysis();
+  };
+
+  const selectImportWopParticipantsFile = () => {
+    if (importWopState.busy) return;
+    importWopState.file = null;
+    clearImportWopParticipantsFileError();
+    setImportWopParticipantsFeedback();
+    clearImportWopParticipantsAnalysis();
+    const file = importWopElements.fileInput?.files?.[0];
+    if (!file) return;
+
+    const fileError = !/\.(xls|xlsx)$/i.test(file.name) || file.size === 0
+      ? t('registration_participants_import_wop_file_error', 'Selecciona un archivo Excel en formato .xls o .xlsx.')
+      : file.size > 5 * 1024 * 1024
+        ? t('registration_participants_import_wop_file_size_error', 'El archivo Excel no puede superar los 5 MB.')
+        : '';
+    if (fileError) {
+      importWopElements.fileInput.value = '';
+      importWopElements.fileInput.setAttribute('aria-invalid', 'true');
+      if (importWopElements.fileError) {
+        importWopElements.fileError.textContent = fileError;
+        importWopElements.fileError.classList.remove('d-none');
+      }
+      return;
+    }
+
+    importWopState.file = file;
+    void analyzeImportWopParticipants();
+  };
+
+  const renderImportWopParticipantsPreview = () => {
+    const participants = importWopState.participants;
+    const validCount = getValidImportWopParticipants().length;
+    if (importWopElements.total) importWopElements.total.textContent = `${participants.length}`;
+    if (importWopElements.valid) importWopElements.valid.textContent = `${validCount}`;
+    if (importWopElements.invalid) importWopElements.invalid.textContent = `${participants.length - validCount}`;
+    importWopElements.tableBody?.replaceChildren();
+    participants.forEach((participant) => {
+      const row = document.createElement('tr');
+      // Preserve the server's calendar dates, invalid date text and document leading zeros.
+      [participant.first_name, participant.last_name, participant.date_of_birth, participant.identification_document].forEach((value) => {
+        const cell = document.createElement('td');
+        cell.textContent = value ?? '-';
+        row.appendChild(cell);
+      });
+      const valid = participant.valid === true;
+      const statusCell = document.createElement('td');
+      const badge = document.createElement('span');
+      badge.className = `badge ${valid ? 'text-bg-success' : 'text-bg-danger'}`;
+      badge.textContent = valid
+        ? t('registration_participants_import_status_valid', 'Válido')
+        : t('registration_participants_import_status_invalid', 'Inválido');
+      statusCell.appendChild(badge);
+      row.appendChild(statusCell);
+      const errorCell = document.createElement('td');
+      errorCell.className = valid ? 'text-body-secondary small' : 'text-danger small';
+      errorCell.textContent = valid ? '-' : (participant.error || '-');
+      row.appendChild(errorCell);
+      importWopElements.tableBody?.appendChild(row);
+    });
+    importWopElements.empty?.classList.toggle('d-none', participants.length > 0);
+    importWopElements.previewWrap?.classList.remove('d-none');
+    syncImportWopParticipantsControls();
+  };
+
+  const analyzeImportWopParticipants = async () => {
+    if (!allowEdit || importWopState.busy || !importWopState.file) return;
+    const eventId = getEvent()?.id || registrationState.school?.event_id;
+    if (!eventId) return;
+    const body = new FormData();
+    body.append('file', importWopState.file);
+    importWopState.busy = 'analysis';
+    setImportWopParticipantsFeedback();
+    clearImportWopParticipantsAnalysis();
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/participants/analize-participants-file?event_id=${encodeURIComponent(eventId)}`, {
+        method: 'POST',
+        headers: { 'Accept-Language': getCurrentAppLanguage() },
+        body
+      });
+      const data = await safeJsonResponse(response);
+      if (!response.ok || !Array.isArray(data?.participants)) {
+        throw new Error(data?.error || t('registration_participants_import_wop_analyze_error', 'Error al analizar el archivo Excel.'));
+      }
+      importWopState.participants = data.participants;
+      importWopState.eventId = eventId;
+      renderImportWopParticipantsPreview();
+    } catch (error) {
+      importWopState.file = null;
+      if (importWopElements.fileInput) importWopElements.fileInput.value = '';
+      setImportWopParticipantsFeedback(error.message || t('registration_participants_import_wop_analyze_error', 'Error al analizar el archivo Excel.'));
+    } finally {
+      importWopState.busy = null;
+      syncImportWopParticipantsControls();
+    }
+  };
+
+  const confirmImportWopParticipants = async () => {
+    if (!allowEdit || importWopState.busy) return;
+    const participants = getValidImportWopParticipants().map((participant) => ({
+      rowNumber: participant.rowNumber,
+      first_name: participant.first_name,
+      last_name: participant.last_name,
+      date_of_birth: participant.date_of_birth,
+      identification_document: participant.identification_document ?? null
+    }));
+    if (!participants.length) return;
+    const eventId = getEvent()?.id || registrationState.school?.event_id;
+    if (`${eventId}` !== `${importWopState.eventId}`) {
+      clearImportWopParticipantsAnalysis();
+      return;
+    }
+    importWopState.busy = 'confirm';
+    setImportWopParticipantsFeedback();
+    syncImportWopParticipantsControls();
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/participants/create-participants`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept-Language': getCurrentAppLanguage() },
+        body: JSON.stringify({ event_id: eventId, school_id: user.id, participants })
+      });
+      const data = await safeJsonResponse(response);
+      if (response.status !== 201) {
+        throw new Error(data?.error || t('registration_participants_import_confirm_error', 'Error al importar participantes.'));
+      }
+      const inserted = data?.inserted ?? participants.length;
+      importWopState.busy = null;
+      resetImportWopParticipantsState();
+      // Wait for Bootstrap's transition before opening the shared success modal.
+      if (importWopParticipantsModal && importWopModalEl) {
+        await new Promise((resolve) => {
+          importWopModalEl.addEventListener('hidden.bs.modal', resolve, { once: true });
+          importWopParticipantsModal.hide();
+        });
+      }
+      await loadParticipants();
+      showMessageModal(
+        t('registration_participants_import_success', 'Se han importado {count} participantes válidos.').replace('{count}', `${inserted}`),
+        t('registration_participants_import_wop_title', 'Importar participantes desde WOP'),
+        'success'
+      );
+    } catch (error) {
+      setImportWopParticipantsFeedback(error.message || t('registration_participants_import_confirm_error', 'Error al importar participantes.'));
+    } finally {
+      importWopState.busy = null;
+      syncImportWopParticipantsControls();
+    }
   };
 
   const syncImportParticipantsModalUi = () => {
@@ -4324,11 +4541,17 @@ function initParticipantsTab(role) {
     addBtn.addEventListener('click', () => openParticipantModal('create'));
   }
 
-  if (importOpenBtn && allowEdit && importParticipantsModal) {
+  if (importOpenBtn && allowEdit) {
     importOpenBtn.addEventListener('click', () => {
+      const source = `${getEvent()?.registrationImportSource ?? 'GEN'}`.trim().toUpperCase();
+      if (source === 'WOP') {
+        resetImportWopParticipantsState();
+        importWopParticipantsModal?.show();
+        return;
+      }
       resetImportParticipantsState();
       syncImportParticipantsModalUi();
-      importParticipantsModal.show();
+      importParticipantsModal?.show();
     });
   }
 
@@ -4486,6 +4709,20 @@ function initParticipantsTab(role) {
   }
 
   if (allowEdit) {
+    importWopElements.fileInput?.addEventListener('change', selectImportWopParticipantsFile);
+    importWopElements.confirmBtn?.addEventListener('click', confirmImportWopParticipants);
+    if (importWopModalEl) {
+      importWopModalEl.addEventListener('hide.bs.modal', (event) => {
+        if (importWopState.busy) event.preventDefault();
+      });
+      importWopModalEl.addEventListener('hidden.bs.modal', () => {
+        resetImportWopParticipantsState();
+        importOpenBtn?.focus();
+      });
+      importWopModalEl.addEventListener('shown.bs.modal', () => {
+        importWopElements.fileInput?.focus();
+      });
+    }
     modalEl.addEventListener('hidden.bs.modal', () => {
       loadParticipants();
     });
@@ -4557,6 +4794,8 @@ function initParticipantsTab(role) {
     updateParticipantsFeeInfo();
     renderParticipants();
     if (authorizationParticipant) syncAuthorizationModal();
+    syncImportWopParticipantsControls();
+    if (importWopState.eventId !== null) renderImportWopParticipantsPreview();
   };
 
   if (ageHeaderInfoBtn) {
