@@ -1855,7 +1855,8 @@ function initOrganizerDashboard() {
     const eventObj = getEvent();
     const schools = Array.isArray(registrationState.schools) ? registrationState.schools : [];
     const participants = Array.isArray(registrationState.participants) ? registrationState.participants : [];
-    const registrations = Array.isArray(registrationState.organizerRegistrations) ? registrationState.organizerRegistrations : [];
+    const registrations = (Array.isArray(registrationState.organizerRegistrations) ? registrationState.organizerRegistrations : [])
+      .filter((registration) => getRegistrationStatusValue(registration) !== 'DEL');
     const categories = Array.isArray(registrationState.registrationCategories) ? registrationState.registrationCategories : [];
     const styles = Array.isArray(registrationState.registrationDisciplines) ? registrationState.registrationDisciplines : [];
     const schoolsById = new Map(schools.map((school) => [`${school.id}`, school]));
@@ -2287,7 +2288,8 @@ function initSchoolDashboard() {
 
   const buildMetrics = () => {
     const participants = Array.isArray(registrationState.participants) ? registrationState.participants : [];
-    const registrations = Array.isArray(registrationState.registrations) ? registrationState.registrations : [];
+    const registrations = (Array.isArray(registrationState.registrations) ? registrationState.registrations : [])
+      .filter((registration) => getRegistrationStatusValue(registration) !== 'DEL');
     const categories = Array.isArray(registrationState.registrationCategories) ? registrationState.registrationCategories : [];
     const styles = Array.isArray(registrationState.registrationDisciplines) ? registrationState.registrationDisciplines : [];
     const categoriesById = new Map(categories.map((category) => [`${category.id}`, category]));
@@ -7690,7 +7692,7 @@ function createRegistrationMobileCard(options = {}) {
     'bi-cash-coin',
     t('registration_competitions_table_total_amount', 'Importe total'),
     options.totalAmountText || '-',
-    options.isFree ? 'text-success' : ''
+    [options.isFree ? 'text-success' : '', options.strikeThroughAmount ? 'text-decoration-line-through' : ''].filter(Boolean).join(' ')
   ));
   card.appendChild(metrics);
 
@@ -7853,6 +7855,7 @@ function initOrganizerRegistrationsTab() {
   const filterForm = document.getElementById('orgRegistrationsFilters');
   const filterSchool = document.getElementById('orgRegistrationsFilterSchool');
   const filterStatus = document.getElementById('orgRegistrationsFilterStatus');
+  const filterShowDeleted = document.getElementById('orgRegistrationsFilterShowDeleted');
   const filterCategory = document.getElementById('orgRegistrationsFilterCategory');
   const filterStyle = document.getElementById('orgRegistrationsFilterStyle');
   const filterClear = document.getElementById('orgRegistrationsFilterClear');
@@ -8371,7 +8374,8 @@ function initOrganizerRegistrationsTab() {
       CRE: { label: t('registration_status_creation', 'Borrador'), color: 'primary' },
       PEN: { label: t('registration_status_pending', 'Pendiente validar'), color: 'warning' },
       VAL: { label: t('registration_status_validated', 'Validada'), color: 'success' },
-      REJ: { label: t('registration_status_rejected', 'Rechazada'), color: 'danger' }
+      REJ: { label: t('registration_status_rejected', 'Rechazada'), color: 'danger' },
+      DEL: { label: t('registration_status_deleted', 'Eliminada'), color: 'danger' }
     };
     const info = statusMap[status] || { label: status || '-', color: 'secondary' };
     return { ...info, label: `${info.label}`.toUpperCase() };
@@ -8440,6 +8444,7 @@ function initOrganizerRegistrationsTab() {
     const styleValue = filterStyle.value;
 
     return registrationState.organizerRegistrations.filter(registration => {
+      if (!filterShowDeleted?.checked && getRegistrationStatusValue(registration) === 'DEL') return false;
       const schoolId = registration?.school_id ?? registration?.school?.id;
       if (schoolValue && `${schoolId || ''}` !== `${schoolValue}`) return false;
       if (statusValue && `${registration?.status || ''}` !== `${statusValue}`) return false;
@@ -8822,25 +8827,30 @@ function initOrganizerRegistrationsTab() {
     if (!mobileActiveFilters) return;
     mobileActiveFilters.innerHTML = '';
     const filterDefinitions = [
-      { key: 'school', select: filterSchool, label: t('org_registrations_filter_school', 'Escuela') },
-      { key: 'status', select: filterStatus, label: t('org_registrations_filter_status', 'Estado') },
-      { key: 'category', select: filterCategory, label: t('org_registrations_filter_category', 'Categoria') },
-      { key: 'style', select: filterStyle, label: t('org_registrations_filter_style', 'Disciplina/Estilo') }
+      { key: 'school', control: filterSchool, label: t('org_registrations_filter_school', 'Escuela') },
+      { key: 'status', control: filterStatus, label: t('org_registrations_filter_status', 'Estado') },
+      { key: 'category', control: filterCategory, label: t('org_registrations_filter_category', 'Categoria') },
+      { key: 'style', control: filterStyle, label: t('org_registrations_filter_style', 'Disciplina/Estilo') },
+      { key: 'showDeleted', control: filterShowDeleted, label: t('org_registrations_filter_show_deleted', 'Ver Eliminadas') }
     ];
-    const activeFilters = filterDefinitions.filter(({ select }) => Boolean(select?.value));
+    const activeFilters = filterDefinitions.filter(({ control }) => (
+      control?.type === 'checkbox' ? control.checked : Boolean(control?.value)
+    ));
 
     if (mobileFilterCount) {
       mobileFilterCount.textContent = `${activeFilters.length}`;
       mobileFilterCount.classList.toggle('d-none', activeFilters.length === 0);
     }
 
-    activeFilters.forEach(({ key, select, label }) => {
+    activeFilters.forEach(({ key, control, label }) => {
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'org-registrations-mobile-filter-chip';
       chip.dataset.filter = key;
       const text = document.createElement('span');
-      text.textContent = `${label}: ${select.selectedOptions?.[0]?.textContent?.trim() || '-'}`;
+      text.textContent = control.type === 'checkbox'
+        ? label
+        : `${label}: ${control.selectedOptions?.[0]?.textContent?.trim() || '-'}`;
       const close = document.createElement('i');
       close.className = 'bi bi-x-lg';
       close.setAttribute('aria-hidden', 'true');
@@ -8938,13 +8948,16 @@ function initOrganizerRegistrationsTab() {
       const totalAmountCell = document.createElement('td');
       totalAmountCell.className = 'text-center';
       const totalAmount = getRegistrationTotalAmount(registration);
+      const strikeThroughAmount = getRegistrationStatusValue(registration) === 'DEL';
       if (getRegistrationPrice(registration) === 0) {
         const freeBadge = document.createElement('span');
         freeBadge.className = 'badge bg-success';
+        if (strikeThroughAmount) freeBadge.classList.add('text-decoration-line-through');
         freeBadge.textContent = 'FREE';
         totalAmountCell.appendChild(freeBadge);
       } else {
         totalAmountCell.textContent = formatCurrencyDisplay(totalAmount);
+        if (strikeThroughAmount) totalAmountCell.classList.add('text-decoration-line-through');
       }
       row.appendChild(totalAmountCell);
 
@@ -9053,6 +9066,7 @@ function initOrganizerRegistrationsTab() {
           ? 'FREE'
           : formatCurrencyDisplay(totalAmount),
         isFree: getRegistrationPrice(registration) === 0,
+        strikeThroughAmount,
         musicInfo,
         syncroInfo,
         hasObservations,
@@ -9129,6 +9143,7 @@ function initOrganizerRegistrationsTab() {
   filterStatus.addEventListener('change', renderRegistrations);
   filterCategory.addEventListener('change', renderRegistrations);
   filterStyle.addEventListener('change', renderRegistrations);
+  filterShowDeleted?.addEventListener('change', renderRegistrations);
   mobileFilterToggle?.addEventListener('click', () => {
     setMobileOrgFilterPanelOpen(!filterForm.classList.contains('mobile-filters-open'));
   });
@@ -9138,14 +9153,16 @@ function initOrganizerRegistrationsTab() {
   mobileActiveFilters?.addEventListener('click', (event) => {
     const chip = event.target.closest('.org-registrations-mobile-filter-chip');
     if (!chip) return;
-    const selectByFilter = {
+    const controlByFilter = {
       school: filterSchool,
       status: filterStatus,
       category: filterCategory,
-      style: filterStyle
+      style: filterStyle,
+      showDeleted: filterShowDeleted
     };
-    const select = selectByFilter[chip.dataset.filter];
-    if (select) select.value = '';
+    const control = controlByFilter[chip.dataset.filter];
+    if (control?.type === 'checkbox') control.checked = false;
+    else if (control) control.value = '';
     renderRegistrations();
   });
   filterClear.addEventListener('click', () => {
@@ -9153,6 +9170,7 @@ function initOrganizerRegistrationsTab() {
     filterStatus.value = '';
     filterCategory.value = '';
     filterStyle.value = '';
+    if (filterShowDeleted) filterShowDeleted.checked = false;
     setMobileOrgFilterPanelOpen(false);
     renderRegistrations();
   });
