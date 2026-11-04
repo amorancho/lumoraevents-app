@@ -99,6 +99,22 @@ const parseIsoDateParts = (isoString) => {
 
 const createUtcDate = (parts) => new Date(Date.UTC(parts.year, parts.month - 1, parts.day));
 
+const isRegistrationOpen = (event, now = new Date()) => {
+  if (Number(event.has_registrations) !== 1) return false;
+
+  const start = parseIsoDateParts(event.registration_start);
+  const end = parseIsoDateParts(event.registration_end);
+  const isValidDate = (parts) => {
+    if (!parts) return false;
+    const date = createUtcDate(parts);
+    return date.getUTCFullYear() === parts.year && date.getUTCMonth() === parts.month - 1 && date.getUTCDate() === parts.day;
+  };
+  if (!isValidDate(start) || !isValidDate(end)) return false;
+
+  const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+  return start.normalized <= today && today <= end.normalized;
+};
+
 const formatMonthOnly = (parts) =>
   new Intl.DateTimeFormat(getCurrentLocale(), { month: 'long', timeZone: 'UTC' }).format(createUtcDate(parts));
 
@@ -727,6 +743,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const categories = parseEventCategories(event.category ?? event.categories);
     const showRegistrationPeriod =
       Number(event.has_registrations) === 1 && event.registration_start && event.registration_end;
+    const registrationOpen = isRegistrationOpen(event);
     const categoriesMarkup = categories.length
       ? `
             <div class="index-event-categories">
@@ -762,7 +779,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               >
                 <i class="bi bi-info-circle" aria-hidden="true"></i><span data-i18n="event_details_button">Event Details</span>
               </button>
-              <a href="home.html?eventId=${safeCode}" class="lm-btn lm-btn-primary index-event-enter"><span data-i18n="go_to_event">Go to Event</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
+              <a href="${registrationOpen ? 'registrationhome.html' : 'home.html'}?eventId=${safeCode}" class="lm-btn lm-btn-primary index-event-enter"><span data-i18n="${registrationOpen ? 'register_for_event' : 'go_to_event'}">${registrationOpen ? 'Register' : 'Go to Event'}</span><i class="bi bi-arrow-up-right" aria-hidden="true"></i></a>
             </div>
         </div>
       </article>
