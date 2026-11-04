@@ -1489,15 +1489,22 @@
                 <label class="form-label" for="registrationCategoryMaxPar" data-i18n="registration_categories_field_max_par">Max. participantes</label>
                 <input type="number" class="form-control" id="registrationCategoryMaxPar" min="0" step="1" required>
               </div>
-              <div class="col-12 col-md-4">
+              <div class="col-6">
                 <label class="form-label" for="registrationCategoryMinYears" data-i18n="registration_categories_field_min_years">Min. anos</label>
                 <input type="number" class="form-control" id="registrationCategoryMinYears" min="0" step="1" required>
               </div>
-              <div class="col-12 col-md-4">
+              <div class="col-6">
                 <label class="form-label" for="registrationCategoryMaxYears" data-i18n="registration_categories_field_max_years">Max. anos</label>
                 <input type="number" class="form-control" id="registrationCategoryMaxYears" min="0" step="1" required>
               </div>
-              <div class="col-12 col-md-4">
+              <div class="col-6">
+                <label class="form-label" for="registrationCategoryOutOfRangeType" data-i18n="registration_categories_field_outofrange_type">Tipo fuera de rango</label>
+                <select class="form-select" id="registrationCategoryOutOfRangeType">
+                  <option value="N" data-i18n="registration_categories_outofrange_type_number">Número</option>
+                  <option value="P" data-i18n="registration_categories_outofrange_type_percentage">Porcentaje</option>
+                </select>
+              </div>
+              <div class="col-6">
                 <div class="registration-category-max-outofrange-label">
                   <label class="form-label mb-0" for="registrationCategoryMaxOutOfRange">
                     <span data-i18n="registration_categories_field_max_outofrange">Max. Fuera de rango</span>
@@ -1505,12 +1512,12 @@
                   <button
                     type="button"
                     class="btn btn-link text-body-secondary p-0 border-0 lh-1 text-decoration-none registration-category-field-help"
-                    title="Indica el numero maximo de personas que pueden quedar fuera del rango de edades permitidas."
+                    title="Indica el máximo de personas o porcentaje que puede quedar fuera del rango de edades permitido."
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
                     data-i18n-title="registration_categories_field_max_outofrange_info">
                     <i class="bi bi-info-circle"></i>
-                    <span class="visually-hidden" data-i18n="registration_categories_field_max_outofrange_info">Indica el numero maximo de personas que pueden quedar fuera del rango de edades permitidas.</span>
+                    <span class="visually-hidden" data-i18n="registration_categories_field_max_outofrange_info">Indica el máximo de personas o porcentaje que puede quedar fuera del rango de edades permitido.</span>
                   </button>
                 </div>
                 <input type="number" class="form-control" id="registrationCategoryMaxOutOfRange" min="0" step="1">
@@ -2379,9 +2386,9 @@
   <script src="js/common.js?v=20261018-1"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js?v=20261028-3"></script>
+  <script src="js/registration.js?v=20261104-1"></script>
   <script src="js/registration-extras.js?v=20261017-1"></script>
-  <script src="js/registration-competitions.js?v=20261027-2"></script>
+  <script src="js/registration-competitions.js?v=20261104-2"></script>
   <script src="js/registration-payments.js?v=20261019-1"></script>
 
 </body></html>

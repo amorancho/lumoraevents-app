@@ -243,7 +243,18 @@
     return minYears !== null || maxYears !== null;
   };
 
-  const getCategoryMaxOutOfRange = (category) => normalizeNumber(category?.max_outofrange) ?? 0;
+  const getCategoryMaxOutOfRange = (category, memberCount) => {
+    const limit = normalizeNumber(category?.max_outofrange) ?? 0;
+    return category?.outofrange_type === 'P' ? Math.ceil(memberCount * limit / 100) : limit;
+  };
+
+  const formatCategoryMaxOutOfRange = (category) => {
+    const limit = normalizeNumber(category?.max_outofrange);
+    if (limit === null) return '-';
+    return category?.outofrange_type === 'P'
+      ? `${limit}%`
+      : `${limit} ${t('registration_categories_outofrange_people', 'people')}`;
+  };
 
   const updateMembersAgeHeaderTooltip = () => {
     syncRegistrationAgeTooltipButton(elements.membersAgeInfoBtn);
@@ -306,7 +317,7 @@
     const minYears = normalizeNumber(category.min_years);
     const maxYears = normalizeNumber(category.max_years);
     const musicMaxDuration = normalizeNumber(category.music_max_duration);
-    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. por encima del rango');
+    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera');
     const participantsInfo = `
       <div class="registration-category-info-card registration-category-info-card--rules">
         <div class="registration-category-info-title">
@@ -330,7 +341,7 @@
           <div class="registration-category-info-values">
             <span><strong>${minLabel}:</strong> ${minYears ?? '-'}</span>
             <span><strong>${maxLabel}:</strong> ${maxYears ?? '-'}</span>
-            <span><strong>${maxOutOfRangeLabel}:</strong> ${getCategoryMaxOutOfRange(category)}</span>
+            <span><strong>${maxOutOfRangeLabel}:</strong> ${formatCategoryMaxOutOfRange(category)}</span>
           </div>
         </div>
       `
@@ -746,10 +757,10 @@
     }
 
     const outOfRangeCount = getAboveAgeRangeMembersCount(selectedMembers, category);
-    const allowedOutOfRange = getCategoryMaxOutOfRange(category);
+    const allowedOutOfRange = getCategoryMaxOutOfRange(category, selectedMembers.length);
     elements.membersOutOfRangeInfo.textContent = formatTemplate(
-      t('registration_competitions_members_outofrange_count', 'Por encima del rango: {count}'),
-      { count: outOfRangeCount }
+      t('registration_competitions_members_outofrange_count', 'Above the age range: {count} / {allowed}'),
+      { count: outOfRangeCount, allowed: allowedOutOfRange }
     );
     elements.membersOutOfRangeInfo.classList.remove('d-none', 'text-muted', 'text-warning-emphasis', 'text-danger', 'fw-semibold');
 
@@ -1340,7 +1351,7 @@
     const maxPar = normalizeNumber(category.max_par);
     const minYears = normalizeNumber(category.min_years);
     const maxYears = normalizeNumber(category.max_years);
-    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. por encima del rango');
+    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera');
     const participantsInfo = `
       <div class="registration-category-info-card registration-category-info-card--rules">
         <div class="registration-category-info-title">
@@ -1364,7 +1375,7 @@
           <div class="registration-category-info-values">
             <span><strong>${minLabel}:</strong> ${minYears ?? '-'}</span>
             <span><strong>${maxLabel}:</strong> ${maxYears ?? '-'}</span>
-            <span><strong>${maxOutOfRangeLabel}:</strong> ${getCategoryMaxOutOfRange(category)}</span>
+            <span><strong>${maxOutOfRangeLabel}:</strong> ${formatCategoryMaxOutOfRange(category)}</span>
           </div>
         </div>
       `

@@ -6265,6 +6265,7 @@ function initRegistrationCategoriesTab() {
     maxPar: document.getElementById('registrationCategoryMaxPar'),
     minYears: document.getElementById('registrationCategoryMinYears'),
     maxYears: document.getElementById('registrationCategoryMaxYears'),
+    outOfRangeType: document.getElementById('registrationCategoryOutOfRangeType'),
     maxOutOfRange: document.getElementById('registrationCategoryMaxOutOfRange'),
     maxOutOfRangeInfo: modalEl.querySelector('[data-bs-toggle="tooltip"]'),
     musicMinDuration: document.getElementById('registrationCategoryMusicMinDuration'),
@@ -6584,6 +6585,13 @@ function initRegistrationCategoriesTab() {
     }
   };
 
+  const formatMaxOutOfRange = (category) => {
+    if (category.max_outofrange == null || category.max_outofrange === '') return '-';
+    return category.outofrange_type === 'P'
+      ? `${category.max_outofrange}%`
+      : `${category.max_outofrange} ${t('registration_categories_outofrange_people', 'people')}`;
+  };
+
   const setFormValues = (category = {}) => {
     if (elements.id) elements.id.value = category?.id ?? '';
     if (elements.name) elements.name.value = category?.name ?? '';
@@ -6591,6 +6599,7 @@ function initRegistrationCategoriesTab() {
     if (elements.maxPar) elements.maxPar.value = category?.max_par ?? '';
     if (elements.minYears) elements.minYears.value = category?.min_years ?? '';
     if (elements.maxYears) elements.maxYears.value = category?.max_years ?? '';
+    if (elements.outOfRangeType) elements.outOfRangeType.value = category?.outofrange_type === 'P' ? 'P' : 'N';
     if (elements.maxOutOfRange) elements.maxOutOfRange.value = category?.max_outofrange ?? '';
     if (elements.musicMinDuration) elements.musicMinDuration.value = formatDurationValue(category?.music_min_duration);
     if (elements.musicMaxDuration) elements.musicMaxDuration.value = formatDurationValue(category?.music_max_duration);
@@ -6712,7 +6721,7 @@ function initRegistrationCategoriesTab() {
       createCategoryMobileMetric(
         'bi-person-exclamation',
         t('registration_categories_header_max_outofrange', 'Max. out of range'),
-        `${category.max_outofrange ?? '-'}`
+        formatMaxOutOfRange(category)
       )
     );
     card.appendChild(metrics);
@@ -6842,7 +6851,7 @@ function initRegistrationCategoriesTab() {
 
       const maxOutOfRangeCell = document.createElement('td');
       maxOutOfRangeCell.className = 'text-center';
-      maxOutOfRangeCell.textContent = category.max_outofrange ?? '-';
+      maxOutOfRangeCell.textContent = formatMaxOutOfRange(category);
       row.appendChild(maxOutOfRangeCell);
 
       const musicMinCell = document.createElement('td');
@@ -7003,6 +7012,7 @@ function initRegistrationCategoriesTab() {
       max_par: normalizeNumber(elements.maxPar?.value),
       min_years: normalizeNumber(elements.minYears?.value),
       max_years: normalizeNumber(elements.maxYears?.value),
+      outofrange_type: elements.outOfRangeType?.value === 'P' ? 'P' : 'N',
       max_outofrange: normalizeNumber(elements.maxOutOfRange?.value),
       music_min_duration: parseDurationValue(elements.musicMinDuration?.value),
       music_max_duration: parseDurationValue(elements.musicMaxDuration?.value),
@@ -8495,7 +8505,10 @@ function initOrganizerRegistrationsTab() {
         return age !== '-' && maxYears !== null && age > maxYears;
       }).length
       : 0;
-    const allowedOutOfRange = normalizeNumber(category?.max_outofrange) ?? 0;
+    const outOfRangeLimit = normalizeNumber(category?.max_outofrange) ?? 0;
+    const allowedOutOfRange = category?.outofrange_type === 'P'
+      ? Math.ceil(members.length * outOfRangeLimit / 100)
+      : outOfRangeLimit;
 
     if (membersElements.outOfRangeInfo) {
       if (!hasAgeRange) {
@@ -8505,8 +8518,8 @@ function initOrganizerRegistrationsTab() {
         membersElements.outOfRangeInfo.classList.add('text-muted');
       } else {
         membersElements.outOfRangeInfo.textContent = formatTemplate(
-          t('registration_competitions_members_outofrange_count', 'Por encima del rango: {count}'),
-          { count: aboveRangeCount }
+          t('registration_competitions_members_outofrange_count', 'Above the age range: {count} / {allowed}'),
+          { count: aboveRangeCount, allowed: allowedOutOfRange }
         );
         membersElements.outOfRangeInfo.classList.remove('d-none', 'text-muted', 'text-warning-emphasis', 'text-danger', 'fw-semibold');
         if (aboveRangeCount > allowedOutOfRange) {
@@ -8588,8 +8601,13 @@ function initOrganizerRegistrationsTab() {
     const maxPar = normalizeNumber(category.max_par);
     const minYears = normalizeNumber(category.min_years);
     const maxYears = normalizeNumber(category.max_years);
-    const maxOutOfRange = normalizeNumber(category?.max_outofrange) ?? 0;
-    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. por encima del rango');
+    const maxOutOfRange = normalizeNumber(category?.max_outofrange);
+    const maxOutOfRangeValue = maxOutOfRange === null
+      ? '-'
+      : category.outofrange_type === 'P'
+        ? `${maxOutOfRange}%`
+        : `${maxOutOfRange} ${t('registration_categories_outofrange_people', 'people')}`;
+    const maxOutOfRangeLabel = t('registration_competitions_rule_max_outofrange', 'Máx. fuera');
     const participantsInfo = `
       <div class="registration-category-info-card registration-category-info-card--rules">
         <div class="registration-category-info-title">
@@ -8613,7 +8631,7 @@ function initOrganizerRegistrationsTab() {
           <div class="registration-category-info-values">
             <span><strong>${minLabel}:</strong> ${minYears ?? '-'}</span>
             <span><strong>${maxLabel}:</strong> ${maxYears ?? '-'}</span>
-            <span><strong>${maxOutOfRangeLabel}:</strong> ${maxOutOfRange}</span>
+            <span><strong>${maxOutOfRangeLabel}:</strong> ${maxOutOfRangeValue}</span>
           </div>
         </div>
       `
