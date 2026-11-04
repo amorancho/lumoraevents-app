@@ -5052,6 +5052,7 @@ function formatRegistrationCurrency(value) {
   return new Intl.NumberFormat(getRegistrationLanguage(), {
     style: 'currency',
     currency: 'EUR',
+    useGrouping: 'always',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(amount);
