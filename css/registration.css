@@ -2815,6 +2815,10 @@
   .registration-dashboard-stat-card .card-body { min-width: 0; }
   .registration-dashboard-kpi-value { font-size: clamp(1.05rem, 4vw, 1.3rem); white-space: normal; overflow-wrap: anywhere; }
   .registration-dashboard-kpi-label { font-size: .67rem; letter-spacing: .04em; }
+  #dashboard :is(.registration-dashboard-status-card, .registration-dashboard-finance-card) .card-body { flex-direction: column; align-items: stretch; }
+  #dashboard :is(.registration-dashboard-status-card, .registration-dashboard-finance-card) .card-body > .d-flex { flex: 0 1 auto; flex-direction: row-reverse; justify-content: flex-end !important; }
+  #dashboard :is(.registration-dashboard-status-card, .registration-dashboard-finance-card) .registration-dashboard-kpi-value { margin-left: 0; }
+  #dashboard .registration-dashboard-finance-card .registration-dashboard-kpi-meta { white-space: normal; overflow: visible; }
   .registration-content .tab-pane > .card:has(.participants-mobile-list) { border: 0 !important; background: transparent; box-shadow: none !important; }
   .registration-payments-tab-content { padding: 1rem !important; }
   #payments .registration-payments-summary-card .card-body { border-color: var(--lm-border); background: transparent; box-shadow: none; }
