@@ -448,6 +448,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const eventPageUrl = getSafeExternalUrl(event?.eventurl);
     const mapsUrl = getSafeExternalUrl(info.location_maps);
     const basesUrl = getSafeExternalUrl(info.bases_document);
+    const authorizationUrl = getSafeExternalUrl(info.authorization_template);
+    const childAuthorizationUrl = getSafeExternalUrl(info.authorization_child_template);
     const safeEmailHref = getSafeMailtoHref(info.email_contact);
     const safePhoneHref = getSafeTelHref(info.phone_contact);
     const countryValue = getCountryName(info.country);
@@ -522,6 +524,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           : `<span class="event-details-placeholder">${placeholderText}</span>`
       },
       {
+        icon: 'bi-geo',
+        label: t('event_details_where'),
+        value: info.location
+      },
+      {
         icon: 'bi-geo-alt',
         label: t('event_details_address'),
         value: info.address
@@ -534,18 +541,36 @@ document.addEventListener('DOMContentLoaded', async () => {
           : `<span class="event-details-placeholder">${placeholderText}</span>`
       },
       {
-        kind: 'bases',
+        kind: 'heading',
+        label: t('event_details_documentation')
+      },
+      {
+        kind: 'document',
+        label: t('event_details_bases'),
         href: basesUrl
+      },
+      {
+        kind: 'document',
+        label: t('event_details_adult_authorization'),
+        href: authorizationUrl
+      },
+      {
+        kind: 'document',
+        label: t('event_details_child_authorization'),
+        href: childAuthorizationUrl
       }
     ]
       .map((item) => {
-        if (item.kind === 'bases') {
+        if (item.kind === 'heading') {
+          return `<h3 class="event-details-section-title">${escapeHtml(item.label)}</h3>`;
+        }
+        if (item.kind === 'document') {
           if (!item.href) {
             return `
               <div class="event-details-action event-details-bases-card is-disabled">
                 <span class="event-details-action-icon"><i class="bi bi-file-earmark-pdf"></i></span>
                 <span>
-                  <span class="event-details-action-label">${escapeHtml(t('event_details_bases'))}</span>
+                  <span class="event-details-action-label">${escapeHtml(item.label)}</span>
                   <span class="event-details-action-subtitle">${placeholderText}</span>
                 </span>
               </div>
@@ -555,7 +580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <a class="event-details-action event-details-bases-card" href="${escapeHtml(item.href)}" target="_blank" rel="noopener noreferrer">
               <span class="event-details-action-icon"><i class="bi bi-file-earmark-pdf"></i></span>
               <span>
-                <span class="event-details-action-label">${escapeHtml(t('event_details_bases'))}</span>
+                <span class="event-details-action-label">${escapeHtml(item.label)}</span>
               </span>
             </a>
           `;

@@ -91,6 +91,7 @@
 .event-details-status-badge--default { border-color: var(--lm-border); color: var(--lm-text-muted); background: var(--lm-bg-elevated); }
 .event-details-modal .modal-body { padding: 1.2rem; background: var(--lm-bg-elevated); }
 .event-details-info-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: .55rem; }
+.event-details-section-title { grid-column: 1 / -1; margin: .7rem 0 .2rem; color: var(--lm-text); font-size: 1rem; font-weight: 750; }
 .event-details-info-item, .event-details-panel { min-width: 0; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-surface); }
 .event-details-info-item { display: flex; align-items: flex-start; gap: .65rem; padding: .7rem; }
 .event-details-info-icon { display: grid; width: 2rem; height: 2rem; flex: 0 0 2rem; place-items: center; border-radius: var(--lm-radius-sm); color: var(--lm-cyan); background: #103347; }
