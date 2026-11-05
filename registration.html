@@ -541,8 +541,8 @@
                         <tr>
                           <th class="participants-col-name" data-i18n="registration_participants_name">Nombre</th>
                           <th class="participants-col-gender" data-i18n="registration_participants_gender">Genero</th>
-                          <th class="participants-col-birth" data-i18n="registration_participants_birth">Fecha nacimiento</th>
                           <th class="participants-col-identification-document" id="participantsIdentificationDocumentHeader" data-i18n="registration_participants_identification_document">Documento identificativo</th>
+                          <th class="participants-col-birth text-nowrap" data-i18n="registration_participants_birth">FEC. NAC.</th>
                           <th class="participants-col-age">
                             <span data-i18n="registration_participants_age">Edad</span>
                             <button
@@ -559,6 +559,12 @@
                           <th class="participants-col-country" data-i18n="registration_participants_country">Pais</th>
                           <th class="text-center participants-col-actions" data-i18n="registration_participants_actions" data-tsv-ignore="true">Acciones</th>
                           <th class="participants-col-registrations" data-i18n="registration_participants_registrations">Inscripciones</th>
+                          <th id="participantsTotalHeader" class="text-end text-nowrap d-none">
+                            <span data-i18n="registration_participants_total_amount">TOTAL</span>
+                            <button type="button" class="btn btn-link text-body-secondary p-0 border-0 ms-1" data-bs-toggle="tooltip" title="Total de importes de inscripciones validadas" aria-label="Total de importes de inscripciones validadas" data-i18n-title="registration_participants_total_amount_info" data-i18n-aria-label="registration_participants_total_amount_info">
+                              <i class="bi bi-info-circle" aria-hidden="true"></i>
+                            </button>
+                          </th>
                         </tr>
                       </thead>
                       <tbody id="participantsTable"></tbody>
@@ -590,7 +596,7 @@
                         </button>
                       </div>
                       <div class="org-registrations-filter-panel" id="orgRegistrationsMobileFilterPanel">
-                        <div class="col-12 col-md-6 col-lg-3">
+                        <div class="org-registrations-filter-school col-12 col-md-6 col-lg-3">
                           <label class="form-label" for="orgRegistrationsFilterSchool" data-i18n="org_registrations_filter_school">Escuela</label>
                           <select id="orgRegistrationsFilterSchool" class="form-select">
                             <option value=""></option>
@@ -619,14 +625,16 @@
                             <option value=""></option>
                           </select>
                         </div>
-                        <div class="col-12 col-md-6 col-lg-2 d-flex align-items-center">
-                          <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="orgRegistrationsFilterShowDeleted">
-                            <label class="form-check-label" for="orgRegistrationsFilterShowDeleted" data-i18n="org_registrations_filter_show_deleted">Ver Eliminadas</label>
+                        <div class="org-registrations-filter-deleted col-12 col-md-6 col-lg-2">
+                          <label class="form-label d-block" for="orgRegistrationsFilterShowDeleted" data-i18n="org_registrations_filter_show_deleted">Ver Eliminadas</label>
+                          <div class="d-flex align-items-center org-registrations-filter-checkbox">
+                            <input class="form-check-input m-0" type="checkbox" id="orgRegistrationsFilterShowDeleted">
                           </div>
                         </div>
                         <div class="org-registrations-filter-clear col-12 col-md-6 col-lg-2">
-                          <button type="button" class="btn btn-outline-secondary w-100" id="orgRegistrationsFilterClear" data-i18n="clear_filters">Limpiar filtros</button>
+                          <button type="button" class="btn btn-outline-secondary" id="orgRegistrationsFilterClear" title="Limpiar filtros" aria-label="Limpiar filtros" data-i18n-title="clear_filters" data-i18n-aria-label="clear_filters">
+                            <i class="bi bi-eraser" aria-hidden="true"></i>
+                          </button>
                         </div>
                         <div class="org-registrations-filter-apply">
                           <button type="button" class="btn btn-primary w-100" id="orgRegistrationsMobileFilterApply" data-i18n="apply_filters">Aplicar</button>
@@ -698,13 +706,10 @@
                       <thead class="table-light">
                         <tr>
                           <th data-i18n="registration_categories_name">Nombre</th>
-                          <th class="text-center" data-i18n="registration_categories_header_min_par">Min. part.</th>
-                          <th class="text-center" data-i18n="registration_categories_header_max_par">Max. part.</th>
-                          <th class="text-center" data-i18n="registration_categories_header_min_years">Edad mín.</th>
-                          <th class="text-center" data-i18n="registration_categories_header_max_years">Edad máx.</th>
+                          <th class="text-center" data-i18n="registration_categories_header_participants">NÚM. PART.</th>
+                          <th class="text-center" data-i18n="registration_categories_header_ages">EDADES</th>
                           <th class="text-center" data-i18n="registration_categories_header_max_outofrange">Máx. fuera rango</th>
-                          <th class="text-center" data-i18n="registration_categories_header_music_min_duration">Dur. mín.</th>
-                          <th class="text-center" data-i18n="registration_categories_header_music_max_duration">Dur. máx.</th>
+                          <th class="text-center" data-i18n="registration_categories_header_music_duration">DUR. MÚSICA</th>
                           <th class="text-center" data-i18n="registration_categories_price">Precio Hoy</th>
                           <th class="text-center" data-i18n="registration_categories_fee">Fee</th>
                           <th class="text-start" data-i18n="registration_categories_header_status">Estado insc.</th>
@@ -1189,7 +1194,7 @@
                 <input type="text" class="form-control" id="participantName" required>
               </div>
               <div class="col-12 col-md-6">
-                <label class="form-label" for="participantDob" data-i18n="registration_participants_birth">Fecha nacimiento</label>
+                <label class="form-label" for="participantDob" data-i18n="registration_participants_birth">FEC. NAC.</label>
                 <input type="date" class="form-control" id="participantDob" required>
               </div>
               <div class="col-12 col-md-6" id="participantIdentificationDocumentField">
@@ -1323,7 +1328,7 @@
             </div>
             <ul class="mb-0 ps-3 small">
               <li data-i18n="registration_participants_import_column_name">Nombre</li>
-              <li data-i18n="registration_participants_import_column_birth">Fecha de nacimiento</li>
+              <li data-i18n="registration_participants_import_column_birth">FEC. NAC.</li>
               <li id="importParticipantsIdentificationDocumentHint" class="d-none" data-i18n="registration_participants_import_column_identification_document_optional">Documento identificativo (opcional)</li>
               <li id="importParticipantsGenderHint" data-i18n="registration_participants_import_column_gender_optional">GÃ©nero (opcional)</li>
               <li data-i18n="registration_participants_import_column_country_optional">Nacionalidad ISO 2 letras (opcional)</li>
@@ -1375,7 +1380,7 @@
                   <tr>
                     <th data-i18n="registration_participants_import_row">Fila</th>
                     <th data-i18n="registration_participants_name">Nombre</th>
-                    <th data-i18n="registration_participants_birth">Fecha nacimiento</th>
+                    <th data-i18n="registration_participants_birth">FEC. NAC.</th>
                     <th id="importParticipantsPreviewIdentificationDocumentHeader" class="d-none" data-i18n="registration_participants_identification_document">Documento identificativo</th>
                     <th id="importParticipantsPreviewGenderHeader" data-i18n="registration_participants_gender">Genero</th>
                     <th data-i18n="registration_participants_country">Pais</th>
@@ -1448,7 +1453,7 @@
                   <tr>
                     <th scope="col" data-i18n="registration_participants_name">Nombre</th>
                     <th scope="col" data-i18n="registration_participants_import_wop_surnames">Apellidos</th>
-                    <th scope="col" data-i18n="registration_participants_import_column_birth">Fecha de nacimiento</th>
+                    <th scope="col" data-i18n="registration_participants_import_column_birth">FEC. NAC.</th>
                     <th scope="col" data-i18n="registration_participants_identification_document">Documento identificativo</th>
                     <th scope="col" data-i18n="registration_participants_import_status">Estado</th>
                     <th scope="col" data-i18n="registration_participants_import_errors">Errores</th>
@@ -1463,6 +1468,24 @@
         <div class="modal-footer flex-wrap gap-2">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
           <button type="button" class="btn btn-primary" id="confirmImportWopParticipantsBtn" data-i18n="registration_participants_import_confirm" disabled>Importar válidos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="participantRegistrationsModal" tabindex="-1" aria-labelledby="participantRegistrationsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h5 class="modal-title" id="participantRegistrationsModalTitle" data-i18n="registration_participants_view_registrations">Ver inscripciones</h5>
+            <div id="participantRegistrationsName" class="small text-body-secondary"></div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" data-i18n-aria-label="close"></button>
+        </div>
+        <div class="modal-body participant-registrations-list" id="participantRegistrationsList"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
         </div>
       </div>
     </div>
@@ -1491,13 +1514,22 @@
                 <label class="form-label" for="registrationCategoryMaxPar" data-i18n="registration_categories_field_max_par">Max. participantes</label>
                 <input type="number" class="form-control" id="registrationCategoryMaxPar" min="0" step="1" required>
               </div>
-              <div class="col-6">
+              <div class="col-12 col-sm-4">
+                <label class="form-label" for="registrationCategoryYearsValidation" data-i18n="registration_categories_years_validation">Validación de años</label>
+                <select class="form-select" id="registrationCategoryYearsValidation" required>
+                  <option value="BY_AGE" data-i18n="registration_categories_years_by_age">Por edad</option>
+                  <option value="BY_YEAR" data-i18n="registration_categories_years_by_year">Por nacimiento</option>
+                </select>
+              </div>
+              <div class="col-6 col-sm-4">
                 <label class="form-label" for="registrationCategoryMinYears" data-i18n="registration_categories_field_min_years">Min. anos</label>
                 <input type="number" class="form-control" id="registrationCategoryMinYears" min="0" step="1" required>
+                <div class="invalid-feedback d-none" data-i18n="registration_categories_birth_year_invalid">Introduce un año de nacimiento de 4 dígitos.</div>
               </div>
-              <div class="col-6">
+              <div class="col-6 col-sm-4">
                 <label class="form-label" for="registrationCategoryMaxYears" data-i18n="registration_categories_field_max_years">Max. anos</label>
                 <input type="number" class="form-control" id="registrationCategoryMaxYears" min="0" step="1" required>
+                <div class="invalid-feedback d-none" data-i18n="registration_categories_birth_year_invalid">Introduce un año de nacimiento de 4 dígitos.</div>
               </div>
               <div class="col-6">
                 <label class="form-label" for="registrationCategoryOutOfRangeType" data-i18n="registration_categories_field_outofrange_type">Tipo fuera de rango</label>
@@ -2122,7 +2154,7 @@
                   <tr>
                     <th data-i18n="registration_competitions_member_name">Nombre</th>
                     <th data-i18n="registration_competitions_member_gender">Genero</th>
-                    <th data-i18n="registration_competitions_member_birth">Nacimiento</th>
+                    <th data-i18n="registration_competitions_member_birth">FEC. NAC.</th>
                     <th>
                       <span data-i18n="registration_competitions_member_age">Edad</span>
                       <button

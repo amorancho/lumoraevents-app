@@ -1660,6 +1660,9 @@ function initOrganizerDashboard() {
   };
 
   const getParticipantRegistrationCount = (participant) => {
+    if (Array.isArray(participant?.choreos)) {
+      return { hasInfo: true, count: participant.choreos.length };
+    }
     const directCount = Number(
       participant?.registrations_count
       ?? participant?.registration_count
@@ -3559,7 +3562,7 @@ function initParticipantsTab(role) {
         const previewCells = [
           `${row.rowNumber ?? '-'}`,
           `${rowData.name ?? ''}`.trim() || '-',
-          getImportPreviewBirthDate(rowData) || '-'
+          formatRegistrationBirthDate(getImportPreviewBirthDate(rowData))
         ];
 
         if (showIdentificationDocument) {
@@ -3761,14 +3764,83 @@ function initParticipantsTab(role) {
   };
 
   const getParticipantRegistrations = (participant) => {
-    const rawValue = `${participant?.reg_cat_sty ?? ''}`.trim();
-    if (!rawValue || rawValue.toUpperCase() === 'NULL') {
-      return [];
+    return Array.isArray(participant?.choreos) ? participant.choreos.filter(item => item && typeof item === 'object') : [];
+  };
+
+  const participantRegistrationStatuses = {
+    CRE: ['registration_status_creation', 'Borrador'],
+    PEN: ['registration_status_pending', 'Pendiente de validación'],
+    VAL: ['registration_status_validated', 'Validada'],
+    REJ: ['registration_status_rejected', 'Rechazada']
+  };
+  let participantRegistrationTooltips = [];
+  const createParticipantRegistrationsSummary = (participant) => {
+    const choreos = getParticipantRegistrations(participant);
+    const wrap = document.createElement('div');
+    wrap.className = 'participants-registrations-list d-flex flex-wrap align-items-center gap-2';
+    const badges = document.createElement('div');
+    badges.className = 'd-flex gap-1';
+    Object.entries(participantRegistrationStatuses).forEach(([status, [key, fallback]]) => {
+      const count = choreos.filter(choreo => choreo.status === status).length;
+      const badge = document.createElement('span');
+      badge.className = `badge ${getChoreoStatusBadgeInfo(status, count).className}`;
+      badge.textContent = `${count}`;
+      badge.title = `${t(key, fallback)}: ${count}`;
+      badge.setAttribute('aria-label', badge.title);
+      badge.setAttribute('data-bs-toggle', 'tooltip');
+      badge.tabIndex = 0;
+      badges.appendChild(badge);
+    });
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn-outline-primary btn-sm btn-view-participant-registrations';
+    button.dataset.id = participant.id;
+    button.setAttribute('data-tsv-ignore', 'true');
+    button.textContent = t('registration_participants_view_registrations', 'Ver inscripciones');
+    wrap.append(badges, button);
+    return wrap;
+  };
+
+  const openParticipantRegistrations = (participant) => {
+    const modalEl = document.getElementById('participantRegistrationsModal');
+    const list = document.getElementById('participantRegistrationsList');
+    if (!modalEl || !list) return;
+    document.getElementById('participantRegistrationsName').textContent = participant.name || '';
+    list.replaceChildren();
+    const choreos = getParticipantRegistrations(participant);
+    if (!choreos.length) {
+      list.textContent = t('registration_participants_no_registration', 'NO INSCRIPCIÓN');
     }
-    return rawValue
-      .split('|')
-      .map((value) => value.trim())
-      .filter(Boolean);
+    choreos.forEach(choreo => {
+      const item = document.createElement('div');
+      item.className = 'participant-registration-item';
+      const name = document.createElement('h6');
+      name.className = 'participant-registration-item__name';
+      name.textContent = choreo.name || '-';
+      const price = document.createElement('strong');
+      price.className = 'participant-registration-item__price';
+      price.textContent = choreo.price == null ? '-' : formatRegistrationCurrency(choreo.price);
+      price.setAttribute('aria-label', `${t('registration_payments_amount_label', 'Importe')}: ${price.textContent}`);
+      const status = document.createElement('span');
+      status.className = `badge participant-registration-item__status ${getChoreoStatusBadgeInfo(choreo.status, 0).className}`;
+      const statusInfo = participantRegistrationStatuses[choreo.status];
+      status.textContent = statusInfo ? t(...statusInfo) : (choreo.status || '-');
+      const classification = document.createElement('div');
+      classification.className = 'participant-registration-item__classification';
+      [
+        [t('registration_competitions_table_category', 'Categoría'), choreo.category],
+        [t('registration_competitions_table_style', 'Disciplina/Estilo'), choreo.style]
+      ].forEach(([label, value], index) => {
+        if (index) classification.append(document.createTextNode(' · '));
+        const labelEl = document.createElement('span');
+        labelEl.className = 'visually-hidden';
+        labelEl.textContent = `${label}: `;
+        classification.append(labelEl, document.createTextNode(`${value ?? '-'}`));
+      });
+      item.append(name, price, classification, status);
+      list.appendChild(item);
+    });
+    bootstrap.Modal.getOrCreateInstance(modalEl).show();
   };
 
   const setCountryValue = (value) => {
@@ -3886,6 +3958,17 @@ function initParticipantsTab(role) {
   };
 
   const renderParticipants = () => {
+    participantRegistrationTooltips = disposeTooltipInstances(participantRegistrationTooltips);
+    const showParticipantTotal = getEvent()?.registrationPricePerPax === true;
+    const totalHeader = document.getElementById('participantsTotalHeader');
+    totalHeader?.classList.toggle('d-none', !showParticipantTotal);
+    const totalInfo = t('registration_participants_total_amount_info', 'Total de importes de inscripciones validadas');
+    const totalInfoButton = totalHeader?.querySelector('button');
+    if (totalInfoButton) {
+      totalInfoButton.title = totalInfo;
+      totalInfoButton.setAttribute('aria-label', totalInfo);
+    }
+    if (showParticipantTotal) participantRegistrationTooltips.push(...initTooltipInstances(totalHeader));
     tableBody.innerHTML = '';
     mobileCards.innerHTML = '';
     const participantsAgeReferenceDate = getRegistrationAgeReferenceDate();
@@ -3914,7 +3997,7 @@ function initParticipantsTab(role) {
     const editTitle = t('edit', 'Edit');
     const deleteTitle = t('delete', 'Delete');
     const authorizationTitle = t('registration_authorization', 'Authorization');
-    const birthLabel = t('registration_participants_birth', 'Fecha nacimiento');
+    const birthLabel = t('registration_participants_birth', 'FEC. NAC.');
     const identificationDocumentLabel = t('registration_participants_identification_document', 'Documento identificativo');
     const ageLabel = t('registration_participants_age', 'Edad');
     const countryLabel = t('registration_participants_country', 'Pais');
@@ -3966,10 +4049,6 @@ function initParticipantsTab(role) {
       }
 
       const dobValue = getDateOnlyValue(participant.date_of_birth);
-      const dobCell = document.createElement('td');
-      dobCell.className = 'participants-col-birth';
-      dobCell.textContent = dobValue || '-';
-      row.appendChild(dobCell);
 
       if (showIdentificationDocument) {
         const identificationDocumentCell = document.createElement('td');
@@ -3977,6 +4056,11 @@ function initParticipantsTab(role) {
         identificationDocumentCell.textContent = participant.identification_document || '-';
         row.appendChild(identificationDocumentCell);
       }
+
+      const dobCell = document.createElement('td');
+      dobCell.className = 'participants-col-birth text-nowrap';
+      dobCell.textContent = formatRegistrationBirthDate(participant.date_of_birth);
+      row.appendChild(dobCell);
 
       const participantAge = calculateAge(dobValue, participantsAgeReferenceDate);
       const ageCell = document.createElement('td');
@@ -3998,26 +4082,15 @@ function initParticipantsTab(role) {
 
       const registrationsCell = document.createElement('td');
       registrationsCell.className = 'participants-col-registrations';
-      const registrations = getParticipantRegistrations(participant);
-      const registrationsWrap = document.createElement('div');
-      registrationsWrap.className = 'participants-registrations-list d-flex flex-wrap gap-1';
-
-      if (registrations.length) {
-        registrations.forEach((registrationLabel) => {
-          const badge = document.createElement('span');
-          badge.className = 'badge bg-primary-subtle text-primary-emphasis';
-          badge.textContent = registrationLabel;
-          registrationsWrap.appendChild(badge);
-        });
-      } else {
-        const badge = document.createElement('span');
-        badge.className = 'badge bg-secondary-subtle text-secondary-emphasis';
-        badge.textContent = t('registration_participants_no_registration', 'NO INSCRIPCIÓN');
-        registrationsWrap.appendChild(badge);
-      }
-
-      registrationsCell.appendChild(registrationsWrap);
+      registrationsCell.appendChild(createParticipantRegistrationsSummary(participant));
       row.appendChild(registrationsCell);
+
+      if (showParticipantTotal) {
+        const totalCell = document.createElement('td');
+        totalCell.className = 'text-end text-nowrap participants-col-total';
+        totalCell.textContent = formatRegistrationCurrency(participant.price);
+        row.appendChild(totalCell);
+      }
 
       if (showOrganizerAuthorizations) {
         const authorizationCell = document.createElement('td');
@@ -4137,7 +4210,6 @@ function initParticipantsTab(role) {
 
       const details = document.createElement('div');
       details.className = 'participant-mobile-card__details';
-      details.appendChild(createMobileDetail('bi-calendar3', birthLabel, dobValue || '-'));
       if (showIdentificationDocument) {
         details.appendChild(createMobileDetail(
           'bi-person-vcard',
@@ -4145,6 +4217,7 @@ function initParticipantsTab(role) {
           participant.identification_document || '-'
         ));
       }
+      details.appendChild(createMobileDetail('bi-calendar3', birthLabel, formatRegistrationBirthDate(participant.date_of_birth)));
       const mobileAgeDetail = createMobileDetail(
         'bi-cake2',
         ageLabel,
@@ -4169,37 +4242,29 @@ function initParticipantsTab(role) {
       mobileRegistrationsTitle.appendChild(trophyIcon);
       mobileRegistrationsTitle.appendChild(mobileRegistrationsLabel);
 
-      const mobileRegistrationList = document.createElement('div');
-      mobileRegistrationList.className = 'participant-mobile-card__registration-list';
-      const mobileRegistrationValues = getParticipantRegistrations(participant);
-      if (mobileRegistrationValues.length) {
-        mobileRegistrationValues.forEach((registrationLabel) => {
-          const registrationBadge = document.createElement('span');
-          registrationBadge.className = 'participant-mobile-card__registration';
-          const checkIcon = document.createElement('i');
-          checkIcon.className = 'bi bi-check-circle-fill';
-          checkIcon.setAttribute('aria-hidden', 'true');
-          const registrationText = document.createElement('span');
-          registrationText.textContent = registrationLabel;
-          registrationBadge.appendChild(checkIcon);
-          registrationBadge.appendChild(registrationText);
-          mobileRegistrationList.appendChild(registrationBadge);
-        });
-      } else {
-        const emptyBadge = document.createElement('span');
-        emptyBadge.className = 'participant-mobile-card__registration participant-mobile-card__registration--empty';
-        const emptyIcon = document.createElement('i');
-        emptyIcon.className = 'bi bi-dash-circle';
-        emptyIcon.setAttribute('aria-hidden', 'true');
-        const emptyText = document.createElement('span');
-        emptyText.textContent = t('registration_participants_no_registration', 'NO INSCRIPCION');
-        emptyBadge.appendChild(emptyIcon);
-        emptyBadge.appendChild(emptyText);
-        mobileRegistrationList.appendChild(emptyBadge);
-      }
+      const mobileRegistrationList = createParticipantRegistrationsSummary(participant);
 
       mobileRegistrations.appendChild(mobileRegistrationsTitle);
       mobileRegistrations.appendChild(mobileRegistrationList);
+      if (showParticipantTotal) {
+        const total = document.createElement('div');
+        total.className = 'd-flex align-items-center justify-content-between gap-2 mt-2';
+        const totalLabel = document.createElement('span');
+        totalLabel.className = 'small text-body-secondary';
+        totalLabel.textContent = t('registration_participants_total_amount', 'TOTAL');
+        const info = document.createElement('button');
+        info.type = 'button';
+        info.className = 'btn btn-link text-body-secondary p-0 border-0 ms-1';
+        info.setAttribute('data-bs-toggle', 'tooltip');
+        info.title = totalInfo;
+        info.setAttribute('aria-label', totalInfo);
+        info.innerHTML = '<i class="bi bi-info-circle" aria-hidden="true"></i>';
+        totalLabel.appendChild(info);
+        const amount = document.createElement('strong');
+        amount.textContent = formatRegistrationCurrency(participant.price);
+        total.append(totalLabel, amount);
+        mobileRegistrations.appendChild(total);
+      }
       mobileCard.appendChild(mobileRegistrations);
 
       if (showOrganizerAuthorizations) {
@@ -4280,14 +4345,18 @@ function initParticipantsTab(role) {
 
       mobileCards.appendChild(mobileCard);
     });
+    participantRegistrationTooltips.push(...initTooltipInstances(tableBody), ...initTooltipInstances(mobileCards));
   };
 
   const showParticipantsError = (message) => {
+    participantRegistrationTooltips = disposeTooltipInstances(participantRegistrationTooltips);
     tableBody.innerHTML = '';
     mobileCards.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
     cell.colSpan = 5
+      + (getEvent()?.registrationPricePerPax === true ? 1 : 0)
+      + (showIdentificationDocument ? 1 : 0)
       + (shouldShowGender ? 1 : 0)
       + (showSchoolColumn ? 1 : 0)
       + (allowEdit ? 1 : 0)
@@ -4348,7 +4417,7 @@ function initParticipantsTab(role) {
       return;
     }
 
-    const dobValue = getDateOnlyValue(participant?.date_of_birth) || '-';
+    const dobValue = formatRegistrationBirthDate(participant?.date_of_birth);
     if (duplicateMessageEl) {
       duplicateMessageEl.innerHTML = `Ya existe un participante con el mismo nombre y fecha de nacimiento: <strong>${participant?.name || '-'}</strong> (${dobValue}). ¿Es correcto?`;
     }
@@ -4644,6 +4713,12 @@ function initParticipantsTab(role) {
   }
 
   const handleParticipantAction = (event) => {
+    const registrationsBtn = event.target.closest('.btn-view-participant-registrations');
+    if (registrationsBtn) {
+      const participant = registrationState.participants.find(item => `${item.id}` === `${registrationsBtn.dataset.id}`);
+      if (participant) openParticipantRegistrations(participant);
+      return;
+    }
     const authorizationBtn = event.target.closest('.btn-participant-authorization');
     const viewAuthorizationBtn = event.target.closest('.btn-view-participant-authorization');
 
@@ -4786,6 +4861,10 @@ function initParticipantsTab(role) {
     });
   }
 
+  window.addEventListener('beforeunload', () => {
+    participantRegistrationTooltips = disposeTooltipInstances(participantRegistrationTooltips);
+  });
+
   const refreshParticipantsTranslations = async () => {
     try {
       await window.translationsReady;
@@ -4832,6 +4911,36 @@ function getDateOnlyValue(dateValue) {
     return dateValue.toISOString().split('T')[0];
   }
   return '';
+}
+
+function formatRegistrationBirthDate(dateValue) {
+  const dateOnly = getDateOnlyValue(dateValue);
+  const match = dateOnly.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|\s)/);
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : (dateOnly || '-');
+}
+
+function getRegistrationMemberAgeRangeStatus(member, category) {
+  const parseLimit = value => value === null || value === undefined || value === ''
+    ? null
+    : normalizeRegistrationNumber(value);
+  const min = parseLimit(category?.min_years);
+  const max = parseLimit(category?.max_years);
+  if (!member || (min === null && max === null)) return 'in-range';
+
+  const dateOfBirth = getDateOnlyValue(member.date_of_birth);
+  if (category?.years_validation === 'BY_YEAR') {
+    const match = dateOfBirth.match(/^(\d{4})-\d{2}-\d{2}/);
+    if (!match) return 'unknown';
+    const year = Number(match[1]);
+    if (min !== null && year < min) return 'above';
+    if (max !== null && year > max) return 'below';
+  } else {
+    const age = calculateAge(dateOfBirth, getRegistrationAgeReferenceDate());
+    if (age === '-') return 'unknown';
+    if (min !== null && age < min) return 'below';
+    if (max !== null && age > max) return 'above';
+  }
+  return 'in-range';
 }
 
 function calculateAge(dateValue, referenceDateValue = null) {
@@ -6264,6 +6373,7 @@ function initRegistrationCategoriesTab() {
     name: document.getElementById('registrationCategoryName'),
     minPar: document.getElementById('registrationCategoryMinPar'),
     maxPar: document.getElementById('registrationCategoryMaxPar'),
+    yearsValidation: document.getElementById('registrationCategoryYearsValidation'),
     minYears: document.getElementById('registrationCategoryMinYears'),
     maxYears: document.getElementById('registrationCategoryMaxYears'),
     outOfRangeType: document.getElementById('registrationCategoryOutOfRangeType'),
@@ -6300,6 +6410,7 @@ function initRegistrationCategoriesTab() {
   ];
   const validationFields = [
     elements.name,
+    elements.yearsValidation,
     elements.minPar,
     elements.maxPar,
     elements.minYears,
@@ -6403,9 +6514,23 @@ function initRegistrationCategoriesTab() {
     field.value = formatDurationValue(totalSeconds);
   };
 
+  const syncCategoryYearsFieldValidity = (field) => {
+    if (!field) return;
+    const byYear = elements.yearsValidation?.value === 'BY_YEAR';
+    field.min = byYear ? '1000' : '0';
+    if (byYear) field.max = '9999';
+    else field.removeAttribute('max');
+    const validYear = /^[1-9][0-9]{3}$/.test(`${field.value ?? ''}`.trim());
+    field.setCustomValidity(byYear && !validYear
+      ? t('registration_categories_birth_year_invalid', 'Introduce un año de nacimiento de 4 dígitos.')
+      : '');
+    field.parentElement?.querySelector('.invalid-feedback')?.classList.toggle('d-none', !byYear);
+  };
+
   const validateCategoryField = (field) => {
     if (!field) return true;
 
+    if (field === elements.minYears || field === elements.maxYears) syncCategoryYearsFieldValidity(field);
     if (field === elements.musicMinDuration) syncDurationFieldValidity(field, 'registration_categories_field_music_min_duration_invalid');
     if (field === elements.musicMaxDuration) syncDurationFieldValidity(field, 'registration_categories_field_music_max_duration_invalid');
 
@@ -6598,8 +6723,10 @@ function initRegistrationCategoriesTab() {
     if (elements.name) elements.name.value = category?.name ?? '';
     if (elements.minPar) elements.minPar.value = category?.min_par ?? '';
     if (elements.maxPar) elements.maxPar.value = category?.max_par ?? '';
+    if (elements.yearsValidation) elements.yearsValidation.value = category?.years_validation === 'BY_YEAR' ? 'BY_YEAR' : 'BY_AGE';
     if (elements.minYears) elements.minYears.value = category?.min_years ?? '';
     if (elements.maxYears) elements.maxYears.value = category?.max_years ?? '';
+    [elements.minYears, elements.maxYears].forEach(syncCategoryYearsFieldValidity);
     if (elements.outOfRangeType) elements.outOfRangeType.value = category?.outofrange_type === 'P' ? 'P' : 'N';
     if (elements.maxOutOfRange) elements.maxOutOfRange.value = category?.max_outofrange ?? '';
     if (elements.musicMinDuration) elements.musicMinDuration.value = formatDurationValue(category?.music_min_duration);
@@ -6641,6 +6768,21 @@ function initRegistrationCategoriesTab() {
     };
   };
 
+  const createCategoryYearsRange = (category) => {
+    const range = document.createElement('div');
+    range.className = 'd-inline-flex flex-column align-items-center gap-1';
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-info-subtle text-info-emphasis';
+    const byYear = category.years_validation === 'BY_YEAR';
+    badge.dataset.i18n = byYear ? 'registration_categories_badge_by_year' : 'registration_categories_badge_by_age';
+    badge.textContent = t(badge.dataset.i18n, byYear ? 'POR AÑO NAC.' : 'POR EDAD');
+    const value = document.createElement('span');
+    value.className = 'text-nowrap';
+    value.textContent = `${category.min_years ?? '-'} - ${category.max_years ?? '-'}`;
+    range.append(badge, value);
+    return range;
+  };
+
   const createCategoryMobileMetric = (icon, label, value) => {
     const metric = document.createElement('div');
     metric.className = 'registration-category-mobile-card__metric';
@@ -6654,9 +6796,9 @@ function initRegistrationCategoriesTab() {
     const labelEl = document.createElement('span');
     labelEl.className = 'registration-category-mobile-card__metric-label';
     labelEl.textContent = label;
-    const valueEl = document.createElement('span');
+    const valueEl = document.createElement('div');
     valueEl.className = 'registration-category-mobile-card__metric-value';
-    valueEl.textContent = value;
+    valueEl.append(value);
     copy.append(labelEl, valueEl);
     metric.append(iconEl, copy);
     return metric;
@@ -6701,23 +6843,18 @@ function initRegistrationCategoriesTab() {
     metrics.append(
       createCategoryMobileMetric(
         'bi-people',
-        t('registration_dashboard_kpi_participants', 'Participants'),
-        `${category.min_par ?? '-'} – ${category.max_par ?? '-'}`
+        t('registration_categories_header_participants', 'NÚM. PART.'),
+        `${category.min_par ?? '-'} - ${category.max_par ?? '-'}`
       ),
       createCategoryMobileMetric(
         'bi-calendar3',
-        t('registration_participants_age', 'Age'),
-        `${category.min_years ?? '-'} – ${category.max_years ?? '-'}`
+        t('registration_categories_header_ages', 'EDADES'),
+        createCategoryYearsRange(category)
       ),
       createCategoryMobileMetric(
         'bi-music-note-beamed',
-        t('registration_categories_header_music_min_duration', 'Music min.'),
-        formatDurationValue(category.music_min_duration) || '-'
-      ),
-      createCategoryMobileMetric(
-        'bi-music-note-beamed',
-        t('registration_categories_header_music_max_duration', 'Music max.'),
-        formatDurationValue(category.music_max_duration) || '-'
+        t('registration_categories_header_music_duration', 'DUR. MÚSICA'),
+        `${formatDurationValue(category.music_min_duration) || '-'} - ${formatDurationValue(category.music_max_duration) || '-'}`
       ),
       createCategoryMobileMetric(
         'bi-person-exclamation',
@@ -6830,40 +6967,25 @@ function initRegistrationCategoriesTab() {
       nameCell.textContent = category.name || '-';
       row.appendChild(nameCell);
 
-      const minParCell = document.createElement('td');
-      minParCell.className = 'text-center';
-      minParCell.textContent = category.min_par ?? '-';
-      row.appendChild(minParCell);
+      const participantsCell = document.createElement('td');
+      participantsCell.className = 'text-center text-nowrap';
+      participantsCell.textContent = `${category.min_par ?? '-'} - ${category.max_par ?? '-'}`;
+      row.appendChild(participantsCell);
 
-      const maxParCell = document.createElement('td');
-      maxParCell.className = 'text-center';
-      maxParCell.textContent = category.max_par ?? '-';
-      row.appendChild(maxParCell);
-
-      const minYearsCell = document.createElement('td');
-      minYearsCell.className = 'text-center';
-      minYearsCell.textContent = category.min_years ?? '-';
-      row.appendChild(minYearsCell);
-
-      const maxYearsCell = document.createElement('td');
-      maxYearsCell.className = 'text-center';
-      maxYearsCell.textContent = category.max_years ?? '-';
-      row.appendChild(maxYearsCell);
+      const yearsCell = document.createElement('td');
+      yearsCell.className = 'text-center';
+      yearsCell.appendChild(createCategoryYearsRange(category));
+      row.appendChild(yearsCell);
 
       const maxOutOfRangeCell = document.createElement('td');
       maxOutOfRangeCell.className = 'text-center';
       maxOutOfRangeCell.textContent = formatMaxOutOfRange(category);
       row.appendChild(maxOutOfRangeCell);
 
-      const musicMinCell = document.createElement('td');
-      musicMinCell.className = 'text-center';
-      musicMinCell.textContent = formatDurationValue(category.music_min_duration) || '-';
-      row.appendChild(musicMinCell);
-
-      const musicMaxCell = document.createElement('td');
-      musicMaxCell.className = 'text-center';
-      musicMaxCell.textContent = formatDurationValue(category.music_max_duration) || '-';
-      row.appendChild(musicMaxCell);
+      const musicDurationCell = document.createElement('td');
+      musicDurationCell.className = 'text-center text-nowrap';
+      musicDurationCell.textContent = `${formatDurationValue(category.music_min_duration) || '-'} - ${formatDurationValue(category.music_max_duration) || '-'}`;
+      row.appendChild(musicDurationCell);
 
       const priceCell = document.createElement('td');
       priceCell.className = 'text-center';
@@ -6962,7 +7084,7 @@ function initRegistrationCategoriesTab() {
     tableBody.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 13;
+    cell.colSpan = 10;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
@@ -7011,6 +7133,7 @@ function initRegistrationCategoriesTab() {
       name: elements.name ? elements.name.value.trim() : '',
       min_par: normalizeNumber(elements.minPar?.value),
       max_par: normalizeNumber(elements.maxPar?.value),
+      years_validation: elements.yearsValidation?.value === 'BY_YEAR' ? 'BY_YEAR' : 'BY_AGE',
       min_years: normalizeNumber(elements.minYears?.value),
       max_years: normalizeNumber(elements.maxYears?.value),
       outofrange_type: elements.outOfRangeType?.value === 'P' ? 'P' : 'N',
@@ -7196,6 +7319,10 @@ function initRegistrationCategoriesTab() {
     form.classList.remove('was-validated');
     form.dataset.mode = 'create';
     clearCategoryValidationState();
+  });
+
+  elements.yearsValidation?.addEventListener('change', () => {
+    [elements.minYears, elements.maxYears].forEach(validateCategoryField);
   });
 
   validationFields.forEach((field) => {
@@ -8006,6 +8133,8 @@ function initOrganizerRegistrationsTab() {
     if (modalElements.style && selectedModalStyle) modalElements.style.value = selectedModalStyle;
   };
 
+  let schoolFilterSelect = null;
+
   const loadSchools = async () => {
     try {
       const schools = await fetchEventSchools();
@@ -8016,6 +8145,15 @@ function initOrganizerRegistrationsTab() {
         option.textContent = school?.name || school?.school_name || '-';
         filterSchool.appendChild(option);
       });
+      if (window.TomSelect && !schoolFilterSelect) {
+        schoolFilterSelect = new TomSelect(filterSchool, {
+          maxItems: 1,
+          maxOptions: null,
+          create: false,
+          allowEmptyOption: true,
+          placeholder: t('registration_competitions_participant_placeholder', 'Escribe para buscar...')
+        });
+      }
     } catch (err) {
       // keep filters but allow list to load
     }
@@ -8499,14 +8637,11 @@ function initOrganizerRegistrationsTab() {
     const showMemberPrice = getEvent()?.registrationPricePerPax === true;
     document.getElementById('registrationMembersPriceHeader')?.classList.toggle('d-none', !showMemberPrice);
 
-    const minYears = normalizeNumber(category?.min_years);
-    const maxYears = normalizeNumber(category?.max_years);
-    const hasAgeRange = minYears !== null || maxYears !== null;
+    const hasAgeRange = [category?.min_years, category?.max_years].some(value =>
+      value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))
+    );
     const aboveRangeCount = hasAgeRange
-      ? members.filter(member => {
-        const age = calculateAge(getDateOnlyValue(member?.date_of_birth), getRegistrationAgeReferenceDate());
-        return age !== '-' && maxYears !== null && age > maxYears;
-      }).length
+      ? members.filter(member => getRegistrationMemberAgeRangeStatus(member, category) === 'above').length
       : 0;
     const outOfRangeLimit = normalizeNumber(category?.max_outofrange) ?? 0;
     const allowedOutOfRange = category?.outofrange_type === 'P'
@@ -8534,8 +8669,10 @@ function initOrganizerRegistrationsTab() {
         }
       }
     }
-    membersElements.belowRangeNote?.classList.toggle('d-none', minYears === null);
-    membersElements.belowRangeNote?.classList.toggle('d-flex', minYears !== null);
+    const lowerAgeBound = category?.years_validation === 'BY_YEAR' ? category?.max_years : category?.min_years;
+    const hasMinimumAge = lowerAgeBound !== null && lowerAgeBound !== undefined && lowerAgeBound !== '' && Number.isFinite(Number(lowerAgeBound));
+    membersElements.belowRangeNote?.classList.toggle('d-none', !hasMinimumAge);
+    membersElements.belowRangeNote?.classList.toggle('d-flex', hasMinimumAge);
 
     if (membersElements.count) {
       membersElements.count.textContent = `${members.length}`;
@@ -8552,8 +8689,9 @@ function initOrganizerRegistrationsTab() {
       const row = document.createElement('tr');
       row.dataset.id = member.id;
       const memberAge = calculateAge(getDateOnlyValue(member?.date_of_birth), getRegistrationAgeReferenceDate());
-      const isBelowRange = hasAgeRange && minYears !== null && memberAge !== '-' && memberAge < minYears;
-      const isAboveRange = hasAgeRange && maxYears !== null && memberAge !== '-' && memberAge > maxYears;
+      const ageRangeStatus = getRegistrationMemberAgeRangeStatus(member, category);
+      const isBelowRange = ageRangeStatus === 'below';
+      const isAboveRange = ageRangeStatus === 'above';
       if (isAboveRange) row.classList.add('table-warning');
       else if (isBelowRange) row.classList.add('table-info');
 
@@ -8567,9 +8705,9 @@ function initOrganizerRegistrationsTab() {
         row.appendChild(genderCell);
       }
 
-      const dobValue = getDateOnlyValue(member.date_of_birth);
       const dobCell = document.createElement('td');
-      dobCell.textContent = dobValue || '-';
+      dobCell.className = 'text-nowrap';
+      dobCell.textContent = formatRegistrationBirthDate(member.date_of_birth);
       row.appendChild(dobCell);
 
       const ageCell = document.createElement('td');
@@ -8606,7 +8744,9 @@ function initOrganizerRegistrationsTab() {
     const minLabel = t('registration_competitions_rule_min', 'Min');
     const maxLabel = t('registration_competitions_rule_max', 'Max');
     const participantsLabel = t('registration_competitions_table_participants', 'Participantes');
-    const ageRequirementsLabel = t('registration_competitions_rule_age', 'Edad');
+    const ageRequirementsLabel = category.years_validation === 'BY_YEAR'
+      ? t('registration_competitions_rule_birth_year', 'AÑO NACIMIENTO')
+      : t('registration_competitions_rule_age', 'Edad');
     const minPar = normalizeNumber(category.min_par);
     const maxPar = normalizeNumber(category.max_par);
     const minYears = normalizeNumber(category.min_years);
@@ -9190,10 +9330,12 @@ function initOrganizerRegistrationsTab() {
     };
     const control = controlByFilter[chip.dataset.filter];
     if (control?.type === 'checkbox') control.checked = false;
+    else if (control === filterSchool && schoolFilterSelect) schoolFilterSelect.clear(true);
     else if (control) control.value = '';
     renderRegistrations();
   });
   filterClear.addEventListener('click', () => {
+    schoolFilterSelect?.clear(true);
     filterSchool.value = '';
     filterStatus.value = '';
     filterCategory.value = '';

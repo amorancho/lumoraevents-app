@@ -275,18 +275,7 @@
   );
 
   const getMemberAgeRangeStatus = (member, category = getMembersCategory()) => {
-    if (!member || !categoryHasAgeRange(category)) return 'in-range';
-
-    const age = getMemberAgeValue(member);
-    const minYears = normalizeNumber(category?.min_years);
-    const maxYears = normalizeNumber(category?.max_years);
-    if (age === '-') {
-      return 'unknown';
-    }
-
-    if (minYears !== null && age < minYears) return 'below';
-    if (maxYears !== null && age > maxYears) return 'above';
-    return 'in-range';
+    return getRegistrationMemberAgeRangeStatus(member, category);
   };
 
   const getAboveAgeRangeMembersCount = (members = selectedMembers, category = getMembersCategory()) => {
@@ -308,7 +297,9 @@
     const minLabel = t('registration_competitions_rule_min', 'Min');
     const maxLabel = t('registration_competitions_rule_max', 'Max');
     const participantsLabel = t('registration_competitions_table_participants', 'Participantes');
-    const ageRequirementsLabel = t('registration_competitions_rule_age', 'Edad');
+    const ageRequirementsLabel = category.years_validation === 'BY_YEAR'
+      ? t('registration_competitions_rule_birth_year', 'AÑO NACIMIENTO')
+      : t('registration_competitions_rule_age', 'Edad');
     const musicLabel = t('registration_competitions_table_music', 'Música');
     const musicDurationLabel = t('registration_categories_field_music_max_duration', 'Duración música');
     const economicsLabel = t('registration_competitions_rule_economics', 'Información económica');
@@ -779,7 +770,8 @@
     if (!elements.membersBelowRangeNote) return;
 
     const category = getMembersCategory();
-    const hasMinimumAge = normalizeNumber(category?.min_years) !== null;
+    const lowerAgeBound = category?.years_validation === 'BY_YEAR' ? category?.max_years : category?.min_years;
+    const hasMinimumAge = lowerAgeBound !== null && lowerAgeBound !== undefined && lowerAgeBound !== '' && Number.isFinite(Number(lowerAgeBound));
     elements.membersBelowRangeNote.classList.toggle('d-none', !hasMinimumAge);
     elements.membersBelowRangeNote.classList.toggle('d-flex', hasMinimumAge);
   };
@@ -841,9 +833,9 @@
         row.appendChild(genderCell);
       }
 
-      const dobValue = getDateOnlyValue(member.date_of_birth);
       const dobCell = document.createElement('td');
-      dobCell.textContent = dobValue || '-';
+      dobCell.className = 'text-nowrap';
+      dobCell.textContent = formatRegistrationBirthDate(member.date_of_birth);
       row.appendChild(dobCell);
 
       const ageCell = document.createElement('td');
@@ -916,14 +908,16 @@
         placeholder: t('registration_competitions_participant_placeholder', 'Escribe para buscar...'),
         render: {
           option: (data, escape) => {
+            const birthDate = formatRegistrationBirthDate(data.dob);
             const ageValue = calculateAge(getDateOnlyValue(data.dob), getRegistrationAgeReferenceDate());
-            const ageText = ageValue === '-' ? '' : `${ageValue}`;
+            const ageText = ageValue === '-' ? '' : `(${ageValue})`;
             const minorBadge = isRegistrationMinorAge(ageValue)
               ? `<span class="badge rounded-pill bg-warning-subtle text-warning-emphasis border border-warning-subtle">${escape(t('registration_participants_minor', 'MINOR'))}</span>`
               : '';
-            return `<div class="d-flex justify-content-between">
-              <span>${escape(data.text)}</span>
-              <span class="d-inline-flex align-items-center gap-2 ms-2">
+            return `<div class="registration-participant-option d-flex flex-column gap-1">
+              <span class="text-break">${escape(data.text)}</span>
+              <span class="d-inline-flex flex-wrap align-items-center gap-2">
+                <span class="text-muted small text-nowrap">${escape(t('registration_participants_birth', 'FEC. NAC.'))}: ${escape(birthDate)}</span>
                 <span class="text-muted small">${escape(ageText)}</span>
                 ${minorBadge}
               </span>
@@ -939,7 +933,7 @@
     options.forEach(optionData => {
       const option = document.createElement('option');
       option.value = optionData.value;
-      option.textContent = optionData.text;
+      option.textContent = `${optionData.text} · ${formatRegistrationBirthDate(optionData.dob)}`;
       elements.participantSelect.appendChild(option);
     });
   };
@@ -1073,7 +1067,7 @@
           ...member,
           id: memberId,
           name: member.name || (memberId != null ? `#${memberId}` : ''),
-          date_of_birth: member.date_of_birth
+          date_of_birth: member.date_of_birth || fallback?.date_of_birth
         };
       }
       const fallback = participantsById.get(`${member}`);
@@ -1375,7 +1369,9 @@
     const minLabel = t('registration_competitions_rule_min', 'Min');
     const maxLabel = t('registration_competitions_rule_max', 'Max');
     const participantsLabel = t('registration_competitions_table_participants', 'Participantes');
-    const ageRequirementsLabel = t('registration_competitions_rule_age', 'Edad');
+    const ageRequirementsLabel = category.years_validation === 'BY_YEAR'
+      ? t('registration_competitions_rule_birth_year', 'AÑO NACIMIENTO')
+      : t('registration_competitions_rule_age', 'Edad');
     const minPar = normalizeNumber(category.min_par);
     const maxPar = normalizeNumber(category.max_par);
     const minYears = normalizeNumber(category.min_years);

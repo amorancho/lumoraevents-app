@@ -705,6 +705,27 @@
 .participants-mobile-active-filters {
   display: none;
 }
+#registrationMembersModal .ts-dropdown .registration-participant-option {
+  padding: var(--lm-space-3);
+  border-bottom: 1px solid var(--lm-border-strong);
+}
+#registrationMembersModal .ts-dropdown .registration-participant-option:last-child {
+  border-bottom: 0;
+}
+.participant-registration-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--lm-space-1) var(--lm-space-2);
+  padding: var(--lm-space-2) 0;
+  border-bottom: 1px solid var(--lm-border);
+}
+.participant-registration-item:first-child { padding-top: 0; }
+.participant-registration-item:last-child { padding-bottom: 0; border-bottom: 0; }
+.participant-registration-item__name { min-width: 0; margin: 0; overflow-wrap: anywhere; font-size: var(--lm-font-card-body); }
+.participant-registration-item__price { white-space: nowrap; text-align: right; font-size: var(--lm-font-card-body); }
+.participant-registration-item__classification { min-width: 0; color: var(--lm-text-muted); font-size: var(--lm-font-card-meta); overflow-wrap: anywhere; }
+.participant-registration-item__status { justify-self: end; max-width: 10rem; white-space: normal; }
 .participants-mobile-list {
   display: none;
 }
@@ -738,15 +759,19 @@
   .participants-table--organizer-without-authorization .participants-col-registrations {
     width: 25%;
   }
-  .participants-table--organizer-without-authorization .participants-registrations-list {
-    flex-wrap: nowrap !important;
-  }
 }
 .org-registrations-filters {
   order: 1;
 }
 .org-registrations-summary {
   order: 2;
+}
+.org-registrations-filter-checkbox {
+  min-height: 44px;
+  justify-content: center;
+}
+.org-registrations-filter-deleted {
+  text-align: center;
 }
 @media (min-width: 768px) {
   #org-registrations .org-registrations-filters {
@@ -760,16 +785,35 @@
   #org-registrations .org-registrations-filter-panel > .col-12 {
     width: auto;
     max-width: none;
-    flex: 1 1 13rem;
+    flex: 1 1 9rem;
+    min-width: 0;
     padding: 0;
   }
-  #org-registrations .org-registrations-filter-clear {
-    flex: 0 1 12rem;
+  #org-registrations .org-registrations-filter-panel > .org-registrations-filter-school {
+    flex: 2 1 18rem;
+    min-width: 0;
+  }
+  #org-registrations .org-registrations-filter-panel > .org-registrations-filter-deleted,
+  #org-registrations .org-registrations-filter-panel > .org-registrations-filter-clear {
+    flex: 0 0 auto;
+  }
+  #org-registrations .org-registrations-filter-deleted .form-label {
+    white-space: nowrap;
   }
   #org-registrations .org-registrations-export {
     width: auto;
     flex: 0 0 auto;
     padding: 0;
+  }
+}
+@media (min-width: 992px) {
+  #org-registrations .org-registrations-filters {
+    flex: 1 1 0;
+    flex-wrap: nowrap;
+  }
+  #org-registrations .org-registrations-summary {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 }
 .school-registrations-fee {
@@ -1374,6 +1418,9 @@
   #org-registrations .org-registrations-filter-clear,
   #org-registrations .org-registrations-filter-apply {
     grid-column: auto;
+  }
+  #org-registrations .org-registrations-filter-panel > .org-registrations-filter-school {
+    grid-column: 1 / -1;
   }
   #org-registrations .org-registrations-filters.mobile-filters-open .org-registrations-filter-apply {
     display: block;
