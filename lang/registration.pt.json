@@ -1,4 +1,5 @@
 {
+  "registration_competitions_special_price_notice": "Este evento tem um preço especial de {price} euros para a segunda inscrição e seguintes para a mesma pessoa. O preço integral aplica-se à inscrição com o preço mais elevado (consultar o regulamento do evento). Este cálculo será refletido assim que a tua inscrição for validada. Fiquem atentos!",
   "title": "Gestión de Inscripciones",
   "registration_heading": "Registro da escola",
   "registration_tab_dashboard": "Dashboard",

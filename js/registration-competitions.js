@@ -726,10 +726,12 @@
     }
   };
 
+  const areMembersReadOnly = () => isSchoolUser && membersRegistration?.status === 'VAL';
+
   const updateMemberControls = () => {
     if (!elements.addMemberBtn) return;
     const category = getMembersCategory();
-    if (!category || !registrationState.participants.length) {
+    if (areMembersReadOnly() || !category || !registrationState.participants.length) {
       elements.addMemberBtn.disabled = true;
       return;
     }
@@ -785,6 +787,20 @@
   const renderMembersTable = () => {
     if (!elements.membersTable) return;
     elements.membersTable.innerHTML = '';
+    const showMemberPrice = getEvent()?.registrationPricePerPax === true;
+    document.getElementById('registrationMembersPriceHeader')?.classList.toggle('d-none', !showMemberPrice);
+    const readOnly = areMembersReadOnly();
+    elements.participantSelect?.closest('.d-flex')?.classList.toggle('d-none', readOnly);
+    if (elements.participantSelect) elements.participantSelect.disabled = readOnly;
+    if (participantSelect) {
+      if (readOnly) participantSelect.disable();
+      else participantSelect.enable();
+    }
+    if (elements.membersSaveBtn) {
+      elements.membersSaveBtn.classList.toggle('d-none', readOnly);
+      elements.membersSaveBtn.disabled = readOnly;
+    }
+    membersModalEl.querySelector('th[data-i18n="registration_competitions_member_actions"]')?.classList.toggle('d-none', readOnly);
 
     updateMemberCount();
     updateMembersOutOfRangeInfo();
@@ -841,8 +857,10 @@
 
       const actionsCell = document.createElement('td');
       actionsCell.className = 'text-center';
+      actionsCell.classList.toggle('d-none', readOnly);
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
+      removeBtn.disabled = readOnly;
       removeBtn.className = 'btn btn-outline-danger btn-sm btn-remove-member';
       removeBtn.dataset.id = member.id;
       removeBtn.title = deleteTitle;
@@ -856,6 +874,13 @@
         authorizationCell.className = 'text-center text-nowrap';
         appendRegistrationAuthorizationStatus(authorizationCell, member);
         row.appendChild(authorizationCell);
+      }
+
+      if (showMemberPrice) {
+        const priceCell = document.createElement('td');
+        priceCell.className = 'text-end text-nowrap';
+        priceCell.textContent = formatCurrencyDisplay(member.price);
+        row.appendChild(priceCell);
       }
 
       elements.membersTable.appendChild(row);
@@ -1211,6 +1236,10 @@
 
     if (mode === 'create') {
       resetChoreoForm();
+      const styleOptions = Array.from(elements.style?.options || []).filter(option => option.value !== '');
+      if (styleOptions.length === 1) {
+        elements.style.value = styleOptions[0].value;
+      }
       setAudioSectionVisible(false);
       updateModalStatusInfo('', '');
       updateRegistrationTotalAmountInfo(null);
@@ -1460,6 +1489,16 @@
   };
 
   const renderRegistrations = () => {
+    const specialPriceNotice = document.getElementById('registrationSpecialPriceNotice');
+    if (specialPriceNotice) {
+      const event = getEvent();
+      const showSpecialPrice = isSchoolUser && event?.registrationPricePerPax === true;
+      specialPriceNotice.classList.toggle('d-none', !showSpecialPrice);
+      specialPriceNotice.textContent = showSpecialPrice ? formatTemplate(
+        t('registration_competitions_special_price_notice', 'Este evento tiene un precio especial de {price} euros para la segunda y siguientes inscripciones para una misma persona. El precio completo se aplica a la inscripción de precio más alto (revisar bases del evento). Este cálculo se refleja una vez se haya validado tu inscripción. ¡Estad atentos!'),
+        { price: new Intl.NumberFormat(getLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((normalizeNumber(event.registrationPriceDiscount) ?? 0) / 100) }
+      ) : '';
+    }
     disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
     mobileCards.innerHTML = '';
@@ -1601,7 +1640,7 @@
       membersBtn.dataset.id = registration.id;
       membersBtn.title = t('registration_competitions_members_title', 'Gestion de miembros');
       membersBtn.setAttribute('aria-label', membersBtn.title);
-      membersBtn.disabled = isPending || isValidated;
+      membersBtn.disabled = isPending;
       membersBtn.innerHTML = '<i class="bi bi-people"></i>';
 
       const confirmBtn = document.createElement('button');
@@ -1680,7 +1719,7 @@
             icon: 'bi-people',
             label: t('registration_competitions_table_participants', 'Participantes'),
             title: t('registration_competitions_members_title', 'Gestion de miembros'),
-            disabled: isPending || isValidated
+            disabled: isPending
           },
           {
             className: 'btn-confirm-registration',
@@ -1756,6 +1795,7 @@
   };
 
   const addMember = () => {
+    if (areMembersReadOnly()) return;
     const category = getMembersCategory();
     if (!category) {
       showMessageModal(
@@ -1807,6 +1847,7 @@
   };
 
   const removeMember = (memberId) => {
+    if (areMembersReadOnly()) return;
     selectedMembers = selectedMembers.filter(member => `${member.id}` !== `${memberId}`);
     renderMembersTable();
     refreshParticipantSelect();
@@ -1987,6 +2028,7 @@
   };
 
   const saveMembers = async () => {
+    if (areMembersReadOnly()) return;
     if (!validateMembersSelection()) {
       return;
     }

@@ -8496,6 +8496,8 @@ function initOrganizerRegistrationsTab() {
   const renderMembersTable = (members, category = null) => {
     if (!membersElements.table) return;
     membersElements.table.innerHTML = '';
+    const showMemberPrice = getEvent()?.registrationPricePerPax === true;
+    document.getElementById('registrationMembersPriceHeader')?.classList.toggle('d-none', !showMemberPrice);
 
     const minYears = normalizeNumber(category?.min_years);
     const maxYears = normalizeNumber(category?.max_years);
@@ -8581,6 +8583,13 @@ function initOrganizerRegistrationsTab() {
         authorizationCell.className = 'text-center text-nowrap';
         appendRegistrationAuthorizationStatus(authorizationCell, member);
         row.appendChild(authorizationCell);
+      }
+
+      if (showMemberPrice) {
+        const priceCell = document.createElement('td');
+        priceCell.className = 'text-end text-nowrap';
+        priceCell.textContent = formatCurrencyDisplay(member.price);
+        row.appendChild(priceCell);
       }
 
       membersElements.table.appendChild(row);

@@ -1,4 +1,5 @@
 {
+  "registration_competitions_special_price_notice": "This event offers a special price of {price} euros for the second and subsequent registrations for the same person. The full price applies to the highest-priced registration (check the event rules). This calculation is reflected once your registration has been validated. Stay tuned!",
   "title": "Registration management",
   "registration_heading": "School registration",
   "registration_tab_dashboard": "Dashboard",

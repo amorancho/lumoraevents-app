@@ -880,11 +880,24 @@
                     </div>
                   </div>
                   <div class="col-md-3">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input" type="checkbox" id="reg_price_per_pax">
+                      <label class="form-check-label" for="reg_price_per_pax">Precio por participante</label>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
                     <label class="form-label" for="reg_import_source" data-i18n="registration_import_source_label">Origen Importación Participantes</label>
                     <select class="form-select" id="reg_import_source">
                       <option value="WOP" selected>WOP</option>
                       <option value="GEN" data-i18n="registration_import_source_general">General</option>
                     </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label" for="reg_price_discount">Precio por categoría/inscripción extra</label>
+                    <div class="input-group">
+                      <input type="number" class="form-control" id="reg_price_discount" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+                      <span class="input-group-text">EUR</span>
+                    </div>
                   </div>
                 </div>
               </div>
