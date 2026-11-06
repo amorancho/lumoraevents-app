@@ -1,4 +1,13 @@
 {
+  "forgot_password_link": "Não me lembro da palavra-passe",
+  "forgot_password_title": "Repor palavra-passe",
+  "forgot_password_submit": "Enviar email",
+  "forgot_password_confirm": "Queres repor a palavra-passe? Se existir uma conta elegível, será enviada uma palavra-passe temporária ao contacto guardado e as sessões anteriores serão revogadas.",
+  "forgot_password_sending": "A enviar…",
+  "forgot_password_retry_after": "Tenta novamente dentro de {seconds} segundos.",
+  "forgot_password_username_invalid": "Introduz um utilizador com entre 1 e 191 caracteres.",
+  "forgot_password_error": "Não foi possível pedir a reposição. Tenta novamente mais tarde.",
+  "forgot_password_success": "Se existir uma conta associada a este utilizador neste evento, receberás um email com as instruções.",
   "login_title": "Início de sessão",
   "username_label": "Nome de utilizador",
   "password_label": "Palavra-passe",

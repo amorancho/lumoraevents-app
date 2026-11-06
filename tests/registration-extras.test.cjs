@@ -84,7 +84,7 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
       else throw new Error(`Unexpected test method: ${method} ${route}`);
     }
     const code = result.status || 200;
-    return { ok: code >= 200 && code < 300, status: code, json: async () => clone(result.data) };
+    return new Response(code === 204 ? null : JSON.stringify(result.data), { status: code });
   };
   w.fetch = router;
   w.Headers = Headers;

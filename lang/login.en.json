@@ -1,4 +1,13 @@
 {
+  "forgot_password_link": "I forgot my password",
+  "forgot_password_title": "Reset password",
+  "forgot_password_submit": "Send email",
+  "forgot_password_confirm": "Reset your password? If an eligible account exists, a temporary password will be emailed to the stored contact and previous sessions will be revoked.",
+  "forgot_password_sending": "Sending…",
+  "forgot_password_retry_after": "Try again in {seconds} seconds.",
+  "forgot_password_username_invalid": "Enter a username of between 1 and 191 characters.",
+  "forgot_password_error": "Unable to request a password reset. Please try again later.",
+  "forgot_password_success": "If an eligible account exists for this username and event, you will receive an email with instructions.",
   "login_title": "User Login",
   "username_label": "Username",
   "password_label": "Password",

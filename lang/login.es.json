@@ -1,4 +1,13 @@
 {
+  "forgot_password_link": "No recuerdo mi password",
+  "forgot_password_title": "Restablecer contraseña",
+  "forgot_password_submit": "Enviar email",
+  "forgot_password_confirm": "¿Quieres restablecer la contraseña? Si existe una cuenta elegible, se enviará una contraseña temporal al contacto guardado y se cerrarán sus sesiones anteriores.",
+  "forgot_password_sending": "Enviando…",
+  "forgot_password_retry_after": "Vuelve a intentarlo en {seconds} segundos.",
+  "forgot_password_username_invalid": "Introduce un usuario de entre 1 y 191 caracteres.",
+  "forgot_password_error": "No se ha podido solicitar el restablecimiento. Inténtalo más tarde.",
+  "forgot_password_success": "Si existe una cuenta asociada a ese usuario en este evento, recibirás un email con las instrucciones.",
   "login_title": "Inicio de sesión",
   "username_label": "Usuario",
   "password_label": "Contraseña",

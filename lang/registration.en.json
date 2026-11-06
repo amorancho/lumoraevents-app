@@ -1,4 +1,12 @@
 {
+  "school_access_title": "Sign-in details",
+  "school_change_password": "Change password",
+  "school_current_password": "Current password",
+  "school_new_password": "New password",
+  "school_password_changed": "Password updated successfully.",
+  "school_password_incorrect": "The current password is incorrect.",
+  "school_password_error": "Unable to change the password.",
+  "school_password_length": "Both passwords must contain between 1 and 2000 characters.",
   "registration_competitions_rule_birth_year": "BIRTH YEAR",
   "registration_participants_total_amount": "TOTAL",
   "registration_participants_total_amount_info": "Total amount of validated registrations",

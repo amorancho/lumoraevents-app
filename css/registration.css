@@ -2746,6 +2746,10 @@
 .registration-page :is(.registration-main, .modal) .form-check-input:checked { border-color: var(--lm-primary); background-color: var(--lm-primary); }
 .registration-page :is(.registration-main, .modal) .form-check-label { color: var(--lm-text); }
 #schoolForm fieldset { border: 1px solid var(--lm-border-strong) !important; border-radius: var(--lm-radius-md) !important; background: var(--lm-surface) !important; }
+.school-access { min-width: 0; margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-md); background: var(--lm-surface); }
+.school-access h2 { margin: 0 0 1rem; color: var(--lm-cyan); font-size: 1rem; font-weight: 700; }
+.school-access .row > div { min-width: 0; }
+.school-access .form-control[aria-invalid="true"] { border-color: var(--lm-danger); }
 #schoolForm .school-user-type-option { border-color: var(--lm-border-strong); color: var(--lm-text-muted); background: var(--lm-bg-elevated); }
 #schoolForm .btn-check:checked + .school-user-type-option { border-color: var(--lm-cyan); color: var(--lm-text); background: #16384b; }
 #schoolForm .btn-check:focus-visible + .school-user-type-option { outline: 2px solid var(--lm-cyan); outline-offset: 2px; }

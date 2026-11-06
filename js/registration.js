@@ -2445,6 +2445,98 @@ async function fetchSchoolRecord(userId) {
   }
 }
 
+function initSchoolPasswordChange(user) {
+  const toggle = document.getElementById('schoolChangePasswordToggle');
+  const form = document.getElementById('schoolChangePasswordForm');
+  if (!toggle || !form || user?.role !== 'school' || !user.account_id || form.dataset.initialized) return;
+  form.dataset.initialized = 'true';
+  toggle.classList.remove('d-none');
+  const current = document.getElementById('schoolCurrentPassword');
+  const next = document.getElementById('schoolNewPassword');
+  const submit = document.getElementById('schoolChangePasswordSubmit');
+  const cancel = document.getElementById('schoolChangePasswordCancel');
+  const feedback = document.getElementById('schoolPasswordFeedback');
+  let busy = false;
+  const clearValidation = () => {
+    current.setCustomValidity('');
+    current.removeAttribute('aria-invalid');
+    feedback.classList.add('d-none');
+  };
+  const close = () => {
+    form.reset();
+    form.classList.remove('was-validated');
+    current.setCustomValidity('');
+    current.removeAttribute('aria-invalid');
+    form.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.focus();
+  };
+  toggle.addEventListener('click', () => {
+    if (busy) return;
+    feedback.classList.add('d-none');
+    if (!form.hidden) return close();
+    form.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+    current.focus();
+  });
+  cancel.addEventListener('click', () => {
+    if (busy) return;
+    feedback.classList.add('d-none');
+    close();
+  });
+  current.addEventListener('input', clearValidation);
+  next.addEventListener('input', () => feedback.classList.add('d-none'));
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (busy) return;
+    clearValidation();
+    const payload = { current_password: current.value, new_password: next.value };
+    if (!form.checkValidity()) {
+      form.classList.add('was-validated');
+      form.reportValidity();
+      return;
+    }
+    if (Object.values(payload).some(value => value.length < 1 || value.length > 2000)) {
+      feedback.textContent = t('school_password_length', 'Both passwords must contain between 1 and 2000 characters.');
+      feedback.classList.remove('d-none', 'alert-success');
+      feedback.classList.add('alert-danger');
+      return;
+    }
+    busy = true;
+    [toggle, submit, cancel, current, next].forEach(element => { element.disabled = true; });
+    try {
+      const response = await lumoraApiFetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }, { auth: 'required' });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || data?.success !== true) {
+        if (data?.code === 'current_password_incorrect') {
+          current.setCustomValidity(data.error || t('school_password_incorrect', 'The current password is incorrect.'));
+          current.setAttribute('aria-invalid', 'true');
+        }
+        throw new Error(data?.error || t('school_password_error', 'Unable to change the password.'));
+      }
+      // The endpoint preserves this session: do not clear or replace its token.
+      close();
+      feedback.textContent = t('school_password_changed', 'Password updated successfully.');
+      feedback.classList.remove('d-none', 'alert-danger');
+      feedback.classList.add('alert-success');
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      feedback.textContent = error.message || t('school_password_error', 'Unable to change the password.');
+      feedback.classList.remove('d-none', 'alert-success');
+      feedback.classList.add('alert-danger');
+    } finally {
+      busy = false;
+      [toggle, submit, cancel, current, next].forEach(element => { element.disabled = false; });
+      if (form.hidden) toggle.focus();
+      else if (current.validity.customError) current.focus();
+    }
+  });
+}
+
 function initSchoolTab() {
   const form = document.getElementById('schoolForm');
   if (!form) {
@@ -2485,6 +2577,7 @@ function initSchoolTab() {
   });
 
   if (elements.username) elements.username.setAttribute('readonly', 'readonly');
+  initSchoolPasswordChange(user);
 
   if (elements.alert) {
     const hideAlert = () => elements.alert.classList.add('d-none');
@@ -5341,6 +5434,18 @@ function initSchoolsTab() {
   const resetPasswordBtn = document.getElementById('schoolResetPasswordBtn');
   const resetPasswordModalEl = document.getElementById('schoolResetPasswordConfirmModal');
   const confirmResetPasswordBtn = document.getElementById('confirmSchoolResetPasswordBtn');
+  const currentEvent = getEvent();
+  const isSchoolAccountEvent = [61, 58, 66, 67].includes(Number(currentEvent?.id)) ||
+    ['onstage27', 'tedvision27', 'givemehype27', 'costaflow27'].includes(String(currentEvent?.code || '').toLowerCase());
+  const canResetSchoolPassword = !(getUserFromToken()?.role === 'organizer' && isSchoolAccountEvent);
+  if (resetPasswordBtn) {
+    if (canResetSchoolPassword) {
+      resetPasswordBtn.classList.remove('d-none');
+      resetPasswordBtn.disabled = false;
+    } else {
+      resetPasswordBtn.remove();
+    }
+  }
 
   if (!filterForm || !tableBody || !mobileCards || !filterName || !filterCountry || !modalEl) {
     return;
@@ -5741,7 +5846,7 @@ function initSchoolsTab() {
     detailModal.show();
   };
 
-  if (resetPasswordBtn && resetPasswordModal) {
+  if (canResetSchoolPassword && resetPasswordBtn && resetPasswordModal) {
     resetPasswordBtn.addEventListener('click', () => {
       if (!selectedSchool?.id) return;
 
@@ -5752,7 +5857,7 @@ function initSchoolsTab() {
     });
   }
 
-  if (confirmResetPasswordBtn && resetPasswordModal) {
+  if (canResetSchoolPassword && confirmResetPasswordBtn && resetPasswordModal) {
     confirmResetPasswordBtn.addEventListener('click', async () => {
       if (!selectedSchool?.id) return;
 

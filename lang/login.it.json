@@ -1,4 +1,13 @@
 {
+  "forgot_password_link": "Ho dimenticato la password",
+  "forgot_password_title": "Reimposta password",
+  "forgot_password_submit": "Invia email",
+  "forgot_password_confirm": "Vuoi reimpostare la password? Se esiste un account idoneo, una password temporanea verrà inviata al contatto registrato e le sessioni precedenti saranno revocate.",
+  "forgot_password_sending": "Invio…",
+  "forgot_password_retry_after": "Riprova tra {seconds} secondi.",
+  "forgot_password_username_invalid": "Inserisci un nome utente da 1 a 191 caratteri.",
+  "forgot_password_error": "Impossibile richiedere il ripristino. Riprova più tardi.",
+  "forgot_password_success": "Se esiste un account idoneo per questo utente ed evento, riceverai un’email con le istruzioni.",
   "login_title": "Accesso utente",
   "username_label": "Nome utente",
   "password_label": "Password",

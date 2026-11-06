@@ -98,6 +98,19 @@
       background: #fcb045;
     }
 
+    body { min-height: 100vh; height: auto; padding: 1rem; }
+    .login-container { max-width: 100%; }
+    .login-container > img { max-width: 100%; height: auto; }
+    .login-recovery-link { margin-top: .6rem; padding: .25rem 0; border: 0; color: var(--lm-cyan, #26d7e8); background: transparent; font-size: .85rem; text-decoration: underline; text-align: left; }
+    .login-container :is(button, input):focus-visible { outline: 2px solid var(--lm-cyan, #26d7e8); outline-offset: 3px; }
+    .login-btn:disabled { opacity: .6; cursor: wait; }
+    .login-recovery { min-width: 0; margin-top: 1.25rem; padding: 1rem; border: 1px solid var(--lm-border-strong, #376074); border-radius: var(--lm-radius-md, 12px); background: var(--lm-surface, #152c38); text-align: left; }
+    .login-recovery h3 { margin: 0 0 1rem; font-size: 1rem; }
+    .login-recovery .form-group { margin-bottom: .75rem; }
+    .login-recovery-feedback { margin-top: .85rem; font-size: .85rem; line-height: 1.5; overflow-wrap: anywhere; }
+    .login-recovery-feedback[data-state="success"] { color: var(--lm-green, #76e9ba); }
+    .login-recovery-feedback[data-state="error"] { color: var(--lm-danger, #ff9ea6); }
+
     .footer-text {
       margin-top: 20px;
       font-size: 0.85rem;
@@ -139,9 +152,19 @@
       <div class="form-group">
         <label for="password" data-i18n="password_label">Password</label>
         <input type="password" id="password" placeholder="">
-        <p class="login-help" data-i18n="login_help">If you do not remember your username or password, contact the event organizer.</p>
+        <p class="login-help" id="loginHelp" data-i18n="login_help">If you do not remember your username or password, contact the event organizer.</p>
+        <button type="button" class="login-recovery-link" id="forgotPasswordLink" aria-expanded="false" aria-controls="forgotPasswordForm" data-i18n="forgot_password_link" hidden>I forgot my password</button>
       </div>
       <button type="submit" class="login-btn" data-i18n="login_button">Login</button>
+    </form>
+    <form id="forgotPasswordForm" class="login-recovery" aria-labelledby="forgotPasswordTitle" novalidate hidden>
+      <h3 id="forgotPasswordTitle" data-i18n="forgot_password_title">Reset password</h3>
+      <div class="form-group">
+        <label for="forgotPasswordUsername" data-i18n="username_label">Username</label>
+        <input type="text" id="forgotPasswordUsername" autocomplete="username" required maxlength="191">
+      </div>
+      <button type="submit" class="login-btn" id="forgotPasswordSubmit" data-i18n="forgot_password_submit">Send email</button>
+      <div id="forgotPasswordFeedback" class="login-recovery-feedback" role="status" aria-live="polite" hidden></div>
     </form>
     <div class="footer-text" id="regName">(c) 2025 LumoraEvents</div>
   </div>
@@ -164,7 +187,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script>
   <script src="js/utils.js"></script>
-  <script src="js/login.js"></script>
+  <script src="js/login.js?v=20261106-2"></script>
 </body>
 </html>

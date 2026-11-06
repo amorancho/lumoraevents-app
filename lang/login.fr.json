@@ -1,4 +1,13 @@
 {
+  "forgot_password_link": "J’ai oublié mon mot de passe",
+  "forgot_password_title": "Réinitialiser le mot de passe",
+  "forgot_password_submit": "Envoyer un email",
+  "forgot_password_confirm": "Réinitialiser le mot de passe ? Si un compte éligible existe, un mot de passe temporaire sera envoyé au contact enregistré et les sessions précédentes seront révoquées.",
+  "forgot_password_sending": "Envoi…",
+  "forgot_password_retry_after": "Réessayez dans {seconds} secondes.",
+  "forgot_password_username_invalid": "Saisissez un identifiant de 1 à 191 caractères.",
+  "forgot_password_error": "Impossible de demander la réinitialisation. Réessayez plus tard.",
+  "forgot_password_success": "Si un compte éligible existe pour cet identifiant et cet événement, vous recevrez un email avec les instructions.",
   "login_title": "Connexion utilisateur",
   "username_label": "Nom d'utilisateur",
   "password_label": "Mot de passe",

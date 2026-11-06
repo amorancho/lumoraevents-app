@@ -436,12 +436,6 @@
                         <input type="text" class="form-control" id="schoolDocument">
                         <div class="form-text" data-i18n="field_document_help">Informar si se desea factura para las inscripciones.</div>
                       </div>
-                      <div class="col-12 col-md-6">
-                        <label class="form-label" for="schoolUsername" data-i18n="field_username">Usuario</label>
-                        <div class="input-group">
-                          <input type="text" class="form-control bg-light" id="schoolUsername" readonly>
-                        </div>
-                      </div>
                     </div>
 
                     <div id="schoolSaveAlert" class="alert alert-success mt-3 d-none" role="alert" data-i18n="registration_school_saved">
@@ -452,6 +446,35 @@
                       <button type="submit" class="btn btn-primary" id="schoolSaveBtn" data-i18n="save">Guardar</button>
                     </div>
                   </form>
+                  <section class="school-access" aria-labelledby="schoolAccessTitle">
+                    <h2 id="schoolAccessTitle" data-i18n="school_access_title">Datos de acceso</h2>
+                    <div class="row g-3 align-items-end">
+                      <div class="col-12 col-md">
+                        <label class="form-label" for="schoolUsername" data-i18n="field_username">Usuario</label>
+                        <input type="text" class="form-control bg-light" id="schoolUsername" autocomplete="username" readonly>
+                      </div>
+                      <div class="col-12 col-md-auto">
+                        <button type="button" class="btn btn-outline-primary d-none" id="schoolChangePasswordToggle" aria-expanded="false" aria-controls="schoolChangePasswordForm" data-i18n="school_change_password">Modificar contraseña</button>
+                      </div>
+                    </div>
+                    <div id="schoolPasswordFeedback" class="alert mt-3 d-none" role="status" aria-live="polite"></div>
+                    <form id="schoolChangePasswordForm" class="mt-3" novalidate hidden>
+                      <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="schoolCurrentPassword" data-i18n="school_current_password">Contraseña actual</label>
+                          <input type="password" class="form-control" id="schoolCurrentPassword" autocomplete="current-password" required minlength="1" maxlength="2000">
+                        </div>
+                        <div class="col-12 col-md-6">
+                          <label class="form-label" for="schoolNewPassword" data-i18n="school_new_password">Contraseña nueva</label>
+                          <input type="password" class="form-control" id="schoolNewPassword" autocomplete="new-password" required minlength="1" maxlength="2000">
+                        </div>
+                      </div>
+                      <div class="d-flex flex-wrap gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary" id="schoolChangePasswordSubmit" data-i18n="save">Guardar</button>
+                        <button type="button" class="btn btn-outline-secondary" id="schoolChangePasswordCancel" data-i18n="cancel">Cancelar</button>
+                      </div>
+                    </form>
+                  </section>
                 </div>
               </div>
             </div>
@@ -2366,7 +2389,7 @@
           <section id="registrationAccountExtras" class="registration-extras d-none mt-4" aria-live="polite"></section>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-warning me-auto" id="schoolResetPasswordBtn" data-i18n="schools_reset_password">Restablecer contraseña</button>
+          <button type="button" class="btn btn-outline-warning me-auto d-none" id="schoolResetPasswordBtn" data-i18n="schools_reset_password" disabled>Restablecer contraseña</button>
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
         </div>
       </div>
@@ -2421,7 +2444,7 @@
   <script src="js/common.js?v=20261018-1"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js?v=20261104-1"></script>
+  <script src="js/registration.js?v=20261106-1"></script>
   <script src="js/registration-extras.js?v=20261017-1"></script>
   <script src="js/registration-competitions.js?v=20261104-2"></script>
   <script src="js/registration-payments.js?v=20261019-1"></script>

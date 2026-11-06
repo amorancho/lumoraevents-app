@@ -34,10 +34,14 @@
 .registration-type-option .form-check-input:checked { border-color: var(--lm-primary); background-color: var(--lm-primary); }
 .registration-type-option .form-check-input:focus { box-shadow: none; }
 
+.registration-credentials { min-width: 0; margin: 0 0 1.6rem; padding: 1rem; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-md); background: var(--lm-surface-raised); }
+.registration-credentials legend { float: none; width: auto; margin: 0; padding: 0 .45rem; color: var(--lm-cyan); font-size: .9rem; font-weight: 700; }
 .registration-fields > div { min-width: 0; }
 .registration-fields .form-label { margin-bottom: .45rem; color: var(--lm-text); font-size: .86rem; font-weight: 650; }
 .registration-fields .form-control, .registration-fields .form-select { min-width: 0; min-height: 44px; border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-sm); color: var(--lm-text); background-color: var(--lm-surface); }
 .registration-fields .form-control:focus, .registration-fields .form-select:focus { border-color: var(--lm-primary); color: var(--lm-text); background-color: var(--lm-surface); box-shadow: 0 0 0 .2rem rgba(38, 215, 232, .16); }
+.registration-credentials .form-control.is-invalid { border-color: var(--lm-danger); }
+.registration-credentials .invalid-feedback { color: var(--lm-danger); }
 .registration-fields .form-control[readonly], .registration-fields .form-control.bg-light { border-color: var(--lm-border); color: var(--lm-text-soft); background: var(--lm-bg-elevated) !important; }
 .registration-fields .form-text { margin-top: .45rem; color: var(--lm-text-muted); font-size: .78rem; line-height: 1.45; }
 .registration-fields .input-group-text { min-height: 44px; border-color: var(--lm-border-strong); border-radius: var(--lm-radius-sm) 0 0 var(--lm-radius-sm); color: var(--lm-cyan); background: var(--lm-surface-raised); font-weight: 700; }

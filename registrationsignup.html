@@ -28,7 +28,7 @@
         <div class="registration-form-body">
           <div class="registration-notice lm-notice alert-info" role="alert">
             <i class="bi bi-envelope-check" aria-hidden="true"></i>
-            <span data-i18n="signup_notice">After creating the account, you will receive your access credentials by email in the next few minutes.</span>
+            <span data-i18n="signup_notice">Use your email as your username and choose a password to access your account.</span>
           </div>
 
           <form id="signupForm" novalidate>
@@ -46,21 +46,30 @@
               </div>
             </fieldset>
 
-                <div class="row g-3 registration-fields">
+                <fieldset class="registration-credentials">
+                  <legend data-i18n="signup_credentials">Sign-in details</legend>
+                  <div class="row g-3 registration-fields">
+                  <div class="col-12">
+                    <label class="form-label" for="signupUsername" data-i18n="field_username">Username</label>
+                    <input type="email" class="form-control" id="signupUsername" autocomplete="username" aria-describedby="signupUsernameHelp" required>
+                    <div class="form-text" id="signupUsernameHelp" data-i18n="field_username_help">Your username must be your email address.</div>
+                  </div>
                   <div class="col-12 col-md-6">
+                    <label class="form-label" for="signupPassword" data-i18n="field_password">Password</label>
+                    <input type="password" class="form-control" id="signupPassword" autocomplete="new-password" required>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <label class="form-label" for="signupPasswordConfirm" data-i18n="field_password_confirm">Repeat password</label>
+                    <input type="password" class="form-control" id="signupPasswordConfirm" autocomplete="new-password" aria-describedby="signupPasswordMismatch" required>
+                    <div class="invalid-feedback" id="signupPasswordMismatch" aria-live="polite" data-i18n="password_mismatch">Passwords do not match.</div>
+                  </div>
+                  </div>
+                </fieldset>
+
+                <div class="row g-3 registration-fields">
+                  <div class="col-12 col-md-8">
                     <label class="form-label" for="signupName" data-i18n="field_name">Name</label>
                     <input type="text" class="form-control" id="signupName" required>
-                  </div>
-                  <div class="col-12 col-md-6">
-                    <label class="form-label" for="signupUsername" data-i18n="field_username">Username</label>
-                    <div class="input-group">
-                      <span class="input-group-text" id="signupUsernamePrefix">sch_</span>
-                      <input type="text" class="form-control" id="signupUsername" required>
-                    </div>
-                  </div>
-                  <div class="col-12 col-md-8">
-                    <label class="form-label" for="signupEmail" data-i18n="field_email">Email</label>
-                    <input type="email" class="form-control" id="signupEmail" required>
                   </div>
                   <div class="col-12 col-md-4">
                     <label class="form-label" for="signupLanguage" data-i18n="field_language">Language</label>

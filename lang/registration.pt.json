@@ -1,4 +1,12 @@
 {
+  "school_access_title": "Dados de acesso",
+  "school_change_password": "Alterar palavra-passe",
+  "school_current_password": "Palavra-passe atual",
+  "school_new_password": "Nova palavra-passe",
+  "school_password_changed": "Palavra-passe atualizada com sucesso.",
+  "school_password_incorrect": "A palavra-passe atual não está correta.",
+  "school_password_error": "Não foi possível alterar a palavra-passe.",
+  "school_password_length": "Ambas as palavras-passe devem ter entre 1 e 2000 caracteres.",
   "registration_competitions_rule_birth_year": "ANO DE NASCIMENTO",
   "registration_participants_total_amount": "TOTAL",
   "registration_participants_total_amount_info": "Montante total das inscrições validadas",

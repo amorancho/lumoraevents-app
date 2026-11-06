@@ -8,15 +8,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cancelLink = document.getElementById('cancelLink');
   const submitBtn = document.getElementById('signupSubmit');
   const representativeInput = document.getElementById('signupRepresentative');
-  const usernamePrefix = document.getElementById('signupUsernamePrefix');
   const userTypeInputs = document.querySelectorAll('input[name="signupUserType"]');
+  const passwordInput = document.getElementById('signupPassword');
+  const passwordConfirmInput = document.getElementById('signupPasswordConfirm');
+
+  const validatePasswords = () => {
+    const mismatch = passwordConfirmInput.value !== '' && passwordInput.value !== passwordConfirmInput.value;
+    passwordConfirmInput.setCustomValidity(mismatch ? t('password_mismatch', 'Passwords do not match.') : '');
+    passwordConfirmInput.setAttribute('aria-invalid', String(mismatch));
+    passwordConfirmInput.classList.toggle('is-invalid', mismatch);
+  };
+  passwordInput.addEventListener('input', validatePasswords);
+  passwordConfirmInput.addEventListener('input', validatePasswords);
 
   const getUserType = () => document.querySelector('input[name="signupUserType"]:checked')?.value || 'SCH';
 
   const updateUserTypeFields = () => {
     const isIndividual = getUserType() === 'PAR';
 
-    if (usernamePrefix) usernamePrefix.textContent = isIndividual ? 'par_' : 'sch_';
     if (representativeInput) {
       representativeInput.readOnly = isIndividual;
       representativeInput.classList.toggle('bg-light', isIndividual);
@@ -55,8 +64,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    validatePasswords();
     if (!form.checkValidity()) {
       form.classList.add('was-validated');
+      if (!passwordConfirmInput.validity.valid) passwordConfirmInput.focus();
       return;
     }
 
@@ -69,12 +80,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const originalText = submitBtn.textContent;
     submitBtn.textContent = t('saving', 'Saving...');
 
+    const username = document.getElementById('signupUsername').value.trim().toLowerCase();
     const payload = {
       name: document.getElementById('signupName').value.trim(),
-      username: `${getUserType() === 'PAR' ? 'par_' : 'sch_'}${document.getElementById('signupUsername').value.trim()}`,
+      username,
+      password: document.getElementById('signupPassword').value,
       user_type: getUserType(),
       language: document.getElementById('signupLanguage').value,
-      email: document.getElementById('signupEmail').value.trim(),
+      email: username,
       city: document.getElementById('signupCity').value.trim(),
       country: document.getElementById('signupCountry').value,
       phone: document.getElementById('signupPhone').value.trim(),
@@ -97,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       showSuccessAndRedirect(
-        t('signup_success', 'Account created. Check your email for credentials.'),
+        t('signup_success', 'Account created. You can now sign in.'),
         t('success_title', 'Success'),
         `registrationhome.html?eventId=${encodeURIComponent(eventId)}`
       );

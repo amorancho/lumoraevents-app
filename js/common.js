@@ -17,14 +17,15 @@ const initialLang = getCurrentAppLanguage();
 updateFlag(initialLang);
 
 const eventId = getEventIdFromUrl();
+window.lumoraEventSessionReady = ensureLumoraEventSession(eventId, pageName);
+// DOM handlers and API requests await the original promise; handle early rejection.
+window.lumoraEventSessionReady.catch(() => {});
 
-const originalFetch = window.fetch;
-
-window.fetch = function (url, options = {}) {
+window.fetch = async function (url, options = {}) {
   const lang = localStorage.getItem('lang') || 'es';
 
   const requestUrl = new URL(
-    typeof url === 'string' ? url : url.url,
+    typeof url?.url === 'string' ? url.url : String(url),
     window.location.origin
   );
 
@@ -32,24 +33,25 @@ window.fetch = function (url, options = {}) {
     requestUrl.pathname.startsWith('/public/') ||
     requestUrl.pathname.startsWith('/api/public/');
 
+  const isOwnApi = requestUrl.origin === new URL(API_BASE_URL).origin && requestUrl.pathname.startsWith('/api/');
+  if (isOwnApi && !isPublicApi) await window.lumoraEventSessionReady;
+
   options = options || {};
 
-  const headers = {
-    ...options.headers,
-    'Accept-Language': lang
-  };
+  const headers = new Headers(options.headers || (typeof url !== 'string' ? url.headers : undefined));
+  headers.set('Accept-Language', lang);
 
-  if (!isPublicApi) {
+  if (isOwnApi && !isPublicApi) {
     const user = getUserFromToken();
     const role = user ? user.role : 'guest';
 
-    headers['X-User-Role'] = role;
-    headers['X-User-Id'] = user ? user.id : '';
+    headers.set('X-User-Role', role);
+    headers.set('X-User-Id', user ? user.id : '');
   }
 
   options.headers = headers;
 
-  return originalFetch(url, options);
+  return lumoraSessionFetch(url, options, true);
 };
 
 const translationsReady = pageName === 'admin' ? Promise.resolve() : loadTranslations(initialLang, pageName);
@@ -168,6 +170,7 @@ function setPageTitleAndLang(title, lang) {
 // Creamos la promesa que se resolverá cuando los datos del evento estén listos
 eventReadyPromise = new Promise(async (resolve, reject) => {
   try {
+    await window.lumoraEventSessionReady;
 
     if (eventId) {
       const eventEndpoint = `${API_BASE_URL}/api/public/events/code/${encodeURIComponent(eventId)}`;
@@ -268,13 +271,22 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
     reject(err);
   }
 });
+eventReadyPromise.catch(() => {});
 
 // Ejecutar al cargar el DOM
 document.addEventListener('DOMContentLoaded', async () => {
 
+  try {
+    await window.lumoraEventSessionReady;
+  } catch {
+    return;
+  }
+
   const user = getUserFromToken();
 
-  if (!['public-votes', 'public-vote'].includes(pageName) && eventId && user && user.eventId !== eventId && user.role !== 'admin') {
+  const hasEventAccess = user?.eventId === eventId;
+
+  if (!['public-votes', 'public-vote'].includes(pageName) && eventId && user && !hasEventAccess && user.role !== 'admin') {
     console.warn('El usuario no tiene permiso para este evento. Redirigiendo a la página principal.');
     alert('No tienes permiso para acceder a este evento');
     window.location.href = 'index.html';
@@ -891,6 +903,7 @@ function showMessageModal(message, title = "Mensaje", variant = 'danger') {
 }
 
 async function WaitEventLoaded() {
+  await window.lumoraEventSessionReady;
   try {
     await eventReadyPromise;
   } catch (error) {
