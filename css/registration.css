@@ -3088,3 +3088,40 @@
     outline-offset: 2px;
   }
 }
+
+/* Category price periods share the same presentation in the table and mobile cards. */
+.registration-category-price-ranges {
+  display: grid;
+  gap: .35rem;
+  min-width: 0;
+}
+.registration-category-price-range {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .35rem .65rem;
+  padding: .35rem .5rem;
+  border: 1px solid transparent;
+  border-radius: var(--lm-radius-sm);
+  color: var(--lm-text-muted);
+  font-size: .75rem;
+}
+.registration-category-price-range__amount {
+  color: var(--lm-text);
+  white-space: nowrap;
+}
+.registration-category-price-range--current {
+  border-color: var(--lm-green);
+  color: var(--lm-green);
+  background: rgba(var(--bs-success-rgb), .08);
+}
+.registration-category-price-range--current .registration-category-price-range__amount {
+  color: inherit;
+}
+@media (min-width: 768px) {
+  .registration-category-price-range {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+  }
+}

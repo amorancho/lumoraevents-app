@@ -1,4 +1,5 @@
 {
+  "registration_categories_price_current": "Prezzo attuale",
   "registration_sidebar_mode_open": "Sempre aperto",
   "registration_sidebar_mode_closed": "Sempre chiuso",
   "registration_sidebar_mode_hover": "Apri al passaggio del mouse",
@@ -517,7 +518,7 @@
   "registration_competitions_member_gender": "Genere",
   "registration_competitions_members_save": "Salva",
   "save_choreo": "Salva iscrizione",
-  "registration_categories_price": "Prezzo di oggi",
+  "registration_categories_price": "Prezzo",
   "registration_categories_fee": "Fee",
   "registration_categories_applies_fee": "Commissione applicata",
   "registration_categories_no_fee": "Nessuna commissione",

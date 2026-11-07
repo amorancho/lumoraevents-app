@@ -1,4 +1,5 @@
 {
+  "registration_categories_price_current": "Preço em vigor",
   "registration_sidebar_mode_open": "Sempre aberto",
   "registration_sidebar_mode_closed": "Sempre fechado",
   "registration_sidebar_mode_hover": "Abrir ao passar o rato",
@@ -517,7 +518,7 @@
   "registration_competitions_member_gender": "Genero",
   "registration_competitions_members_save": "Guardar",
   "save_choreo": "Guardar inscricao",
-  "registration_categories_price": "Preco de hoje",
+  "registration_categories_price": "Preço",
   "registration_categories_fee": "Fee",
   "registration_categories_applies_fee": "Taxa aplicável",
   "registration_categories_no_fee": "Sem taxa",

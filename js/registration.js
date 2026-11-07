@@ -7016,14 +7016,47 @@ function initRegistrationCategoriesTab() {
     categoryModal.show();
   };
 
-  const getCategoryCurrentPrice = (category) => {
-    const hasPriceByDate = category.reg_price_by_date !== null
-      && category.reg_price_by_date !== undefined
-      && category.reg_price_by_date !== '';
-    return {
-      hasPriceByDate,
-      value: hasPriceByDate ? category.reg_price_by_date : category.registration_price
-    };
+  const createCategoryPriceRanges = (category) => {
+    const list = document.createElement('div');
+    list.className = 'registration-category-price-ranges';
+    const ranges = Array.isArray(category.prices) && category.prices.length
+      ? [...category.prices].sort((a, b) => `${a.start_date || ''}`.localeCompare(`${b.start_date || ''}`))
+      : [{
+        start_date: category.event_reg_start || getEvent()?.registrationStart,
+        end_date: category.event_reg_end || getEvent()?.registrationEnd,
+        price: category.registration_price,
+        is_current: true
+      }];
+    ranges.forEach((range) => {
+      const row = document.createElement('div');
+      row.className = 'registration-category-price-range';
+      const isCurrent = range.is_current === true || range.is_current === 1 || range.is_current === '1';
+      if (isCurrent) {
+        row.classList.add('registration-category-price-range--current');
+        row.setAttribute('aria-current', 'true');
+      }
+      const dates = document.createElement('span');
+      dates.className = 'registration-category-price-range__dates';
+      const start = formatRegistrationSidebarDate(getCategoryPriceDate(range.start_date));
+      const end = formatRegistrationSidebarDate(getCategoryPriceDate(range.end_date));
+      dates.textContent = `${start} - ${end}`;
+      const amount = document.createElement('strong');
+      amount.className = 'registration-category-price-range__amount';
+      const value = normalizeNumber(range.price);
+      amount.textContent = value === null ? '-' : value === 0 ? 'FREE' : formatCurrencyDisplay(value);
+      row.append(dates, amount);
+      if (isCurrent) {
+        const current = document.createElement('span');
+        current.className = 'visually-hidden';
+        current.textContent = t('registration_categories_price_current', 'Current price');
+        const icon = document.createElement('i');
+        icon.className = 'bi bi-check-circle-fill';
+        icon.setAttribute('aria-hidden', 'true');
+        row.append(icon, current);
+      }
+      list.appendChild(row);
+    });
+    return list;
   };
 
   const createCategoryYearsRange = (category) => {
@@ -7128,24 +7161,8 @@ function initRegistrationCategoriesTab() {
     price.className = 'registration-category-mobile-card__price';
     const priceLabel = document.createElement('span');
     priceLabel.className = 'registration-category-mobile-card__section-label';
-    priceLabel.textContent = t('registration_categories_price', 'Price today');
-    const currentPrice = getCategoryCurrentPrice(category);
-    const sourceBadge = document.createElement('span');
-    sourceBadge.className = `registration-category-mobile-card__price-source badge ${currentPrice.hasPriceByDate
-      ? 'bg-info-subtle text-info-emphasis'
-      : 'bg-secondary-subtle text-secondary-emphasis'}`;
-    sourceBadge.textContent = currentPrice.hasPriceByDate ? 'BY_DATE' : 'GENERIC';
-    const amount = document.createElement('span');
-    amount.className = 'registration-category-mobile-card__price-amount';
-    if (Number(currentPrice.value) === 0) {
-      amount.classList.add('text-success');
-      amount.textContent = 'FREE';
-    } else {
-      amount.textContent = currentPrice.value !== null && currentPrice.value !== undefined && currentPrice.value !== ''
-        ? formatCurrencyDisplay(currentPrice.value)
-        : '-';
-    }
-    price.append(priceLabel, amount, sourceBadge);
+    priceLabel.textContent = t('registration_categories_price', 'Price');
+    price.append(priceLabel, createCategoryPriceRanges(category));
 
     const fee = document.createElement('div');
     const appliesFee = Number(category.apply_fee ?? 1) === 1;
@@ -7247,25 +7264,7 @@ function initRegistrationCategoriesTab() {
 
       const priceCell = document.createElement('td');
       priceCell.className = 'text-center';
-      const currentPrice = getCategoryCurrentPrice(category);
-      const priceWrap = document.createElement('div');
-      priceWrap.className = 'd-inline-flex flex-column align-items-center gap-1';
-      const priceSourceBadge = document.createElement('span');
-      priceSourceBadge.className = currentPrice.hasPriceByDate
-        ? 'badge bg-info-subtle text-info-emphasis'
-        : 'badge bg-secondary-subtle text-secondary-emphasis';
-      priceSourceBadge.textContent = currentPrice.hasPriceByDate ? 'BY_DATE' : 'GENERIC';
-      const priceValue = document.createElement('span');
-      if (Number(currentPrice.value) === 0) {
-        priceValue.className = 'badge bg-success';
-        priceValue.textContent = 'FREE';
-      } else {
-        priceValue.textContent = currentPrice.value !== null && currentPrice.value !== undefined && currentPrice.value !== ''
-          ? formatCurrencyDisplay(currentPrice.value)
-          : '-';
-      }
-      priceWrap.append(priceSourceBadge, priceValue);
-      priceCell.appendChild(priceWrap);
+      priceCell.appendChild(createCategoryPriceRanges(category));
       row.appendChild(priceCell);
 
       const feeCell = document.createElement('td');

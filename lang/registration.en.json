@@ -1,4 +1,5 @@
 {
+  "registration_categories_price_current": "Current price",
   "registration_sidebar_mode_open": "Always expanded",
   "registration_sidebar_mode_closed": "Always collapsed",
   "registration_sidebar_mode_hover": "Expand on hover",
@@ -519,7 +520,7 @@
   "registration_competitions_member_gender": "Gender",
   "registration_competitions_members_save": "Save",
   "save_choreo": "Save registration",
-  "registration_categories_price": "Today's Price",
+  "registration_categories_price": "Price",
   "registration_categories_fee": "Fee",
   "registration_categories_applies_fee": "Applies fee",
   "registration_categories_no_fee": "No fee",

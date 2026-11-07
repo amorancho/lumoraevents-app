@@ -2,6 +2,8 @@ Las pruebas de `registration-extras.test.cjs` verifican el comportamiento del DO
 
 `registration-sidebar.test.cjs` verifica los tres modos del sidebar de escritorio, la persistencia de la elección, el funcionamiento sin almacenamiento, los tooltips y acciones de su cabecera, y la conservación del menú móvil. Usa `jsdom` 26 y se ejecuta con `node --test tests/registration-sidebar.test.cjs`, sin renderizar ni realizar comprobaciones visuales.
 
+`registration-category-prices.test.cjs` comprueba los rangos de precios recibidos de API, su orden, los importes en céntimos, el indicador `is_current` y las fechas del evento como respaldo cuando no hay rangos. Usa `jsdom` 26 y se ejecuta con `node --test tests/registration-category-prices.test.cjs`, sin renderizado ni pruebas visuales.
+
 `registration-wop-import.test.cjs` comprueba la selección de GEN/WOP y los permisos, el análisis automático al elegir un Excel válido, el límite de 5 MB, el envío multipart sin mapeo, los resultados y errores por fila, la conservación de fechas y documentos, la confirmación exclusiva de filas válidas, los errores de API, el bloqueo de envíos duplicados y la recarga tras el `201`. Usa la misma dependencia `jsdom` 26 y se ejecuta con `node --test tests/registration-wop-import.test.cjs`; todas las respuestas de API están simuladas.
 
 `registration-fees.test.cjs` comprueba los cálculos de NON, PAR, SCH y REG, las categorías exentas, los participantes únicos, la validación de inscripciones y los totales y saldos del Dashboard. Solo necesita Node.js y se ejecuta con `node --test tests/registration-fees.test.cjs`.
