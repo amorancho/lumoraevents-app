@@ -2848,13 +2848,13 @@
 
 @media (min-width: 992px) {
   .registration-shell { padding: 0; }
-  .registration-layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 0 !important; margin: 0; }
+  .registration-layout { --registration-sidebar-width: 260px; display: grid; grid-template-columns: var(--registration-sidebar-width) minmax(0, 1fr); gap: 0 !important; margin: 0; }
   .registration-layout > * { width: auto; min-width: 0; padding: 0; }
-  .registration-layout > .registration-sidebar-column { align-self: stretch; padding: 1rem 0 0 1.75rem; }
-  .registration-layout > .registration-content { padding: 1rem 1.75rem 3rem; }
+  .registration-layout > .registration-sidebar-column { align-self: stretch; padding: .75rem 0 0 .5rem; }
+  .registration-layout > .registration-content { padding: .75rem .5rem 2rem .75rem; }
 }
 @media (min-width: 1250px) {
-  .registration-layout { grid-template-columns: 300px minmax(0, 1fr); }
+  .registration-layout { --registration-sidebar-width: 280px; }
 }
 @media (max-width: 767.98px) {
   .registration-shell { padding: .75rem .75rem 2.5rem; }
@@ -2880,4 +2880,211 @@
   #payments .registration-payments-summary-card--combined { grid-column: span 1; }
   #payments .registration-payments-combined-metrics { grid-template-columns: minmax(0, 1fr); }
   #payments .registration-payments-combined-metric:not(.d-none) + .registration-payments-combined-metric { padding: .75rem 0 0; border-top: 1px solid var(--lm-border); border-left: 0; }
+}
+
+/* Compact metadata in the desktop registration lists; mobile uses separate cards. */
+.registration-page .registrations-desktop-table .registration-table-category-style {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: .35rem;
+}
+.registration-page .registrations-desktop-table .registration-table-category-style > span {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+.registration-page .registrations-desktop-table .registration-table-music-dot {
+  display: inline-block;
+  width: .85rem;
+  height: .85rem;
+  padding: 0;
+  border-radius: var(--lm-radius-pill);
+  vertical-align: middle;
+}
+.registration-page .registrations-desktop-table [tabindex]:focus-visible {
+  outline: 2px solid var(--lm-cyan);
+  outline-offset: 3px;
+}
+
+.registration-page .registrations-desktop-table .registration-table-sync-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+@media (min-width: 768px) {
+  .registration-page :is(#org-registrations, #competitions) > .card > .card-body {
+    padding: .75rem !important;
+  }
+  #org-registrations .org-registrations-filter-panel > .col-12 {
+    flex: 1 1 7rem;
+  }
+  #org-registrations .org-registrations-filter-panel > .org-registrations-filter-school {
+    flex: 2 1 16rem;
+    max-width: none;
+  }
+  #org-registrations .org-registrations-filter-panel > .org-registrations-filter-deleted,
+  #org-registrations .org-registrations-filter-panel > .org-registrations-filter-clear {
+    flex: 0 0 auto;
+  }
+  #org-registrations .org-registrations-filters {
+    gap: .65rem !important;
+  }
+  .registration-page :is(#org-registrations, #competitions) .registrations-desktop-table {
+    max-height: var(--registration-table-height, calc(100dvh - 18rem));
+    overflow: auto;
+    scrollbar-gutter: stable;
+  }
+  .registration-page .registrations-desktop-table .table {
+    width: 100%;
+    table-layout: auto;
+  }
+  .registration-page .registrations-desktop-table .table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    box-shadow: 0 1px var(--lm-border);
+  }
+  .registration-page .registrations-desktop-table:focus-visible {
+    outline: 2px solid var(--lm-cyan);
+    outline-offset: 2px;
+  }
+}
+
+@media (min-width: 768px) {
+  /* Balance the descriptive columns instead of giving long names all spare width.
+     Percentages remain flexible under the table's automatic content sizing. */
+  #org-registrations .registrations-desktop-table .registration-col-identity {
+    width: 18%;
+  }
+  .registration-page .registrations-desktop-table .registration-col-category-style {
+    width: 16%;
+  }
+  #org-registrations .registrations-desktop-table tbody td:nth-child(-n + 2),
+  #competitions .registrations-desktop-table tbody td:first-child {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (min-width: 768px) {
+  /* Fit the group column to its names, with a responsive limit for long entries. */
+  .registration-page :is(#org-registrations, #competitions) .registrations-desktop-table .registration-col-group {
+    width: 1%;
+  }
+  .registration-page .registrations-desktop-table .registration-table-name {
+    display: block;
+    inline-size: max-content;
+    max-inline-size: clamp(10rem, 13vw, 15rem);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Desktop sidebar modes. The mobile offcanvas keeps its existing markup. */
+@media (min-width: 992px) {
+  .registration-layout:is([data-sidebar-mode="closed"], [data-sidebar-mode="hover"]) {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+  }
+  .registration-layout > .registration-sidebar-column {
+    position: relative;
+    z-index: 10;
+  }
+  #registrationSidebarMount {
+    width: 100%;
+  }
+  .registration-layout:is([data-sidebar-mode="closed"], [data-sidebar-mode="hover"]) #registrationSidebarMount {
+    width: 4rem;
+  }
+  .registration-layout[data-sidebar-mode="hover"] #registrationSidebarMount:is(:hover, :focus-within) {
+    width: calc(var(--registration-sidebar-width) - .5rem);
+  }
+  .registration-layout[data-sidebar-mode="closed"] #registrationSidebarMount,
+  .registration-layout[data-sidebar-mode="hover"] #registrationSidebarMount:not(:hover):not(:focus-within) {
+    --registration-sidebar-label-display: none;
+    --registration-sidebar-item-align: center;
+    --registration-sidebar-item-gap: 0;
+    --registration-sidebar-item-padding: .7rem 0;
+    --registration-sidebar-icons-direction: column;
+    --registration-sidebar-full-display: none;
+    --registration-sidebar-icons-display: flex;
+    --registration-sidebar-toolbar-position: static;
+  }
+  #registrationSidebarMount .registration-sidebar-card > .card-body {
+    position: relative;
+    padding: .5rem;
+  }
+  #registrationSidebarMount .registration-sidebar-toolbar {
+    position: var(--registration-sidebar-toolbar-position, absolute);
+    top: .5rem;
+    right: .5rem;
+    display: flex;
+    justify-content: var(--registration-sidebar-item-align, flex-end);
+    margin-bottom: .5rem;
+  }
+  #registrationSidebarMount .registration-sidebar-mode {
+    width: 40px;
+    justify-content: center;
+    padding: .5rem;
+  }
+  #registrationSidebarMount [data-registration-nav-key] > span {
+    display: var(--registration-sidebar-label-display, inline);
+  }
+  #registrationSidebarMount [data-registration-nav-key] {
+    justify-content: var(--registration-sidebar-item-align, flex-start);
+    gap: var(--registration-sidebar-item-gap, .75rem) !important;
+    padding: var(--registration-sidebar-item-padding, .7rem .8rem) !important;
+  }
+  #registrationSidebarMount .registration-sidebar-full-info {
+    display: var(--registration-sidebar-full-display, block);
+    padding: 0 .5rem .5rem;
+  }
+  #registrationSidebarMount .registration-sidebar-full-info .registration-sidebar-meta {
+    margin-top: 0;
+  }
+  #registrationSidebarMount .registration-sidebar-full-info .registration-sidebar-meta > div:first-child {
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    padding-right: 44px;
+  }
+  #registrationSidebarMount .registration-sidebar-icons {
+    display: var(--registration-sidebar-icons-display, none);
+    flex-direction: var(--registration-sidebar-icons-direction, row);
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: .25rem;
+  }
+  #registrationSidebarMount .registration-sidebar-icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius-sm);
+    color: var(--lm-blue);
+    background: var(--lm-surface-raised);
+    font-size: .9rem;
+  }
+  #registrationSidebarMount .registration-sidebar-indicator i {
+    font-size: .65rem;
+  }
+  #registrationSidebarMount .registration-sidebar-indicator[data-state="open"] {
+    color: var(--lm-green);
+  }
+  #registrationSidebarMount .registration-sidebar-indicator[data-state="closed"] {
+    color: var(--lm-danger);
+  }
+  #registrationSidebarMount [tabindex]:focus-visible {
+    outline: 2px solid var(--lm-cyan);
+    outline-offset: 2px;
+  }
 }

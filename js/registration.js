@@ -549,6 +549,68 @@ function initTooltipInstances(rootEl) {
   );
 }
 
+// These helpers are used only by the desktop registration tables.
+function createRegistrationTableCategoryCell(category, style) {
+  const cell = document.createElement('td');
+  const stack = document.createElement('div');
+  stack.className = 'registration-table-category-style';
+  [category, style].forEach((label, index) => {
+    const text = document.createElement('span');
+    text.className = index === 0 ? 'fw-semibold' : 'text-muted';
+    text.textContent = label || '-';
+    stack.appendChild(text);
+  });
+  cell.appendChild(stack);
+  cell.setAttribute('data-tsv-value', `${category || '-'} / ${style || '-'}`);
+  return cell;
+}
+
+function configureRegistrationTableBadge(badge, label, status = null) {
+  const shortLabels = {
+    VAL: t('registration_status_validated_short', 'VAL'),
+    PEN: t('registration_status_pending_short', 'PEN. VAL.'),
+    CRE: t('registration_status_creation_short', 'CREA.'),
+    REJ: t('registration_status_rejected_short', 'REC')
+  };
+  badge.textContent = status ? (shortLabels[status] || label) : '';
+  if (!status) badge.classList.add('registration-table-music-dot');
+  badge.tabIndex = 0;
+  badge.setAttribute('aria-label', label);
+  badge.setAttribute('data-bs-toggle', 'tooltip');
+  badge.setAttribute('data-bs-placement', 'top');
+  badge.setAttribute('data-bs-title', label);
+  badge.parentElement.setAttribute('data-tsv-value', label);
+}
+
+// Keep long lists inside the viewport so their horizontal scrollbar stays reachable.
+function initRegistrationTableScrolling() {
+  const tables = [...document.querySelectorAll('.registrations-desktop-table')];
+  if (!tables.length) return;
+  let frame = null;
+  const update = () => {
+    frame = null;
+    if (!window.matchMedia('(min-width: 768px)').matches) return;
+    tables.forEach((table) => {
+      if (!table.getClientRects().length) return;
+      const top = Math.max(0, table.getBoundingClientRect().top);
+      const height = `${Math.max(160, Math.floor(window.innerHeight - top - 16))}px`;
+      if (table.style.getPropertyValue('--registration-table-height') !== height) {
+        table.style.setProperty('--registration-table-height', height);
+      }
+    });
+  };
+  const scheduleUpdate = () => {
+    if (frame === null) frame = window.requestAnimationFrame(update);
+  };
+  const observer = new ResizeObserver(scheduleUpdate);
+  document.querySelectorAll('#header, .registration-content, .org-registrations-controls, .school-registrations-controls, #registrationSpecialPriceNotice')
+    .forEach((element) => observer.observe(element));
+  window.addEventListener('resize', scheduleUpdate);
+  window.addEventListener('scroll', scheduleUpdate, { passive: true });
+  document.addEventListener('shown.bs.tab', scheduleUpdate);
+  scheduleUpdate();
+}
+
 function syncRegistrationConfigState() {
   registrationState.registrationConfig = {
     categories: Array.isArray(registrationState.registrationCategories)
@@ -602,6 +664,7 @@ function getRegistrationRole(user = getUserFromToken()) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  initRegistrationTableScrolling();
   await WaitEventLoaded();
   await ensureTranslationsReady();
   await loadRegistrationEventInfo();
@@ -888,6 +951,90 @@ function buildRegistrationSidebarHeroMarkup() {
   `;
 }
 
+function buildRegistrationDesktopSidebarHeroMarkup() {
+  const copy = getRegistrationSidebarCopy();
+  const event = getEvent();
+  const status = getRegistrationSidebarStatusInfo();
+  const tooltip = (label) => `data-sidebar-tooltip data-bs-title="${escapeRegistrationTooltipHtml(label)}" aria-label="${escapeRegistrationTooltipHtml(label)}"`;
+  const eventDates = `${copy.eventDates}: ${formatRegistrationSidebarRange(event?.start, event?.end)}`;
+  const registrationDates = `${copy.registrationDates}: ${formatRegistrationSidebarRange(event?.registrationStart, event?.registrationEnd)}`;
+  return `
+    <div class="registration-sidebar-toolbar">
+      <button type="button" class="btn btn-outline-secondary registration-sidebar-mode" data-sidebar-tooltip>
+        <i class="bi bi-layout-sidebar" aria-hidden="true"></i>
+      </button>
+    </div>
+    <div class="registration-sidebar-full-info">
+      ${buildRegistrationSidebarHeroMarkup()}
+    </div>
+    <div class="registration-sidebar-icons">
+      <span class="registration-sidebar-icon registration-sidebar-indicator" data-state="${status.state}" tabindex="0" ${tooltip(status.label)}>
+        <i class="bi bi-circle-fill" aria-hidden="true"></i>
+      </span>
+      <span class="registration-sidebar-icon" tabindex="0" ${tooltip(eventDates)}>
+        <i class="bi bi-calendar-event" aria-hidden="true"></i>
+      </span>
+      <span class="registration-sidebar-icon" tabindex="0" ${tooltip(registrationDates)}>
+        <i class="bi bi-journal-check" aria-hidden="true"></i>
+      </span>
+      <button type="button" class="btn btn-link registration-sidebar-icon registration-bases-document-link" ${tooltip(t('registration_competition_rules', 'Competition rules'))}>
+        <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+      </button>
+      ${hasRegistrationPaymentInstructions() ? `
+        <button type="button" class="btn btn-link registration-sidebar-icon" data-bs-toggle="modal" data-bs-target="#registrationPaymentInstructionsModal" ${tooltip(t('registration_payment_instructions', 'Payment instructions'))}>
+          <i class="bi bi-info-circle" aria-hidden="true"></i>
+        </button>` : ''}
+    </div>
+  `;
+}
+
+let registrationSidebarTooltips = [];
+
+function initRegistrationDesktopSidebar() {
+  const mount = document.getElementById('registrationSidebarMount');
+  const layout = document.querySelector('.registration-layout');
+  const button = mount?.querySelector('.registration-sidebar-mode');
+  if (!layout || !button) return;
+  const modes = ['open', 'closed', 'hover'];
+  const labels = {
+    open: t('registration_sidebar_mode_open', 'Always expanded'),
+    closed: t('registration_sidebar_mode_closed', 'Always collapsed'),
+    hover: t('registration_sidebar_mode_hover', 'Expand on hover')
+  };
+  const icons = { open: 'bi-layout-sidebar', closed: 'bi-layout-sidebar-inset', hover: 'bi-mouse' };
+  let mode = layout.dataset.sidebarMode;
+  if (!mode) {
+    try { mode = localStorage.getItem('registrationSidebarMode'); } catch { /* Storage can be unavailable. */ }
+  }
+  if (!modes.includes(mode)) mode = 'open';
+  const applyMode = () => {
+    layout.dataset.sidebarMode = mode;
+    const next = modes[(modes.indexOf(mode) + 1) % modes.length];
+    const description = `${t('registration_sidebar_mode', 'Sidebar')}: ${labels[mode]}. ${t('registration_sidebar_mode_next', 'Change to')}: ${labels[next]}`;
+    button.setAttribute('aria-label', description);
+    button.setAttribute('data-bs-title', description);
+    button.querySelector('i').className = `bi ${icons[mode]}`;
+    const tooltip = window.bootstrap?.Tooltip?.getInstance(button);
+    if (tooltip) tooltip.setContent({ '.tooltip-inner': description });
+    mount.querySelectorAll('[data-sidebar-nav-tooltip]').forEach((item) => {
+      const instance = window.bootstrap?.Tooltip?.getInstance(item);
+      if (mode === 'closed') instance?.enable();
+      else instance?.disable();
+    });
+  };
+  button.addEventListener('click', () => {
+    mode = modes[(modes.indexOf(mode) + 1) % modes.length];
+    applyMode();
+    try { localStorage.setItem('registrationSidebarMode', mode); } catch { /* Keep the choice for this page. */ }
+  });
+  applyMode();
+  if (window.bootstrap?.Tooltip) {
+    registrationSidebarTooltips = [...mount.querySelectorAll('[data-sidebar-tooltip], [data-sidebar-nav-tooltip]')]
+      .map((element) => bootstrap.Tooltip.getOrCreateInstance(element, { placement: 'right', container: 'body' }));
+    applyMode();
+  }
+}
+
 function buildRegistrationSidebarItemsMarkup(role, activeKey, options = {}) {
   const itemClassName = options.itemClassName
     || 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3 text-start';
@@ -896,12 +1043,15 @@ function buildRegistrationSidebarItemsMarkup(role, activeKey, options = {}) {
     const isActive = item.key === activeKey;
     const activeClasses = isActive ? ' active' : '';
     const activeAttributes = isActive ? ' aria-current="page"' : '';
+    const tooltipAttributes = options.iconTooltips
+      ? ` data-sidebar-nav-tooltip data-bs-title="${escapeRegistrationTooltipHtml(t(item.labelKey, item.fallbackLabel))}" aria-label="${escapeRegistrationTooltipHtml(t(item.labelKey, item.fallbackLabel))}"`
+      : '';
 
     return `
       <button
         type="button"
         class="${itemClassName}${activeClasses}"
-        data-registration-nav-key="${item.key}"${activeAttributes}>
+        data-registration-nav-key="${item.key}"${activeAttributes}${tooltipAttributes}>
         <i class="bi ${item.icon}"></i>
         <span>${t(item.labelKey, item.fallbackLabel)}</span>
       </button>
@@ -916,6 +1066,7 @@ function renderRegistrationSidebar(role) {
   if (!desktopMount && !mobileMount) {
     return;
   }
+  registrationSidebarTooltips = disposeTooltipInstances(registrationSidebarTooltips);
 
   const visibleItems = getVisibleRegistrationNavItems(role);
   if (!visibleItems.length) {
@@ -932,11 +1083,12 @@ function renderRegistrationSidebar(role) {
     <div class="sticky-lg-top">
       <div class="card border-0 shadow-sm registration-sidebar-card">
         <div class="card-body border-bottom">
-          ${heroMarkup}
+          ${buildRegistrationDesktopSidebarHeroMarkup()}
         </div>
         <div class="list-group list-group-flush">
           ${buildRegistrationSidebarItemsMarkup(role, activeKey, {
-            itemClassName: 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3 border-0 border-bottom text-start'
+            itemClassName: 'list-group-item list-group-item-action d-flex align-items-center gap-3 px-3 py-3 border-0 border-bottom text-start',
+            iconTooltips: true
           })}
         </div>
       </div>
@@ -974,6 +1126,7 @@ function renderRegistrationSidebar(role) {
   if (mobileMount) {
     mobileMount.innerHTML = mobileMarkup;
   }
+  initRegistrationDesktopSidebar();
 }
 
 function hideRegistrationSidebarOffcanvas() {
@@ -9167,20 +9320,17 @@ function initOrganizerRegistrationsTab() {
       row.appendChild(schoolCell);
 
       const nameCell = document.createElement('td');
-      nameCell.textContent = registration.name || registration.choreography || '-';
+      const nameText = document.createElement('span');
+      nameText.className = 'registration-table-name';
+      nameText.textContent = registration.name || registration.choreography || '-';
+      nameCell.appendChild(nameText);
       row.appendChild(nameCell);
 
       const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
       const categoryName = registration.category_name || categoryById.get(`${categoryId}`)?.name || '-';
-      const categoryCell = document.createElement('td');
-      categoryCell.textContent = categoryName;
-      row.appendChild(categoryCell);
-
       const styleId = registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
       const styleName = registration.style_name || styleById.get(`${styleId}`)?.name || '-';
-      const styleCell = document.createElement('td');
-      styleCell.textContent = styleName;
-      row.appendChild(styleCell);
+      row.appendChild(createRegistrationTableCategoryCell(categoryName, styleName));
 
       const participantsCell = document.createElement('td');
       participantsCell.className = 'text-center';
@@ -9235,11 +9385,13 @@ function initOrganizerRegistrationsTab() {
       row.appendChild(totalAmountCell);
 
       const statusCell = document.createElement('td');
+      statusCell.className = 'text-center';
       const statusInfo = formatStatusInfo(registration.status);
       const statusBadge = document.createElement('span');
       statusBadge.className = `badge bg-${statusInfo.color}`;
       statusBadge.textContent = statusInfo.label;
       statusCell.appendChild(statusBadge);
+      configureRegistrationTableBadge(statusBadge, statusInfo.label, registration.status);
       row.appendChild(statusCell);
 
       const musicCell = document.createElement('td');
@@ -9249,15 +9401,31 @@ function initOrganizerRegistrationsTab() {
       musicBadge.className = `badge ${musicInfo.className}`;
       musicBadge.textContent = musicInfo.label;
       musicCell.appendChild(musicBadge);
+      configureRegistrationTableBadge(musicBadge, musicInfo.label);
       row.appendChild(musicCell);
 
       const syncroCell = document.createElement('td');
       syncroCell.className = 'text-center';
-      const syncroBadge = document.createElement('span');
       const syncroInfo = getSyncroStatusBadgeInfo(registration.syncro_status);
-      syncroBadge.className = `badge ${syncroInfo.className}`;
-      syncroBadge.textContent = syncroInfo.label;
-      syncroCell.appendChild(syncroBadge);
+      const syncroIcon = document.createElement('span');
+      const syncroState = `${registration.syncro_status || ''}`;
+      const syncroIconClass = syncroState === 'NOT_APPLICABLE'
+        ? 'bi-dash-circle text-info'
+        : syncroState === 'SYNCRO_OK'
+          ? 'bi-check-circle-fill text-success'
+          : `bi-x-circle ${syncroState === 'PEN_UPDATE' ? 'text-warning' : 'text-secondary'}`;
+      syncroIcon.className = 'registration-table-sync-icon';
+      syncroIcon.tabIndex = 0;
+      syncroIcon.setAttribute('aria-label', syncroInfo.label);
+      syncroIcon.setAttribute('data-bs-toggle', 'tooltip');
+      syncroIcon.setAttribute('data-bs-placement', 'top');
+      syncroIcon.setAttribute('data-bs-title', syncroInfo.label);
+      const icon = document.createElement('i');
+      icon.className = `bi ${syncroIconClass}`;
+      icon.setAttribute('aria-hidden', 'true');
+      syncroIcon.appendChild(icon);
+      syncroCell.setAttribute('data-tsv-value', syncroInfo.label);
+      syncroCell.appendChild(syncroIcon);
       row.appendChild(syncroCell);
 
       const actionsCell = document.createElement('td');

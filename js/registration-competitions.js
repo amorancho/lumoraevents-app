@@ -1527,18 +1527,12 @@
 
       const nameCell = document.createElement('td');
       const nameWrapper = document.createElement('div');
-      nameWrapper.className = 'fw-semibold';
+      nameWrapper.className = 'fw-semibold registration-table-name';
       nameWrapper.textContent = registration.name || '-';
       nameCell.appendChild(nameWrapper);
       row.appendChild(nameCell);
 
-      const categoryCell = document.createElement('td');
-      categoryCell.textContent = registration.category_name || '-';
-      row.appendChild(categoryCell);
-
-      const styleCell = document.createElement('td');
-      styleCell.textContent = registration.style_name || '-';
-      row.appendChild(styleCell);
+      row.appendChild(createRegistrationTableCategoryCell(registration.category_name, registration.style_name));
 
       const participantsCell = document.createElement('td');
       participantsCell.className = 'text-center';
@@ -1590,11 +1584,13 @@
       row.appendChild(totalAmountCell);
 
       const statusCell = document.createElement('td');
+      statusCell.className = 'text-center';
       const statusInfo = formatStatusInfo(registration.status);
       const statusBadge = document.createElement('span');
       statusBadge.className = `badge bg-${statusInfo.color}`;
       statusBadge.textContent = statusInfo.label;
       statusCell.appendChild(statusBadge);
+      configureRegistrationTableBadge(statusBadge, statusInfo.label, registration.status);
       row.appendChild(statusCell);
 
       const musicCell = document.createElement('td');
@@ -1604,6 +1600,7 @@
       musicBadge.className = `badge ${musicInfo.className}`;
       musicBadge.textContent = musicInfo.label;
       musicCell.appendChild(musicBadge);
+      configureRegistrationTableBadge(musicBadge, musicInfo.label);
       row.appendChild(musicCell);
 
       const actionsCell = document.createElement('td');
@@ -1744,7 +1741,7 @@
     mobileCards.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 10;
+    cell.colSpan = 9;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);
