@@ -954,7 +954,17 @@ document.addEventListener('DOMContentLoaded', async () => {
               const safeLeftIndex = leftIndex === -1 ? EVENT_STATUS_ORDER.length : leftIndex;
               const safeRightIndex = rightIndex === -1 ? EVENT_STATUS_ORDER.length : rightIndex;
 
-              return safeLeftIndex - safeRightIndex;
+              const statusOrder = safeLeftIndex - safeRightIndex;
+              if (statusOrder !== 0 || left.event_status !== 'proximamente') {
+                return statusOrder;
+              }
+
+              const leftStart = Date.parse(left.start);
+              const rightStart = Date.parse(right.start);
+              if (Number.isNaN(leftStart)) return Number.isNaN(rightStart) ? 0 : 1;
+              if (Number.isNaN(rightStart)) return -1;
+
+              return leftStart - rightStart;
             })
         : [];
 
