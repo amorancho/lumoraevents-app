@@ -33,7 +33,6 @@
   "registration_categories_years_by_age": "Por edad",
   "registration_categories_years_by_year": "Por nacimiento",
   "registration_categories_birth_year_invalid": "Introduce un año de nacimiento de 4 dígitos.",
-  "registration_competitions_special_price_notice": "Este evento tiene un precio especial de {price} euros para la segunda y siguientes inscripciones para una misma persona. El precio completo se aplica a la inscripción de precio más alto (revisar bases del evento). Este cálculo se refleja una vez se haya validado tu inscripción. ¡Estad atentos!",
   "title": "Gestión de Inscripciones",
   "registration_heading": "Registro de escuela",
   "registration_tab_dashboard": "Dashboard",

@@ -604,7 +604,7 @@ function initRegistrationTableScrolling() {
     if (frame === null) frame = window.requestAnimationFrame(update);
   };
   const observer = new ResizeObserver(scheduleUpdate);
-  document.querySelectorAll('#header, .registration-content, .org-registrations-controls, .school-registrations-controls, #registrationSpecialPriceNotice')
+  document.querySelectorAll('#header, .registration-content, .org-registrations-controls, .school-registrations-controls')
     .forEach((element) => observer.observe(element));
   window.addEventListener('resize', scheduleUpdate);
   window.addEventListener('scroll', scheduleUpdate, { passive: true });

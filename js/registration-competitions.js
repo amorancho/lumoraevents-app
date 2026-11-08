@@ -1485,16 +1485,6 @@
   };
 
   const renderRegistrations = () => {
-    const specialPriceNotice = document.getElementById('registrationSpecialPriceNotice');
-    if (specialPriceNotice) {
-      const event = getEvent();
-      const showSpecialPrice = isSchoolUser && event?.registrationPricePerPax === true;
-      specialPriceNotice.classList.toggle('d-none', !showSpecialPrice);
-      specialPriceNotice.textContent = showSpecialPrice ? formatTemplate(
-        t('registration_competitions_special_price_notice', 'Este evento tiene un precio especial de {price} euros para la segunda y siguientes inscripciones para una misma persona. El precio completo se aplica a la inscripción de precio más alto (revisar bases del evento). Este cálculo se refleja una vez se haya validado tu inscripción. ¡Estad atentos!'),
-        { price: new Intl.NumberFormat(getLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((normalizeNumber(event.registrationPriceDiscount) ?? 0) / 100) }
-      ) : '';
-    }
     disposeRegistrationsTooltips();
     tableBody.innerHTML = '';
     mobileCards.innerHTML = '';

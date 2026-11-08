@@ -33,7 +33,6 @@
   "registration_categories_years_by_age": "Par âge",
   "registration_categories_years_by_year": "Par année de naissance",
   "registration_categories_birth_year_invalid": "Saisissez une année de naissance à 4 chiffres.",
-  "registration_competitions_special_price_notice": "Cet événement propose un tarif spécial de {price} euros pour la deuxième inscription et les suivantes pour une même personne. Le plein tarif s’applique à l’inscription dont le prix est le plus élevé (consultez le règlement de l’événement). Ce calcul sera pris en compte une fois votre inscription validée. Restez à l’écoute !",
   "title": "Gestión de Inscripciones",
   "registration_tab_dashboard": "Dashboard",
   "registration_sidebar_section": "Inscriptions",
