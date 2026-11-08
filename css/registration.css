@@ -2792,6 +2792,10 @@
 .registration-page :is(.registration-main, .modal) .table .table-warning > * { background: #302817; }
 .registration-page :is(.registration-main, .modal) .table .table-info > * { background: #102f3a; }
 .registration-page :is(.registration-main, .modal) .table .btn-group .btn { min-width: 34px; min-height: 34px; padding: .3rem; }
+/* Keep the members modal compact despite the general table and button sizing. */
+#registrationMembersModal .table > :not(caption) > * > * { padding: .35rem .6rem; }
+#registrationMembersModal .btn-remove-member { width: 32px; min-height: 32px; padding: .25rem; }
+#registrationMembersAgeInfoBtn { min-height: 0; }
 .registration-page :is(.registration-main, .modal) .alert { border-radius: var(--lm-radius-md); }
 .registration-page :is(.registration-main, .modal) .alert-info { border-color: #287a91; color: #c5f5ff; background: #102f3a; }
 .registration-page :is(.registration-main, .modal) .alert-success { border-color: #267b6c; color: #d0fff0; background: #17342f; }
