@@ -11,7 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
-  <link rel="stylesheet" href="css/registration.css?v=20261108-1">
+  <link rel="stylesheet" href="css/registration.css?v=20261108-7">
 </head>
 <body class="d-flex flex-column min-vh-100 registration-page" data-bs-theme="dark">
   
@@ -148,14 +148,15 @@
 
                   <div class="registration-dashboard-finance-grid mt-4">
                     <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="total">
-                      <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-                          <div class="registration-dashboard-kpi-copy">
-                            <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_total_and_paid">Total</div>
+                      <div class="card-body registration-dashboard-total-layout">
+                        <div class="registration-dashboard-total-summary d-flex flex-column align-items-start">
+                          <div class="registration-dashboard-total-heading d-flex align-items-center gap-2">
+                            <span class="registration-dashboard-kpi-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+                            <div class="registration-dashboard-kpi-label text-nowrap" data-i18n="registration_dashboard_kpi_total_and_paid">Total</div>
                           </div>
-                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-cash-stack"></i></span>
+                          <div class="registration-dashboard-kpi-value" id="organizerDashboardTotalAmountValue">EUR 0.00</div>
                         </div>
-                        <div class="registration-dashboard-kpi-value" id="organizerDashboardTotalAmountValue">EUR 0.00</div>
+                        <dl class="registration-finance-breakdown" id="organizerDashboardTotalBreakdown" aria-live="polite"></dl>
                       </div>
                     </div>
                     <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="paid">
@@ -315,15 +316,15 @@
 
                   <div class="registration-dashboard-finance-grid mt-4">
                     <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="total">
-                      <div class="card-body">
-                        <div class="d-flex align-items-start justify-content-between gap-3 mb-3">
-                          <div class="registration-dashboard-kpi-copy">
-                            <div class="registration-dashboard-kpi-label" data-i18n="registration_dashboard_kpi_total_and_paid">Total</div>
-                            <div class="registration-dashboard-kpi-meta" id="schoolDashboardTotalAmountMeta">0 Inscripciones</div>
+                      <div class="card-body registration-dashboard-total-layout">
+                        <div class="registration-dashboard-total-summary d-flex flex-column align-items-start">
+                          <div class="registration-dashboard-total-heading d-flex align-items-center gap-2">
+                            <span class="registration-dashboard-kpi-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+                            <div class="registration-dashboard-kpi-label text-nowrap" data-i18n="registration_dashboard_kpi_total_and_paid">Total</div>
                           </div>
-                          <span class="registration-dashboard-kpi-icon"><i class="bi bi-cash-stack"></i></span>
+                          <div class="registration-dashboard-kpi-value" id="schoolDashboardTotalAmountValue">EUR 0.00</div>
                         </div>
-                        <div class="registration-dashboard-kpi-value" id="schoolDashboardTotalAmountValue">EUR 0.00</div>
+                        <dl class="registration-finance-breakdown" id="schoolDashboardTotalBreakdown" aria-live="polite"></dl>
                       </div>
                     </div>
                     <div class="card registration-dashboard-stat-card registration-dashboard-finance-card" data-finance="paid">
@@ -964,11 +965,13 @@
                             <div class="registration-dashboard-kpi-label" data-i18n="registration_payments_total_fee">Total fee</div>
                             <div class="registration-dashboard-kpi-meta" id="registrationPaymentsFeeMeta">0 Participants</div>
                             <div class="registration-dashboard-kpi-value" id="registrationPaymentsFeeValue">EUR 0.00</div>
+                            <dl class="registration-finance-breakdown" id="registrationPaymentsFeeBreakdown" aria-live="polite"></dl>
                           </div>
                           <div class="registration-payments-combined-metric">
                             <div class="registration-dashboard-kpi-label" data-i18n="registration_payments_total_registrations">Total inscripciones</div>
                             <div class="registration-dashboard-kpi-meta" id="registrationPaymentsAmountMeta">0 Registrations</div>
                             <div class="registration-dashboard-kpi-value" id="registrationPaymentsAmountValue">EUR 0.00</div>
+                            <dl class="registration-finance-breakdown" id="registrationPaymentsAmountBreakdown" aria-live="polite"></dl>
                           </div>
                         </div>
                         <span class="registration-dashboard-kpi-icon"><i class="bi bi-person-vcard"></i></span>
@@ -2442,10 +2445,10 @@
   <script src="js/common.js?v=20261018-1"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js?v=20261107-13"></script>
+  <script src="js/registration.js?v=20261108-3"></script>
   <script src="js/registration-extras.js?v=20261017-1"></script>
   <script src="js/registration-competitions.js?v=20261107-6"></script>
-  <script src="js/registration-payments.js?v=20261019-1"></script>
+  <script src="js/registration-payments.js?v=20261108-8"></script>
 
 </body></html>
 

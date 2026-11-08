@@ -688,5 +688,7 @@
   "extras_error_403": "You do not have permission for this operation.",
   "extras_error_404": "This item is no longer available.",
   "extras_error_409": "The operation conflicts with the current state. Refresh and check capacity or linked bookings.",
-  "extras_error_422": "The data failed validation. Check the form."
+  "extras_error_422": "The data failed validation. Check the form.",
+  "registration_finance_validated": "Validated",
+  "registration_finance_unvalidated": "Unvalidated"
 }

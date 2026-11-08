@@ -686,5 +686,7 @@
   "extras_error_403": "Non hai il permesso per questa operazione.",
   "extras_error_404": "Questo elemento non è più disponibile.",
   "extras_error_409": "L’operazione è in conflitto con lo stato attuale. Aggiorna e controlla la capienza o le prenotazioni collegate.",
-  "extras_error_422": "I dati non superano la convalida. Controlla il modulo."
+  "extras_error_422": "I dati non superano la convalida. Controlla il modulo.",
+  "registration_finance_validated": "Validate",
+  "registration_finance_unvalidated": "Non validate"
 }

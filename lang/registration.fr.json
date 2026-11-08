@@ -686,5 +686,7 @@
   "extras_error_403": "Vous n’avez pas l’autorisation pour cette opération.",
   "extras_error_404": "Cet élément n’est plus disponible.",
   "extras_error_409": "L’opération est incompatible avec l’état actuel. Actualisez et vérifiez la capacité ou les réservations liées.",
-  "extras_error_422": "Les données ne passent pas la validation. Vérifiez le formulaire."
+  "extras_error_422": "Les données ne passent pas la validation. Vérifiez le formulaire.",
+  "registration_finance_validated": "Validées",
+  "registration_finance_unvalidated": "Non validées"
 }

@@ -307,14 +307,13 @@ function initPaymentsTab(role) {
 
   const buildMetrics = () => {
     const registrations = getFilteredRegistrations();
-    const validatedRegistrations = registrations.filter((registration) => isRegistrationValidated(registration));
     const categoryById = getCategoryById();
     const finance = buildRegistrationFinanceMetrics(registrations, {
       categoryById,
-      validatedOnly: true,
       useStoredTotalAmount: true
     });
-    const feeMetrics = buildRegistrationFeeMetrics(validatedRegistrations, categoryById, {
+    const feeMetrics = buildRegistrationFeeMetrics(registrations, categoryById, {
+      validatedOnly: false,
       schoolId: isOrganizer ? getSelectedSchoolFilterId() : getUserFromToken()?.id
     });
     const totalFee = feeMetrics.totalFee;
@@ -333,14 +332,33 @@ function initPaymentsTab(role) {
     const summaryAccountId = getSelectedSchoolFilter() ? (getSelectedSchoolFilterId() || '__unresolved__') : null;
     const extrasSummary = window.RegistrationExtras?.getFinanceSummary(summaryAccountId);
     const extrasEnabled = window.RegistrationExtras?.enabled() === true;
-    const totalAmount = extrasEnabled ? (extrasSummary?.total_amount ?? null) : totalFee + finance.totalAmount;
+    const validatedFeeMetrics = buildRegistrationFeeMetrics(registrations, categoryById, {
+      schoolId: isOrganizer ? getSelectedSchoolFilterId() : getUserFromToken()?.id
+    });
+    const validatedFee = validatedFeeMetrics.totalFee;
+    const unvalidatedIncrement = finance.unvalidatedAmount + totalFee - validatedFee;
+    const totalAmount = extrasEnabled
+      ? (extrasSummary ? extrasSummary.total_amount + unvalidatedIncrement : null)
+      : totalFee + finance.totalAmount;
+    const registrationsAmount = extrasEnabled
+      ? (extrasSummary ? extrasSummary.registrations_amount + unvalidatedIncrement : null)
+      : finance.totalAmount;
+    const unvalidatedAmount = extrasEnabled ? unvalidatedIncrement : finance.unvalidatedAmount;
     const pendingAmount = totalAmount == null ? null : totalAmount - totalPaidAmount;
 
     return {
       finance,
+      registrationsAmount,
+      unvalidatedAmount,
       extrasSummary,
       extrasEnabled,
       feeMetrics,
+      feeBreakdown: {
+        validatedAmount: validatedFee,
+        unvalidatedAmount: totalFee - validatedFee,
+        validatedRegistrationsCount: validatedFeeMetrics.units,
+        unvalidatedRegistrationsCount: feeMetrics.units - validatedFeeMetrics.units
+      },
       totalFee,
       totalAmount,
       totalPaidAmount,
@@ -359,6 +377,7 @@ function initPaymentsTab(role) {
     if (summaryElements.feeValue) {
       summaryElements.feeValue.textContent = formatRegistrationCurrency(metrics.totalFee);
     }
+    renderRegistrationFinanceBreakdown('registrationPaymentsFeeBreakdown', metrics.feeBreakdown);
     if (summaryElements.feeMeta) {
       const unitLabels = {
         PAR: t('registration_dashboard_kpi_participants', 'Participants'),
@@ -368,9 +387,13 @@ function initPaymentsTab(role) {
       summaryElements.feeMeta.textContent = `${formatInteger(metrics.feeMetrics.units)} ${unitLabels[metrics.feeMetrics.type] || ''}`;
     }
     if (summaryElements.amountValue) {
-      summaryElements.amountValue.textContent = metrics.extrasEnabled && !metrics.extrasSummary ? '—'
-        : formatRegistrationCurrency(metrics.extrasSummary?.registrations_amount ?? metrics.finance.totalAmount);
+      summaryElements.amountValue.textContent = metrics.registrationsAmount == null ? '—' : formatRegistrationCurrency(metrics.registrationsAmount);
     }
+    renderRegistrationFinanceBreakdown('registrationPaymentsAmountBreakdown', {
+      ...metrics.finance,
+      validatedAmount: metrics.registrationsAmount == null ? null : metrics.registrationsAmount - metrics.unvalidatedAmount,
+      unvalidatedAmount: metrics.unvalidatedAmount
+    });
     if (summaryElements.amountMeta) {
       summaryElements.amountMeta.textContent = `${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }

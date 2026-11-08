@@ -686,5 +686,7 @@
   "extras_error_403": "Não tem permissão para esta operação.",
   "extras_error_404": "Este elemento já não está disponível.",
   "extras_error_409": "A operação entra em conflito com o estado atual. Atualize e verifique a capacidade ou as reservas associadas.",
-  "extras_error_422": "Os dados não cumprem as validações. Verifique o formulário."
+  "extras_error_422": "Os dados não cumprem as validações. Verifique o formulário.",
+  "registration_finance_validated": "Validadas",
+  "registration_finance_unvalidated": "Por validar"
 }

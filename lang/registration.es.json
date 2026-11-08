@@ -688,5 +688,7 @@
   "extras_error_403": "No tienes permiso para esta operación.",
   "extras_error_404": "El elemento ya no está disponible.",
   "extras_error_409": "La operación entra en conflicto con el estado actual. Actualiza los datos y revisa las plazas o reservas asociadas.",
-  "extras_error_422": "Los datos no cumplen las validaciones. Revisa el formulario."
+  "extras_error_422": "Los datos no cumplen las validaciones. Revisa el formulario.",
+  "registration_finance_validated": "Validadas",
+  "registration_finance_unvalidated": "Sin validar"
 }

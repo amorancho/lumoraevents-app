@@ -107,7 +107,7 @@ test('legacy events keep PAR when the API omits the new type; explicit zero-cost
 });
 
 test('Dashboard totals and outstanding balance use the same fee rules without changing stored registration amounts', () => {
-  for (const [type, fee] of [['NON', 0], ['PAR', 4000], ['REG', 3000], ['SCH', 2000]]) {
+  for (const [type, fee] of [['NON', 0], ['PAR', 6000], ['REG', 5000], ['SCH', 4000]]) {
     const { context, state } = harness(type);
     state.paymentDocuments = [
       { payment_type: 'PAY', status: 'VAL', amount: 2500 },
@@ -115,19 +115,54 @@ test('Dashboard totals and outstanding balance use the same fee rules without ch
       { payment_type: 'INV', status: 'VAL', amount: 9000 }
     ];
     const finance = context.buildRegistrationDashboardFinanceMetrics(registrations, categories);
-    assert.equal(finance.totalAmount, 10000 + fee, type);
-    assert.equal(finance.totalRegistrationsCount, 4, type);
+    assert.equal(finance.totalAmount, 28000 + fee, type);
+    assert.equal(finance.totalRegistrationsCount, 6, type);
     assert.equal(finance.paidAmount, 2500, type);
-    assert.equal(finance.pendingAmount, 7500 + fee, type);
+    assert.equal(finance.pendingAmount, 25500 + fee, type);
   }
 });
 
-test('authoritative extras API totals are preserved for every fee type', () => {
-  for (const type of ['NON', 'PAR', 'REG', 'SCH']) {
+test('extras API totals retain extras and discounts while adding unvalidated registrations and incremental fees', () => {
+  for (const [type, increment] of [['NON', 18000], ['PAR', 20000], ['REG', 20000], ['SCH', 20000]]) {
     const { context } = harness(type);
     context.window.RegistrationExtras = { enabled: () => true, getFinanceSummary: () => ({ total_amount: 12345 }) };
-    assert.equal(context.buildRegistrationDashboardFinanceMetrics(registrations, categories).totalAmount, 12345);
+    assert.equal(context.buildRegistrationDashboardFinanceMetrics(registrations, categories).totalAmount, 12345 + increment);
     context.window.RegistrationExtras.getFinanceSummary = () => null;
     assert.equal(context.buildRegistrationDashboardFinanceMetrics(registrations, categories).totalAmount, null);
+  }
+});
+
+test('financial totals exclude DEL, normalize statuses and split VAL from CRE, PEN and REJ', () => {
+  const { context } = harness('NON');
+  const rows = [
+    registration(1, 4, 1, [11], 1000, ' val '),
+    registration(2, 4, 1, [12], 2000, 'CRE'),
+    registration(3, 4, 1, [13], 3000, ' pen '),
+    registration(4, 4, 1, [14], 4000, 'REJ'),
+    registration(5, 4, 1, [15], 99000, ' del ')
+  ];
+  const metrics = context.buildRegistrationDashboardFinanceMetrics(rows, categories);
+  assert.equal(metrics.totalAmount, 10000);
+  assert.equal(metrics.validatedAmount, 1000);
+  assert.equal(metrics.unvalidatedAmount, 9000);
+  assert.equal(metrics.validatedRegistrationsCount, 1);
+  assert.equal(metrics.unvalidatedRegistrationsCount, 3);
+  assert.equal(metrics.totalRegistrationsCount, 4);
+});
+
+test('fees for all active statuses deduplicate shared participants and schools across the split', () => {
+  const rows = [
+    registration(1, 4, 1, [11], 1000),
+    registration(2, 4, 1, [11, 12], 2000, 'CRE'),
+    registration(3, 5, 2, [13], 3000, 'REJ'),
+    registration(4, 6, 1, [14], 99000, 'DEL')
+  ];
+  for (const [type, totalFee, validatedFee] of [['NON', 0, 0], ['PAR', 2000, 1000], ['REG', 2000, 1000], ['SCH', 2000, 1000]]) {
+    const { context } = harness(type);
+    const metrics = context.buildRegistrationDashboardFinanceMetrics(rows, categories);
+    assert.equal(metrics.totalAmount, 6000 + totalFee, type);
+    assert.equal(metrics.validatedAmount, 1000 + validatedFee, type);
+    assert.equal(metrics.unvalidatedAmount, 5000 + totalFee - validatedFee, type);
+    assert.equal(metrics.validatedAmount + metrics.unvalidatedAmount, metrics.totalAmount, type);
   }
 });
