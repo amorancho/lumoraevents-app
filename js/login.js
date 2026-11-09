@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function initLoginPasswordRecovery(eventCode) {
-  const supportedEvents = ['onstage27', 'tedvision27', 'givemehype27', 'costaflow27'];
+  const supportedEvents = ['onstage27', 'tedvision27', 'givemehype27', 'costaflow27', 'iadgrandprix27', 'fitkidsandacrodance27'];
   if (!supportedEvents.includes(String(eventCode || '').toLowerCase())) return;
   const link = document.getElementById('forgotPasswordLink');
   const form = document.getElementById('forgotPasswordForm');
