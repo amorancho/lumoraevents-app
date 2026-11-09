@@ -1063,11 +1063,12 @@
                           <div class="registration-payments-filter-clear col-12 col-md-6 col-lg-2">
                             <button type="button" class="btn btn-outline-secondary w-100" id="registrationPaymentsFilterClear" data-i18n="clear_filters">Limpiar</button>
                           </div>
-                          <div class="registration-payments-export col-12 col-md-auto d-flex align-items-end">
+                          <div class="registration-payments-export col-12 col-md-auto d-flex align-items-end gap-2">
                             <button type="button" class="btn btn-outline-success btn-sm text-nowrap" id="registrationPaymentsCopyTsvBtn" aria-label="Exportar" title="Exportar" data-i18n-aria-label="export" data-i18n-title="export">
                               <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
                               <span class="registration-payments-export-label ms-2" data-i18n="export">Exportar</span>
                             </button>
+                            <button type="button" class="btn btn-primary btn-sm text-nowrap d-none" id="registrationPaymentsOrganizerAddBtn" data-i18n="registration_payments_add">Añadir pago</button>
                           </div>
                         </form>
                         <div class="registration-payments-count d-flex align-items-center justify-content-lg-end gap-2 d-none" id="registrationPaymentsOrganizerCountWrap">
@@ -1097,6 +1098,7 @@
                             <tr>
                               <th id="registrationPaymentsSchoolHeader" data-i18n="org_registrations_table_school">Escuela</th>
                               <th data-i18n="registration_payment_status">Estado de pago</th>
+                              <th data-i18n="registration_payment_origin">Origen</th>
                               <th data-i18n="registration_competitions_reject_reason_label">Motivo rechazo</th>
                               <th class="text-center" data-i18n="registration_competitions_table_total_amount">Importe total</th>
                               <th class="text-center" data-i18n="registration_payments_created_at">Fecha creación</th>
@@ -1968,8 +1970,10 @@
                   type="file"
                   class="form-control"
                   id="registrationPaymentsCreateFile"
+                  aria-describedby="registrationPaymentsCreateFileOptional"
                   accept="application/pdf,.pdf"
                   required>
+                <div class="form-text d-none" id="registrationPaymentsCreateFileOptional" data-i18n="registration_payment_file_optional">El archivo es opcional; puedes añadir el pago sin adjuntar un documento.</div>
                 <div class="form-text" data-i18n="registration_payment_formats">Formato permitido: PDF</div>
                 <div class="invalid-feedback" data-i18n="registration_payment_invalid_file">
                   Selecciona un archivo PDF vÃ¡lido.

@@ -52,6 +52,7 @@ function initPaymentsTab(role) {
     copyTsvBtn: document.getElementById('registrationPaymentsCopyTsvBtn'),
     copyTsvBtnSchool: document.getElementById('registrationPaymentsCopyTsvBtnSchool'),
     addBtn: document.getElementById('registrationPaymentsAddBtn'),
+    organizerAddBtn: document.getElementById('registrationPaymentsOrganizerAddBtn'),
     organizerHeader: document.getElementById('registrationPaymentsOrganizerHeader'),
     organizerCountWrap: document.getElementById('registrationPaymentsOrganizerCountWrap'),
     schoolActions: document.getElementById('registrationPaymentsSchoolActions'),
@@ -127,6 +128,7 @@ function initPaymentsTab(role) {
   if (paymentElements.addBtn) {
     paymentElements.addBtn.classList.toggle('d-none', isOrganizer);
   }
+  paymentElements.organizerAddBtn?.classList.toggle('d-none', !isOrganizer);
   if (paymentElements.organizerHeader) {
     paymentElements.organizerHeader.classList.toggle('d-none', !isOrganizer);
   }
@@ -447,7 +449,7 @@ function initPaymentsTab(role) {
       removeConfirm: t('registration_payment_remove_confirm', 'Are you sure you want to delete the payment receipt?'),
       removeTitle: t('registration_payment_remove', 'Delete receipt'),
       removeSuccess: t('payment_removed', 'Payment removed successfully.'),
-      schoolRequired: ''
+      schoolRequired: t('registration_invoices_school_required', 'Select a school.')
     };
   };
 
@@ -976,7 +978,19 @@ function initPaymentsTab(role) {
     return button;
   };
 
-  const getDocumentActionOptions = (documentType) => {
+  const isOrganizerPayment = (payment) => Number(payment?.by_organizer) === 1;
+  const isSchoolPaymentLocked = (payment) => !isOrganizer && isOrganizerPayment(payment);
+  const createOrganizerPaymentBadge = () => {
+    const badge = document.createElement('span');
+    badge.className = 'badge bg-info text-dark';
+    badge.textContent = t('registration_payment_by_organizer', 'ORGANIZADOR');
+    return badge;
+  };
+
+  const getDocumentActionOptions = (documentType, documentRow) => {
+    if (documentType === 'PAY' && isSchoolPaymentLocked(documentRow)) {
+      return [];
+    }
     if (documentType === 'INV') {
       const actions = [{
         action: 'view',
@@ -1092,6 +1106,9 @@ function initPaymentsTab(role) {
     dateText.textContent = formatPaymentCreatedAt(documentRow.created_at);
     date.appendChild(dateText);
     identityCopy.append(title, date);
+    if (!isInvoice && isOrganizerPayment(documentRow)) {
+      identityCopy.appendChild(createOrganizerPaymentBadge());
+    }
     identity.append(icon, identityCopy);
     header.appendChild(identity);
 
@@ -1132,7 +1149,7 @@ function initPaymentsTab(role) {
       card.appendChild(rejection);
     }
 
-    const actionOptions = getDocumentActionOptions(documentType);
+    const actionOptions = getDocumentActionOptions(documentType, documentRow);
     const actions = document.createElement('div');
     actions.className = 'registration-document-mobile-card__actions';
     if (actionOptions.length === 1) {
@@ -1141,7 +1158,9 @@ function initPaymentsTab(role) {
       actions.classList.add('registration-document-mobile-card__actions--four');
     }
     actionOptions.forEach((options) => actions.appendChild(createMobileDocumentAction(options)));
-    card.appendChild(actions);
+    if (actionOptions.length) {
+      card.appendChild(actions);
+    }
     return card;
   };
 
@@ -1182,6 +1201,14 @@ function initPaymentsTab(role) {
       statusCell.appendChild(statusBadge);
       row.appendChild(statusCell);
 
+      const originCell = document.createElement('td');
+      if (isOrganizerPayment(payment)) {
+        originCell.appendChild(createOrganizerPaymentBadge());
+      } else {
+        originCell.textContent = '-';
+      }
+      row.appendChild(originCell);
+
       const rejectReasonCell = document.createElement('td');
       rejectReasonCell.className = 'text-break';
       rejectReasonCell.textContent = `${payment?.reject_reason ?? ''}`.trim() || '-';
@@ -1205,51 +1232,9 @@ function initPaymentsTab(role) {
       actionGroup.className = 'btn-group';
       actionGroup.setAttribute('role', 'group');
 
-      if (isOrganizer) {
-        actionGroup.appendChild(createRowActionButton({
-          action: 'edit-amount',
-          titleKey: 'registration_payments_edit_amount',
-          titleFallback: 'Edit amount',
-          className: 'btn-outline-secondary',
-          icon: 'bi-pencil-square'
-        }));
-        actionGroup.appendChild(createRowActionButton({
-          action: 'validate',
-          titleKey: 'registration_payment_validate',
-          titleFallback: 'Validate payment',
-          className: 'btn-outline-success',
-          icon: 'bi-check2-circle'
-        }));
-        actionGroup.appendChild(createRowActionButton({
-          action: 'reject',
-          titleKey: 'org_registrations_action_reject',
-          titleFallback: 'Reject',
-          className: 'btn-outline-danger',
-          icon: 'bi-x-circle'
-        }));
-      }
-
-      actionGroup.appendChild(createRowActionButton({
-        action: 'view',
-        titleKey: 'registration_payment_view_receipt',
-        titleFallback: 'View receipt',
-        className: 'btn-outline-primary',
-        icon: 'bi-eye'
-      }));
-      actionGroup.appendChild(createRowActionButton({
-        action: 'download',
-        titleKey: 'registration_payment_download',
-        titleFallback: 'Download receipt',
-        className: 'btn-outline-dark',
-        icon: 'bi-download'
-      }));
-      actionGroup.appendChild(createRowActionButton({
-        action: 'delete',
-        titleKey: 'registration_payment_remove',
-        titleFallback: 'Delete receipt',
-        className: 'btn-outline-danger',
-        icon: 'bi-trash'
-      }));
+      getDocumentActionOptions('PAY', payment).forEach((options) => {
+        actionGroup.appendChild(createRowActionButton(options));
+      });
 
       actionsCell.appendChild(actionGroup);
       row.appendChild(actionsCell);
@@ -1552,7 +1537,7 @@ function initPaymentsTab(role) {
     if (createSaveBtn && !createSaveBtn.disabled) {
       createSaveBtn.textContent = messages.addAction;
     }
-    if (activeCreateDocumentType === 'INV' && createSchoolSelectEl?.options?.length) {
+    if (isOrganizer && createSchoolSelectEl?.options?.length) {
       createSchoolSelectEl.options[0].textContent = messages.schoolRequired;
     }
   };
@@ -1561,7 +1546,15 @@ function initPaymentsTab(role) {
     activeCreateDocumentType = documentType;
     refreshCreateModalLabels();
 
-    const showSchoolField = documentType === 'INV' && isOrganizer;
+    const showSchoolField = isOrganizer;
+    if (createFileEl) {
+      createFileEl.required = !(isOrganizer && documentType === 'PAY');
+    }
+    document.getElementById('registrationPaymentsCreateFileOptional')
+      ?.classList.toggle('d-none', !(isOrganizer && documentType === 'PAY'));
+    if (createSchoolSelectEl) {
+      createSchoolSelectEl.required = showSchoolField;
+    }
     if (createSchoolFieldEl) {
       createSchoolFieldEl.classList.toggle('d-none', !showSchoolField);
     }
@@ -1577,7 +1570,7 @@ function initPaymentsTab(role) {
   };
 
   const getCreatePaymentContext = async (documentType) => {
-    if (documentType === 'INV') {
+    if (isOrganizer) {
       const eventIdValue = getEvent()?.id;
       if (!eventIdValue) {
         throw new Error(t('event_not_found', 'Event not found.'));
@@ -1586,7 +1579,7 @@ function initPaymentsTab(role) {
       const schoolIdValue = `${createSchoolSelectEl?.value ?? ''}`.trim();
       if (!schoolIdValue) {
         createSchoolSelectEl?.classList.add('is-invalid');
-        throw new Error(getDocumentMessages('INV').schoolRequired);
+        throw new Error(getDocumentMessages(documentType).schoolRequired);
       }
 
       return {
@@ -1632,7 +1625,8 @@ function initPaymentsTab(role) {
 
     const amount = parseAmountToCents(createAmountEl.value);
     const file = createFileEl.files?.[0] || null;
-    const requiresSchool = activeCreateDocumentType === 'INV' && isOrganizer;
+    const requiresSchool = isOrganizer;
+    const isOrganizerCreatedPayment = isOrganizer && activeCreateDocumentType === 'PAY';
     const selectedSchoolId = `${createSchoolSelectEl?.value ?? ''}`.trim();
 
     let hasErrors = false;
@@ -1640,7 +1634,7 @@ function initPaymentsTab(role) {
       createAmountEl.classList.add('is-invalid');
       hasErrors = true;
     }
-    if (!isPdfFile(file)) {
+    if ((file || !isOrganizerCreatedPayment) && !isPdfFile(file)) {
       createFileEl.classList.add('is-invalid');
       hasErrors = true;
     }
@@ -1660,7 +1654,12 @@ function initPaymentsTab(role) {
     formData.append('school_id', `${schoolId}`);
     formData.append('amount', `${amount}`);
     formData.append('payment_type', activeCreateDocumentType);
-    formData.append('payment', file);
+    if (file) {
+      formData.append('payment', file);
+    }
+    if (isOrganizerCreatedPayment) {
+      formData.append('by_organizer', '1');
+    }
 
     createSaveBtn.disabled = true;
     createSaveBtn.textContent = t('saving', 'Saving...');
@@ -1896,16 +1895,20 @@ function initPaymentsTab(role) {
     }
   };
 
-  paymentElements.addBtn?.addEventListener('click', async (event) => {
+  const openCreatePaymentModal = async (event) => {
     event.preventDefault();
     try {
-      await getCreatePaymentContext('PAY');
+      if (!isOrganizer) {
+        await getCreatePaymentContext('PAY');
+      }
       await prepareCreateModal('PAY');
       createModal?.show();
     } catch (error) {
       showMessageModal(error.message || getDocumentMessages('PAY').loadError, t('error_title', 'Error'));
     }
-  });
+  };
+  paymentElements.addBtn?.addEventListener('click', openCreatePaymentModal);
+  paymentElements.organizerAddBtn?.addEventListener('click', openCreatePaymentModal);
 
   invoiceElements.addBtn?.addEventListener('click', async (event) => {
     event.preventDefault();
@@ -1986,6 +1989,10 @@ function initPaymentsTab(role) {
     const row = actionButton.closest('[data-id]');
     const paymentId = row?.dataset?.id;
     const action = actionButton.dataset.paymentAction;
+    const selectedPayment = paymentRows.find((item) => String(item?.id) === String(paymentId));
+    if (!selectedPayment || isSchoolPaymentLocked(selectedPayment)) {
+      return;
+    }
 
     if (action === 'edit-amount' && paymentId) {
       const payment = paymentRows.find((item) => `${item?.id}` === `${paymentId}`);
