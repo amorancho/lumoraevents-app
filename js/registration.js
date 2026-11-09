@@ -6689,6 +6689,8 @@ function initRegistrationCategoriesTab() {
   const maxOutOfRangeTooltip = elements.maxOutOfRangeInfo
     ? bootstrap.Tooltip.getOrCreateInstance(elements.maxOutOfRangeInfo)
     : null;
+  let categoryOperationPending = false;
+  let categoryModalSuspended = false;
   let categoryToDelete = null;
   let categoryForPrices = null;
   let categoryPrices = [];
@@ -6903,6 +6905,54 @@ function initRegistrationCategoriesTab() {
     }
   };
 
+  // Uses the authenticated fetch wrapper from common.js; never cache this check.
+  const hasCategoryRegistrations = async (categoryId, newBasePrice) => {
+    const params = new URLSearchParams();
+    // The base-price field is optional; null cannot be sent as a numeric query.
+    // In that case use the general check so an existing registration still warns.
+    if (newBasePrice !== undefined && newBasePrice !== null) params.set('registration_price', String(newBasePrice));
+    const query = params.toString();
+    const res = await fetch(`${API_BASE_URL}/api/registrations/categories/${encodeURIComponent(categoryId)}/has-registrations${query ? `?${query}` : ''}`, { cache: 'no-store' });
+    const fallback = t('registration_categories_check_error', 'Could not check associated registrations. Please try again.');
+    if (!res.ok) throw new Error(await getCategoryPriceApiError(res, fallback));
+    const data = await res.json();
+    if (typeof data?.has_registrations !== 'boolean') throw new Error(fallback);
+    return data.has_registrations;
+  };
+
+  const confirmCategoryRecalculation = async (categoryIds, sourceModalEl, newBasePrice) => {
+    const results = await Promise.all([...new Set(categoryIds.map(String))].map(id => hasCategoryRegistrations(id, newBasePrice)));
+    if (!results.some(Boolean)) return true;
+    const warningEl = document.getElementById('registrationCategoryRecalculationModal');
+    const confirmBtn = document.getElementById('confirmRegistrationCategoryRecalculationBtn');
+    if (!warningEl || !confirmBtn) throw new Error(t('registration_categories_check_error', 'Could not check associated registrations. Please try again.'));
+    const warningModal = bootstrap.Modal.getOrCreateInstance(warningEl);
+    const sourceModal = bootstrap.Modal.getInstance(sourceModalEl);
+    const restoreSource = sourceModalEl.classList.contains('show');
+    const transition = (el, instance, action, eventName) => new Promise(resolve => {
+      el.addEventListener(eventName, resolve, { once: true });
+      instance[action]();
+    });
+    categoryModalSuspended = true;
+    try {
+      if (restoreSource) await transition(sourceModalEl, sourceModal, 'hide', 'hidden.bs.modal');
+      const confirmed = await new Promise(resolve => {
+        let accepted = false;
+        const onConfirm = () => { accepted = true; warningModal.hide(); };
+        warningEl.addEventListener('hidden.bs.modal', () => {
+          confirmBtn.removeEventListener('click', onConfirm);
+          resolve(accepted);
+        }, { once: true });
+        confirmBtn.addEventListener('click', onConfirm);
+        warningModal.show();
+      });
+      if (restoreSource) await transition(sourceModalEl, sourceModal, 'show', 'shown.bs.modal');
+      return confirmed;
+    } finally {
+      categoryModalSuspended = false;
+    }
+  };
+
   const resetCategoryPriceForm = () => {
     const priceElements = getCategoryPricesElements();
     priceElements.form?.reset();
@@ -6960,6 +7010,7 @@ function initRegistrationCategoriesTab() {
 
   const saveCategoryPrice = async (event) => {
     event.preventDefault();
+    if (categoryOperationPending) return;
     const priceElements = getCategoryPricesElements();
     priceElements.endDate?.setCustomValidity('');
     if (!categoryForPrices?.id || !priceElements.form?.checkValidity()) {
@@ -6975,8 +7026,13 @@ function initRegistrationCategoriesTab() {
     const priceId = priceElements.id?.value;
     const payload = { event_id: getEvent()?.id, reg_category_id: categoryForPrices.id, start_date: priceElements.startDate.value, end_date: priceElements.endDate.value, price: parseCurrencyValueToCents(priceElements.price.value) };
     if (!payload.event_id) delete payload.event_id;
+    categoryOperationPending = true;
     if (priceElements.saveBtn) priceElements.saveBtn.disabled = true;
     try {
+      const existingPrice = categoryPrices.find(price => String(price.id) === String(priceId));
+      const categoryIds = [payload.reg_category_id];
+      if (existingPrice?.reg_category_id != null) categoryIds.push(existingPrice.reg_category_id);
+      if (!await confirmCategoryRecalculation(categoryIds, pricesModalEl)) return;
       const res = await fetch(`${API_BASE_URL}/api/registrations/category-prices${priceId ? `/${priceId}` : ''}`, { method: priceId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       if (!res.ok) {
         throw new Error(await getCategoryPriceApiError(res, t('registration_category_prices_save_error', 'Error saving category price.')));
@@ -6987,13 +7043,18 @@ function initRegistrationCategoriesTab() {
     } catch (err) {
       showMessageModal(err.message || t('registration_category_prices_save_error', 'Error saving category price.'), t('error_title', 'Error'));
     } finally {
+      categoryOperationPending = false;
       if (priceElements.saveBtn) priceElements.saveBtn.disabled = false;
     }
   };
 
   const deleteCategoryPrice = async (priceId) => {
-    if (!priceId || !window.confirm(t('registration_category_prices_delete_question', 'Delete this category price?'))) return;
+    if (categoryOperationPending || !priceId || !window.confirm(t('registration_category_prices_delete_question', 'Delete this category price?'))) return;
+    const price = categoryPrices.find(item => String(item.id) === String(priceId));
+    if (!price) return;
+    categoryOperationPending = true;
     try {
+      if (!await confirmCategoryRecalculation([price.reg_category_id ?? categoryForPrices.id], pricesModalEl)) return;
       const res = await fetch(`${API_BASE_URL}/api/registrations/category-prices/${priceId}`, { method: 'DELETE' });
       if (!res.ok) {
         throw new Error(await getCategoryPriceApiError(res, t('registration_category_prices_delete_error', 'Error deleting category price.')));
@@ -7002,6 +7063,8 @@ function initRegistrationCategoriesTab() {
       await loadCategoryPrices();
     } catch (err) {
       showMessageModal(err.message || t('registration_category_prices_delete_error', 'Error deleting category price.'), t('error_title', 'Error'));
+    } finally {
+      categoryOperationPending = false;
     }
   };
 
@@ -7403,7 +7466,7 @@ function initRegistrationCategoriesTab() {
   };
 
   const saveCategory = async () => {
-    if (!form) return;
+    if (!form || categoryOperationPending) return;
     if (!validateCategoryForm()) {
       return;
     }
@@ -7412,6 +7475,7 @@ function initRegistrationCategoriesTab() {
     normalizeDurationFieldDisplay(elements.musicMinDuration);
     normalizeDurationFieldDisplay(elements.musicMaxDuration);
 
+    categoryOperationPending = true;
     if (elements.saveBtn) {
       elements.saveBtn.disabled = true;
     }
@@ -7451,6 +7515,7 @@ function initRegistrationCategoriesTab() {
     const method = isEdit ? 'PUT' : 'POST';
 
     try {
+      if (isEdit && categoryId && !await confirmCategoryRecalculation([categoryId], modalEl, payload.registration_price)) return;
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -7477,6 +7542,7 @@ function initRegistrationCategoriesTab() {
     } catch (err) {
       showMessageModal(err.message || t('registration_categories_save_error', 'Error saving category.'), t('error_title', 'Error'));
     } finally {
+      categoryOperationPending = false;
       if (elements.saveBtn) {
         elements.saveBtn.disabled = false;
         elements.saveBtn.textContent = originalText;
@@ -7485,13 +7551,15 @@ function initRegistrationCategoriesTab() {
   };
 
   const deleteCategory = async () => {
-    if (!categoryToDelete) return;
+    if (!categoryToDelete || categoryOperationPending) return;
+    categoryOperationPending = true;
 
     if (elements.confirmDeleteBtn) {
       elements.confirmDeleteBtn.disabled = true;
     }
 
     try {
+      if (!await confirmCategoryRecalculation([categoryToDelete.id], deleteModalEl)) return;
       const payload = {
         event_id: getEvent()?.id
       };
@@ -7516,6 +7584,7 @@ function initRegistrationCategoriesTab() {
         throw new Error(errorMessage);
       }
 
+      categoryToDelete = null;
       deleteModal.hide();
       await fetchRegistrationCategories({ force: true });
       notifyRegistrationConfigUpdate();
@@ -7523,10 +7592,10 @@ function initRegistrationCategoriesTab() {
     } catch (err) {
       showMessageModal(err.message || t('registration_categories_delete_error', 'Error deleting category.'), t('error_title', 'Error'));
     } finally {
+      categoryOperationPending = false;
       if (elements.confirmDeleteBtn) {
         elements.confirmDeleteBtn.disabled = false;
       }
-      categoryToDelete = null;
     }
   };
 
@@ -7596,6 +7665,7 @@ function initRegistrationCategoriesTab() {
   });
 
   pricesModalEl?.addEventListener('hidden.bs.modal', () => {
+    if (categoryModalSuspended) return;
     const shouldReloadCategories = categoryPricesChanged;
     categoryForPrices = null;
     categoryPrices = [];
@@ -7607,6 +7677,7 @@ function initRegistrationCategoriesTab() {
   });
 
   modalEl.addEventListener('hidden.bs.modal', () => {
+    if (categoryModalSuspended) return;
     maxOutOfRangeTooltip?.hide();
     if (!form) return;
     form.classList.remove('was-validated');

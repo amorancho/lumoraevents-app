@@ -39,3 +39,4 @@ Los endpoints usados parten de `/api/extras`:
 El resumen global de organización agrega los resúmenes individuales, con un máximo de cuatro peticiones simultáneas, porque el contrato suministrado no incluye un endpoint de resumen global. Un fallo de resumen se muestra con opción de reintento y deja el total y el saldo como no disponibles.
 
 Las respuestas de servidor están simuladas: la validación contra una API real y la revisión visual en móvil y escritorio deben realizarse en un entorno con evento y credenciales de prueba.
+`registration-category-confirmation.test.cjs` comprueba las consultas previas de categorías y precios, la confirmación y cancelación, los errores y reintentos, los importes en céntimos y el bloqueo de envíos duplicados. Se ejecuta con `node --test tests/registration-category-confirmation.test.cjs`; usa API y eventos de modal simulados, sin renderizar ni generar capturas.

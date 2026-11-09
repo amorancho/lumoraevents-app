@@ -687,5 +687,10 @@
   "extras_error_409": "L’operazione è in conflitto con lo stato attuale. Aggiorna e controlla la capienza o le prenotazioni collegate.",
   "extras_error_422": "I dati non superano la convalida. Controlla il modulo.",
   "registration_finance_validated": "Validate",
-  "registration_finance_unvalidated": "Non validate"
+  "registration_finance_unvalidated": "Non validate",
+  "registration_categories_recalculation_title": "Attenzione: iscrizioni associate",
+  "registration_categories_recalculation_message": "Questa categoria ha iscrizioni associate. Se continui, i loro prezzi verranno ricalcolati. Vuoi continuare?",
+  "registration_categories_recalculation_continue": "Continua e ricalcola",
+  "registration_categories_check_error": "Impossibile verificare le iscrizioni associate. Riprova.",
+  "registration_competitions_member_price_pending": "Da calcolare"
 }

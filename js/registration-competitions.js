@@ -871,7 +871,9 @@
       if (showMemberPrice) {
         const priceCell = document.createElement('td');
         priceCell.className = 'text-end text-nowrap';
-        priceCell.textContent = formatCurrencyDisplay(member.price);
+        priceCell.textContent = member.pricePendingCalculation
+          ? t('registration_competitions_member_price_pending', 'Pend. Calcular')
+          : formatCurrencyDisplay(member.price);
         row.appendChild(priceCell);
       }
 
@@ -1824,7 +1826,7 @@
       return;
     }
 
-    selectedMembers.push(participant);
+    selectedMembers.push({ ...participant, pricePendingCalculation: true });
     renderMembersTable();
     refreshParticipantSelect();
   };

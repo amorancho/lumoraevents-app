@@ -689,5 +689,10 @@
   "extras_error_409": "La operación entra en conflicto con el estado actual. Actualiza los datos y revisa las plazas o reservas asociadas.",
   "extras_error_422": "Los datos no cumplen las validaciones. Revisa el formulario.",
   "registration_finance_validated": "Validadas",
-  "registration_finance_unvalidated": "Sin validar"
+  "registration_finance_unvalidated": "Sin validar",
+  "registration_categories_recalculation_title": "Atención: inscripciones asociadas",
+  "registration_categories_recalculation_message": "Esta categoría tiene inscripciones asociadas. Si continúas, se recalcularán sus precios. ¿Quieres continuar?",
+  "registration_categories_recalculation_continue": "Continuar y recalcular",
+  "registration_categories_check_error": "No se pudieron comprobar las inscripciones asociadas. Vuelve a intentarlo.",
+  "registration_competitions_member_price_pending": "Pend. Calcular"
 }

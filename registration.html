@@ -1618,6 +1618,24 @@
     </div>
   </div>
 
+  <div class="modal fade" id="registrationCategoryRecalculationModal" tabindex="-1" aria-hidden="true" aria-labelledby="registrationCategoryRecalculationTitle" aria-describedby="registrationCategoryRecalculationMessage">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger">
+          <h5 class="modal-title" id="registrationCategoryRecalculationTitle"><i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true"></i><span data-i18n="registration_categories_recalculation_title">Atención: inscripciones asociadas</span></h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0" id="registrationCategoryRecalculationMessage" data-i18n="registration_categories_recalculation_message">Esta categoría tiene inscripciones asociadas. Si continúas, se recalcularán sus precios. ¿Quieres continuar?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-i18n="cancel">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="confirmRegistrationCategoryRecalculationBtn" data-i18n="registration_categories_recalculation_continue">Continuar y recalcular</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="registrationCategoryDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">

@@ -689,5 +689,10 @@
   "extras_error_409": "The operation conflicts with the current state. Refresh and check capacity or linked bookings.",
   "extras_error_422": "The data failed validation. Check the form.",
   "registration_finance_validated": "Validated",
-  "registration_finance_unvalidated": "Unvalidated"
+  "registration_finance_unvalidated": "Unvalidated",
+  "registration_categories_recalculation_title": "Warning: associated registrations",
+  "registration_categories_recalculation_message": "This category has associated registrations. If you continue, their prices will be recalculated. Do you want to continue?",
+  "registration_categories_recalculation_continue": "Continue and recalculate",
+  "registration_categories_check_error": "Could not check associated registrations. Please try again.",
+  "registration_competitions_member_price_pending": "Pending calculation"
 }
