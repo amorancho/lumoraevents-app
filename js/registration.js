@@ -5624,8 +5624,8 @@ function initSchoolsTab() {
   const resetPasswordModalEl = document.getElementById('schoolResetPasswordConfirmModal');
   const confirmResetPasswordBtn = document.getElementById('confirmSchoolResetPasswordBtn');
   const currentEvent = getEvent();
-  const isSchoolAccountEvent = [61, 58, 66, 67, 52, 55].includes(Number(currentEvent?.id)) ||
-    ['onstage27', 'tedvision27', 'givemehype27', 'costaflow27', 'iadgrandprix27', 'fitkidsandacrodance27'].includes(String(currentEvent?.code || '').toLowerCase());
+  const isSchoolAccountEvent = [61, 58, 66, 67].includes(Number(currentEvent?.id)) ||
+    ['onstage27', 'tedvision27', 'givemehype27', 'costaflow27'].includes(String(currentEvent?.code || '').toLowerCase());
   const canResetSchoolPassword = !(getUserFromToken()?.role === 'organizer' && isSchoolAccountEvent);
   if (resetPasswordBtn) {
     if (canResetSchoolPassword) {
