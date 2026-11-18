@@ -1,4 +1,7 @@
 {
+  "registration_competitions_optional_fields": "Campos opcionais",
+  "org_registrations_group_category": "Agrupar por categoria",
+  "org_registrations_no_category": "Sem categoria",
   "registration_categories_price_current": "Preço em vigor",
   "registration_sidebar_mode_open": "Sempre aberto",
   "registration_sidebar_mode_closed": "Sempre fechado",

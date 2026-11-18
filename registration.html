@@ -11,7 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
-  <link rel="stylesheet" href="css/registration.css?v=20261108-7">
+  <link rel="stylesheet" href="css/registration.css?v=20261118-2">
 </head>
 <body class="d-flex flex-column min-vh-100 registration-page" data-bs-theme="dark">
   
@@ -611,7 +611,7 @@
                       <span class="text-muted org-registrations-summary-label" data-i18n="registration_competitions_total">Total inscripciones</span>
                       <span class="badge bg-secondary" id="orgRegistrationsCount">0</span>
                     </div>
-                    <form id="orgRegistrationsFilters" class="org-registrations-filters row g-3 align-items-end flex-grow-1">
+                    <form id="orgRegistrationsFilters" class="org-registrations-filters align-items-end flex-grow-1">
                       <div class="org-registrations-mobile-filter-toggle">
                         <button type="button" class="btn btn-outline-secondary" id="orgRegistrationsMobileFilterToggle" aria-expanded="false" aria-controls="orgRegistrationsMobileFilterPanel">
                           <i class="bi bi-funnel me-1" aria-hidden="true"></i>
@@ -663,6 +663,12 @@
                         <div class="org-registrations-filter-apply">
                           <button type="button" class="btn btn-primary w-100" id="orgRegistrationsMobileFilterApply" data-i18n="apply_filters">Aplicar</button>
                         </div>
+                      </div>
+                      <div class="org-registrations-view-controls">
+                        <button type="button" class="btn btn-outline-primary" id="orgRegistrationsGroupCategoryBtn" aria-pressed="false" aria-controls="orgRegistrationsTable orgRegistrationsMobileCards" aria-label="Agrupar por categoría" title="Agrupar por categoría" data-i18n-aria-label="org_registrations_group_category" data-i18n-title="org_registrations_group_category">
+                          <i class="bi bi-collection me-1" aria-hidden="true"></i>
+                          <span data-i18n="org_registrations_group_category">Agrupar por categoría</span>
+                        </button>
                       </div>
                       <div class="org-registrations-export col-12 col-md-auto d-flex align-items-end">
                         <button type="button" class="btn btn-outline-success btn-sm text-nowrap" id="orgRegistrationsCopyTsvBtn" aria-label="Exportar" title="Exportar" data-i18n-aria-label="export" data-i18n-title="export">
@@ -1730,21 +1736,6 @@
           <form id="registrationForm" data-mode="create" novalidate>
             <input type="hidden" id="registrationId">
             <div class="row g-3">
-              <div class="col-12">
-                <label class="form-label" for="choreographyName" data-i18n="registration_competitions_choreography_name">Nombre coreografia</label>
-                <div class="input-group">
-                  <input type="text" class="form-control" id="choreographyName" maxlength="100" required>
-                  <span class="input-group-text d-none" id="registrationParticipantsCountAddon">0 miembros</span>
-                </div>
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label" for="registrationChoreoName" data-i18n="registration_competitions_choreo_name">Nombre de la coreografía</label>
-                <input type="text" class="form-control" id="registrationChoreoName">
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label" for="choreographerName" data-i18n="registration_competitions_choreographer">Coreografo</label>
-                <input type="text" class="form-control" id="choreographerName">
-              </div>
               <div class="col-12 col-md-6">
                 <label class="form-label" for="registrationCategory" data-i18n="registration_competitions_category">Categoria</label>
                 <select id="registrationCategory" class="form-select" required>
@@ -1761,14 +1752,36 @@
                 <div class="form-text mt-1" id="categoryRuleInfo"></div>
               </div>
               <div class="col-12">
-                <label class="form-label" for="registrationObservations" data-i18n="registration_competitions_observations">Observaciones</label>
-                <textarea
-                  class="form-control"
-                  id="registrationObservations"
-                  rows="3"
-                  data-i18n-placeholder="registration_competitions_observations_placeholder"
-                  placeholder="Observaciones de la inscripciÃ³n"
-                ></textarea>
+                <label class="form-label" for="choreographyName" data-i18n="registration_competitions_choreography_name">Grupo / participante</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="choreographyName" maxlength="100" required>
+                  <span class="input-group-text d-none" id="registrationParticipantsCountAddon">0 miembros</span>
+                </div>
+              </div>
+              <div class="col-12">
+                <fieldset class="registration-optional-fields">
+                  <legend data-i18n="registration_competitions_optional_fields">Campos opcionales</legend>
+                  <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" for="registrationChoreoName" data-i18n="registration_competitions_choreo_name">Nombre de la coreografía</label>
+                      <input type="text" class="form-control" id="registrationChoreoName">
+                    </div>
+                    <div class="col-12 col-md-6">
+                      <label class="form-label" for="choreographerName" data-i18n="registration_competitions_choreographer">Coreografo</label>
+                      <input type="text" class="form-control" id="choreographerName">
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label" for="registrationObservations" data-i18n="registration_competitions_observations">Observaciones</label>
+                      <textarea
+                        class="form-control"
+                        id="registrationObservations"
+                        rows="3"
+                        data-i18n-placeholder="registration_competitions_observations_placeholder"
+                        placeholder="Observaciones de la inscripciÃ³n"
+                      ></textarea>
+                    </div>
+                  </div>
+                </fieldset>
               </div>
             </div>
 

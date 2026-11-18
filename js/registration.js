@@ -8349,6 +8349,18 @@ function openRegistrationNotesModal(registration, onSaved) {
   registrationNotesController.open(registration, onSaved);
 }
 
+function buildOrganizerRegistrationCategoryGroups(registrations, categoryById) {
+  const groups = new Map();
+  registrations.forEach(registration => {
+    const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+    const name = registration.category_name || categoryById.get(`${categoryId}`)?.name || registration.reg_category?.name || t('org_registrations_no_category', 'Sin categoría');
+    const key = categoryId !== '' ? `id:${categoryId}` : `name:${name}`;
+    if (!groups.has(key)) groups.set(key, { name, registrations: [] });
+    groups.get(key).registrations.push(registration);
+  });
+  return Array.from(groups.values()).sort((a, b) => a.name.localeCompare(b.name, document.documentElement.lang || undefined, { numeric: true, sensitivity: 'base' }));
+}
+
 function initOrganizerRegistrationsTab() {
   const tableBody = document.getElementById('orgRegistrationsTable');
   const mobileCards = document.getElementById('orgRegistrationsMobileCards');
@@ -8362,6 +8374,8 @@ function initOrganizerRegistrationsTab() {
   const filterStyle = document.getElementById('orgRegistrationsFilterStyle');
   const filterClear = document.getElementById('orgRegistrationsFilterClear');
   const copyTsvBtn = document.getElementById('orgRegistrationsCopyTsvBtn');
+  const groupCategoryBtn = document.getElementById('orgRegistrationsGroupCategoryBtn');
+  let groupByCategory = false;
   const mobileFilterToggle = document.getElementById('orgRegistrationsMobileFilterToggle');
   const mobileFilterApply = document.getElementById('orgRegistrationsMobileFilterApply');
   const mobileFilterCount = document.getElementById('orgRegistrationsMobileFilterCount');
@@ -9417,236 +9431,265 @@ function initOrganizerRegistrationsTab() {
     const membersLabel = t('org_registrations_action_members', 'Participantes');
     const notesLabel = t('registration_notes_action', 'View/edit observations');
 
-    registrations.forEach(registration => {
-      const row = document.createElement('tr');
-      row.dataset.id = registration.id;
+    const groups = groupByCategory
+      ? buildOrganizerRegistrationCategoryGroups(registrations, categoryById)
+      : [{ registrations }];
+    groups.forEach(group => {
+      if (groupByCategory) {
+        const heading = document.createElement('div');
+        heading.className = 'org-registrations-category-heading';
+        const title = document.createElement('span');
+        title.textContent = group.name;
+        const count = document.createElement('span');
+        count.className = 'badge bg-secondary';
+        count.textContent = `${group.registrations.length}`;
+        heading.append(title, count);
 
-      const schoolCell = document.createElement('td');
-      schoolCell.textContent = registration.school_name || registration.school?.name || '-';
-      row.appendChild(schoolCell);
+        const groupRow = document.createElement('tr');
+        groupRow.className = 'org-registrations-category-row';
+        const cell = document.createElement('th');
+        cell.colSpan = tableBody.closest('table').tHead.rows[0].cells.length;
+        cell.setAttribute('data-tsv-ignore', 'true');
+        cell.appendChild(heading);
+        groupRow.appendChild(cell);
+        tableBody.appendChild(groupRow);
 
-      const nameCell = document.createElement('td');
-      const nameText = document.createElement('span');
-      nameText.className = 'registration-table-name';
-      nameText.textContent = registration.name || registration.choreography || '-';
-      nameCell.appendChild(nameText);
-      row.appendChild(nameCell);
-
-      const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
-      const categoryName = registration.category_name || categoryById.get(`${categoryId}`)?.name || '-';
-      const styleId = registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
-      const styleName = registration.style_name || styleById.get(`${styleId}`)?.name || '-';
-      row.appendChild(createRegistrationTableCategoryCell(categoryName, styleName));
-
-      const participantsCell = document.createElement('td');
-      participantsCell.className = 'text-center';
-      participantsCell.textContent = `${getParticipantsCount(registration)}`;
-      row.appendChild(participantsCell);
-
-      const observationsCell = document.createElement('td');
-      observationsCell.className = 'text-center';
-      observationsCell.setAttribute('data-tsv-ignore', 'true');
-      const observationsIcon = document.createElement('i');
-      const hasObservations = hasRegistrationObservations(registration);
-      observationsIcon.className = hasObservations
-        ? 'bi bi-chat-left-text-fill text-warning'
-        : 'bi bi-dash-circle text-body-tertiary';
-      observationsIcon.setAttribute('data-bs-toggle', 'tooltip');
-      observationsIcon.setAttribute('data-bs-placement', 'top');
-      observationsIcon.setAttribute(
-        'data-bs-title',
-        hasObservations
-          ? t('registration_competitions_observations_yes', 'Con observaciones')
-          : t('registration_competitions_observations_no', 'Sin observaciones')
-      );
-      observationsIcon.setAttribute(
-        'aria-label',
-        hasObservations
-          ? t('registration_competitions_observations_yes', 'Con observaciones')
-          : t('registration_competitions_observations_no', 'Sin observaciones')
-      );
-      observationsCell.appendChild(observationsIcon);
-      row.appendChild(observationsCell);
-
-      const alertsCell = document.createElement('td');
-      alertsCell.className = 'text-center';
-      alertsCell.setAttribute('data-tsv-ignore', 'true');
-      alertsCell.appendChild(createRegistrationAlertsIcon(registration));
-      row.appendChild(alertsCell);
-
-      const totalAmountCell = document.createElement('td');
-      totalAmountCell.className = 'text-center';
-      const totalAmount = getRegistrationTotalAmount(registration);
-      const strikeThroughAmount = getRegistrationStatusValue(registration) === 'DEL';
-      if (getRegistrationPrice(registration) === 0) {
-        const freeBadge = document.createElement('span');
-        freeBadge.className = 'badge bg-success';
-        if (strikeThroughAmount) freeBadge.classList.add('text-decoration-line-through');
-        freeBadge.textContent = 'FREE';
-        totalAmountCell.appendChild(freeBadge);
-      } else {
-        totalAmountCell.textContent = formatCurrencyDisplay(totalAmount);
-        if (strikeThroughAmount) totalAmountCell.classList.add('text-decoration-line-through');
+        const mobileHeading = heading.cloneNode(true);
+        mobileHeading.setAttribute('role', 'heading');
+        mobileHeading.setAttribute('aria-level', '3');
+        mobileCards.appendChild(mobileHeading);
       }
-      row.appendChild(totalAmountCell);
+      group.registrations.forEach(registration => {
+        const row = document.createElement('tr');
+        row.dataset.id = registration.id;
 
-      const statusCell = document.createElement('td');
-      statusCell.className = 'text-center';
-      const statusInfo = formatStatusInfo(registration.status);
-      const statusBadge = document.createElement('span');
-      statusBadge.className = `badge bg-${statusInfo.color}`;
-      statusBadge.textContent = statusInfo.label;
-      statusCell.appendChild(statusBadge);
-      configureRegistrationTableBadge(statusBadge, statusInfo.label, registration.status);
-      row.appendChild(statusCell);
+        const schoolCell = document.createElement('td');
+        schoolCell.textContent = registration.school_name || registration.school?.name || '-';
+        row.appendChild(schoolCell);
 
-      const musicCell = document.createElement('td');
-      musicCell.className = 'text-center';
-      const musicInfo = getRegistrationMusicBadgeInfo(registration);
-      const musicBadge = document.createElement('span');
-      musicBadge.className = `badge ${musicInfo.className}`;
-      musicBadge.textContent = musicInfo.label;
-      musicCell.appendChild(musicBadge);
-      configureRegistrationTableBadge(musicBadge, musicInfo.label);
-      row.appendChild(musicCell);
+        const nameCell = document.createElement('td');
+        const nameText = document.createElement('span');
+        nameText.className = 'registration-table-name';
+        nameText.textContent = registration.name || registration.choreography || '-';
+        nameCell.appendChild(nameText);
+        row.appendChild(nameCell);
 
-      const syncroCell = document.createElement('td');
-      syncroCell.className = 'text-center';
-      const syncroInfo = getSyncroStatusBadgeInfo(registration.syncro_status);
-      const syncroIcon = document.createElement('span');
-      const syncroState = `${registration.syncro_status || ''}`;
-      const syncroIconClass = syncroState === 'NOT_APPLICABLE'
-        ? 'bi-dash-circle text-info'
-        : syncroState === 'SYNCRO_OK'
-          ? 'bi-check-circle-fill text-success'
-          : `bi-x-circle ${syncroState === 'PEN_UPDATE' ? 'text-warning' : 'text-secondary'}`;
-      syncroIcon.className = 'registration-table-sync-icon';
-      syncroIcon.tabIndex = 0;
-      syncroIcon.setAttribute('aria-label', syncroInfo.label);
-      syncroIcon.setAttribute('data-bs-toggle', 'tooltip');
-      syncroIcon.setAttribute('data-bs-placement', 'top');
-      syncroIcon.setAttribute('data-bs-title', syncroInfo.label);
-      const icon = document.createElement('i');
-      icon.className = `bi ${syncroIconClass}`;
-      icon.setAttribute('aria-hidden', 'true');
-      syncroIcon.appendChild(icon);
-      syncroCell.setAttribute('data-tsv-value', syncroInfo.label);
-      syncroCell.appendChild(syncroIcon);
-      row.appendChild(syncroCell);
+        const categoryId = registration?.reg_category_id ?? registration?.category_id ?? registration?.reg_category?.id ?? '';
+        const categoryName = registration.category_name || categoryById.get(`${categoryId}`)?.name || '-';
+        const styleId = registration?.reg_style_id ?? registration?.style_id ?? registration?.reg_style?.id ?? '';
+        const styleName = registration.style_name || styleById.get(`${styleId}`)?.name || '-';
+        row.appendChild(createRegistrationTableCategoryCell(categoryName, styleName));
 
-      const actionsCell = document.createElement('td');
-      actionsCell.className = 'text-center';
-      actionsCell.setAttribute('data-tsv-ignore', 'true');
-      const actionGroup = document.createElement('div');
-      actionGroup.className = 'btn-group';
-      actionGroup.setAttribute('role', 'group');
+        const participantsCell = document.createElement('td');
+        participantsCell.className = 'text-center';
+        participantsCell.textContent = `${getParticipantsCount(registration)}`;
+        row.appendChild(participantsCell);
 
-      const validateBtn = document.createElement('button');
-      validateBtn.type = 'button';
-      validateBtn.className = 'btn btn-outline-success btn-sm btn-org-registration-validate';
-      validateBtn.disabled = registration.status !== 'PEN';
-      validateBtn.dataset.id = registration.id;
-      validateBtn.title = validateLabel;
-      validateBtn.setAttribute('aria-label', validateLabel);
-      validateBtn.setAttribute('data-bs-toggle', 'tooltip');
-      validateBtn.setAttribute('data-bs-placement', 'top');
-      validateBtn.innerHTML = '<i class="bi bi-check-circle"></i>';
+        const observationsCell = document.createElement('td');
+        observationsCell.className = 'text-center';
+        observationsCell.setAttribute('data-tsv-ignore', 'true');
+        const observationsIcon = document.createElement('i');
+        const hasObservations = hasRegistrationObservations(registration);
+        observationsIcon.className = hasObservations
+          ? 'bi bi-chat-left-text-fill text-warning'
+          : 'bi bi-dash-circle text-body-tertiary';
+        observationsIcon.setAttribute('data-bs-toggle', 'tooltip');
+        observationsIcon.setAttribute('data-bs-placement', 'top');
+        observationsIcon.setAttribute(
+          'data-bs-title',
+          hasObservations
+            ? t('registration_competitions_observations_yes', 'Con observaciones')
+            : t('registration_competitions_observations_no', 'Sin observaciones')
+        );
+        observationsIcon.setAttribute(
+          'aria-label',
+          hasObservations
+            ? t('registration_competitions_observations_yes', 'Con observaciones')
+            : t('registration_competitions_observations_no', 'Sin observaciones')
+        );
+        observationsCell.appendChild(observationsIcon);
+        row.appendChild(observationsCell);
 
-      const rejectBtn = document.createElement('button');
-      rejectBtn.type = 'button';
-      rejectBtn.className = 'btn btn-outline-danger btn-sm btn-org-registration-reject';
-      rejectBtn.disabled = !['PEN', 'VAL'].includes(`${registration.status || ''}`);
-      rejectBtn.dataset.id = registration.id;
-      rejectBtn.title = rejectLabel;
-      rejectBtn.setAttribute('aria-label', rejectLabel);
-      rejectBtn.setAttribute('data-bs-toggle', 'tooltip');
-      rejectBtn.setAttribute('data-bs-placement', 'top');
-      rejectBtn.innerHTML = '<i class="bi bi-x-circle"></i>';
+        const alertsCell = document.createElement('td');
+        alertsCell.className = 'text-center';
+        alertsCell.setAttribute('data-tsv-ignore', 'true');
+        alertsCell.appendChild(createRegistrationAlertsIcon(registration));
+        row.appendChild(alertsCell);
 
-      const membersBtn = document.createElement('button');
-      membersBtn.type = 'button';
-      membersBtn.className = 'btn btn-outline-secondary btn-sm btn-org-registration-members';
-      membersBtn.dataset.id = registration.id;
-      membersBtn.title = membersLabel;
-      membersBtn.setAttribute('aria-label', membersLabel);
-      membersBtn.setAttribute('data-bs-toggle', 'tooltip');
-      membersBtn.setAttribute('data-bs-placement', 'top');
-      membersBtn.innerHTML = '<i class="bi bi-people"></i>';
+        const totalAmountCell = document.createElement('td');
+        totalAmountCell.className = 'text-center';
+        const totalAmount = getRegistrationTotalAmount(registration);
+        const strikeThroughAmount = getRegistrationStatusValue(registration) === 'DEL';
+        if (getRegistrationPrice(registration) === 0) {
+          const freeBadge = document.createElement('span');
+          freeBadge.className = 'badge bg-success';
+          if (strikeThroughAmount) freeBadge.classList.add('text-decoration-line-through');
+          freeBadge.textContent = 'FREE';
+          totalAmountCell.appendChild(freeBadge);
+        } else {
+          totalAmountCell.textContent = formatCurrencyDisplay(totalAmount);
+          if (strikeThroughAmount) totalAmountCell.classList.add('text-decoration-line-through');
+        }
+        row.appendChild(totalAmountCell);
 
-      const detailsBtn = document.createElement('button');
-      detailsBtn.type = 'button';
-      detailsBtn.className = 'btn btn-outline-primary btn-sm btn-org-registration-details';
-      detailsBtn.dataset.id = registration.id;
-      detailsBtn.title = detailsLabel;
-      detailsBtn.setAttribute('aria-label', detailsLabel);
-      detailsBtn.setAttribute('data-bs-toggle', 'tooltip');
-      detailsBtn.setAttribute('data-bs-placement', 'top');
-      detailsBtn.innerHTML = '<i class="bi bi-search"></i>';
+        const statusCell = document.createElement('td');
+        statusCell.className = 'text-center';
+        const statusInfo = formatStatusInfo(registration.status);
+        const statusBadge = document.createElement('span');
+        statusBadge.className = `badge bg-${statusInfo.color}`;
+        statusBadge.textContent = statusInfo.label;
+        statusCell.appendChild(statusBadge);
+        configureRegistrationTableBadge(statusBadge, statusInfo.label, registration.status);
+        row.appendChild(statusCell);
 
-      const notesBtn = document.createElement('button');
-      notesBtn.type = 'button';
-      notesBtn.className = 'btn btn-outline-info btn-sm btn-registration-notes';
-      notesBtn.dataset.id = registration.id;
-      notesBtn.title = notesLabel;
-      notesBtn.setAttribute('aria-label', notesLabel);
-      notesBtn.innerHTML = '<i class="bi bi-chat-left-text"></i>';
+        const musicCell = document.createElement('td');
+        musicCell.className = 'text-center';
+        const musicInfo = getRegistrationMusicBadgeInfo(registration);
+        const musicBadge = document.createElement('span');
+        musicBadge.className = `badge ${musicInfo.className}`;
+        musicBadge.textContent = musicInfo.label;
+        musicCell.appendChild(musicBadge);
+        configureRegistrationTableBadge(musicBadge, musicInfo.label);
+        row.appendChild(musicCell);
 
-      actionGroup.appendChild(notesBtn);
-      actionGroup.appendChild(validateBtn);
-      actionGroup.appendChild(rejectBtn);
-      actionGroup.appendChild(membersBtn);
-      actionGroup.appendChild(detailsBtn);
-      actionsCell.appendChild(actionGroup);
-      row.appendChild(actionsCell);
+        const syncroCell = document.createElement('td');
+        syncroCell.className = 'text-center';
+        const syncroInfo = getSyncroStatusBadgeInfo(registration.syncro_status);
+        const syncroIcon = document.createElement('span');
+        const syncroState = `${registration.syncro_status || ''}`;
+        const syncroIconClass = syncroState === 'NOT_APPLICABLE'
+          ? 'bi-dash-circle text-info'
+          : syncroState === 'SYNCRO_OK'
+            ? 'bi-check-circle-fill text-success'
+            : `bi-x-circle ${syncroState === 'PEN_UPDATE' ? 'text-warning' : 'text-secondary'}`;
+        syncroIcon.className = 'registration-table-sync-icon';
+        syncroIcon.tabIndex = 0;
+        syncroIcon.setAttribute('aria-label', syncroInfo.label);
+        syncroIcon.setAttribute('data-bs-toggle', 'tooltip');
+        syncroIcon.setAttribute('data-bs-placement', 'top');
+        syncroIcon.setAttribute('data-bs-title', syncroInfo.label);
+        const icon = document.createElement('i');
+        icon.className = `bi ${syncroIconClass}`;
+        icon.setAttribute('aria-hidden', 'true');
+        syncroIcon.appendChild(icon);
+        syncroCell.setAttribute('data-tsv-value', syncroInfo.label);
+        syncroCell.appendChild(syncroIcon);
+        row.appendChild(syncroCell);
 
-      tableBody.appendChild(row);
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'text-center';
+        actionsCell.setAttribute('data-tsv-ignore', 'true');
+        const actionGroup = document.createElement('div');
+        actionGroup.className = 'btn-group';
+        actionGroup.setAttribute('role', 'group');
 
-      mobileCards.appendChild(createRegistrationMobileCard({
-        registration,
-        name: registration.name || registration.choreography || '-',
-        schoolName: registration.school_name || registration.school?.name || '-',
-        statusInfo,
-        categoryName,
-        styleName,
-        participantsCount: getParticipantsCount(registration),
-        totalAmountText: getRegistrationPrice(registration) === 0
-          ? 'FREE'
-          : formatCurrencyDisplay(totalAmount),
-        isFree: getRegistrationPrice(registration) === 0,
-        strikeThroughAmount,
-        musicInfo,
-        syncroInfo,
-        hasObservations,
-        actions: [
-          { className: 'btn-registration-notes', variant: 'btn-outline-info', icon: 'bi-chat-left-text', label: t('registration_competitions_observations', 'Observations'), title: notesLabel },
-          {
-            className: 'btn-org-registration-validate',
-            variant: 'btn-outline-success',
-            icon: 'bi-check-circle',
-            label: validateLabel,
-            disabled: registration.status !== 'PEN'
-          },
-          {
-            className: 'btn-org-registration-reject',
-            variant: 'btn-outline-danger',
-            icon: 'bi-x-circle',
-            label: rejectLabel,
-            disabled: !['PEN', 'VAL'].includes(`${registration.status || ''}`)
-          },
-          {
-            className: 'btn-org-registration-members',
-            variant: 'btn-outline-secondary',
-            icon: 'bi-people',
-            label: membersLabel
-          },
-          {
-            className: 'btn-org-registration-details',
-            variant: 'btn-outline-primary',
-            icon: 'bi-search',
-            label: detailsLabel
-          }
-        ]
-      }));
+        const validateBtn = document.createElement('button');
+        validateBtn.type = 'button';
+        validateBtn.className = 'btn btn-outline-success btn-sm btn-org-registration-validate';
+        validateBtn.disabled = registration.status !== 'PEN';
+        validateBtn.dataset.id = registration.id;
+        validateBtn.title = validateLabel;
+        validateBtn.setAttribute('aria-label', validateLabel);
+        validateBtn.setAttribute('data-bs-toggle', 'tooltip');
+        validateBtn.setAttribute('data-bs-placement', 'top');
+        validateBtn.innerHTML = '<i class="bi bi-check-circle"></i>';
+
+        const rejectBtn = document.createElement('button');
+        rejectBtn.type = 'button';
+        rejectBtn.className = 'btn btn-outline-danger btn-sm btn-org-registration-reject';
+        rejectBtn.disabled = !['PEN', 'VAL'].includes(`${registration.status || ''}`);
+        rejectBtn.dataset.id = registration.id;
+        rejectBtn.title = rejectLabel;
+        rejectBtn.setAttribute('aria-label', rejectLabel);
+        rejectBtn.setAttribute('data-bs-toggle', 'tooltip');
+        rejectBtn.setAttribute('data-bs-placement', 'top');
+        rejectBtn.innerHTML = '<i class="bi bi-x-circle"></i>';
+
+        const membersBtn = document.createElement('button');
+        membersBtn.type = 'button';
+        membersBtn.className = 'btn btn-outline-secondary btn-sm btn-org-registration-members';
+        membersBtn.dataset.id = registration.id;
+        membersBtn.title = membersLabel;
+        membersBtn.setAttribute('aria-label', membersLabel);
+        membersBtn.setAttribute('data-bs-toggle', 'tooltip');
+        membersBtn.setAttribute('data-bs-placement', 'top');
+        membersBtn.innerHTML = '<i class="bi bi-people"></i>';
+
+        const detailsBtn = document.createElement('button');
+        detailsBtn.type = 'button';
+        detailsBtn.className = 'btn btn-outline-primary btn-sm btn-org-registration-details';
+        detailsBtn.dataset.id = registration.id;
+        detailsBtn.title = detailsLabel;
+        detailsBtn.setAttribute('aria-label', detailsLabel);
+        detailsBtn.setAttribute('data-bs-toggle', 'tooltip');
+        detailsBtn.setAttribute('data-bs-placement', 'top');
+        detailsBtn.innerHTML = '<i class="bi bi-search"></i>';
+
+        const notesBtn = document.createElement('button');
+        notesBtn.type = 'button';
+        notesBtn.className = 'btn btn-outline-info btn-sm btn-registration-notes';
+        notesBtn.dataset.id = registration.id;
+        notesBtn.title = notesLabel;
+        notesBtn.setAttribute('aria-label', notesLabel);
+        notesBtn.innerHTML = '<i class="bi bi-chat-left-text"></i>';
+
+        actionGroup.appendChild(notesBtn);
+        actionGroup.appendChild(validateBtn);
+        actionGroup.appendChild(rejectBtn);
+        actionGroup.appendChild(membersBtn);
+        actionGroup.appendChild(detailsBtn);
+        actionsCell.appendChild(actionGroup);
+        row.appendChild(actionsCell);
+
+        tableBody.appendChild(row);
+
+        mobileCards.appendChild(createRegistrationMobileCard({
+          registration,
+          name: registration.name || registration.choreography || '-',
+          schoolName: registration.school_name || registration.school?.name || '-',
+          statusInfo,
+          categoryName,
+          styleName,
+          participantsCount: getParticipantsCount(registration),
+          totalAmountText: getRegistrationPrice(registration) === 0
+            ? 'FREE'
+            : formatCurrencyDisplay(totalAmount),
+          isFree: getRegistrationPrice(registration) === 0,
+          strikeThroughAmount,
+          musicInfo,
+          syncroInfo,
+          hasObservations,
+          actions: [
+            { className: 'btn-registration-notes', variant: 'btn-outline-info', icon: 'bi-chat-left-text', label: t('registration_competitions_observations', 'Observations'), title: notesLabel },
+            {
+              className: 'btn-org-registration-validate',
+              variant: 'btn-outline-success',
+              icon: 'bi-check-circle',
+              label: validateLabel,
+              disabled: registration.status !== 'PEN'
+            },
+            {
+              className: 'btn-org-registration-reject',
+              variant: 'btn-outline-danger',
+              icon: 'bi-x-circle',
+              label: rejectLabel,
+              disabled: !['PEN', 'VAL'].includes(`${registration.status || ''}`)
+            },
+            {
+              className: 'btn-org-registration-members',
+              variant: 'btn-outline-secondary',
+              icon: 'bi-people',
+              label: membersLabel
+            },
+            {
+              className: 'btn-org-registration-details',
+              variant: 'btn-outline-primary',
+              icon: 'bi-search',
+              label: detailsLabel
+            }
+          ]
+        }));
+      });
     });
 
     initRegistrationsTooltips();
@@ -9691,6 +9734,11 @@ function initOrganizerRegistrationsTab() {
   filterCategory.addEventListener('change', renderRegistrations);
   filterStyle.addEventListener('change', renderRegistrations);
   filterShowDeleted?.addEventListener('change', renderRegistrations);
+  groupCategoryBtn?.addEventListener('click', () => {
+    groupByCategory = !groupByCategory;
+    groupCategoryBtn.setAttribute('aria-pressed', `${groupByCategory}`);
+    renderRegistrations();
+  });
   mobileFilterToggle?.addEventListener('click', () => {
     setMobileOrgFilterPanelOpen(!filterForm.classList.contains('mobile-filters-open'));
   });
@@ -9725,7 +9773,7 @@ function initOrganizerRegistrationsTab() {
   });
 
   if (copyTsvBtn) {
-    bindTableTsvExportButton(copyTsvBtn, tableBody);
+    bindTableTsvExportButton(copyTsvBtn, tableBody, { ignoreSelector: '[data-tsv-ignore="true"]' });
   }
 
   const handleConfigUpdate = () => {

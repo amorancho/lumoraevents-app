@@ -1,4 +1,7 @@
 {
+  "registration_competitions_optional_fields": "Optional fields",
+  "org_registrations_group_category": "Group by category",
+  "org_registrations_no_category": "No category",
   "registration_categories_price_current": "Current price",
   "registration_sidebar_mode_open": "Always expanded",
   "registration_sidebar_mode_closed": "Always collapsed",

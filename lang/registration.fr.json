@@ -1,4 +1,7 @@
 {
+  "registration_competitions_optional_fields": "Champs facultatifs",
+  "org_registrations_group_category": "Regrouper par catégorie",
+  "org_registrations_no_category": "Sans catégorie",
   "registration_categories_price_current": "Prix en vigueur",
   "registration_sidebar_mode_open": "Toujours ouvert",
   "registration_sidebar_mode_closed": "Toujours fermé",
