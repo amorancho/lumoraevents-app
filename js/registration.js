@@ -2694,6 +2694,10 @@ function initSchoolTab() {
   if (!form) {
     return;
   }
+  const hideUserType = getEvent()?.registrationCreateParticipant === true;
+  const userTypeFieldset = document.getElementById('schoolUserTypeFieldset');
+  userTypeFieldset?.classList.toggle('d-none', hideUserType);
+  userTypeFieldset?.classList.toggle('d-inline-block', !hideUserType);
 
   const user = getUserFromToken();
   if (!user || !user.id) {

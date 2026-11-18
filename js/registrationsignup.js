@@ -9,6 +9,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const submitBtn = document.getElementById('signupSubmit');
   const representativeInput = document.getElementById('signupRepresentative');
   const userTypeInputs = document.querySelectorAll('input[name="signupUserType"]');
+  const createParticipant = getEvent()?.registrationCreateParticipant === true;
+  const birthDateInput = document.getElementById('signupBirthDate');
+  document.getElementById('signupBirthDateField').hidden = !createParticipant;
+  birthDateInput.disabled = !createParticipant;
+  birthDateInput.required = createParticipant;
+  if (createParticipant) {
+    document.getElementById('signupNameField').classList.replace('col-md-8', 'col-md-6');
+    document.getElementById('signupLanguageField').classList.replace('col-md-4', 'col-md-2');
+    document.getElementById('signupUserTypeFieldset').hidden = true;
+    userTypeInputs.forEach(input => {
+      input.checked = input.value === 'PAR';
+      input.disabled = true;
+    });
+  }
   const passwordInput = document.getElementById('signupPassword');
   const passwordConfirmInput = document.getElementById('signupPasswordConfirm');
 
@@ -21,7 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   passwordInput.addEventListener('input', validatePasswords);
   passwordConfirmInput.addEventListener('input', validatePasswords);
 
-  const getUserType = () => document.querySelector('input[name="signupUserType"]:checked')?.value || 'SCH';
+  const getUserType = () => createParticipant
+    ? 'PAR'
+    : (document.querySelector('input[name="signupUserType"]:checked')?.value || 'SCH');
 
   const updateUserTypeFields = () => {
     const isIndividual = getUserType() === 'PAR';
@@ -83,6 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const username = document.getElementById('signupUsername').value.trim().toLowerCase();
     const payload = {
       name: document.getElementById('signupName').value.trim(),
+      ...(createParticipant ? { date_of_birth: birthDateInput.value } : {}),
       username,
       password: document.getElementById('signupPassword').value,
       user_type: getUserType(),

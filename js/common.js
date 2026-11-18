@@ -261,7 +261,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hasWorkshopsServices: data.has_workshops_services === 1,
         registrationImportSource: data.reg_import_source,
         registrationPricePerPax: data.reg_price_per_pax === 1,
-        registrationPriceDiscount: data.reg_price_discount
+        registrationPriceDiscount: data.reg_price_discount,
+        registrationCreateParticipant: data.reg_create_part === 1
       };
 
     }

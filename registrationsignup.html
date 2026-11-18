@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
   <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
-  <link rel="stylesheet" href="css/registration-access.css?v=20261014-1">
+  <link rel="stylesheet" href="css/registration-access.css?v=20261118-2">
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
 </head>
@@ -21,7 +21,6 @@
       <header class="registration-access-intro registration-signup-intro">
         <span class="registration-access-mark" aria-hidden="true"><i class="bi bi-person-plus"></i></span>
         <h1 data-i18n="signup_title">Create school account</h1>
-        <p data-i18n="signup_subtitle">Complete the form to request access.</p>
       </header>
 
       <div class="registration-form-card lm-card">
@@ -32,7 +31,7 @@
           </div>
 
           <form id="signupForm" novalidate>
-            <fieldset class="registration-type-fieldset">
+            <fieldset class="registration-type-fieldset" id="signupUserTypeFieldset">
               <legend data-i18n="field_user_type">Account type</legend>
               <div class="registration-type-options">
                 <label class="registration-type-option" for="signupUserTypeSchool">
@@ -67,11 +66,15 @@
                 </fieldset>
 
                 <div class="row g-3 registration-fields">
-                  <div class="col-12 col-md-8">
+                  <div class="col-12 col-md-8" id="signupNameField">
                     <label class="form-label" for="signupName" data-i18n="field_name">Name</label>
                     <input type="text" class="form-control" id="signupName" required>
                   </div>
-                  <div class="col-12 col-md-4">
+                  <div class="col-12 col-md-4" id="signupBirthDateField" hidden>
+                    <label class="form-label" for="signupBirthDate" data-i18n="field_date_of_birth">Fecha de nacimiento</label>
+                    <input type="date" class="form-control" id="signupBirthDate" autocomplete="bday" disabled>
+                  </div>
+                  <div class="col-12 col-md-4" id="signupLanguageField">
                     <label class="form-label" for="signupLanguage" data-i18n="field_language">Language</label>
                     <select class="form-select" id="signupLanguage">
                       <option value="es">ES</option>
@@ -125,6 +128,6 @@
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20260917"></script>
   <script src="utils/countries.js"></script>
-  <script src="js/registrationsignup.js"></script>
+  <script src="js/registrationsignup.js?v=20261118-2"></script>
 
 </body></html>

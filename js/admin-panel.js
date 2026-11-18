@@ -848,7 +848,7 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
     'visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics',
     'show_flags','send_stats_code','hide_judges','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters',
     'has_penalties','has_clubs','hide_school_info','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','has_accreditations','registration_start','registration_end','music_extra_time','registration_fee_type','registration_fee_cost','registration_min_age',
-    'registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc','has_workshops_services','reg_price_per_pax','reg_import_source','reg_price_discount',
+    'registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc','has_workshops_services','reg_price_per_pax','reg_create_part','reg_import_source','reg_price_discount',
     'category_class_type','score_type','criteria_config','total_system','criteria_per_judge',
     'min_styles','can_decide_positions','restrict_voting','results_filter',
     'tied_positions'
@@ -887,6 +887,7 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
   appendConfigRow(registrationsContent,[
     fields.registration_authorizations,fields.registration_show_id_doc,fields.has_workshops_services,fields.reg_price_per_pax
   ],'col-12 col-md-6 col-lg-3');
+  appendConfigRow(registrationsContent,[fields.reg_create_part],'col-12 col-md-6 col-lg-3');
   appendConfigRow(registrationsContent,[fields.reg_import_source,fields.reg_price_discount],'col-12 col-md-6 col-lg-3');
   syncRegistrationsTabState();
 }
@@ -1345,6 +1346,7 @@ function populateEventForm(eventObj){
     : (Number(eventObj.registration_fee_cost)>0?'PAR':'NON');
   document.getElementById('registration_fee_cost').value=formatCentsToCurrencyValue(eventObj.registration_fee_cost);
   document.getElementById('reg_price_per_pax').checked=Number(eventObj.reg_price_per_pax)===1;
+  document.getElementById('reg_create_part').checked=Number(eventObj.reg_create_part)===1;
   document.getElementById('reg_price_discount').value=formatCentsToCurrencyValue(eventObj.reg_price_discount);
   document.getElementById('registration_min_age').value=eventObj.registration_min_age??'';
   document.getElementById('reg_import_source').value=eventObj.reg_import_source==='WOP'?'WOP':'GEN';
@@ -1524,6 +1526,7 @@ function collectEventFormData(){
     registration_show_id_doc:document.getElementById('registration_show_id_doc').checked?1:0,
     has_workshops_services:document.getElementById('has_workshops_services').checked?1:0,
     reg_price_per_pax:document.getElementById('reg_price_per_pax').checked?1:0,
+    reg_create_part:document.getElementById('reg_create_part').checked?1:0,
     reg_price_discount:parseCurrencyValueToCents(document.getElementById('reg_price_discount').value),
     reg_import_source:document.getElementById('reg_import_source').value,
     notice_text:document.getElementById('notice_text').value.trim(),
