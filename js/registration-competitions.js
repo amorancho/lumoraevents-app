@@ -46,6 +46,11 @@
     participantSelect: document.getElementById('registrationParticipantSelect'),
     addMemberBtn: document.getElementById('addRegistrationMemberBtn'),
     membersTable: document.getElementById('registrationMembersTable'),
+    membersMobileCards: document.getElementById('registrationMembersMobileCards'),
+    memberPicker: document.getElementById('registrationMemberPicker'),
+    memberSearch: document.getElementById('registrationMemberSearch'),
+    availableMembers: document.getElementById('registrationAvailableMembers'),
+    availableMembersEmpty: document.getElementById('registrationAvailableMembersEmpty'),
     membersCount: document.getElementById('registrationMembersCount'),
     membersOutOfRangeInfo: document.getElementById('registrationMembersOutOfRangeInfo'),
     membersBelowRangeNote: document.getElementById('registrationMembersBelowRangeNote'),
@@ -779,9 +784,11 @@
   const renderMembersTable = () => {
     if (!elements.membersTable) return;
     elements.membersTable.innerHTML = '';
+    elements.membersMobileCards?.replaceChildren();
     const showMemberPrice = getEvent()?.registrationPricePerPax === true;
     document.getElementById('registrationMembersPriceHeader')?.classList.toggle('d-none', !showMemberPrice);
     const readOnly = areMembersReadOnly();
+    elements.memberPicker?.classList.toggle('d-none', readOnly);
     elements.participantSelect?.closest('.d-flex')?.classList.toggle('d-none', readOnly);
     if (elements.participantSelect) elements.participantSelect.disabled = readOnly;
     if (participantSelect) {
@@ -878,11 +885,61 @@
       }
 
       elements.membersTable.appendChild(row);
+      elements.membersMobileCards?.appendChild(createRegistrationMemberMobileCard(member, {
+        age: memberAge,
+        ageRangeStatus,
+        readOnly,
+        showPrice: showMemberPrice,
+        priceText: showMemberPrice
+          ? (member.pricePendingCalculation
+            ? t('registration_competitions_member_price_pending', 'Pend. Calcular')
+            : formatCurrencyDisplay(member.price))
+          : ''
+      }));
     });
 
     updateMemberControls();
   };
+  const renderAvailableParticipantCards = () => {
+    if (!elements.availableMembers) return;
+    elements.availableMembers.replaceChildren();
+    const excluded = new Set(selectedMembers.map(member => `${member.id}`));
+    const normalizeSearch = value => `${value || ''}`.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase().trim();
+    const query = normalizeSearch(elements.memberSearch?.value);
+    const available = registrationState.participants.filter(participant => (
+      !excluded.has(`${participant.id}`) && normalizeSearch(participant.name || participant.id).includes(query)
+    ));
+    available.forEach(participant => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'registration-member-option';
+      button.dataset.id = participant.id;
+      button.disabled = areMembersReadOnly() || elements.addMemberBtn.disabled;
+      button.setAttribute('aria-label', `${t('registration_competitions_add_member', 'Add')}: ${participant.name || participant.id}`);
+      const name = document.createElement('span');
+      name.className = 'registration-member-option-name';
+      name.textContent = participant.name || `${participant.id}`;
+      const info = document.createElement('span');
+      info.className = 'registration-member-option-info';
+      const birth = document.createElement('span');
+      birth.textContent = formatRegistrationBirthDate(participant.date_of_birth);
+      birth.setAttribute('aria-label', `${t('registration_competitions_member_birth', 'Birth date')}: ${birth.textContent}`);
+      info.appendChild(birth);
+      const age = calculateAge(getDateOnlyValue(participant.date_of_birth), getRegistrationAgeReferenceDate());
+      if (isRegistrationMinorAge(age)) {
+        const minor = document.createElement('span');
+        minor.className = 'badge bg-warning-subtle text-warning-emphasis';
+        minor.textContent = t('registration_participants_minor', 'MINOR');
+        info.appendChild(minor);
+      }
+      button.append(name, info);
+      elements.availableMembers.appendChild(button);
+    });
+    elements.availableMembersEmpty?.classList.toggle('d-none', available.length > 0);
+  };
+
   const refreshParticipantSelect = () => {
+    renderAvailableParticipantCards();
     if (!elements.participantSelect) return;
 
     const excluded = new Set(selectedMembers.map(member => `${member.id}`));
@@ -1192,6 +1249,7 @@
   };
 
   const resetMembersState = () => {
+    if (elements.memberSearch) elements.memberSearch.value = '';
     if (elements.membersForm) elements.membersForm.classList.remove('was-validated');
     if (elements.membersId) elements.membersId.value = '';
     selectedMembers = [];
@@ -1329,6 +1387,7 @@
 
     resetMembersState();
     membersRegistration = registration;
+    if (elements.memberPicker) elements.memberPicker.open = false;
     const rawCategoryId = registration.reg_category_id
       || registration.category_id
       || registration.reg_category?.id
@@ -1779,7 +1838,7 @@
     }
   };
 
-  const addMember = () => {
+  const addMember = (participantId) => {
     if (areMembersReadOnly()) return;
     const category = getMembersCategory();
     if (!category) {
@@ -1790,7 +1849,9 @@
       return;
     }
 
-    const selectedId = participantSelect ? participantSelect.getValue() : (elements.participantSelect?.value || '');
+    const selectedId = typeof participantId === 'string'
+      ? participantId
+      : (participantSelect ? participantSelect.getValue() : (elements.participantSelect?.value || ''));
     if (!selectedId) {
       showMessageModal(
         t('registration_competitions_participant_required_error', 'Selecciona un participante.'),
@@ -2091,6 +2152,16 @@
     elements.addMemberBtn.addEventListener('click', addMember);
   }
 
+  elements.memberSearch?.addEventListener('input', renderAvailableParticipantCards);
+  elements.availableMembers?.addEventListener('click', event => {
+    const button = event.target.closest('.registration-member-option');
+    if (button && !button.disabled) addMember(button.dataset.id);
+  });
+  elements.membersMobileCards?.addEventListener('click', event => {
+    const button = event.target.closest('.btn-remove-member');
+    if (button && !button.disabled) removeMember(button.dataset.id);
+  });
+
   if (elements.membersTable) {
     elements.membersTable.addEventListener('click', (event) => {
       const removeBtn = event.target.closest('.btn-remove-member');
@@ -2357,6 +2428,10 @@
     const membersAgeLanguageObserver = new MutationObserver(() => {
       updateMembersAgeHeaderTooltip();
       renderRegistrations();
+      if (membersRegistration) {
+        renderMembersTable();
+        refreshParticipantSelect();
+      }
     });
     membersAgeLanguageObserver.observe(document.documentElement, {
       attributes: true,

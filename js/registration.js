@@ -5280,6 +5280,50 @@ function appendRegistrationAgeWithMinorBadge(container, age) {
   container.replaceChildren(ageWrap);
 }
 
+function createRegistrationMemberMobileCard(member, { age, ageRangeStatus, readOnly = true, showPrice = false, priceText = '' }) {
+  const card = document.createElement('article');
+  card.className = 'registration-member-card';
+  card.dataset.id = member.id;
+  if (ageRangeStatus === 'above' || ageRangeStatus === 'below') card.dataset.ageRange = ageRangeStatus;
+  const header = document.createElement('div');
+  header.className = 'registration-member-card-header';
+  const name = document.createElement('h6');
+  name.textContent = member.name || '-';
+  header.appendChild(name);
+  if (!readOnly) {
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'btn btn-outline-danger btn-sm btn-remove-member';
+    remove.dataset.id = member.id;
+    remove.setAttribute('aria-label', `${t('delete', 'Delete')}: ${member.name || '-'}`);
+    remove.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>';
+    header.appendChild(remove);
+  }
+  const details = document.createElement('dl');
+  details.className = 'registration-member-card-details';
+  const addDetail = (label, fill) => {
+    const item = document.createElement('div');
+    const term = document.createElement('dt');
+    term.textContent = label;
+    const value = document.createElement('dd');
+    fill(value);
+    item.append(term, value);
+    details.appendChild(item);
+  };
+  addDetail(t('registration_competitions_member_birth', 'Birth date'), value => {
+    value.textContent = formatRegistrationBirthDate(member.date_of_birth);
+  });
+  addDetail(t('registration_competitions_member_age', 'Age'), value => {
+    appendRegistrationAgeWithMinorBadge(value, age);
+    value.title = getRegistrationAgeTooltipText();
+  });
+  if (getEvent()?.showGender) addDetail(t('registration_competitions_member_gender', 'Gender'), value => { value.textContent = member.gender || '-'; });
+  if (getEvent()?.hasAuthorizations === true) addDetail(t('registration_authorization', 'Authorization'), value => appendRegistrationAuthorizationStatus(value, member));
+  if (showPrice) addDetail(t('registration_payments_amount_label', 'Amount'), value => { value.textContent = priceText; });
+  card.append(header, details);
+  return card;
+}
+
 function getRegistrationAgeReferenceDate() {
   return getEvent()?.start || null;
 }
@@ -9012,6 +9056,8 @@ function initOrganizerRegistrationsTab() {
   const renderMembersTable = (members, category = null) => {
     if (!membersElements.table) return;
     membersElements.table.innerHTML = '';
+    const mobileCards = document.getElementById('registrationMembersMobileCards');
+    mobileCards?.replaceChildren();
     const showMemberPrice = getEvent()?.registrationPricePerPax === true;
     document.getElementById('registrationMembersPriceHeader')?.classList.toggle('d-none', !showMemberPrice);
 
@@ -9109,6 +9155,12 @@ function initOrganizerRegistrationsTab() {
       }
 
       membersElements.table.appendChild(row);
+      mobileCards?.appendChild(createRegistrationMemberMobileCard(member, {
+        age: memberAge,
+        ageRangeStatus,
+        showPrice: showMemberPrice,
+        priceText: showMemberPrice ? formatCurrencyDisplay(member.price) : ''
+      }));
     });
   };
 

@@ -1,4 +1,6 @@
 {
+  "registration_members_add_participants": "Add participants",
+  "registration_members_no_available": "No participants available for this search.",
   "registration_competitions_optional_fields": "Optional fields",
   "org_registrations_group_category": "Group by category",
   "org_registrations_no_category": "No category",

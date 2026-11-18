@@ -705,6 +705,121 @@
 .participants-mobile-active-filters {
   display: none;
 }
+#registrationMembersModal .registration-member-picker,
+#registrationMembersModal .registration-members-mobile-cards {
+  display: none;
+}
+#registrationMembersModal .registration-available-members {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--lm-space-2);
+  max-height: 15rem;
+  overflow-y: auto;
+  padding: var(--lm-space-1);
+}
+#registrationMembersModal .registration-member-picker {
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius-md);
+  background: var(--lm-surface);
+}
+#registrationMembersModal .registration-member-picker summary {
+  padding: var(--lm-space-3);
+  border-radius: var(--lm-radius-md);
+  color: var(--lm-blue);
+  font-size: var(--lm-font-card-body);
+  font-weight: 700;
+  cursor: pointer;
+}
+#registrationMembersModal .registration-member-picker summary:hover {
+  background: var(--lm-surface-hover);
+}
+#registrationMembersModal .registration-member-picker summary:focus-visible {
+  outline: 2px solid var(--lm-cyan);
+  outline-offset: 2px;
+}
+#registrationMembersModal .registration-member-picker-content {
+  padding: 0 var(--lm-space-3) var(--lm-space-3);
+}
+#registrationMembersModal .registration-member-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--lm-space-1);
+  min-width: 0;
+  padding: var(--lm-space-2);
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius-sm);
+  color: var(--lm-text);
+  background: var(--lm-surface);
+  text-align: left;
+  font-size: var(--lm-font-data);
+}
+#registrationMembersModal .registration-member-option:not(:disabled):hover {
+  border-color: var(--lm-cyan);
+  background: var(--lm-surface-hover);
+}
+#registrationMembersModal .registration-member-option:disabled {
+  opacity: .5;
+  cursor: default;
+}
+.registration-member-option-name {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+.registration-member-option-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--lm-space-1);
+  color: var(--lm-text-muted);
+}
+#registrationMembersModal .registration-member-card {
+  min-width: 0;
+  padding: var(--lm-space-3);
+  border: 1px solid var(--lm-border);
+  border-radius: var(--lm-radius-md);
+  background: var(--lm-surface);
+}
+#registrationMembersModal .registration-member-card[data-age-range="above"] { border-color: var(--lm-warning); }
+#registrationMembersModal .registration-member-card[data-age-range="below"] { border-color: var(--lm-cyan); }
+.registration-member-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--lm-space-2);
+}
+.registration-member-card-header h6 {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--lm-font-card-body);
+  font-weight: 700;
+}
+.registration-member-card-header button { flex-shrink: 0; }
+#registrationMembersModal .registration-member-card .btn-remove-member { width: 40px; min-height: 40px; }
+.registration-member-card-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--lm-space-2);
+  margin: var(--lm-space-2) 0 0;
+  font-size: var(--lm-font-card-meta);
+}
+.registration-member-card-details > div { min-width: 0; }
+.registration-member-card-details dt { color: var(--lm-text-muted); font-weight: 500; }
+.registration-member-card-details dd { margin: 0; overflow-wrap: anywhere; }
+#registrationMembersModal .registration-member-card-details .badge { max-width: 100%; white-space: normal; }
+@media (min-width: 768px) {
+  #registrationMembersModal .registration-member-dropdown { display: none !important; }
+  #registrationMembersModal .registration-member-picker:not(.d-none) { display: block; }
+}
+@media (max-width: 767.98px) {
+  #registrationMembersModal .registration-members-desktop-table { display: none; }
+  #registrationMembersModal .registration-members-mobile-cards {
+    display: grid;
+    gap: var(--lm-space-2);
+  }
+}
 #registrationMembersModal .ts-dropdown .registration-participant-option {
   padding: var(--lm-space-3);
   border-bottom: 1px solid var(--lm-border-strong);

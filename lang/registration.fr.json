@@ -1,4 +1,6 @@
 {
+  "registration_members_add_participants": "Ajouter des participants",
+  "registration_members_no_available": "Aucun participant disponible pour cette recherche.",
   "registration_competitions_optional_fields": "Champs facultatifs",
   "org_registrations_group_category": "Regrouper par catégorie",
   "org_registrations_no_category": "Sans catégorie",
