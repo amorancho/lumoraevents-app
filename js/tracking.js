@@ -2,6 +2,8 @@ var title = 'Competition Tracking';
 
 const allowedRoles = ["admin", "organizer"];
 const voteDetailsInFlight = new Set();
+let trackingVoteDetailsRequestId = 0;
+let trackingFeedbackAudioUrl = '';
 const competitionDetailsInFlight = new Set();
 const SIDEBAR_STATUS_FILTER_NOT_FINISHED = '__NOT_FINISHED__';
 const TRACKING_SIDEBAR_FILTERS_STORAGE_PREFIX = 'lumora.tracking.sidebarFilters';
@@ -2090,6 +2092,10 @@ async function showCompetitionVotingDetails(categoryId, styleId) {
 document.addEventListener('DOMContentLoaded', async () => {
 
   validateRoles(allowedRoles);
+  document.getElementById('detailsModal').addEventListener('hide.bs.modal', () => {
+    trackingVoteDetailsRequestId += 1;
+    clearTrackingFeedbackAudio();
+  });
 
   await WaitEventLoaded();
   await ensureTranslationsReady();
@@ -3950,11 +3956,71 @@ function initActionDropdowns(container) {
   });
 }
 
+function clearTrackingFeedbackAudio() {
+  const player = document.getElementById('trackingFeedbackAudioPlayer');
+  if (player) {
+    player.pause();
+    player.removeAttribute('src');
+    player.load();
+  }
+  if (trackingFeedbackAudioUrl) {
+    URL.revokeObjectURL(trackingFeedbackAudioUrl);
+    trackingFeedbackAudioUrl = '';
+  }
+}
+
+async function loadTrackingFeedbackAudio(competitionId, judgeId, dancerId, requestId) {
+  const section = document.createElement('div');
+  section.className = 'col-12 mt-3 text-start';
+  section.innerHTML = `
+    <label class="form-label fw-semibold" for="trackingFeedbackAudioPlayer">${escapeHtml(t('audio_feedback', 'Audio feedback'))}</label>
+    <div role="status">${escapeHtml(t('audio_feedback_loading', 'Loading audio...'))}</div>
+  `;
+  criteriaContainer.appendChild(section);
+
+  try {
+    if (!competitionId) throw new Error(t('audio_feedback_load_error', 'Error loading audio feedback.'));
+    const params = new URLSearchParams({
+      event_id: String(getEvent().id),
+      judge_id: String(judgeId),
+      dancer_id: String(dancerId)
+    });
+    const response = await fetch(`${API_BASE_URL}/api/competitions/${competitionId}/feedback/download?${params.toString()}`);
+    if (requestId !== trackingVoteDetailsRequestId) return;
+    if (response.status === 404) {
+      section.remove();
+      return;
+    }
+    if (!response.ok) throw new Error(t('audio_feedback_load_error', 'Error loading audio feedback.'));
+    const blob = await response.blob();
+    if (requestId !== trackingVoteDetailsRequestId) return;
+
+    trackingFeedbackAudioUrl = URL.createObjectURL(blob);
+    const player = document.createElement('audio');
+    player.id = 'trackingFeedbackAudioPlayer';
+    player.className = 'tracking-feedback-audio-player';
+    player.controls = true;
+    player.preload = 'metadata';
+    player.src = trackingFeedbackAudioUrl;
+    section.querySelector('[role="status"]').replaceWith(player);
+  } catch (error) {
+    if (requestId !== trackingVoteDetailsRequestId) return;
+    const status = section.querySelector('[role="status"]');
+    status.className = 'alert alert-danger mb-0';
+    status.setAttribute('role', 'alert');
+    status.textContent = t('audio_feedback_load_error', 'Error loading audio feedback.');
+    console.error('Error loading tracking audio feedback:', error);
+  }
+}
+
 async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, dancerName, judgeName) {
   if (voteDetailsInFlight.has(rowId)) {
     return;
   }
   voteDetailsInFlight.add(rowId);
+  const requestId = ++trackingVoteDetailsRequestId;
+  clearTrackingFeedbackAudio();
+  const modalEl = document.getElementById('detailsModal');
 
   document.getElementById('detailsModalLabel').textContent = `${t('judge')}: ${judgeName} / ${t('dancer')}: ${dancerName}`;
 
@@ -3969,6 +4035,7 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
     }
 
     const data = await res.json();
+    if (requestId !== trackingVoteDetailsRequestId) return;
 
     const formatCriteriaLabel = (criteria) =>
       getCriteriaDisplayParts(criteria?.name, criteria?.percentage, criteria?.max_score).caption;
@@ -4016,15 +4083,18 @@ async function showVoteDetails(categoryId, styleId, judgeId, dancerId, rowId, da
       criteriaContainer.appendChild(commentsCol);
     }
 
-    const modalEl = document.getElementById('detailsModal');
-    let modal = new bootstrap.Modal(modalEl);
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
     // Footer  limpiar primero
     const footer = modal._element.querySelector('.modal-footer');
     footer.innerHTML = `<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">${t('close')}</button>`;
 
     modal.show();
+    if (parseJudgeFlag(data.dancers.has_feedback)) {
+      void loadTrackingFeedbackAudio(data.dancers.competition_id ?? data.competition?.id, judgeId, dancerId, requestId);
+    }
   } catch (error) {
+    if (requestId !== trackingVoteDetailsRequestId) return;
     console.error('Error loading vote details modal:', error);
     showMessageModal(error?.message || t('error_fetch_vote_details'), t('error_title'));
   } finally {

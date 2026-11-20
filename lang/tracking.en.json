@@ -1,4 +1,7 @@
 {
+  "audio_feedback": "Audio feedback",
+  "audio_feedback_loading": "Loading audio...",
+  "audio_feedback_load_error": "Error loading audio feedback.",
   "tracking_competitions_title": "Competitions",
   "tracking_show_menu": "Show menu",
   "tracking_hide_menu": "Hide menu",

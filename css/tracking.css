@@ -1131,6 +1131,7 @@
 .tracking-page .tracking-allow-changes-badge--allowed { border-color: #197d68 !important; color: var(--lm-green) !important; background: #0b302e !important; }
 .tracking-page .tracking-allow-changes-badge--blocked { border-color: #934148 !important; color: var(--lm-danger) !important; background: #351e29 !important; }
 .tracking-modal .modal-body { color: var(--lm-text); font-size: .82rem; }
+.tracking-feedback-audio-player { display: block; width: 100%; color-scheme: dark; }
 .tracking-modal .modal-footer { gap: .45rem; }
 .tracking-modal .modal-title { overflow-wrap: anywhere; }
 .tracking-modal .card, .tracking-modal .accordion-item { min-width: 0; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); color: var(--lm-text); background: var(--lm-surface); box-shadow: none; }
