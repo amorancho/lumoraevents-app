@@ -22,6 +22,7 @@ window.RegistrationExtras = (() => {
     return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString(getRegistrationLanguage(), { dateStyle: 'medium', timeStyle: 'short' });
   };
   const isActive = (item) => item?.is_active === true || Number(item?.is_active) === 1;
+  const hasPrice = (item) => item?.price != null && Number.isFinite(Number(item.price)) && Number(item.price) > 0;
   const id = (value) => {
     const result = Number(value);
     if (!Number.isSafeInteger(result) || result <= 0) throw new Error(text('invalid_selection'));
@@ -39,7 +40,7 @@ window.RegistrationExtras = (() => {
   const button = (action, label, value = '', variant = 'outline-primary') => `<button type="button" class="btn btn-${variant} btn-sm" data-extras-action="${action}" data-id="${html(value)}">${html(label)}</button>`;
   const notice = (message, kind = 'danger') => `<div class="alert alert-${kind} mb-3" role="${kind === 'danger' ? 'alert' : 'status'}">${html(message)}</div>`;
   const loading = () => `<div class="py-4 text-center" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>${html(text('loading'))}</div>`;
-  const status = (value) => `<span class="lm-status lm-status-${{ PENDING: 'warning', VALIDATED: 'success', REJECTED: 'danger' }[value] || 'neutral'}">${html(text(String(value || '').toLowerCase()))}</span>`;
+  const status = (value) => `<span class="lm-status lm-status-${{ PENDING: 'warning', VALIDATED: 'success', REJECTED: 'danger' }[value] || 'neutral'}"${value === 'PENDING' ? ` title="${html(text('pending'))}" aria-label="${html(text('pending'))}"` : ''}>${html(text(value === 'PENDING' ? 'pending_short' : String(value || '').toLowerCase()))}</span>`;
   const fieldLabel = (label, value) => `<div><dt>${html(label)}</dt><dd>${value}</dd></div>`;
 
   async function request(path, { method = 'GET', body, query } = {}) {
@@ -63,6 +64,7 @@ window.RegistrationExtras = (() => {
     if (!response.ok) {
       const error = new Error(data?.error || t(`extras_error_${response.status}`, text('request_error')));
       error.status = response.status;
+      error.code = data?.code;
       throw error;
     }
     return data;
@@ -217,16 +219,15 @@ window.RegistrationExtras = (() => {
   function bookingFilters(ctx) {
     // Unique prefixes allow the account dialog and the event list to coexist.
     const prefix = ctx.accountId == null ? ctx.mount.id : `account-${ctx.accountId}`;
-    let fields = selectFilter('status', text('status'), ['PENDING', 'VALIDATED', 'REJECTED'].map(value => [value, text(value.toLowerCase())]), ctx.filters.status)
-      + selectFilter('item_type', text('type'), ['WORKSHOP', 'PACK', 'SERVICE'].map(value => [value, typeName(value)]), ctx.filters.item_type);
+    const statusFilter = selectFilter('status', text('status'), ['PENDING', 'VALIDATED', 'REJECTED'].map(value => [value, text(value.toLowerCase())]), ctx.filters.status);
+    const typeFilter = selectFilter('item_type', text('type'), ['WORKSHOP', 'PACK', 'SERVICE'].map(value => [value, typeName(value)]), ctx.filters.item_type);
+    let fields = '';
     if (admin() && ctx.accountId == null) {
       fields += selectFilter('registration_school_id', text('account'), registrationState.schools.map(account => [account.id, account.name || account.school_name]), ctx.filters.registration_school_id);
-      fields += selectFilter('user_type', text('audience'), [['SCH', text('school')], ['PAR', text('individual')]], ctx.filters.user_type);
-      fields += ['workshop_id', 'pack_id', 'service_id', 'attendee_id'].map(name => `<div><label class="form-label" for="extras-filter-${name}">${html(text(name))}</label><input class="form-control lm-input" type="number" min="1" step="1" id="extras-filter-${name}" name="${name}" value="${html(ctx.filters[name] || '')}"></div>`).join('');
     }
-    fields += selectFilter('page_size', text('page_size'), [10, 20, 50, 100].map(value => [value, value]), ctx.pageSize).replace(/<option value="">.*?<\/option>/, '');
+    fields += admin() ? typeFilter + statusFilter : statusFilter + typeFilter;
     fields = fields.replaceAll('extras-filter-', `extras-filter-${prefix}-`);
-    return `<form data-extras-filters class="extras-filters lm-card lm-card-body mb-3">${fields}<div class="extras-actions align-self-end"><button type="submit" class="btn btn-primary btn-sm">${html(text('filter'))}</button>${button('clear-filters', text('clear'), '', 'outline-secondary')}</div></form>`;
+    return `<form data-extras-filters class="extras-filters extras-filters--compact mb-3">${fields}<div class="extras-actions align-self-end"><button type="submit" class="btn btn-primary btn-sm">${html(text('filter'))}</button>${button('clear-filters', text('clear'), '', 'outline-secondary')}</div></form>`;
   }
   async function loadContext(ctx) {
     if (!enabled()) return;
@@ -243,11 +244,18 @@ window.RegistrationExtras = (() => {
         const form = ctx.mount.querySelector('[data-extras-filters]');
         if (form) form.outerHTML = bookingFilters(ctx);
       }
-      const query = ctx.resource === 'bookings' ? { ...ctx.filters, page: ctx.page, page_size: ctx.pageSize } : undefined;
-      const data = await request(resourcePath(ctx.resource, ctx.accountId), { query });
+      const [data, workshopCatalog] = await Promise.all([
+        ctx.resource === 'bookings' ? loadAccountBookings(ctx.filters, resourcePath('bookings', ctx.accountId)).then(data => ({ data })) : request(resourcePath(ctx.resource, ctx.accountId)),
+        ctx.resource === 'packs' ? request('/admin/workshops').catch(() => null) : null
+      ]);
       if (!sameEvent(generation) || serial !== ctx.request) return;
+      if (ctx.resource === 'packs') ctx.allWorkshopIds = Array.isArray(workshopCatalog) ? [...new Set(workshopCatalog.map(workshop => Number(workshop.id)))] : null;
       ctx.rows = ctx.resource === 'bookings' ? data?.data : data;
       if (!Array.isArray(ctx.rows)) throw new Error(text('invalid_response'));
+      if (ctx.resource === 'bookings') {
+        ctx.rows = await resolveBookingNames(ctx.rows);
+        if (!sameEvent(generation) || serial !== ctx.request) return;
+      }
       ctx.pagination = ctx.resource === 'bookings' ? data.pagination : null;
       if (ctx.pagination && ctx.page > Math.max(1, ctx.pagination.total_pages)) {
         ctx.page = Math.max(1, ctx.pagination.total_pages);
@@ -284,13 +292,15 @@ window.RegistrationExtras = (() => {
     return `<div class="extras-occupancy"><div class="extras-occupancy-track" role="progressbar" aria-label="${html(text('validated_count'))}" aria-valuemin="0" aria-valuemax="${capacity}" aria-valuenow="${validated}"><span style="width:${percent}%"></span></div>${caption}</div>`;
   }
   function columns(ctx) {
-    if (ctx.resource === 'workshops') return ['name', 'teacher', 'start_at', 'end_at', 'price', 'capacity', 'occupancy', 'status'];
-    if (ctx.resource === 'packs') return ['name', 'mode', 'workshop_count', 'workshops', 'price', 'status'];
-    if (ctx.resource === 'services') return ['name', 'description', 'price', 'status'];
+    if (ctx.resource === 'workshops') return ['name', 'teacher', 'day', 'time_range', 'capacity', 'occupancy', 'status'];
+    if (ctx.resource === 'packs') return ['name', 'mode', 'workshop_count', 'workshops', 'status'];
+    if (ctx.resource === 'services') return ['name', 'description', 'status'];
     if (ctx.resource === 'discount-codes') return ['code', 'amount', 'audience', 'valid_from', 'valid_until', 'max_uses', 'status'];
-    return [...(admin() && ctx.accountId == null ? ['account'] : []), 'type', 'concept', 'attendee', 'quantity', 'amount', 'status', 'created_at'];
+    return [...(admin() && ctx.accountId == null ? ['account'] : []), 'type', 'name', 'attendee', 'quantity', 'amount', 'status', 'created_at'];
   }
   function cell(ctx, row, key) {
+    if (key === 'day') return html(workshopDatePart(row.start_at, false));
+    if (key === 'time_range') return `${html(workshopDatePart(row.start_at, true))} – ${html(workshopDatePart(row.end_at, true))}`;
     if (key === 'status') return ctx.resource === 'bookings' ? status(row.status) : `<span class="lm-status lm-status-${isActive(row) ? 'success' : 'neutral'}">${html(text(isActive(row) ? 'active' : 'inactive'))}</span>`;
     if (key === 'occupancy') return occupancyMarkup(row);
     if (key === 'price' || key === 'amount') return html(money(ctx.resource === 'bookings' ? row.total_amount : row[key]));
@@ -299,20 +309,29 @@ window.RegistrationExtras = (() => {
     if (key === 'audience') return html(text({ SCH: 'school', PAR: 'individual', BOTH: 'both' }[row.audience] || 'both'));
     if (key === 'mode') return html(text(row.mode === 'FLEX' ? 'flex' : 'fixed'));
     if (key === 'type') return html(typeName(row.item_type));
-    if (key === 'concept') return html(bookingConcept(row));
+    if (key === 'concept' || (key === 'name' && ctx.resource === 'bookings')) return html(bookingConcept(row));
     if (key === 'attendee') return html(bookingAttendee(row, ctx.participants));
     if (key === 'account') return html(accountName(row));
-    if (key === 'workshops') return html((row.workshops || []).map(w => w.name).join(', ') || ids(row).map(value => `#${value}`).join(', ') || '—');
+    if (key === 'workshops') {
+      const workshopIds = [...new Set([...(row.workshop_ids || []), ...(row.workshops || []).map(workshop => workshop.id)].map(Number))];
+      if (ctx.allWorkshopIds?.length && sameIds(workshopIds, ctx.allWorkshopIds)) return `<div class="extras-pack-workshop-badges"><span class="lm-status lm-status-info">${html(text('all_workshops'))}</span></div>`;
+      const names = row.workshops?.length ? row.workshops.map(workshop => workshop.name || `#${workshop.id}`) : ids(row).map(value => `#${value}`);
+      return names.length ? `<div class="extras-pack-workshop-badges">${names.map(name => `<span class="lm-status lm-status-info">${html(name)}</span>`).join('')}</div>` : '—';
+    }
     return html(row[key] ?? '—');
   }
+  function columnLabel(ctx, key) {
+    return text(ctx.resource === 'packs' && key === 'workshops' ? 'available_workshops' : key);
+  }
   function actions(ctx, row) {
-    let result = button('details', text('details'), row.id);
+    let result = ['workshops', 'packs', 'services'].includes(ctx.resource) ? '' : button('details', text('details'), row.id);
     if (ctx.resource === 'bookings') {
       if (row.status === 'PENDING') {
         if (admin() && ctx.accountId == null) result += button('validate', text('validate'), row.id, 'outline-success') + button('reject', text('reject'), row.id, 'outline-danger');
         else result += button('edit', t('edit'), row.id) + button('delete', t('delete'), row.id, 'outline-danger');
       }
     } else if (canManage(ctx)) {
+      if (['workshops', 'packs', 'services'].includes(ctx.resource)) result += button('prices', text('manage_prices'), row.id);
       result += button('edit', t('edit'), row.id) + button('delete', t('delete'), row.id, 'outline-danger');
       result += button('toggle', text(isActive(row) ? 'deactivate' : 'activate'), row.id, 'outline-secondary');
     }
@@ -322,8 +341,8 @@ window.RegistrationExtras = (() => {
     const list = ctx.mount.querySelector('[data-extras-list]');
     if (!list) return;
     const keys = columns(ctx);
-    list.innerHTML = ctx.rows.length ? `<div class="table-responsive extras-desktop-table lm-card"><table class="table lm-table align-middle"><caption class="visually-hidden">${html(titleFor(ctx))}</caption><thead><tr>${keys.map(key => `<th scope="col">${html(text(key))}</th>`).join('')}<th scope="col">${html(text('actions'))}</th></tr></thead><tbody>${ctx.rows.map(row => `<tr>${keys.map(key => `<td>${cell(ctx, row, key)}</td>`).join('')}<td>${actions(ctx, row)}</td></tr>`).join('')}</tbody></table></div>
-      <div class="extras-mobile-list">${ctx.rows.map(row => `<article class="lm-card lm-card-body"><dl class="extras-detail-grid">${keys.map(key => fieldLabel(text(key), cell(ctx, row, key))).join('')}</dl>${actions(ctx, row)}</article>`).join('')}</div>` : `<p class="text-body-secondary py-4">${html(text('empty'))}</p>`;
+    list.innerHTML = ctx.rows.length ? `<div class="table-responsive extras-desktop-table lm-card"><table class="table lm-table align-middle"><caption class="visually-hidden">${html(titleFor(ctx))}</caption><thead><tr>${keys.map(key => `<th scope="col"${key === 'workshop_count' ? ` class="extras-workshop-count" title="${html(text(key))}" aria-label="${html(text(key))}"` : ''}>${html(key === 'workshop_count' ? text('workshop_count_short') : columnLabel(ctx, key))}</th>`).join('')}<th scope="col">${html(text('actions'))}</th></tr></thead><tbody>${ctx.rows.map(row => `<tr>${keys.map(key => `<td${key === 'workshop_count' ? ' class="extras-workshop-count"' : ''}>${cell(ctx, row, key)}</td>`).join('')}<td>${actions(ctx, row)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="extras-mobile-list">${ctx.rows.map(row => `<article class="lm-card lm-card-body"><dl class="extras-detail-grid">${keys.map(key => fieldLabel(columnLabel(ctx, key), cell(ctx, row, key))).join('')}</dl>${actions(ctx, row)}</article>`).join('')}</div>` : `<p class="text-body-secondary py-4">${html(text('empty'))}</p>`;
     if (ctx.pagination) {
       const page = Number(ctx.pagination.page) || ctx.page;
       const pages = Number(ctx.pagination.total_pages) || 0;
@@ -332,6 +351,105 @@ window.RegistrationExtras = (() => {
   }
 
   function catalogPath(resource) { return `${admin() ? '/admin' : '/catalog'}/${resource}`; }
+  async function resolveBookingNames(rows) {
+    const types = { WORKSHOP: 'workshop', PACK: 'pack', SERVICE: 'service' };
+    const missing = rows.filter(row => {
+      const kind = types[row.item_type];
+      return kind && !row[kind]?.name && !row[`${kind}_name`] && !row.item_name && !row.name
+        && !(kind === 'workshop' && row.workshops?.some(workshop => workshop.name));
+    });
+    const catalogs = new Map(await Promise.all([...new Set(missing.map(row => types[row.item_type]))].map(async kind => [kind, await request(catalogPath(`${kind}s`))])));
+    return rows.map(row => {
+      if (!missing.includes(row)) return row;
+      const kind = types[row.item_type];
+      const productId = row[`${kind}_id`] || row[kind]?.id || (kind === 'workshop' ? ids(row)[0] : null);
+      const product = catalogs.get(kind).find(item => Number(item.id) === Number(productId));
+      return product ? { ...row, [`${kind}_name`]: product.name } : row;
+    });
+  }
+  async function loadAccountBookings(filters = {}, path = '/bookings') {
+    const bookings = new Map();
+    let pages = 1;
+    for (let page = 1; page <= pages; page++) {
+      const response = await request(path, { query: { ...filters, page, page_size: 100 } });
+      if (!Array.isArray(response?.data)) throw new Error(text('invalid_response'));
+      pages = Number(response.pagination?.total_pages) || 1;
+      if (!Number.isSafeInteger(pages) || pages < 1) throw new Error(text('invalid_response'));
+      response.data.forEach(booking => bookings.set(booking.id, booking));
+    }
+    return [...bookings.values()];
+  }
+  async function loadServiceReservations() {
+    const bookings = await loadAccountBookings();
+    const reservations = new Map();
+    for (let booking of bookings) {
+      if (booking.item_type !== 'SERVICE' || !['PENDING', 'VALIDATED'].includes(booking.status)) continue;
+      if (!(booking.service_id || booking.service?.id) || booking.quantity == null) {
+        booking = { ...booking, ...await request(`/bookings/${id(booking.id)}`) };
+      }
+      if (!['PENDING', 'VALIDATED'].includes(booking.status)) continue;
+      const serviceId = id(booking.service_id || booking.service?.id);
+      const quantity = id(booking.quantity);
+      if (!reservations.has(serviceId)) reservations.set(serviceId, { PENDING: 0, VALIDATED: 0 });
+      reservations.get(serviceId)[booking.status] += quantity;
+    }
+    return reservations;
+  }
+  function serviceReservations(serviceId, reservations) {
+    const quantities = reservations?.get(Number(serviceId));
+    if (!quantities) return '';
+    const total = quantities.PENDING + quantities.VALIDATED;
+    return `<div class="extras-service-reservations"><strong>${html(text('reserved_quantity').replace('{count}', total))}</strong><div class="extras-actions">${['VALIDATED', 'PENDING'].filter(key => quantities[key] > 0).map(key => `<span class="lm-status lm-status-${key === 'VALIDATED' ? 'success' : 'warning'}">${html(text(key === 'PENDING' ? 'pending_short' : key.toLowerCase()))}: ${html(quantities[key])}</span>`).join('')}</div></div>`;
+  }
+  async function loadWorkshopReservations() {
+    const [participants, bookings] = await Promise.all([
+      loadBookingParticipants().catch(() => []), loadAccountBookings()
+    ]);
+    const reservations = new Map();
+    const packs = new Map();
+    const snapshotIds = booking => [...new Set([
+      ...(booking.workshop_ids || []), ...(booking.workshops || []).map(workshop => workshop.id),
+      booking.workshop?.id, booking.workshop_id
+    ].filter(Boolean).map(Number))];
+    for (let booking of bookings) {
+      if (!['PENDING', 'VALIDATED'].includes(booking.status) || !['WORKSHOP', 'PACK'].includes(booking.item_type)) continue;
+      // Only booking snapshots identify the actual sessions chosen in a FLEX pack.
+      // Never infer a reservation from the pack's current catalog composition.
+      if (!snapshotIds(booking).length || (booking.item_type === 'PACK' && !(booking.pack_id || booking.pack?.id))) {
+        booking = { ...booking, ...await request(`/bookings/${id(booking.id)}`) };
+      }
+      if (!['PENDING', 'VALIDATED'].includes(booking.status)) continue;
+      const workshopIds = snapshotIds(booking);
+      if (!workshopIds.length) throw new Error(text('invalid_response'));
+      const name = bookingAttendee(booking, participants);
+      const participant = name !== '—' ? name : `${text('attendee')} #${booking.attendee_id ?? '—'}`;
+      const key = `${booking.attendee_id ?? participant}:${booking.status}`;
+      const singleParticipant = participants.length === 1 && String(participants[0].id) === String(booking.attendee_id);
+      const entry = { participant, participantId: String(booking.attendee_id), singleParticipant, status: booking.status };
+      if (booking.item_type === 'PACK') {
+        const packId = id(booking.pack_id || booking.pack?.id);
+        if (!packs.has(packId)) packs.set(packId, new Map());
+        packs.get(packId).set(key, entry);
+      }
+      workshopIds.forEach(workshopId => {
+        if (!reservations.has(workshopId)) reservations.set(workshopId, new Map());
+        reservations.get(workshopId).set(key, entry);
+      });
+    }
+    return { workshops: reservations, packs, participantIds: participants.map(person => String(person.id)) };
+  }
+  function reservationBadges(itemId, reservations, resource = 'workshops') {
+    const entries = reservations?.[resource].get(Number(itemId));
+    if (!entries?.size) return '';
+    return `<div class="extras-workshop-reservations">${[...entries.values()].map(entry => `<div class="extras-booking-marker"><span class="lm-status lm-status-info"><i class="bi bi-bookmark-check" aria-hidden="true"></i>${html(entry.singleParticipant ? text('booked') : text('booked_for').replace('{participant}', entry.participant))}</span>${status(entry.status)}</div>`).join('')}</div>`;
+  }
+  function allParticipantsBooked(itemId, reservations, resource = 'workshops') {
+    if (!reservations?.participantIds.length) return false;
+    const entries = reservations[resource].get(Number(itemId));
+    if (!entries) return false;
+    const bookedParticipants = new Set([...entries.values()].map(entry => entry.participantId));
+    return reservations.participantIds.every(participantId => bookedParticipants.has(participantId));
+  }
   async function loadCatalog(mount, resource) {
     const serial = String(Number(mount.dataset.request || 0) + 1);
     mount.dataset.request = serial;
@@ -343,9 +461,13 @@ window.RegistrationExtras = (() => {
     const list = mount.querySelector('[data-extras-catalog-list]');
     try {
       const resources = resource === 'workshops' ? ['workshops', 'packs'] : ['services'];
-      const results = await Promise.all(resources.map(item => request(`/catalog/${item}`)));
+      let reservationsError = false;
+      const [results, reservations] = await Promise.all([
+        Promise.all(resources.map(item => request(`/catalog/${item}`))),
+        (splitCatalog ? loadWorkshopReservations() : loadServiceReservations()).catch(() => { reservationsError = true; return null; })
+      ]);
       if (!sameEvent(generation) || mount.dataset.request !== serial) return;
-      list.innerHTML = resources.map((kind, index) => `<section class="mb-4"${splitCatalog ? ` id="${mount.id}-${kind}-catalog" role="tabpanel" aria-labelledby="${mount.id}-${kind}-tab" tabindex="0"${kind !== mount.querySelector('[aria-selected="true"]').dataset.extrasCatalogTab ? ' hidden' : ''}` : ''}><div class="extras-catalog-grid${splitCatalog ? ` extras-catalog-grid--${kind}` : ''}">${results[index].map(item => catalogCard(kind, kind === 'packs' ? { ...item, workshops: packWorkshops(item, results[0]) } : item)).join('') || `<p>${html(text('empty'))}</p>`}</div></section>`).join('');
+      list.innerHTML = (reservationsError ? notice(text('bookings_unavailable'), 'warning') : '') + resources.map((kind, index) => `<section class="mb-4"${splitCatalog ? ` id="${mount.id}-${kind}-catalog" role="tabpanel" aria-labelledby="${mount.id}-${kind}-tab" tabindex="0"${kind !== mount.querySelector('[aria-selected="true"]').dataset.extrasCatalogTab ? ' hidden' : ''}` : ''}><div class="extras-catalog-grid${splitCatalog ? ` extras-catalog-grid--${kind}` : ''}">${results[index].map(item => catalogCard(kind, kind === 'packs' ? { ...item, workshops: packWorkshops(item, results[0]) } : item, reservations)).join('') || `<p>${html(text('empty'))}</p>`}</div></section>`).join('');
     } catch (error) {
       if (sameEvent(generation) && mount.dataset.request === serial) list.innerHTML = notice(error.message) + button('catalog-refresh', text('retry'), resource);
     }
@@ -373,15 +495,17 @@ window.RegistrationExtras = (() => {
     const workshops = item.workshops?.length ? item.workshops : catalog.filter(w => ids(item).includes(Number(w.id)));
     return workshops.map(w => ({ ...catalog.find(entry => Number(entry.id) === Number(w.id)), ...w }));
   }
-  function packWorkshopSummary(item) {
-    return `<div class="extras-pack-composition"><p class="extras-pack-mode"><span class="lm-status lm-status-purple">${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))}</span><strong>${html(item.workshop_count)} ${html(text('workshops'))}</strong></p><details class="extras-pack-details"><summary><i class="bi bi-collection" aria-hidden="true"></i><span>${html(text(item.mode === 'FLEX' ? 'available_workshops' : 'included_workshops'))}</span><i class="bi bi-chevron-down extras-pack-chevron" aria-hidden="true"></i></summary><p class="extras-pack-hint">${html(item.mode === 'FLEX' ? text('select_exactly').replace('{count}', item.workshop_count) : text('included_workshops'))}</p><ul class="extras-workshop-summary">${(item.workshops || []).map(w => `<li><strong class="extras-session-name">${html(w.name)}</strong>${workshopMeta(w)}</li>`).join('')}</ul></details></div>`;
+  function packWorkshopSummary(item, reservations = null) {
+    return `<div class="extras-pack-composition"><p class="extras-pack-mode"><span class="lm-status lm-status-purple">${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))}</span><strong>${html(item.workshop_count)} ${html(text('workshops'))}</strong></p><details class="extras-pack-details"><summary><i class="bi bi-collection" aria-hidden="true"></i><span>${html(text(item.mode === 'FLEX' ? 'available_workshops' : 'included_workshops'))}</span><i class="bi bi-chevron-down extras-pack-chevron" aria-hidden="true"></i></summary><p class="extras-pack-hint">${html(item.mode === 'FLEX' ? text('select_exactly').replace('{count}', item.workshop_count) : text('included_workshops'))}</p><ul class="extras-workshop-summary">${(item.workshops || []).map(w => `<li><strong class="extras-session-name">${html(w.name)}</strong>${reservationBadges(w.id, reservations)}${workshopMeta(w)}</li>`).join('')}</ul></details></div>`;
   }
   function workshopDescription(item) {
     return workshopMeta(item) + occupancyMarkup(item, !admin());
   }
-  function catalogCard(resource, item) {
-    const packWorkshops = resource === 'packs' ? packWorkshopSummary(item) : '';
-    return `<article class="lm-card lm-card-body extras-catalog-card"><h4 class="h6">${html(item.name)}</h4><p class="extras-description text-body-secondary">${html(item.description || '')}</p>${resource === 'workshops' ? workshopDescription(item) : packWorkshops}<div class="extras-catalog-card-footer"><strong>${html(money(item.price))}</strong><button type="button" class="btn btn-primary btn-sm" data-extras-action="book" data-resource="${resource}" data-id="${html(item.id)}">${html(text('book'))}</button></div></article>`;
+  function catalogCard(resource, item, reservations = null) {
+    const packWorkshops = resource === 'packs' ? packWorkshopSummary(item, reservations) : '';
+    const reservationInfo = ['workshops', 'packs'].includes(resource) ? reservationBadges(item.id, reservations, resource) : resource === 'services' ? serviceReservations(item.id, reservations) : '';
+    const fullyBooked = ['workshops', 'packs'].includes(resource) && allParticipantsBooked(item.id, reservations, resource);
+    return `<article class="lm-card lm-card-body extras-catalog-card"><h4 class="h6">${html(item.name)}</h4><p class="extras-description text-body-secondary">${html(item.description || '')}</p>${resource === 'workshops' ? workshopDescription(item) : packWorkshops}<div class="extras-catalog-card-footer">${reservationInfo}<strong>${html(hasPrice(item) ? money(item.price) : text('price_unavailable'))}</strong><button type="button" class="btn btn-primary btn-sm" data-extras-action="book" data-resource="${resource}" data-id="${html(item.id)}"${fullyBooked || !hasPrice(item) ? ' disabled' : ''}>${html(text('book'))}</button></div></article>`;
   }
 
   async function openDialog(title, content, onSave = null, saveLabel = t('save')) {
@@ -429,13 +553,12 @@ window.RegistrationExtras = (() => {
       dismiss.forEach(button => { button.disabled = true; });
       let saved = false;
       try {
-        await onSave(form);
-        saved = true;
+        saved = await onSave(form) !== false;
       } catch (error) {
         modal.querySelector('[data-extras-dialog-feedback]').innerHTML = notice(error.message);
       } finally {
         form.dataset.saving = 'false';
-        submit.disabled = false;
+        submit.disabled = form.dataset.priceReady === 'false' || form.dataset.bookingAvailable === 'false';
         dismiss.forEach(button => { button.disabled = false; });
       }
       if (saved) instance.hide();
@@ -456,9 +579,29 @@ window.RegistrationExtras = (() => {
     if (Number.isNaN(parsed.getTime())) return '';
     return new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   }
-  function input(name, value = '', { type = 'text', required = false, min, step, disabled = false } = {}) {
+  function workshopDatePart(value, timeOnly) {
+    if (!value) return '—';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return '—';
+    return timeOnly
+      ? parsed.toLocaleTimeString(getRegistrationLanguage(), { hour: '2-digit', minute: '2-digit' })
+      : parsed.toLocaleDateString(getRegistrationLanguage(), { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function workshopTimePicker(name, value) {
+    const local = localDateTime(value);
+    const hour = local.slice(11, 13);
+    const minute = local.slice(14, 16) || '00';
+    const hours = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'));
+    const minutes = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
+    // Preserve an existing off-step time when editing, without rounding a saved schedule.
+    if (!minutes.includes(minute)) minutes.push(minute);
+    minutes.sort();
+    const control = (part, options, selected) => `<div><label class="visually-hidden" for="extras-field-${name}_${part}">${html(text(part))}</label><select class="form-select lm-input" id="extras-field-${name}_${part}" name="${name}_${part}" required>${part === 'hour' ? '<option value="">—</option>' : ''}${options.map(option => `<option value="${option}"${option === selected ? ' selected' : ''}>${option}</option>`).join('')}</select></div>`;
+    return `<fieldset class="extras-form-field extras-time-field"><legend class="form-label">${html(text(`${name}_time`))} *</legend><div class="extras-time-controls">${control('hour', hours, hour)}<span aria-hidden="true">:</span>${control('minute', minutes, minute)}</div></fieldset>`;
+  }
+  function input(name, value = '', { type = 'text', required = false, min, max, step, disabled = false } = {}) {
     const valueText = type === 'datetime-local' ? localDateTime(value) : value ?? '';
-    return `<div class="extras-form-field"><label class="form-label" for="extras-field-${name}">${html(text(name))}${required ? ' *' : ''}</label><input class="form-control lm-input" id="extras-field-${name}" name="${name}" type="${type}" value="${html(valueText)}"${required ? ' required' : ''}${disabled ? ' disabled' : ''}${min != null ? ` min="${min}"` : ''}${step != null ? ` step="${step}"` : ''}></div>`;
+    return `<div class="extras-form-field"><label class="form-label" for="extras-field-${name}">${html(text(name))}${required ? ' *' : ''}</label><input class="form-control lm-input" id="extras-field-${name}" name="${name}" type="${type}" value="${html(valueText)}"${required ? ' required' : ''}${disabled ? ' disabled' : ''}${min != null ? ` min="${html(min)}"` : ''}${max != null ? ` max="${html(max)}"` : ''}${step != null ? ` step="${html(step)}"` : ''}></div>`;
   }
   function select(name, options, value, required = true, disabled = false) {
     return `<div class="extras-form-field"><label class="form-label" for="extras-field-${name}">${html(text(name))}</label><select class="form-select lm-input" id="extras-field-${name}" name="${name}"${required ? ' required' : ''}${disabled ? ' disabled' : ''}>${options.map(([key, label]) => `<option value="${html(key)}"${String(key) === String(value) ? ' selected' : ''}>${html(label)}</option>`).join('')}</select></div>`;
@@ -484,6 +627,146 @@ window.RegistrationExtras = (() => {
     if (!['FIXED', 'FLEX'].includes(mode) || !Number.isSafeInteger(count) || count < 1 || new Set(selected).size !== selected.length || (mode === 'FIXED' ? selected.length !== count : selected.length < count)) throw new Error(text('pack_selection_invalid'));
   }
 
+  function calendarDay(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+    const parsed = new Date(`${value}T00:00:00Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value ? value : '';
+  }
+  async function openPrices(ctx, row) {
+    if (!canManage(ctx) || !['workshops', 'packs', 'services'].includes(ctx.resource)) return;
+    const generation = state.generation;
+    const path = `/admin/${ctx.resource}/${id(row.id)}`;
+    const start = calendarDay(String(getEvent()?.registrationStart || '').slice(0, 10));
+    const end = calendarDay(String(getEvent()?.registrationEnd || '').slice(0, 10));
+    const periodValid = Boolean(start && end && start <= end);
+    let prices = [], editing = null, ready = false, reloading = false;
+    const priceLabel = t('registration_category_prices_price', text('price'));
+    const dateField = name => `<div class="extras-form-field"><label class="form-label" for="extras-field-${name}">${html(text(name))}</label><input class="form-control lm-input" id="extras-field-${name}" name="${name}" type="date"${start ? ` min="${start}"` : ''}${end ? ` max="${end}"` : ''} required></div>`;
+    const content = `${periodValid ? '' : notice(text('price_period_missing'), 'warning')}
+      <fieldset data-extras-price-fields class="extras-price-fields" disabled>
+        <legend class="visually-hidden" data-extras-price-heading>${html(text('add_price'))}</legend>
+        <div class="extras-price-form-grid">
+          ${dateField('start_date')}${dateField('end_date')}
+          <div class="extras-form-field"><label class="form-label" for="extras-field-price">${html(priceLabel)}</label><div class="input-group"><input class="form-control lm-input" id="extras-field-price" name="price" type="number" min="0.01" max="99999999.99" step="0.01" inputmode="decimal" required><span class="input-group-text">EUR</span></div></div>
+          <div class="extras-price-submit" data-extras-price-controls></div>
+        </div>
+      </fieldset>
+      <div class="extras-actions mt-2"><button type="button" class="btn btn-outline-secondary btn-sm" data-extras-price-action="reset" hidden>${html(t('cancel'))}</button><button type="button" class="btn btn-outline-secondary btn-sm" data-extras-price-action="refresh" hidden>${html(text('refresh'))}</button></div>
+      <div class="extras-prices-table" data-extras-prices-list aria-live="polite"></div>
+      <div data-extras-price-confirm aria-live="polite"></div>`;
+    const form = await openDialog(`${text('manage_prices')} · ${row.name}`, content, async form => {
+      if (!ready || !periodValid) throw new Error(text('price_period_missing'));
+      const values = Object.fromEntries(new FormData(form));
+      const first = calendarDay(values.start_date), last = calendarDay(values.end_date);
+      if (!first || !last || first > last) throw new Error(text('price_invalid_dates'));
+      if (first < start || last > end) throw new Error(text('price_outside_period'));
+      const amount = String(values.price).trim();
+      if (!/^\d+(?:\.\d{1,2})?$/.test(amount) || Number(amount) <= 0 || Number(amount) > 99999999.99) throw new Error(text('price_invalid_amount'));
+      if (prices.some(price => String(price.id) !== String(editing?.id) && first <= price.end_date && last >= price.start_date)) throw new Error(text('price_overlap'));
+      const payload = { start_date: first, end_date: last, price: amount };
+      const body = editing ? Object.fromEntries(Object.entries(payload).filter(([key, value]) => key === 'price' ? Number(value) !== Number(editing.price) : value !== editing[key])) : payload;
+      if (!editing || Object.keys(body).length) {
+        try {
+          await request(`${path}/prices${editing ? `/${id(editing.id)}` : ''}`, { method: editing ? 'PATCH' : 'POST', body });
+        } catch (error) {
+          if (error.status === 409 || error.status === 404) {
+            try { await reload(); } catch { /* Keep the original mutation error; the list shows the refresh failure. */ }
+          }
+          throw error;
+        }
+      }
+      reset();
+      await reload();
+      feedback.innerHTML = notice(text('saved'), 'success');
+      return false;
+    }, text('add_price'));
+    if (!form || !sameEvent(generation)) return;
+    const feedback = form.querySelector('[data-extras-dialog-feedback]');
+    const list = form.querySelector('[data-extras-prices-list]');
+    const fields = form.querySelector('[data-extras-price-fields]');
+    const confirmation = form.querySelector('[data-extras-price-confirm]');
+    const submit = form.querySelector('[type="submit"]');
+    submit.classList.add('text-nowrap');
+    form.querySelector('[data-extras-price-controls]').prepend(submit);
+    const cancelEdit = form.querySelector('[data-extras-price-action="reset"]');
+    const refreshButton = form.querySelector('[data-extras-price-action="refresh"]');
+    const closeButton = form.querySelector('.modal-footer [data-bs-dismiss]');
+    closeButton.classList.replace('btn-outline-secondary', 'btn-secondary');
+    const current = () => sameEvent(generation) && state.dialog === form.closest('.modal');
+    const reset = () => {
+      editing = null;
+      ['start_date', 'end_date', 'price'].forEach(key => { form.elements.namedItem(key).value = ''; });
+      form.querySelector('[data-extras-price-heading]').textContent = text('add_price');
+      submit.textContent = text('add_price');
+      cancelEdit.hidden = true;
+      feedback.innerHTML = ''; confirmation.innerHTML = '';
+    };
+    const reload = async () => {
+      reloading = true;
+      ready = false; fields.disabled = true; submit.disabled = true; form.dataset.priceReady = 'false';
+      list.innerHTML = loading();
+      try {
+        const [product, data] = await Promise.all([request(path), request(`${path}/prices`)]);
+        if (!current()) return;
+        if (!Array.isArray(data)) throw new Error(text('invalid_response'));
+        prices = data;
+        const index = ctx.rows.findIndex(item => String(item.id) === String(row.id));
+        if (index >= 0) ctx.rows[index] = product;
+        renderList(ctx);
+        list.innerHTML = `<div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead class="table-light"><tr><th scope="col">${html(text('start_date'))}</th><th scope="col">${html(text('end_date'))}</th><th scope="col" class="text-end">${html(priceLabel)}</th><th scope="col" class="text-end">${html(text('actions'))}</th></tr></thead><tbody>${prices.map(price => `<tr><td>${html(price.start_date)}</td><td>${html(price.end_date)}</td><td class="text-end">${html(money(price.price))}</td><td class="text-end"><div class="btn-group btn-group-sm"><button type="button" class="btn btn-outline-primary" data-extras-price-action="edit" data-price-id="${html(price.id)}" title="${html(t('edit'))}" aria-label="${html(t('edit'))}"${periodValid ? '' : ' disabled'}><i class="bi bi-pencil" aria-hidden="true"></i></button><button type="button" class="btn btn-outline-danger" data-extras-price-action="delete" data-price-id="${html(price.id)}" title="${html(t('delete'))}" aria-label="${html(t('delete'))}"><i class="bi bi-trash" aria-hidden="true"></i></button></div></td></tr>`).join('')}</tbody></table></div>${prices.length ? '' : `<p class="text-muted text-center py-3 mb-0">${html(text('prices_empty'))}</p>`}`;
+        refreshButton.hidden = true;
+        ready = true;
+        form.dataset.priceReady = String(periodValid);
+        fields.disabled = !periodValid;
+        submit.disabled = !periodValid;
+      } catch (error) {
+        if (current()) {
+          list.innerHTML = notice(error.message);
+          refreshButton.hidden = false;
+        }
+        throw error;
+      } finally {
+        reloading = false;
+      }
+    };
+    form.addEventListener('click', async event => {
+      const target = event.target.closest('[data-extras-price-action]');
+      if (!target || target.disabled || reloading || form.dataset.saving === 'true') return;
+      const action = target.dataset.extrasPriceAction;
+      if (action === 'reset') { reset(); return; }
+      if (action === 'cancel-delete') { confirmation.innerHTML = ''; return; }
+      if (action === 'edit') {
+        editing = prices.find(price => String(price.id) === target.dataset.priceId);
+        if (!editing) return;
+        ['start_date', 'end_date', 'price'].forEach(key => { form.elements.namedItem(key).value = editing[key]; });
+        form.querySelector('[data-extras-price-heading]').textContent = text('save_price');
+        submit.textContent = text('save_price');
+        cancelEdit.hidden = false;
+        feedback.innerHTML = ''; confirmation.innerHTML = '';
+        form.elements.namedItem('start_date').focus();
+        return;
+      }
+      if (action === 'delete') {
+        confirmation.innerHTML = `${notice(text('price_delete_confirm'), 'warning')}<div class="extras-actions mb-3"><button type="button" class="btn btn-danger btn-sm" data-extras-price-action="confirm-delete" data-price-id="${html(target.dataset.priceId)}">${html(t('delete'))}</button><button type="button" class="btn btn-outline-secondary btn-sm" data-extras-price-action="cancel-delete">${html(t('cancel'))}</button></div>`;
+        confirmation.querySelector('button').focus();
+        return;
+      }
+      form.dataset.saving = 'true'; target.disabled = true; submit.disabled = true;
+      try {
+        if (action === 'confirm-delete') {
+          await request(`${path}/prices/${id(target.dataset.priceId)}`, { method: 'DELETE' });
+          reset();
+        }
+        await reload();
+      } catch (error) {
+        if (current()) feedback.innerHTML = notice(error.message);
+      } finally {
+        form.dataset.saving = 'false'; target.disabled = false; submit.disabled = !ready || !periodValid;
+      }
+    });
+    try { await reload(); } catch { /* The list contains the error and a refresh action remains available. */ }
+  }
+
   async function openEditor(ctx, row = null) {
     let original = row ? await request(`${resourcePath(ctx.resource, ctx.accountId)}/${id(row.id)}`) : {};
     const resource = ctx.resource;
@@ -496,24 +779,36 @@ window.RegistrationExtras = (() => {
     let workshops = [];
     if (resource === 'packs') workshops = await request('/admin/workshops');
     const common = resource !== 'discount-codes';
-    let fields = common ? input('name', original.name, { required: true }) + `<div class="extras-form-field"><label class="form-label" for="extras-field-description">${html(text('description'))}</label><textarea class="form-control lm-input" id="extras-field-description" name="description" rows="3">${html(original.description || '')}</textarea></div>` : '';
+    const compactProduct = ['packs', 'services'].includes(resource);
+    const activeField = `<div class="extras-form-field extras-active-field"><label class="form-check"><input class="form-check-input" type="checkbox" name="is_active"${!row || isActive(original) ? ' checked' : ''}><span class="form-check-label">${html(text('active'))}</span></label></div>`;
+    const nameField = input('name', original.name, { required: true });
+    const descriptionField = `<div class="extras-form-field"><label class="form-label" for="extras-field-description">${html(text('description'))}</label><textarea class="form-control lm-input" id="extras-field-description" name="description" rows="3">${html(original.description || '')}</textarea></div>`;
+    let fields = common ? nameField + descriptionField : '';
     if (resource === 'workshops') {
-      fields += input('teacher', original.teacher, { required: true }) + input('start_at', original.start_at, { type: 'datetime-local', required: true }) + input('end_at', original.end_at, { type: 'datetime-local', required: true }) + input('capacity', original.capacity, { type: 'number', min: 1, step: 1, required: true });
+      fields += input('teacher', original.teacher, { required: true }) + input('capacity', original.capacity, { type: 'number', min: 1, step: 1, required: true })
+        + `<div class="extras-workshop-schedule">${input('day', localDateTime(original.start_at).slice(0, 10), { type: 'date', required: true })}${workshopTimePicker('start', original.start_at)}${workshopTimePicker('end', original.end_at)}</div>`;
     }
-    if (resource === 'packs') fields += select('mode', [['FIXED', text('fixed')], ['FLEX', text('flex')]], original.mode || 'FIXED') + input('workshop_count', original.workshop_count || 1, { type: 'number', min: 1, step: 1, required: true });
-    if (common) fields += input('price', original.price ?? '', { type: 'number', min: 0, step: '0.01', required: true });
+    if (compactProduct) fields = `<div class="extras-product-editor-heading">${nameField}${activeField}</div>${descriptionField}`;
+    if (resource === 'packs') {
+      fields += select('mode', [['FIXED', text('fixed')], ['FLEX', text('flex')]], original.mode || 'FIXED') + input('workshop_count', original.workshop_count || 1, { type: 'number', min: 1, step: 1, required: true });
+    }
     if (resource === 'discount-codes') {
       fields += input('code', original.code, { required: true, disabled: locked }) + input('amount', original.amount, { type: 'number', min: '0.01', step: '0.01', required: true, disabled: locked })
         + select('audience', [['SCH', text('school')], ['PAR', text('individual')], ['BOTH', text('both')]], original.audience || 'BOTH', true, locked)
         + input('valid_from', original.valid_from, { type: 'datetime-local', disabled: locked }) + input('valid_until', original.valid_until, { type: 'datetime-local', disabled: locked })
         + input('max_uses', original.max_uses, { type: 'number', min: 1, step: 1, disabled: locked });
     }
-    fields += `<div class="extras-form-field"><label class="form-check"><input class="form-check-input" type="checkbox" name="is_active"${!row || isActive(original) ? ' checked' : ''}><span class="form-check-label">${html(text('active'))}</span></label></div>`;
-    const composition = resource === 'packs' ? workshopSelector(workshops, ids(original)) : '';
-    const form = await openDialog(`${row ? t('edit') : text('add')} · ${titleFor(ctx)}`, `${locked ? notice(text('discount_locked'), 'info') : ''}<div class="extras-form-grid">${fields}</div>${composition}`, async (form) => {
+    if (!compactProduct) fields += activeField;
+    const composition = resource === 'packs' ? `<div class="extras-pack-editor-workshops">${workshopSelector(workshops, ids(original))}</div>` : '';
+    const form = await openDialog(`${row ? t('edit') : text('add')} · ${titleFor(ctx)}`, `${locked ? notice(text('discount_locked'), 'info') : ''}<div class="extras-form-grid${compactProduct ? ' extras-product-editor-fields' : ''}">${fields}</div>${composition}`, async (form) => {
       const values = Object.fromEntries(new FormData(form));
+      if (resource === 'workshops') {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(values.day) || !['start', 'end'].every(part => /^(?:[01]\d|2[0-3])$/.test(values[`${part}_hour`]) && /^[0-5]\d$/.test(values[`${part}_minute`]))) throw new Error(text('required_fields'));
+        values.start_at = `${values.day}T${values.start_hour}:${values.start_minute}`;
+        values.end_at = `${values.day}T${values.end_hour}:${values.end_minute}`;
+      }
       const payload = {};
-      const keys = resource === 'discount-codes' ? (locked ? [] : ['code', 'amount', 'audience', 'valid_from', 'valid_until', 'max_uses']) : ['name', 'description', 'price', ...(resource === 'workshops' ? ['teacher', 'start_at', 'end_at', 'capacity'] : []), ...(resource === 'packs' ? ['mode', 'workshop_count'] : [])];
+      const keys = resource === 'discount-codes' ? (locked ? [] : ['code', 'amount', 'audience', 'valid_from', 'valid_until', 'max_uses']) : ['name', 'description', ...(resource === 'workshops' ? ['teacher', 'start_at', 'end_at', 'capacity'] : []), ...(resource === 'packs' ? ['mode', 'workshop_count'] : [])];
       keys.forEach(key => {
         let value = String(values[key] ?? '').trim();
         if (['name', 'teacher', 'code'].includes(key) && !value) throw new Error(text('required_fields'));
@@ -531,6 +826,7 @@ window.RegistrationExtras = (() => {
         data = Object.fromEntries(Object.entries(payload).filter(([key, value]) => {
           if (['start_at', 'end_at', 'valid_from', 'valid_until'].includes(key)) return localDateTime(value) !== localDateTime(original[key]);
           if (key === 'is_active') return value !== isActive(original);
+          if (['price', 'amount', 'capacity', 'workshop_count', 'max_uses'].includes(key)) return value == null ? original[key] != null : original[key] == null || Number(value) !== Number(original[key]);
           return String(value ?? '') !== String(original[key] ?? '');
         }));
         if (Object.keys(data).length) {
@@ -589,19 +885,37 @@ window.RegistrationExtras = (() => {
     const initialProductId = product?.id || original.pack_id || original.service_id || ids(original)[0] || '';
     let currentType = initialType;
     let currentProduct = null;
+    const keepsProduct = () => Boolean(original.id) && currentType === initialType && String(currentProduct?.id) === String(initialProductId);
     const fields = `${original.id || product ? '' : select('item_type', ['WORKSHOP', 'PACK', 'SERVICE'].map(value => [value, typeName(value)]), initialType)}<div data-extras-booking-fields></div>`;
     const form = await openDialog(original.id ? t('edit') : text('book'), fields, async form => {
+      if (!keepsProduct() && !hasPrice(currentProduct)) throw new Error(text('price_unavailable'));
       const payload = bookingPayload(form, currentType, currentProduct, participants);
       if (!original.id && payload.attendee_id === null) delete payload.attendee_id;
       let body = payload;
-      if (original.id) {
-        delete payload.item_type;
-        body = Object.fromEntries(Object.entries(payload).filter(([key, value]) => {
-          if (key === 'workshop_ids') return !sameIds(value, ids(original)) || (currentType === 'PACK' && Number(payload.pack_id) !== Number(original.pack_id));
-          return String(value ?? '') !== String(original[key] ?? '');
-        }));
-        if (Object.keys(body).length) await request(`${resourcePath('bookings', ctx.accountId)}/${id(original.id)}`, { method: 'PATCH', body });
-      } else await request(resourcePath('bookings', ctx.accountId), { method: 'POST', body });
+      try {
+        if (original.id) {
+          delete payload.item_type;
+          body = Object.fromEntries(Object.entries(payload).filter(([key, value]) => {
+            if (key === 'workshop_ids') return !sameIds(value, ids(original)) || (currentType === 'PACK' && Number(payload.pack_id) !== Number(original.pack_id));
+            return String(value ?? '') !== String(original[key] ?? '');
+          }));
+          if (Object.keys(body).length) await request(`${resourcePath('bookings', ctx.accountId)}/${id(original.id)}`, { method: 'PATCH', body });
+        } else await request(resourcePath('bookings', ctx.accountId), { method: 'POST', body });
+      } catch (error) {
+        if (error.code === 'extras_price_not_available') {
+          const resource = { WORKSHOP: 'workshops', PACK: 'packs', SERVICE: 'services' }[currentType];
+          const selectedId = currentProduct?.id;
+          // Block the stale offer even if refreshing the catalog fails.
+          currentProduct.price = null;
+          renderProduct(selectedId);
+          try {
+            products[currentType] = await request(catalogPath(resource));
+            renderProduct(selectedId);
+            if (ctx.catalogResource) await loadCatalog(ctx.mount, ctx.catalogResource);
+          } catch { /* Keep the unavailable state and the original API error. */ }
+        }
+        throw error;
+      }
       await afterMutation(ctx, original.id ? text('saved') : text('booking_pending'));
     }, original.id ? t('save') : text('book'));
     if (!form) return;
@@ -609,11 +923,15 @@ window.RegistrationExtras = (() => {
     const renderProduct = (productId, preserve = false) => {
       const area = form.querySelector('[data-extras-product-fields]');
       currentProduct = products[currentType].find(item => String(item.id) === String(productId));
+      const available = keepsProduct() || hasPrice(currentProduct);
+      form.dataset.bookingAvailable = String(available);
+      form.querySelector('[type="submit"]').disabled = !available;
       if (!currentProduct) { area.innerHTML = ''; return; }
       const item = currentProduct;
       const attendee = form.querySelector('[name="attendee_id"]');
       if (attendee) attendee.required = currentType !== 'SERVICE';
-      let content = `<p class="mt-3"><strong>${html(item.name)}</strong>${item.price != null ? ` · ${html(money(item.price))}` : ''}</p>`;
+      const amount = keepsProduct() ? original.unit_price ?? (original.total_amount != null ? Number(original.total_amount) / (Number(original.quantity) || 1) : null) : item.price;
+      let content = `<p class="mt-3"><strong>${html(item.name)}</strong>${amount != null ? ` · ${html(money(amount))}` : ''}</p>${available ? '' : notice(text('price_unavailable'), 'warning')}`;
       if (currentType === 'SERVICE') content += input('quantity', preserve ? original.quantity || 1 : 1, { type: 'number', min: 1, step: 1, required: true });
       if (currentType === 'WORKSHOP') content += workshopDescription(item) + `<p class="small text-body-secondary">${html(text('capacity_pending_hint'))}</p>`;
       if (currentType === 'PACK') {
@@ -671,13 +989,13 @@ window.RegistrationExtras = (() => {
   }
 
   async function openDetails(ctx, row) {
+    if (['workshops', 'packs', 'services'].includes(ctx.resource)) return;
     const item = await request(`${resourcePath(ctx.resource, ctx.accountId)}/${id(row.id)}`);
     if (ctx.resource === 'bookings' && item.attendee_id != null) {
       ctx.participants = await loadBookingParticipants(ctx.accountId);
     }
     let content = `<dl class="extras-detail-grid">${columns(ctx).map(key => fieldLabel(text(key), cell(ctx, item, key))).join('')}</dl>`;
     if (item.description && !columns(ctx).includes('description')) content += `<p class="extras-description">${html(item.description)}</p>`;
-    if (ctx.resource === 'workshops') content += occupancyMarkup(await request(`/admin/workshops/${id(row.id)}/occupancy`));
     if (ctx.resource === 'discount-codes') {
       const usage = await request(`/admin/discount-codes/${id(row.id)}/usage`);
       content += `<h3 class="h6">${html(text('usage'))}</h3><dl class="extras-detail-grid">${['used_count', 'max_uses', 'remaining_uses'].map(key => fieldLabel(text(key), html(usage[key] ?? text('unlimited')))).join('')}</dl>`;
@@ -807,6 +1125,7 @@ window.RegistrationExtras = (() => {
       const row = ctx.rows.find(item => String(item.id) === target.dataset.id);
       if (!row) return;
       if (action === 'details') await openDetails(ctx, row);
+      if (action === 'prices' && canManage(ctx)) await openPrices(ctx, row);
       if (action === 'edit') await openEditor(ctx, row);
       if (['delete', 'validate', 'reject'].includes(action)) await confirmAction(ctx, action, row);
       if (action === 'toggle') {
@@ -824,7 +1143,7 @@ window.RegistrationExtras = (() => {
     if (form.matches('[data-extras-filters]')) {
       const ctx = closestContext(form);
       const data = Object.fromEntries(new FormData(form));
-      ctx.page = 1; ctx.pageSize = Number(data.page_size); delete data.page_size;
+      ctx.page = 1; if (data.page_size) ctx.pageSize = Number(data.page_size); delete data.page_size;
       ctx.filters = data;
       return loadContext(ctx);
     }

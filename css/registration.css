@@ -12,12 +12,54 @@
 .extras-actions .btn { min-height: 38px; }
 .extras-filters, .extras-form-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--lm-space-3); }
 .extras-filters > *, .extras-form-field { min-width: 0; }
+.extras-product-editor-fields > :nth-child(-n+2) { grid-column: 1 / -1; }
+.extras-product-editor-heading { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--lm-space-3); min-width: 0; }
+.extras-price-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.extras-price-fields > legend { float: none; width: auto; }
+.extras-price-form-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .8fr); align-items: end; gap: var(--lm-space-3); }
+.extras-price-form-grid .form-control { min-width: 0; max-width: 100%; padding-inline: var(--lm-space-1); }
+.extras-price-form-grid .input-group { flex-wrap: nowrap; }
+.extras-price-form-grid .input-group-text { padding-inline: var(--lm-space-1); }
+.extras-price-submit { display: grid; grid-column: 1 / -1; }
+.extras-prices-table { margin-top: var(--lm-space-4); }
+.extras-prices-table :is(th, td) { white-space: nowrap; }
+@media (max-width: 575.98px) {
+  .extras-price-form-grid { gap: var(--lm-space-1); }
+  .extras-price-form-grid :is(.form-label, .form-control, .input-group-text) { font-size: var(--lm-font-card-meta); }
+}
+@media (min-width: 768px) {
+  .extras-price-form-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .extras-price-submit { grid-column: auto; }
+  .extras-price-form-grid .form-control, .extras-price-form-grid .input-group-text { padding-inline: var(--lm-space-3); }
+}
+.extras-pack-editor-workshops .extras-workshop-option { min-width: 0; }
 .extras-filters .form-label, .extras-form-field .form-label { color: var(--lm-text-muted); font-size: var(--lm-font-card-body); }
+.extras-filters.extras-filters--compact { display: flex; align-items: end; flex-wrap: wrap; gap: var(--lm-space-2); }
+.extras-filters--compact > :not(.extras-actions) { flex: 0 1 280px; min-width: 0; }
+.extras-filters--compact .form-label { margin-bottom: var(--lm-space-1); }
+.extras-filters--compact .form-select { min-height: 38px; padding-block: var(--lm-space-1); font-size: var(--lm-font-card-body); }
 .extras-mobile-list, .extras-catalog-grid { display: grid; gap: var(--lm-space-3); }
 .extras-desktop-table { display: none; }
 .extras-desktop-table th { white-space: nowrap; }
 .extras-desktop-table td { min-width: 95px; max-width: 260px; font-size: var(--lm-font-data); }
 .extras-desktop-table td .extras-actions { min-width: 170px; }
+.extras-desktop-table :is(th, td).extras-workshop-count { width: 1%; min-width: 0; text-align: center; white-space: nowrap; }
+.extras-pack-workshop-badges { display: flex; flex-wrap: wrap; gap: var(--lm-space-1); }
+.extras-pack-workshop-badges .lm-status { padding: var(--lm-space-1) var(--lm-space-2); font-size: .6875rem; white-space: normal; overflow-wrap: anywhere; text-align: left; }
+#extras-workshops .extras-desktop-table td:last-child { max-width: none; width: 1%; }
+#extras-workshops .extras-desktop-table .extras-actions { flex-wrap: nowrap; width: max-content; }
+#extras-workshops .extras-desktop-table .extras-actions .btn { white-space: nowrap; }
+.extras-workshop-schedule { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--lm-space-3); }
+.extras-workshop-schedule > :first-child { grid-column: 1 / -1; }
+.extras-time-field { margin: 0; padding: 0; border: 0; }
+.extras-time-field > legend { float: none; width: auto; margin-bottom: var(--lm-space-2); }
+.extras-time-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--lm-space-1); }
+.extras-time-controls > div { min-width: 0; }
+.extras-time-controls > span { color: var(--lm-text-soft); }
+.extras-time-controls .form-select { padding-left: var(--lm-space-2); padding-right: var(--lm-space-5); background-position: right var(--lm-space-1) center; }
+.extras-active-field { display: flex; align-items: center; align-self: end; min-height: 44px; }
+.extras-active-field .form-check { display: flex; align-items: center; gap: var(--lm-space-2); margin: 0; padding: 0; }
+.extras-active-field .form-check-input { float: none; flex-shrink: 0; margin: 0; }
 .extras-detail-grid, .extras-finance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--lm-space-3); }
 .extras-detail-grid dt, .extras-finance-grid dt { margin-bottom: var(--lm-space-1); color: var(--lm-text-soft); font-size: var(--lm-font-card-meta); font-weight: 500; }
 .extras-detail-grid dd, .extras-finance-grid dd { margin: 0; font-size: var(--lm-font-card-body); }
@@ -26,13 +68,22 @@
 .extras-pagination { justify-content: space-between; margin-top: var(--lm-space-4); font-size: var(--lm-font-card-meta); }
 .extras-catalog-card { display: flex; min-width: 0; flex-direction: column; gap: var(--lm-space-2); }
 .extras-catalog-card h4 { color: var(--lm-text); }
+.extras-workshop-reservations { display: grid; gap: var(--lm-space-2); margin-block: var(--lm-space-2); }
+.extras-booking-marker { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--lm-space-2); min-width: 0; }
+.extras-booking-marker > .lm-status { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+.extras-booking-marker > .lm-status, .extras-service-reservations .lm-status { padding: var(--lm-space-1) var(--lm-space-2); gap: var(--lm-space-1); font-size: .6875rem; line-height: 1.2; letter-spacing: 0; font-weight: 600; }
+.extras-booking-marker i { flex-shrink: 0; }
+.extras-service-reservations { display: grid; gap: var(--lm-space-2); padding: var(--lm-space-3); border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-md); background: var(--lm-bg-elevated); }
+.extras-service-reservations > strong { color: var(--lm-cyan); font-size: var(--lm-font-card-body); }
+.extras-service-reservations .lm-status { white-space: normal; }
 .extras-catalog-card-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--lm-space-2); margin-top: auto; padding-top: var(--lm-space-3); }
+.extras-catalog-card-footer > :is(.extras-workshop-reservations, .extras-service-reservations) { flex-basis: 100%; min-width: 0; margin: 0; }
 .extras-description { white-space: pre-wrap; }
 .extras-occupancy { display: grid; gap: var(--lm-space-2); min-width: 0; font-size: var(--lm-font-card-meta); color: var(--lm-text-muted); }
 .extras-occupancy-track { height: 8px; overflow: hidden; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-pill); background: var(--lm-bg-elevated); }
 .extras-occupancy-track > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--lm-blue), var(--lm-cyan)); }
-.extras-availability { justify-self: start; gap: var(--lm-space-2); white-space: normal; }
-.extras-availability strong { font-size: var(--lm-font-card-title); }
+.extras-availability { justify-self: start; gap: var(--lm-space-1); padding: var(--lm-space-1) var(--lm-space-2); font-size: .6875rem; line-height: 1.2; letter-spacing: 0; white-space: normal; }
+.extras-availability strong { font-size: inherit; }
 .extras-workshop-selector { margin-top: var(--lm-space-4); padding: var(--lm-space-3); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); }
 .extras-workshop-options { display: grid; gap: var(--lm-space-2); max-height: 320px; overflow-y: auto; }
 .extras-workshop-option { display: flex; align-items: flex-start; gap: var(--lm-space-3); padding: var(--lm-space-3); border: 1px solid var(--lm-border); background: var(--lm-surface); border-radius: var(--lm-radius-sm); cursor: pointer; }
@@ -47,8 +98,9 @@
 .extras-catalog-tabs [aria-selected="true"] { color: var(--lm-cyan); border-color: var(--lm-border-strong); background: var(--lm-surface-raised); }
 .extras-catalog-card h4 { margin-bottom: 0; font-size: var(--lm-font-card-title); font-weight: 700; }
 .extras-catalog-card .extras-description { margin-bottom: var(--lm-space-2); color: var(--lm-text-muted) !important; font-size: var(--lm-font-card-body); }
-.extras-catalog-card-footer { border-top: 1px solid var(--lm-border); }
-.extras-catalog-card-footer > strong { color: var(--lm-cyan); font-size: 1.25rem; }
+.extras-catalog-card-footer::after { content: ""; order: 1; flex-basis: 100%; border-top: 1px solid var(--lm-border); margin-block: var(--lm-space-1); }
+.extras-catalog-card-footer > button { order: 2; }
+.extras-catalog-card-footer > strong { order: 2; color: var(--lm-cyan); font-size: 1.25rem; }
 .extras-session-meta { display: grid; gap: var(--lm-space-3); margin-block: var(--lm-space-2) var(--lm-space-3); padding: var(--lm-space-3); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-bg-elevated); }
 .extras-session-meta > span { display: flex; align-items: flex-start; gap: var(--lm-space-2); min-width: 0; }
 .extras-session-meta i { color: var(--lm-cyan); flex-shrink: 0; }
@@ -79,13 +131,20 @@
 .extras-discount-form > div { flex: 1 1 180px; min-width: 0; }
 .registration-extras :is(button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 2px; }
 @media (min-width: 576px) {
+  .extras-product-editor-heading { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+  .extras-workshop-schedule { grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr)); }
+  .extras-workshop-schedule > :first-child { grid-column: auto; }
   .extras-form-grid, .extras-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .extras-finance-grid { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
   .extras-catalog-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
 }
 @media (min-width: 768px) {
+  .extras-pack-editor-workshops .extras-workshop-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .extras-catalog-grid--workshops { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .extras-catalog-grid--packs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 992px) {
+  .extras-pack-editor-workshops .extras-workshop-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (min-width: 1200px) {
   .extras-catalog-grid--workshops { grid-template-columns: repeat(6, minmax(0, 1fr)); }

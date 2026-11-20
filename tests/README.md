@@ -25,6 +25,10 @@ Las personas de workshops, packs y servicios proceden de la consulta compartida 
 
 Los importes de `/api/extras` se interpretan en euros decimales. `RegistrationExtras.getFinanceSummary()` los convierte a céntimos para los cálculos y formateadores existentes de Inscripciones. `total_amount` se toma directamente como total debido; solo se restan los pagos validados para calcular el saldo pendiente.
 
+Las tarifas de workshops, packs y servicios se gestionan mediante `/admin/{recurso}/{id}/prices` (GET/POST) y `/admin/{recurso}/{id}/prices/{priceId}` (PATCH/DELETE). Las pruebas comprueban rangos inclusivos, límites del periodo de inscripción sin convertir zonas horarias, importes decimales positivos, solapamientos y conflictos concurrentes, recarga tras las escrituras y ausencia de `price` en el CRUD de productos. También cubren el bloqueo de nuevas reservas sin tarifa vigente, la recuperación del código `extras_price_not_available` y la edición de reservas pendientes con su importe histórico.
+
+La regresión del modal de tarifas pulsa los botones reales «Añadir precio» y «Guardar precio» para verificar POST y PATCH, además de comprobar que cancelar la edición solo limpia los campos. No se limita a emitir un evento `submit` directamente.
+
 Los endpoints usados parten de `/api/extras`:
 
 | Ámbito | Recursos y operaciones |
