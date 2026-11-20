@@ -170,6 +170,44 @@ test('school/individual navigation keeps the original Participants tab and remov
   } finally { h.close(); }
 });
 
+test('school catalog tabs support keyboard navigation and keep the selected tab after refresh', async () => {
+  const h = harness();
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    const doc = h.w.document;
+    assert.equal(h.w.getVisibleRegistrationNavItems().find(item => item.key === 'extras-workshops').labelKey, 'extras_workshops_packs');
+    assert.equal(doc.querySelector('#extras-workshops h2, #extras-workshops h3'), null);
+    assert.equal(doc.querySelector('#extras-workshops-workshops-catalog').hidden, false);
+    assert.equal(doc.querySelector('#extras-workshops-packs-catalog').hidden, true);
+    doc.querySelector('[data-extras-catalog-tab="workshops"]').dispatchEvent(new h.w.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    assert.equal(doc.querySelector('#extras-workshops-workshops-catalog').hidden, true);
+    assert.equal(doc.querySelector('#extras-workshops-packs-catalog').hidden, false);
+    assert.equal(doc.activeElement.dataset.extrasCatalogTab, 'packs');
+    await h.click('#extras-workshops [data-extras-action="catalog-refresh"]');
+    assert.equal(doc.querySelector('[data-extras-catalog-tab="packs"]').getAttribute('aria-selected'), 'true');
+    assert.equal(doc.querySelector('#extras-workshops-packs-catalog').hidden, false);
+    await h.click('[data-extras-catalog-tab="workshops"]');
+    assert.equal(doc.querySelector('#extras-workshops-packs-catalog').hidden, true);
+  } finally { h.close(); }
+});
+
+test('new workshop, pack and service bookings automatically select the sole account participant', async () => {
+  for (const resource of ['workshops', 'packs', 'services']) {
+    const h = harness();
+    h.data.participants = [h.data.participants.find(person => person.id === 21)];
+    try {
+      await h.init(); await h.navigate(resource === 'services' ? 'extras-services' : 'extras-workshops');
+      if (resource === 'services') assert.equal(h.w.getVisibleRegistrationNavItems().find(item => item.key === 'extras-services').labelKey, 'extras_galas_extras');
+      if (resource === 'packs') await h.click('[data-extras-catalog-tab="packs"]');
+      await h.click(`[data-extras-action="book"][data-resource="${resource}"][data-id="${resource === 'services' ? 31 : resource === 'packs' ? 7 : 11}"]`);
+      assert.equal(h.w.document.querySelector('#registrationExtrasModal [name="attendee_id"]').value, '21');
+      await h.submit();
+      assert.equal(h.lastMutation().body.attendee_id, 21);
+      assert.equal(h.lastMutation().body.item_type, resource === 'services' ? 'SERVICE' : resource === 'packs' ? 'PACK' : 'WORKSHOP');
+    } finally { h.close(); }
+  }
+});
+
 test('admin uses bearer auth and numeric event context; organizer and school omit event header', async () => {
   for (const role of ['admin', 'organizer', 'school']) {
     const h = harness({ role });

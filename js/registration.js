@@ -814,7 +814,12 @@ function setupRegistrationNavigation(role) {
 
 function getVisibleRegistrationNavItems(role = registrationNavigationState.role) {
   return REGISTRATION_NAV_ITEMS.filter(item => item.roles.includes(role)
-    && (!item.extras || getEvent()?.hasWorkshopsServices === true));
+    && (!item.extras || getEvent()?.hasWorkshopsServices === true))
+    .map(item => role === 'school' && item.key === 'extras-workshops'
+      ? { ...item, labelKey: 'extras_workshops_packs', fallbackLabel: 'Workshops / Packs' }
+      : role === 'school' && item.key === 'extras-services'
+        ? { ...item, labelKey: 'extras_galas_extras', fallbackLabel: 'Galas y Extras' }
+      : item);
 }
 
 function hasRegistrationPaymentInstructions() {

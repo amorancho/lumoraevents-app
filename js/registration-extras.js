@@ -272,11 +272,16 @@ window.RegistrationExtras = (() => {
     }
   }
 
-  function occupancyMarkup(item) {
+  function occupancyMarkup(item, compact = false) {
     const capacity = Math.max(0, Number(item.capacity) || 0);
     const validated = Number(item.validated_count) || 0;
     const percent = capacity ? Math.min(100, Math.max(0, validated / capacity * 100)) : 0;
-    return `<div class="extras-occupancy"><div class="extras-occupancy-track" role="progressbar" aria-label="${html(text('validated_count'))}" aria-valuemin="0" aria-valuemax="${capacity}" aria-valuenow="${validated}"><span style="width:${percent}%"></span></div><span>${html(text('validated_count'))}: ${validated} · ${html(text('pending_count'))}: ${html(item.pending_count ?? '—')} · ${html(text('available_count'))}: ${html(item.available_count ?? '—')}</span></div>`;
+    const availability = item.available_count;
+    const availabilityState = availability == null ? 'neutral' : Number(availability) > 0 ? 'success' : 'warning';
+    const caption = compact
+      ? `<span class="extras-availability lm-status lm-status-${availabilityState}"><i class="bi bi-ticket-perforated" aria-hidden="true"></i>${html(text('available_count'))}<strong>${html(availability ?? '—')}</strong></span>`
+      : `<span>${html(text('validated_count'))}: ${validated} · ${html(text('pending_count'))}: ${html(item.pending_count ?? '—')} · ${html(text('available_count'))}: ${html(availability ?? '—')}</span>`;
+    return `<div class="extras-occupancy"><div class="extras-occupancy-track" role="progressbar" aria-label="${html(text('validated_count'))}" aria-valuemin="0" aria-valuemax="${capacity}" aria-valuenow="${validated}"><span style="width:${percent}%"></span></div>${caption}</div>`;
   }
   function columns(ctx) {
     if (ctx.resource === 'workshops') return ['name', 'teacher', 'start_at', 'end_at', 'price', 'capacity', 'occupancy', 'status'];
@@ -331,22 +336,51 @@ window.RegistrationExtras = (() => {
     const serial = String(Number(mount.dataset.request || 0) + 1);
     mount.dataset.request = serial;
     const generation = state.generation;
-    mount.innerHTML = `<div class="extras-heading"><h2 class="h4">${html(text(resourceLabels[resource]))}</h2>${button('catalog-refresh', text('refresh'), resource, 'outline-secondary')}</div><div data-extras-catalog-list>${loading()}</div>`;
+    const splitCatalog = resource === 'workshops';
+    const selectedTab = mount.dataset.catalogTab === 'packs' ? 'packs' : 'workshops';
+    const tabs = splitCatalog ? `<div class="extras-catalog-tabs" role="tablist" aria-label="${html(text('workshops_packs'))}">${['workshops', 'packs'].map(kind => `<button type="button" role="tab" id="${mount.id}-${kind}-tab" aria-controls="${mount.id}-${kind}-catalog" aria-selected="${kind === selectedTab}" tabindex="${kind === selectedTab ? '0' : '-1'}" data-extras-catalog-tab="${kind}">${html(text(resourceLabels[kind]))}</button>`).join('')}</div>` : `<h2 class="h4">${html(text(resourceLabels[resource]))}</h2>`;
+    mount.innerHTML = `<div class="extras-heading">${tabs}${button('catalog-refresh', text('refresh'), resource, 'outline-secondary')}</div><div data-extras-catalog-list>${loading()}</div>`;
     const list = mount.querySelector('[data-extras-catalog-list]');
     try {
       const resources = resource === 'workshops' ? ['workshops', 'packs'] : ['services'];
       const results = await Promise.all(resources.map(item => request(`/catalog/${item}`)));
       if (!sameEvent(generation) || mount.dataset.request !== serial) return;
-      list.innerHTML = resources.map((kind, index) => `<section class="mb-4"><h3 class="h5">${html(text(resourceLabels[kind]))}</h3><div class="extras-catalog-grid">${results[index].map(item => catalogCard(kind, item)).join('') || `<p>${html(text('empty'))}</p>`}</div></section>`).join('');
+      list.innerHTML = resources.map((kind, index) => `<section class="mb-4"${splitCatalog ? ` id="${mount.id}-${kind}-catalog" role="tabpanel" aria-labelledby="${mount.id}-${kind}-tab" tabindex="0"${kind !== mount.querySelector('[aria-selected="true"]').dataset.extrasCatalogTab ? ' hidden' : ''}` : ''}><div class="extras-catalog-grid${splitCatalog ? ` extras-catalog-grid--${kind}` : ''}">${results[index].map(item => catalogCard(kind, kind === 'packs' ? { ...item, workshops: packWorkshops(item, results[0]) } : item)).join('') || `<p>${html(text('empty'))}</p>`}</div></section>`).join('');
     } catch (error) {
       if (sameEvent(generation) && mount.dataset.request === serial) list.innerHTML = notice(error.message) + button('catalog-refresh', text('retry'), resource);
     }
   }
+  function selectCatalogTab(tab) {
+    const mount = tab.closest('[data-extras-resource]');
+    mount.dataset.catalogTab = tab.dataset.extrasCatalogTab;
+    mount.querySelectorAll('[data-extras-catalog-tab]').forEach(button => {
+      const selected = button === tab;
+      button.setAttribute('aria-selected', String(selected));
+      button.tabIndex = selected ? 0 : -1;
+      const panel = document.getElementById(button.getAttribute('aria-controls'));
+      if (panel) panel.hidden = !selected;
+    });
+  }
+  function workshopMeta(item) {
+    const start = item.start_at ? new Date(item.start_at) : null;
+    const end = item.end_at ? new Date(item.end_at) : null;
+    const locale = getRegistrationLanguage();
+    const day = start && !Number.isNaN(start.getTime()) ? start.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short' }) : '—';
+    const time = value => value && !Number.isNaN(value.getTime()) ? value.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '—';
+    return `<span class="extras-session-meta"><span class="extras-session-teacher"><i class="bi bi-person" aria-hidden="true"></i><span><small>${html(text('teacher'))}</small><strong>${html(item.teacher || '—')}</strong></span></span><span class="extras-session-schedule"><i class="bi bi-calendar-event" aria-hidden="true"></i><span>${html(day)}<strong>${html(time(start))} – ${html(time(end))}</strong></span></span></span>`;
+  }
+  function packWorkshops(item, catalog) {
+    const workshops = item.workshops?.length ? item.workshops : catalog.filter(w => ids(item).includes(Number(w.id)));
+    return workshops.map(w => ({ ...catalog.find(entry => Number(entry.id) === Number(w.id)), ...w }));
+  }
+  function packWorkshopSummary(item) {
+    return `<div class="extras-pack-composition"><p class="extras-pack-mode"><span class="lm-status lm-status-purple">${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))}</span><strong>${html(item.workshop_count)} ${html(text('workshops'))}</strong></p><details class="extras-pack-details"><summary><i class="bi bi-collection" aria-hidden="true"></i><span>${html(text(item.mode === 'FLEX' ? 'available_workshops' : 'included_workshops'))}</span><i class="bi bi-chevron-down extras-pack-chevron" aria-hidden="true"></i></summary><p class="extras-pack-hint">${html(item.mode === 'FLEX' ? text('select_exactly').replace('{count}', item.workshop_count) : text('included_workshops'))}</p><ul class="extras-workshop-summary">${(item.workshops || []).map(w => `<li><strong class="extras-session-name">${html(w.name)}</strong>${workshopMeta(w)}</li>`).join('')}</ul></details></div>`;
+  }
   function workshopDescription(item) {
-    return `<p class="small text-body-secondary mb-2">${html(item.teacher || '')}<br>${html(date(item.start_at))} – ${html(date(item.end_at))}</p>${occupancyMarkup(item)}`;
+    return workshopMeta(item) + occupancyMarkup(item, !admin());
   }
   function catalogCard(resource, item) {
-    const packWorkshops = resource === 'packs' ? `<p>${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))} · ${html(item.workshop_count)} ${html(text('workshops'))}</p><ul class="extras-workshop-summary">${(item.workshops || []).map(w => `<li>${html(w.name)} · ${html(w.teacher || '')}<br><small>${html(date(w.start_at))} – ${html(date(w.end_at))}</small></li>`).join('')}</ul>` : '';
+    const packWorkshops = resource === 'packs' ? packWorkshopSummary(item) : '';
     return `<article class="lm-card lm-card-body extras-catalog-card"><h4 class="h6">${html(item.name)}</h4><p class="extras-description text-body-secondary">${html(item.description || '')}</p>${resource === 'workshops' ? workshopDescription(item) : packWorkshops}<div class="extras-catalog-card-footer"><strong>${html(money(item.price))}</strong><button type="button" class="btn btn-primary btn-sm" data-extras-action="book" data-resource="${resource}" data-id="${html(item.id)}">${html(text('book'))}</button></div></article>`;
   }
 
@@ -430,7 +464,7 @@ window.RegistrationExtras = (() => {
     return `<div class="extras-form-field"><label class="form-label" for="extras-field-${name}">${html(text(name))}</label><select class="form-select lm-input" id="extras-field-${name}" name="${name}"${required ? ' required' : ''}${disabled ? ' disabled' : ''}>${options.map(([key, label]) => `<option value="${html(key)}"${String(key) === String(value) ? ' selected' : ''}>${html(label)}</option>`).join('')}</select></div>`;
   }
   function workshopSelector(workshops, selected = [], disabled = false) {
-    return `<fieldset class="extras-workshop-selector"${disabled ? ' disabled' : ''}><legend class="fs-6">${html(text('workshops'))}</legend><p class="small text-body-secondary" data-extras-selection-hint></p><p class="small" data-extras-selection-count aria-live="polite"></p><div class="extras-workshop-options">${workshops.map(w => `<label class="extras-workshop-option"><input class="form-check-input" type="checkbox" name="workshop_ids" value="${html(w.id)}"${selected.includes(Number(w.id)) ? ' checked' : ''}><span><strong>${html(w.name)}</strong><small>${html(w.teacher || '')} · ${html(date(w.start_at))}</small></span></label>`).join('') || `<p>${html(text('empty'))}</p>`}</div></fieldset>`;
+    return `<fieldset class="extras-workshop-selector"${disabled ? ' disabled' : ''}><legend class="fs-6">${html(text('workshops'))}</legend><p class="small text-body-secondary" data-extras-selection-hint></p><p class="small" data-extras-selection-count aria-live="polite"></p><div class="extras-workshop-options">${workshops.map(w => `<label class="extras-workshop-option"><input class="form-check-input" type="checkbox" name="workshop_ids" value="${html(w.id)}"${selected.includes(Number(w.id)) ? ' checked' : ''}><span class="extras-workshop-option-content"><strong class="extras-session-name">${html(w.name)}</strong>${workshopMeta(w)}</span></label>`).join('') || `<p>${html(text('empty'))}</p>`}</div></fieldset>`;
   }
   function selectedWorkshops(form) { return [...form.querySelectorAll('[name="workshop_ids"]:checked')].map(item => id(item.value)); }
   function bindWorkshopCounter(form, getRequirement) {
@@ -584,8 +618,8 @@ window.RegistrationExtras = (() => {
       if (currentType === 'WORKSHOP') content += workshopDescription(item) + `<p class="small text-body-secondary">${html(text('capacity_pending_hint'))}</p>`;
       if (currentType === 'PACK') {
         content += `<p>${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))}</p>`;
-        if (item.mode === 'FLEX') content += workshopSelector(item.workshops || workshops.filter(w => ids(item).includes(Number(w.id))), preserve ? ids(original) : []);
-        else content += `<ul>${(item.workshops || []).map(w => `<li>${html(w.name)} · ${html(date(w.start_at))}</li>`).join('')}</ul>`;
+        if (item.mode === 'FLEX') content += workshopSelector(packWorkshops(item, workshops), preserve ? ids(original) : []);
+        else content += packWorkshopSummary({ ...item, workshops: packWorkshops(item, workshops) });
       }
       area.innerHTML = content;
       if (item.mode === 'FLEX' && currentType === 'PACK') {
@@ -600,7 +634,8 @@ window.RegistrationExtras = (() => {
     };
     const renderType = (type, productId = '') => {
       currentType = type;
-      form.querySelector('[data-extras-booking-fields]').innerHTML = `<div class="extras-form-grid">${select('product_id', [['', text('select_product')], ...products[type].map(item => [item.id, item.name])], productId)}${select('attendee_id', attendeeOptions, original.attendee_id || '', type !== 'SERVICE')}</div>${participantError ? notice(participantError, 'warning') : !participants.length && type !== 'SERVICE' ? notice(text(admin() ? 'account_needs_participants' : 'create_participant_first'), 'info') : ''}<div data-extras-product-fields></div>`;
+      const attendeeId = original.attendee_id || (!original.id && (type !== 'SERVICE' || !admin()) && participants.length === 1 ? participants[0].id : '');
+      form.querySelector('[data-extras-booking-fields]').innerHTML = `<div class="extras-form-grid">${select('product_id', [['', text('select_product')], ...products[type].map(item => [item.id, item.name])], productId)}${select('attendee_id', attendeeOptions, attendeeId, type !== 'SERVICE')}</div>${participantError ? notice(participantError, 'warning') : !participants.length && type !== 'SERVICE' ? notice(text(admin() ? 'account_needs_participants' : 'create_participant_first'), 'info') : ''}<div data-extras-product-fields></div>`;
       form.querySelector('[name="product_id"]').addEventListener('change', event => renderProduct(event.target.value));
       renderProduct(productId, Boolean(original.id));
     };
@@ -718,6 +753,11 @@ window.RegistrationExtras = (() => {
     else showMessageModal(error.message, t('error_title', 'Error'));
   }
   async function handleClick(event) {
+    const catalogTab = event.target.closest('[data-extras-catalog-tab]');
+    if (catalogTab && enabled()) {
+      selectCatalogTab(catalogTab);
+      return;
+    }
     const tab = event.target.closest('[data-extras-account-tab]');
     if (tab && enabled()) {
       state.accountTab = tab.dataset.extrasAccountTab;
@@ -835,6 +875,15 @@ window.RegistrationExtras = (() => {
     if (!state.initialized) {
       state.initialized = true;
       document.addEventListener('click', handleClick);
+      document.addEventListener('keydown', event => {
+        const tab = event.target.closest('[data-extras-catalog-tab]');
+        if (!tab || !enabled() || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const tabs = [...tab.parentElement.querySelectorAll('[data-extras-catalog-tab]')];
+        const index = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+        selectCatalogTab(tabs[index]);
+        tabs[index].focus();
+      });
       document.addEventListener('submit', handleSubmit);
       window.addEventListener('registration:panel-changed', event => {
         loadPanel(event.detail.key);
