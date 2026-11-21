@@ -323,21 +323,16 @@ window.RegistrationExtras = (() => {
         const form = ctx.mount.querySelector('[data-extras-filters]');
         if (form) form.outerHTML = bookingFilters(ctx);
       }
-      const [data, workshopCatalog] = await Promise.all([
-        ctx.resource === 'bookings' ? loadAccountBookings(ctx.filters, resourcePath('bookings', ctx.accountId)).then(data => ({ data })) : request(resourcePath(ctx.resource, ctx.accountId)),
-        ctx.resource === 'packs' ? request('/admin/workshops').catch(() => null) : null
-      ]);
+      const data = ctx.resource === 'bookings' ? await loadAccountBookings(ctx.filters, resourcePath('bookings', ctx.accountId)).then(data => ({ data })) : await request(resourcePath(ctx.resource, ctx.accountId));
       if (!sameEvent(generation) || serial !== ctx.request) return;
-      if (ctx.resource === 'packs') ctx.allWorkshopIds = Array.isArray(workshopCatalog) ? [...new Set(workshopCatalog.map(workshop => Number(workshop.id)))] : null;
+      if (ctx.resource === 'packs') {
+        const workshops = [...state.contexts.values()].find(context => context.resource === 'workshops')?.rows;
+        ctx.allWorkshopIds = workshops?.length ? workshops.map(workshop => Number(workshop.id)) : null;
+      }
       ctx.rows = ctx.resource === 'bookings' ? data?.data : data;
       if (!Array.isArray(ctx.rows)) throw new Error(text('invalid_response'));
       if (['workshops', 'packs', 'services'].includes(ctx.resource) && admin()) {
-        const prices = await Promise.allSettled(ctx.rows.map(row => request(`/admin/${ctx.resource}/${id(row.id)}/prices`).then(data => {
-          if (!Array.isArray(data)) throw new Error(text('invalid_response'));
-          return data;
-        })));
-        if (!sameEvent(generation) || serial !== ctx.request) return;
-        ctx.productPrices = new Map(ctx.rows.map((row, index) => [String(row.id), prices[index]]));
+        if (!ctx.rows.every(row => Array.isArray(row.prices))) throw new Error(text('invalid_response'));
       }
       if (ctx.resource === 'bookings') {
         ctx.rows = await resolveBookingNames(ctx.rows);
@@ -391,7 +386,7 @@ window.RegistrationExtras = (() => {
     if (key === 'time_range') return `${html(workshopDatePart(row.start_at, true))} – ${html(workshopDatePart(row.end_at, true))}`;
     if (key === 'status') return ctx.resource === 'bookings' ? status(row.status) : `<span class="lm-status lm-status-${isActive(row) ? 'success' : 'neutral'}">${html(text(isActive(row) ? 'active' : 'inactive'))}</span>`;
     if (key === 'occupancy') return occupancyMarkup(row, false, true);
-    if (key === 'prices') return productPricesMarkup(ctx, row);
+    if (key === 'prices') return productPricesMarkup(row);
     if (key === 'price' || key === 'amount') return html(money(ctx.resource === 'bookings' ? row.total_amount : row[key]));
     if (['start_at', 'end_at', 'valid_from', 'valid_until', 'created_at'].includes(key)) return html(date(row[key]));
     if (key === 'max_uses') return html(row.max_uses ?? text('unlimited'));
@@ -413,19 +408,14 @@ window.RegistrationExtras = (() => {
     if (key === 'prices') return text('prices');
     return text(ctx.resource === 'packs' && key === 'workshops' ? 'available_workshops' : key);
   }
-  function productPricesMarkup(ctx, row) {
-    const result = ctx.productPrices?.get(String(row.id));
-    if (result?.status === 'rejected') return `<span class="text-danger" role="status">${html(result.reason?.message || text('request_error'))}</span>`;
-    const prices = result?.value || [];
+  function productPricesMarkup(row) {
+    const prices = row.prices || [];
     if (!prices.length) return `<span class="text-body-secondary">${html(text('prices_empty'))}</span>`;
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const formatDay = value => {
-      const day = calendarDay(String(value || '').slice(0, 10));
-      return day ? new Intl.DateTimeFormat(getRegistrationLanguage(), { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${day}T12:00:00`)) : '—';
-    };
-    return `<div class="registration-category-price-ranges">${[...prices].sort((a, b) => String(a.start_date).localeCompare(String(b.start_date))).map(price => {
-      const current = price.is_current == null ? price.start_date <= today && today <= price.end_date : [true, 1, '1'].includes(price.is_current);
+    const formatDay = value => calendarDay(value) || '—';
+    return `<div class="registration-category-price-ranges">${prices.map(price => {
+      const current = row.price != null && Number(row.price) === Number(price.price) && price.start_date <= today && today <= price.end_date;
       return `<div class="registration-category-price-range${current ? ' registration-category-price-range--current' : ''}"${current ? ' aria-current="true"' : ''}><span class="registration-category-price-range__dates">${html(formatDay(price.start_date))} - ${html(formatDay(price.end_date))}</span><strong class="registration-category-price-range__amount">${html(money(price.price))}</strong>${current ? `<i class="bi bi-check-circle-fill" aria-hidden="true"></i><span class="visually-hidden">${html(t('registration_categories_price_current'))}</span>` : ''}</div>`;
     }).join('')}</div>`;
   }
@@ -812,15 +802,11 @@ window.RegistrationExtras = (() => {
         const workshops = await request('/admin/workshops');
         if (!current()) return;
         if (!Array.isArray(workshops)) throw new Error(text('invalid_response'));
-        const data = await Promise.all(workshops.map(async workshop => {
-          const prices = await request(`/admin/workshops/${id(workshop.id)}/prices`);
-          if (!Array.isArray(prices)) throw new Error(text('invalid_response'));
-          return { workshop, prices };
-        }));
+        if (!workshops.every(workshop => Array.isArray(workshop.prices))) throw new Error(text('invalid_response'));
+        const data = workshops.map(workshop => ({ workshop, prices: workshop.prices }));
         if (!current()) return;
         existing = data;
-        const priceContext = { productPrices: new Map(data.map(item => [String(item.workshop.id), { status: 'fulfilled', value: item.prices }])) };
-        list.innerHTML = `<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th scope="col">${html(text('workshop'))}</th><th scope="col">${html(text('prices'))}</th></tr></thead><tbody>${data.map(item => `<tr><td>${html(item.workshop.name)}</td><td>${productPricesMarkup(priceContext, item.workshop)}</td></tr>`).join('')}</tbody></table></div>`;
+        list.innerHTML = `<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th scope="col">${html(text('workshop'))}</th><th scope="col">${html(text('prices'))}</th></tr></thead><tbody>${data.map(item => `<tr><td>${html(item.workshop.name)}</td><td>${productPricesMarkup(item.workshop)}</td></tr>`).join('')}</tbody></table></div>`;
         ready = true;
         form.dataset.priceReady = String(periodValid);
       } catch (error) {
@@ -920,19 +906,18 @@ window.RegistrationExtras = (() => {
       cancelEdit.hidden = true;
       feedback.innerHTML = ''; confirmation.innerHTML = '';
     };
-    const reload = async () => {
+    const reload = async (preload = false) => {
       reloading = true;
       ready = false; fields.disabled = true; submit.disabled = true; form.dataset.priceReady = 'false';
       list.innerHTML = loading();
       try {
-        const [product, data] = await Promise.all([request(path), request(`${path}/prices`)]);
+        const products = preload ? ctx.rows : await request(resourcePath(ctx.resource, ctx.accountId));
         if (!current()) return;
-        if (!Array.isArray(data)) throw new Error(text('invalid_response'));
-        prices = data;
-        ctx.productPrices ||= new Map();
-        ctx.productPrices.set(String(row.id), { status: 'fulfilled', value: prices });
-        const index = ctx.rows.findIndex(item => String(item.id) === String(row.id));
-        if (index >= 0) ctx.rows[index] = product;
+        if (!Array.isArray(products) || !products.every(product => Array.isArray(product.prices))) throw new Error(text('invalid_response'));
+        const product = products.find(item => String(item.id) === String(row.id));
+        if (!product) throw new Error(text('invalid_selection'));
+        prices = product.prices;
+        ctx.rows = products;
         renderList(ctx);
         list.innerHTML = `<div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead class="table-light"><tr><th scope="col">${html(text('start_date'))}</th><th scope="col">${html(text('end_date'))}</th><th scope="col" class="text-end">${html(priceLabel)}</th><th scope="col" class="text-end">${html(text('actions'))}</th></tr></thead><tbody>${prices.map(price => `<tr><td>${html(price.start_date)}</td><td>${html(price.end_date)}</td><td class="text-end">${html(money(price.price))}</td><td class="text-end"><div class="btn-group btn-group-sm"><button type="button" class="btn btn-outline-primary" data-extras-price-action="edit" data-price-id="${html(price.id)}" title="${html(t('edit'))}" aria-label="${html(t('edit'))}"${periodValid ? '' : ' disabled'}><i class="bi bi-pencil" aria-hidden="true"></i></button><button type="button" class="btn btn-outline-danger" data-extras-price-action="delete" data-price-id="${html(price.id)}" title="${html(t('delete'))}" aria-label="${html(t('delete'))}"><i class="bi bi-trash" aria-hidden="true"></i></button></div></td></tr>`).join('')}</tbody></table></div>${prices.length ? '' : `<p class="text-muted text-center py-3 mb-0">${html(text('prices_empty'))}</p>`}`;
         refreshButton.hidden = true;
@@ -985,7 +970,7 @@ window.RegistrationExtras = (() => {
         form.dataset.saving = 'false'; target.disabled = false; submit.disabled = !ready || !periodValid;
       }
     });
-    try { await reload(); } catch { /* The list contains the error and a refresh action remains available. */ }
+    try { await reload(true); } catch { /* The list contains the error and a refresh action remains available. */ }
   }
 
   async function openEditor(ctx, row = null) {

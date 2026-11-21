@@ -104,6 +104,11 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
       else if (method === 'POST') result = { status: 201, data: { id: 99, ...call.body, status: 'PENDING' } };
       else throw new Error(`Unexpected test method: ${method} ${route}`);
     }
+    if (method === 'GET' && /^\/admin\/(workshops|packs|services)$/.test(route) && Array.isArray(result.data)) {
+      const resource = route.split('/').at(-1);
+      const withPrices = (product, kind) => ({ ...product, prices: [...(h.prices[`${kind}/${product.id}`] ?? product.prices ?? [])].sort((a, b) => a.start_date.localeCompare(b.start_date) || a.end_date.localeCompare(b.end_date) || Number(a.id) - Number(b.id)) });
+      result.data = result.data.map(product => ({ ...withPrices(product, resource), ...(resource === 'packs' ? { workshops: (product.workshops || []).map(workshop => withPrices(workshop, 'workshops')) } : {}) }));
+    }
     const code = result.status || 200;
     return new Response(code === 204 ? null : JSON.stringify(result.data), { status: code });
   };
@@ -166,6 +171,36 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
 }
 
 for (const resource of ['workshops', 'packs', 'services']) {
+  test(`${resource}: organizer and admin load one list and preload prices without extra GETs`, async () => {
+    for (const role of ['organizer', 'admin']) {
+      const h = harness({ role });
+      const product = h.data[resource][0];
+      product.price = null;
+      h.prices[`${resource}/${product.id}`] = [{ id: 100, start_date: '2026-11-01', end_date: '2026-11-30', price: 25.5 }];
+      h.prices['workshops/11'] ||= [{ id: 101, start_date: '2026-12-01', end_date: '2026-12-31', price: 40 }];
+      try {
+        await h.init();
+        const before = h.calls.length;
+        await h.navigate(`extras-${resource}`);
+        const requests = h.calls.slice(before);
+        assert.deepEqual(requests.map(call => [call.method, call.path]), [['GET', `/admin/${resource}`]]);
+        assert.equal(requests[0].headers.authorization, 'Bearer test-token');
+        assert.equal(requests[0].headers['x-event-id'], role === 'admin' ? '42' : undefined);
+        assert.equal(requests[0].url.search, '');
+        await h.click(`#extras-${resource} [data-extras-action="prices"][data-id="${product.id}"]`);
+        assert.equal(h.calls.length, before + 1);
+        const form = h.w.document.querySelector('#registrationExtrasModal form');
+        assert.match(form.querySelector('[data-extras-prices-list]').textContent, /25,50/);
+        await h.click('[data-extras-price-action="edit"][data-price-id="100"]');
+        assert.equal(form.elements.namedItem('start_date').value, '2026-11-01');
+        assert.equal(form.elements.namedItem('end_date').value, '2026-11-30');
+        assert.equal(form.elements.namedItem('price').value, '25.5');
+        assert.equal(h.calls.length, before + 1);
+        assert.equal(h.calls.some(call => call.method === 'GET' && /\/\d+\/prices$/.test(call.path)), false);
+      } finally { h.close(); }
+    }
+  });
+
   test(`${resource}: the visible Add price button submits the entered range`, async () => {
     const h = harness({ role: 'organizer' });
     const product = h.data[resource][0];
@@ -236,8 +271,9 @@ for (const resource of ['workshops', 'packs', 'services']) {
       assert.equal(h.lastMutation().body, undefined);
       assert.equal(h.lastMutation().path, `${base}/prices/100`);
       assert.equal(form.querySelector('[data-extras-price-action="edit"][data-price-id="100"]'), null);
-      assert.ok(h.calls.filter(call => call.method === 'GET' && call.path === base).length >= 5);
-      assert.ok(h.calls.filter(call => call.method === 'GET' && call.path === `${base}/prices`).length >= 5);
+      assert.equal(h.calls.filter(call => call.method === 'GET' && call.path === base).length, 0);
+      assert.equal(h.calls.filter(call => call.method === 'GET' && call.path === `${base}/prices`).length, 0);
+      assert.equal(h.calls.filter(call => call.method === 'GET' && call.path === `/admin/${resource}`).length, 5);
       for (const call of h.calls.filter(call => call.path.startsWith(`${base}/prices`))) {
         assert.equal(call.url.search, '');
         assert.equal(call.headers.authorization, 'Bearer test-token');
@@ -335,15 +371,19 @@ test('concurrent price conflict refreshes ranges and keeps the form and server e
   } finally { h.close(); }
 });
 
-test('price list load failure prevents writes and supports retry', async () => {
-  const h = harness({ role: 'organizer', overrides: { 'GET /admin/services/31/prices': () => ({ status: 403, data: { error: 'No price access' } }) } });
+test('price list refresh failure prevents writes and supports retry', async () => {
+  const h = harness({ role: 'organizer' });
+  h.prices['services/31'] = [{ id: 100, start_date: '2026-11-01', end_date: '2026-11-30', price: 25 }];
   try {
     await h.init(); await h.navigate('extras-services');
     await h.click('#extras-services [data-extras-action="prices"][data-id="31"]');
     const form = h.w.document.querySelector('#registrationExtrasModal form');
+    h.overrides['GET /admin/services'] = () => ({ status: 403, data: { error: 'No price access' } });
+    await h.click('[data-extras-price-action="delete"]');
+    await h.click('[data-extras-price-action="confirm-delete"]');
     assert.match(form.textContent, /No price access/);
     assert.equal(form.querySelector('[type="submit"]').disabled, true);
-    delete h.overrides['GET /admin/services/31/prices'];
+    delete h.overrides['GET /admin/services'];
     await h.click('[data-extras-price-action="refresh"]');
     assert.equal(form.querySelector('[type="submit"]').disabled, false);
   } finally { h.close(); }
@@ -412,13 +452,13 @@ test('price saves block duplicate mutations and remain recoverable if the follow
     await h.submit({ start_date: '2026-11-01', end_date: '2026-11-30', price: '25' });
     await h.submit();
     assert.equal(h.calls.filter(call => call.method === 'POST').length, 1);
-    h.overrides['GET /admin/services/31/prices'] = () => ({ status: 500, data: { error: 'Refresh failed' } });
+    h.overrides['GET /admin/services'] = () => ({ status: 500, data: { error: 'Refresh failed' } });
     release(); await tick();
     const form = h.w.document.querySelector('#registrationExtrasModal form');
     assert.match(form.textContent, /Refresh failed/);
     assert.equal(form.elements.namedItem('price').value, '');
     assert.equal(form.querySelector('[type="submit"]').disabled, true);
-    delete h.overrides['GET /admin/services/31/prices'];
+    delete h.overrides['GET /admin/services'];
     await h.click('[data-extras-price-action="refresh"]');
     assert.equal(form.querySelector('[type="submit"]').disabled, false);
   } finally { h.close(); }
@@ -1016,7 +1056,7 @@ test('organizer packs label available workshops and collapse only the complete e
   h.data.packs[1].workshop_ids = [11];
   h.data.packs[1].workshops = [h.data.workshops[0]];
   try {
-    await h.init(); await h.navigate('extras-packs');
+    await h.init(); await h.navigate('extras-workshops'); await h.navigate('extras-packs');
     const pane = h.w.document.querySelector('#extras-packs');
     const cells = () => Array.from(pane.querySelectorAll('tbody tr'), row => row.children[3]);
     assert.equal(pane.querySelectorAll('thead th')[3].textContent, 'Workshops disponibles');
@@ -1025,6 +1065,7 @@ test('organizer packs label available workshops and collapse only the complete e
     assert.equal(cells()[1].textContent, 'Workshop <unsafe>');
     assert.equal(cells()[1].querySelector('unsafe'), null);
     h.data.workshops = [...h.data.workshops, { id: 15, name: 'New workshop' }];
+    await h.navigate('extras-workshops');
     await h.click('#extras-packs [data-extras-action="refresh"]');
     assert.doesNotMatch(cells()[0].textContent, /TODOS LOS WORKSHOPS/);
     assert.equal(cells()[0].querySelectorAll('.lm-status').length, 2);
@@ -1507,7 +1548,8 @@ test('bulk workshop prices add multiple ranges with the exact contract and refre
     assert.equal(h.prices['workshops/13'].length, 2);
     assert.equal(h.w.document.querySelector('#registrationExtrasModal').classList.contains('show'), false);
     assert.match(h.w.document.querySelector('#extras-workshops tbody').textContent, /25,50/);
-    assert.ok(h.calls.filter(call => call.method === 'GET' && call.path === '/admin/workshops/13/prices').length >= 4);
+    assert.ok(h.calls.filter(call => call.method === 'GET' && call.path === '/admin/workshops').length >= 4);
+    assert.equal(h.calls.some(call => call.method === 'GET' && /\/workshops\/\d+\/prices$/.test(call.path)), false);
   } finally { h.close(); }
 });
 
@@ -1545,23 +1587,23 @@ test('bulk workshop prices recheck inactive and newly created workshops immediat
 });
 
 test('bulk workshop prices block writes on tariff load failure and recover with refresh', async () => {
-  const h = harness({ role: 'organizer', overrides: { 'GET /admin/workshops/13/prices': () => ({ status: 500, data: { error: 'Cannot check prices' } }) } });
+  const h = harness({ role: 'organizer', overrides: { 'GET /admin/workshops': () => ({ status: 500, data: { error: 'Cannot check prices' } }) } });
   try {
     await h.init(); await h.navigate('extras-workshops');
     await h.click('#extras-workshops [data-extras-action="bulk-prices"]');
     assert.equal(h.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, true);
     assert.equal(h.w.document.querySelector('[data-bulk-price-fields]').disabled, true);
     assert.match(h.w.document.querySelector('[data-bulk-existing]').textContent, /Cannot check prices/);
-    delete h.overrides['GET /admin/workshops/13/prices'];
+    delete h.overrides['GET /admin/workshops'];
     await h.click('[data-bulk-price-action="refresh"]');
     assert.equal(h.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, false);
     fillBulkRange(h, 0, '2026-11-01', '2026-11-30');
-    h.overrides['GET /admin/workshops/13/prices'] = () => ({ status: 500, data: { error: 'Check failed at save' } });
+    h.overrides['GET /admin/workshops'] = () => ({ status: 500, data: { error: 'Check failed at save' } });
     await h.submit();
     assert.equal(h.lastMutation(), undefined);
     assert.equal(h.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, true);
     assert.equal(h.w.document.querySelector('[data-bulk-price-action="refresh"]').disabled, false);
-    delete h.overrides['GET /admin/workshops/13/prices'];
+    delete h.overrides['GET /admin/workshops'];
     await h.click('[data-bulk-price-action="refresh"]');
     assert.equal(h.w.document.querySelector('[data-range-field="inicio"]').value, '2026-11-01');
     assert.equal(h.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, false);
@@ -1665,8 +1707,11 @@ test('organizer workshop table separates day and times without a redundant detai
 });
 
 for (const [resource, productId, priceColumn] of [['workshops', 11, 5], ['packs', 7, 4], ['services', 31, 2]]) {
-test(`organizer ${resource} price column sorts ranges and marks the current price`, async () => {
+test(`organizer ${resource} price column uses listed ranges and marks the current price`, async () => {
   const h = harness({ role: 'organizer' });
+  const RealDate = h.w.Date;
+  h.w.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : ['2026-11-15T12:00:00'])); } };
+  h.data[resource][0].price = 20.5;
   h.prices[`${resource}/${productId}`] = [
     { start_date: '2027-01-01', end_date: '2027-01-31', price: '30.00', is_current: false },
     { start_date: '2026-10-01', end_date: '2026-12-31', price: '20.50', is_current: true }
@@ -1681,21 +1726,35 @@ test(`organizer ${resource} price column sorts ranges and marks the current pric
     assert.equal(ranges[0].getAttribute('aria-current'), 'true');
     assert.equal(ranges[1].hasAttribute('aria-current'), false);
     assert.match(ranges[1].textContent, /30,00/);
-    assert.ok(h.calls.some(call => call.path === `/admin/${resource}/${productId}/prices`));
+    assert.equal(h.calls.some(call => call.path === `/admin/${resource}/${productId}/prices`), false);
   } finally { h.close(); }
 });
 }
 
-test('workshop price loading errors retain the workshop list and refresh can recover', async () => {
-  const h = harness({ role: 'organizer', overrides: { 'GET /admin/workshops/11/prices': () => ({ status: 500, data: { error: 'Prices unavailable' } }) } });
+test('a null current price retains past and future list tariffs, their dates and editable values', async () => {
+  const h = harness({ role: 'organizer' });
+  h.data.workshops[0].price = null;
+  h.prices['workshops/11'] = [
+    { id: 100, start_date: '2020-01-01', end_date: '2020-01-31', price: 15.5 },
+    { id: 101, start_date: '2099-12-01', end_date: '2099-12-31', price: 30 }
+  ];
   try {
     await h.init(); await h.navigate('extras-workshops');
     const pane = h.w.document.querySelector('#extras-workshops');
     assert.equal(pane.querySelectorAll('tbody tr').length, 2);
-    assert.match(pane.querySelector('tbody tr').children[5].textContent, /Prices unavailable/);
-    delete h.overrides['GET /admin/workshops/11/prices'];
-    await h.click('#extras-workshops [data-extras-action="refresh"]');
-    assert.match(pane.querySelector('tbody tr').children[5].textContent, /No hay precios configurados/);
+    const cell = pane.querySelector('tbody tr').children[5];
+    assert.equal(cell.querySelectorAll('.registration-category-price-range').length, 2);
+    assert.match(cell.textContent, /2020-01-01 - 2020-01-31/);
+    assert.match(cell.textContent, /2099-12-01 - 2099-12-31/);
+    assert.equal(cell.querySelector('[aria-current]'), null);
+    const requests = h.calls.length;
+    await h.click('#extras-workshops [data-extras-action="prices"][data-id="11"]');
+    assert.equal(h.calls.length, requests);
+    await h.click('[data-extras-price-action="edit"][data-price-id="101"]');
+    const form = h.w.document.querySelector('#registrationExtrasModal form');
+    assert.equal(form.elements.namedItem('start_date').value, '2099-12-01');
+    assert.equal(form.elements.namedItem('end_date').value, '2099-12-31');
+    assert.equal(form.elements.namedItem('price').value, '30');
   } finally { h.close(); }
 });
 
