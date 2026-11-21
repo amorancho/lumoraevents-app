@@ -99,14 +99,6 @@ const REGISTRATION_NAV_ITEMS = [
     fallbackLabel: 'Disciplines/Styles'
   },
   {
-    key: 'payments',
-    paneId: 'payments',
-    roles: ['school', 'organizer'],
-    icon: 'bi-cash-stack',
-    labelKey: 'registration_tab_payments_invoices',
-    fallbackLabel: 'Payments / Invoices'
-  },
-  {
     key: 'extras-workshops', paneId: 'extras-workshops', roles: ['school', 'organizer'],
     icon: 'bi-calendar-event', labelKey: 'extras_workshops', fallbackLabel: 'Workshops', extras: true
   },
@@ -116,7 +108,7 @@ const REGISTRATION_NAV_ITEMS = [
   },
   {
     key: 'extras-services', paneId: 'extras-services', roles: ['school', 'organizer'],
-    icon: 'bi-bag', labelKey: 'extras_services', fallbackLabel: 'Services', extras: true
+    icon: 'bi-bag', labelKey: 'extras_galas_extras', fallbackLabel: 'Galas y Extras', extras: true
   },
   {
     key: 'extras-discounts', paneId: 'extras-discounts', roles: ['organizer'],
@@ -127,8 +119,20 @@ const REGISTRATION_NAV_ITEMS = [
     icon: 'bi-journal-bookmark', labelKey: 'extras_bookings', fallbackLabel: 'Bookings', extras: true
   },
   {
+    key: 'extras-summary', paneId: 'extras-summary', roles: ['organizer'],
+    icon: 'bi-person-lines-fill', labelKey: 'extras_summary_title', fallbackLabel: 'Resumen de extras', extras: true
+  },
+  {
     key: 'extras-my-bookings', paneId: 'extras-my-bookings', roles: ['school'],
     icon: 'bi-journal-bookmark', labelKey: 'extras_my_bookings', fallbackLabel: 'My bookings', extras: true
+  },
+  {
+    key: 'payments',
+    paneId: 'payments',
+    roles: ['school', 'organizer'],
+    icon: 'bi-cash-stack',
+    labelKey: 'registration_tab_payments_invoices',
+    fallbackLabel: 'Payments / Invoices'
   },
   {
     key: 'support',
@@ -817,8 +821,6 @@ function getVisibleRegistrationNavItems(role = registrationNavigationState.role)
     && (!item.extras || getEvent()?.hasWorkshopsServices === true))
     .map(item => role === 'school' && item.key === 'extras-workshops'
       ? { ...item, labelKey: 'extras_workshops_packs', fallbackLabel: 'Workshops / Packs' }
-      : role === 'school' && item.key === 'extras-services'
-        ? { ...item, labelKey: 'extras_galas_extras', fallbackLabel: 'Galas y Extras' }
       : item);
 }
 

@@ -20,6 +20,7 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
   const h = { w, dom, role, calls: [], messages: [], overrides, summary: clone(summary), discount: null, usage: 0, accounts: [{ id: 4, name: 'Academy', user_type: 'SCH' }, { id: 5, name: 'Alex', user_type: 'PAR' }] };
   h.event = { id: 42, code: 'demo', name: 'Test', hasWorkshopsServices: flag, status: 'ongoing', registrationFeeCost: 1000, registrationStart: '2026-10-01T15:00:00', registrationEnd: '2026-12-31T09:00:00' };
   h.prices = {};
+  h.validatedSummary = { event_id: 42, workshops: [], packs: [], services: [] };
   const workshop = { id: 11, name: 'Workshop <unsafe>', teacher: 'Teacher', description: 'Description', start_at: '2026-10-15T10:00:00', end_at: '2026-10-15T11:00:00', capacity: 1, price: '20.50', validated_count: 1, pending_count: 3, available_count: 0, is_active: true };
   h.data = {
     workshops: [workshop, { ...workshop, id: 13, name: 'Second workshop' }],
@@ -63,11 +64,22 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
       else throw new Error(`Unexpected participant method: ${method}`);
     }
     else if (parsed.pathname === '/api/registrations/payments') result = { data: [{ id: 100, school_id: 4, amount: 5000, payment_type: 'PAY', status: 'VAL' }] };
+    else if (route === '/admin/summary') result = { data: h.validatedSummary };
     else if (route.endsWith('/summary')) result = { data: h.summary };
     else if (route.endsWith('/discount')) {
       if (method === 'POST') h.discount = { id: 1, code: call.body.code, applied_amount: 15 };
       if (method === 'DELETE') h.discount = null;
       result = { data: h.discount };
+    } else if (route === '/admin/workshops/prices' && method === 'POST') {
+      const prices = [];
+      for (const workshop of h.data.workshops) {
+        const existing = h.prices[`workshops/${workshop.id}`] ||= [];
+        for (const range of call.body.ranges) {
+          const price = { id: 100 + existing.length, workshop_id: workshop.id, start_date: range.inicio, end_date: range.fin, price: Number(range.precio) };
+          existing.push(price); prices.push(price);
+        }
+      }
+      result = { status: 201, data: { event_id: call.body.event_id, workshops_count: h.data.workshops.length, prices_count: prices.length, prices } };
     } else {
       const cleaned = route.replace(/^\/admin\/accounts\/\d+/, '').replace(/^\/(admin|catalog)/, '');
       const [, resource, itemId, action, priceId] = cleaned.split('/');
@@ -677,7 +689,7 @@ test('admin uses bearer auth and numeric event context; organizer and school omi
       assert.equal(call.headers['x-event-id'], role === 'admin' ? '42' : undefined);
       assert.equal(call.headers['x-user-role'], undefined);
       assert.equal(call.headers['accept-language'], 'es');
-      assert.equal(h.w.getVisibleRegistrationNavItems().filter(item => item.extras).length, role === 'school' ? 3 : 5);
+      assert.equal(h.w.getVisibleRegistrationNavItems().filter(item => item.extras).length, role === 'school' ? 3 : 6);
     } finally { h.close(); }
   }
 });
@@ -1300,6 +1312,337 @@ test('five dictionaries have identical nonempty extras keys and preserve accente
   assert.equal(languages.pt.extras_services, 'Serviços');
 });
 
+function attendanceHarness(options = {}) {
+  const h = harness({ role: 'organizer', ...options });
+  const packBooking = { booking_id: 51, attendee: { id: 21, name: 'Ana García' }, account: { id: 4, name: 'Escuela Norte', user_type: 'SCH' }, quantity: 1, item_type: 'PACK', pack: { id: 7, name: 'Pack completo' } };
+  const direct = { booking_id: 54, attendee: { id: 22, name: 'Grace Hopper' }, account: { id: 5, name: 'Alex', user_type: 'PAR' }, quantity: 1, item_type: 'WORKSHOP', pack: null };
+  const service = { booking_id: 52, attendee: null, account: { id: 5, name: 'María López', user_type: 'PAR' }, quantity: 3, item_type: 'SERVICE', pack: null };
+  h.validatedSummary = {
+    event_id: 42,
+    workshops: [
+      { id: 11, name: 'Técnica <unsafe>', is_active: 1, teacher: 'Teacher', start_at: '2026-12-01T10:00:00.000Z', end_at: '2026-12-01T11:00:00.000Z', capacity: 30, validated_count: 2, total_quantity: 2, bookings: [packBooking, direct] },
+      { id: 13, name: 'Inactive', is_active: 0, teacher: 'Teacher 2', start_at: null, end_at: null, capacity: 10, validated_count: 0, total_quantity: 0, bookings: [] },
+      { id: 14, name: null, is_active: 1, teacher: null, start_at: null, end_at: null, capacity: 10, validated_count: 1, total_quantity: 1, bookings: [{ ...direct, booking_id: 55, attendee: { id: 99, name: null }, account: { id: 6, name: null, user_type: 'SCH' } }] }
+    ],
+    packs: [{ id: 7, name: 'Pack completo', is_active: 1, mode: 'FIXED', workshop_count: 2, validated_count: 1, total_quantity: 1, bookings: [packBooking] }, { id: 8, name: 'Pack flexible', is_active: 0, mode: 'FLEX', workshop_count: 1, validated_count: 0, total_quantity: 0, bookings: [] }],
+    services: [{ id: 31, name: 'Comida', is_active: 1, validated_count: 2, total_quantity: 5, bookings: [service, { ...service, booking_id: 56, quantity: 2 }] }]
+  };
+  return h;
+}
+
+test('validated extras summary loads once with the current event policy for organizer and admin', async () => {
+  for (const role of ['organizer', 'admin']) {
+    const h = attendanceHarness({ role });
+    try {
+      await h.init();
+      assert.ok(h.w.getVisibleRegistrationNavItems().some(item => item.key === 'extras-summary'));
+      assert.equal(h.calls.filter(call => call.path === '/admin/summary').length, 0);
+      await h.navigate('extras-summary');
+      const calls = h.calls.filter(call => call.path === '/admin/summary');
+      assert.equal(calls.length, 1);
+      assert.equal(calls[0].method, 'GET');
+      assert.equal(calls[0].url.search, '');
+      assert.equal(calls[0].headers.authorization, 'Bearer test-token');
+      assert.equal(calls[0].headers['x-event-id'], role === 'admin' ? '42' : undefined);
+      const pane = h.w.document.querySelector('#extras-summary');
+      assert.equal(pane.querySelector('[data-summary-kind="workshops"]').getAttribute('aria-pressed'), 'true');
+      assert.equal(pane.querySelectorAll('[data-summary-product]').length, 3);
+      assert.match(pane.textContent, /Capacidad: 30/);
+      assert.match(pane.textContent, /Reservas validadas: 2/);
+      assert.match(pane.textContent, /Teacher/);
+      assert.match(pane.textContent, /2026/);
+      assert.match(pane.textContent, /Inactiv/);
+      assert.doesNotMatch(pane.textContent, /\bID\b|#51|#54|#55|Evento: 42/);
+      assert.equal(pane.querySelector('[data-summary-booking="51"]').textContent.trim(), 'Ver reserva');
+      assert.match(pane.textContent, /Sin nombre/);
+      assert.equal(pane.querySelector('unsafe'), null);
+      assert.match(pane.textContent, /Técnica <unsafe>/);
+      assert.equal(pane.querySelectorAll('[data-summary-booking="51"]').length, 1);
+      await h.click('[data-summary-kind="packs"]');
+      assert.match(pane.textContent, /FIXED/);
+      assert.match(pane.textContent, /FLEX/);
+      assert.match(pane.textContent, /Número de workshops: 2/);
+      assert.equal(h.calls.filter(call => call.path === '/admin/summary').length, 1);
+    } finally { h.close(); }
+  }
+});
+
+test('validated extras summary hides navigation and never loads for schools or disabled events', async () => {
+  for (const options of [{ role: 'school' }, { role: 'organizer', flag: false }, { role: 'admin', flag: false }]) {
+    const h = attendanceHarness(options);
+    try {
+      await h.init(); await h.navigate('extras-summary');
+      assert.equal(h.w.getVisibleRegistrationNavItems().some(item => item.key === 'extras-summary'), false);
+      assert.equal(h.calls.some(call => call.path === '/admin/summary'), false);
+      assert.equal(h.w.document.querySelector('#extras-summary').textContent, '');
+    } finally { h.close(); }
+  }
+});
+
+test('validated extras summary searches people and packs locally and expands or collapses visible products', async () => {
+  const h = attendanceHarness();
+  try {
+    await h.init(); await h.navigate('extras-summary');
+    const pane = h.w.document.querySelector('#extras-summary');
+    await h.click('[data-summary-expand="true"]');
+    assert.ok([...pane.querySelectorAll('[data-summary-product]')].every(details => details.open));
+    await h.click('[data-summary-expand="false"]');
+    assert.ok([...pane.querySelectorAll('[data-summary-product]')].every(details => !details.open));
+    const search = pane.querySelector('[data-summary-search]');
+    search.value = 'grace'; search.dispatchEvent(new h.w.Event('input', { bubbles: true }));
+    assert.equal(pane.querySelectorAll('[data-summary-product]').length, 1);
+    assert.equal(pane.querySelectorAll('.extras-summary-booking').length, 1);
+    assert.match(pane.querySelector('.extras-summary-bookings').textContent, /Grace Hopper/);
+    assert.equal(pane.querySelector('[data-summary-product]').open, true);
+    search.value = 'pack completo'; search.dispatchEvent(new h.w.Event('input', { bubbles: true }));
+    assert.equal(pane.querySelectorAll('[data-summary-booking="51"]').length, 1);
+    search.value = 'tecnica'; search.dispatchEvent(new h.w.Event('input', { bubbles: true }));
+    assert.equal(pane.querySelectorAll('.extras-summary-booking').length, 2);
+    search.value = ''; search.dispatchEvent(new h.w.Event('input', { bubbles: true }));
+    await h.click('[data-summary-booked]');
+    assert.equal(pane.querySelectorAll('[data-summary-product]').length, 2);
+    assert.equal(h.calls.filter(call => call.path === '/admin/summary').length, 1);
+  } finally { h.close(); }
+});
+
+test('validated extras summary preserves service rows and quantities and falls back to the buying account', async () => {
+  const h = attendanceHarness();
+  try {
+    await h.init(); await h.navigate('extras-summary');
+    await h.click('[data-summary-kind="services"]');
+    const pane = h.w.document.querySelector('#extras-summary');
+    assert.equal(pane.querySelectorAll('.extras-summary-booking').length, 2);
+    assert.match(pane.querySelector('summary').textContent, /Cantidad: 5/);
+    assert.match(pane.querySelector('summary').textContent, /Reservas validadas: 2/);
+    assert.equal(pane.querySelectorAll('[data-summary-booking="52"]').length, 1);
+    assert.equal(pane.querySelectorAll('[data-summary-booking="56"]').length, 1);
+    assert.match(pane.querySelector('.extras-summary-booking').textContent, /María López/);
+    assert.match(pane.querySelector('.extras-summary-booking').textContent, /Sin participante asignado/);
+    assert.match(pane.querySelector('.extras-summary-booking').textContent, /Particular/);
+  } finally { h.close(); }
+});
+
+test('validated extras summary booking IDs open the existing administrative booking detail', async () => {
+  const h = attendanceHarness();
+  try {
+    await h.init(); await h.navigate('extras-summary');
+    await h.click('[data-summary-expand="true"]');
+    await h.click('[data-summary-booking="51"]');
+    assert.ok(h.calls.some(call => call.path === '/admin/bookings/51'));
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal').classList.contains('show'), true);
+    assert.match(h.w.document.querySelector('#registrationExtrasModal').textContent, /Ada Lovelace/);
+  } finally { h.close(); }
+});
+
+test('validated extras summary handles load failures, empty collections and mismatched event responses', async () => {
+  const h = attendanceHarness({ overrides: { 'GET /admin/summary': () => ({ status: 500, data: { error: 'Summary unavailable' } }) } });
+  try {
+    await h.init(); await h.navigate('extras-summary');
+    const pane = h.w.document.querySelector('#extras-summary');
+    assert.match(pane.textContent, /Summary unavailable/);
+    delete h.overrides['GET /admin/summary'];
+    h.validatedSummary = { event_id: 99, workshops: [], packs: [], services: [] };
+    await h.click('#extras-summary .extras-heading [data-extras-action="refresh"]');
+    assert.equal(pane.querySelectorAll('[data-summary-product]').length, 0);
+    assert.match(pane.textContent, new RegExp(languages.es.extras_invalid_response));
+    h.validatedSummary.event_id = 42;
+    await h.click('#extras-summary .extras-heading [data-extras-action="refresh"]');
+    assert.match(pane.textContent, new RegExp(languages.es.extras_empty));
+    assert.equal(pane.querySelector('[data-summary-count="workshops"]').textContent, '0');
+  } finally { h.close(); }
+});
+
+test('validated extras summary translates labels without fetching or losing the selected collection', async () => {
+  const h = attendanceHarness();
+  try {
+    await h.init(); await h.navigate('extras-summary');
+    await h.click('[data-summary-kind="services"]');
+    h.w.localStorage.setItem('lang', 'en');
+    h.w.document.documentElement.lang = 'en'; await tick();
+    const pane = h.w.document.querySelector('#extras-summary');
+    assert.match(pane.textContent, /Extras overview/);
+    assert.equal(pane.querySelector('[data-summary-kind="services"]').getAttribute('aria-pressed'), 'true');
+    assert.match(pane.textContent, /No participant assigned/);
+    assert.equal(h.calls.filter(call => call.path === '/admin/summary').length, 1);
+  } finally { h.close(); }
+});
+
+test('validated extras summary discards responses after switching events', async () => {
+  let finish;
+  const h = attendanceHarness({ overrides: { 'GET /admin/summary': () => new Promise(resolve => { finish = resolve; }) } });
+  try {
+    await h.init(); await h.navigate('extras-summary');
+    assert.equal(typeof finish, 'function');
+    h.event = { ...h.event, id: 99 };
+    h.w.RegistrationExtras.init('organizer');
+    finish({ data: h.validatedSummary }); await tick();
+    assert.equal(h.w.document.querySelector('#extras-summary').textContent, '');
+  } finally { h.close(); }
+});
+
+function fillBulkRange(h, index, inicio, fin, precio = '25.50') {
+  const row = h.w.document.querySelectorAll('[data-bulk-price-range]')[index];
+  for (const [key, value] of Object.entries({ inicio, fin, precio })) row.querySelector(`[data-range-field="${key}"]`).value = value;
+}
+
+test('bulk workshop prices add multiple ranges with the exact contract and refresh all tariffs', async () => {
+  const h = harness({ role: 'organizer' });
+  h.data.workshops[1].is_active = false;
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    const actions = h.w.document.querySelector('#extras-workshops .extras-heading .extras-actions');
+    assert.equal(actions.children[0].dataset.extrasAction, 'create');
+    assert.equal(actions.children[1].dataset.extrasAction, 'bulk-prices');
+    assert.equal(actions.children[1].textContent, 'Precios');
+    await h.click('#extras-workshops [data-extras-action="bulk-prices"]');
+    fillBulkRange(h, 0, '2026-11-01', '2026-11-30');
+    await h.click('[data-bulk-price-action="add"]');
+    fillBulkRange(h, 1, '2026-12-01', '2026-12-31', '30');
+    await h.submit();
+    assert.deepEqual(h.lastMutation().body, { event_id: 42, ranges: [
+      { inicio: '2026-11-01', fin: '2026-11-30', precio: '25.50' },
+      { inicio: '2026-12-01', fin: '2026-12-31', precio: '30' }
+    ] });
+    assert.equal(h.lastMutation().path, '/admin/workshops/prices');
+    assert.equal(h.prices['workshops/13'].length, 2);
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal').classList.contains('show'), false);
+    assert.match(h.w.document.querySelector('#extras-workshops tbody').textContent, /25,50/);
+    assert.ok(h.calls.filter(call => call.method === 'GET' && call.path === '/admin/workshops/13/prices').length >= 4);
+  } finally { h.close(); }
+});
+
+test('bulk workshop prices reject inclusive overlap between entered ranges before posting', async () => {
+  const h = harness({ role: 'organizer' });
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    await h.click('#extras-workshops [data-extras-action="bulk-prices"]');
+    fillBulkRange(h, 0, '2026-11-01', '2026-11-30');
+    await h.click('[data-bulk-price-action="add"]');
+    fillBulkRange(h, 1, '2026-11-30', '2026-12-10');
+    await h.submit();
+    assert.equal(h.lastMutation(), undefined);
+    assert.match(h.w.document.querySelector('[data-extras-dialog-feedback]').textContent, /solapan/);
+    await h.click('[data-bulk-price-range]:last-child [data-bulk-price-action="remove"]');
+    assert.equal(h.w.document.querySelectorAll('[data-bulk-price-range]').length, 1);
+    assert.equal(h.w.document.querySelector('[data-bulk-price-action="remove"]').disabled, true);
+  } finally { h.close(); }
+});
+
+test('bulk workshop prices recheck inactive and newly created workshops immediately before sending', async () => {
+  const h = harness({ role: 'organizer' });
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    await h.click('#extras-workshops [data-extras-action="bulk-prices"]');
+    h.data.workshops.push({ ...h.data.workshops[0], id: 99, name: 'New inactive workshop', is_active: false });
+    h.prices['workshops/99'] = [{ start_date: '2026-11-30', end_date: '2026-12-10', price: 10 }];
+    fillBulkRange(h, 0, '2026-11-01', '2026-11-30');
+    await h.submit();
+    assert.equal(h.lastMutation(), undefined);
+    assert.match(h.w.document.querySelector('[data-extras-dialog-feedback]').textContent, /New inactive workshop/);
+    assert.equal(h.w.document.querySelector('[data-range-field="inicio"]').value, '2026-11-01');
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, false);
+  } finally { h.close(); }
+});
+
+test('bulk workshop prices block writes on tariff load failure and recover with refresh', async () => {
+  const h = harness({ role: 'organizer', overrides: { 'GET /admin/workshops/13/prices': () => ({ status: 500, data: { error: 'Cannot check prices' } }) } });
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    await h.click('#extras-workshops [data-extras-action="bulk-prices"]');
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, true);
+    assert.equal(h.w.document.querySelector('[data-bulk-price-fields]').disabled, true);
+    assert.match(h.w.document.querySelector('[data-bulk-existing]').textContent, /Cannot check prices/);
+    delete h.overrides['GET /admin/workshops/13/prices'];
+    await h.click('[data-bulk-price-action="refresh"]');
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, false);
+    fillBulkRange(h, 0, '2026-11-01', '2026-11-30');
+    h.overrides['GET /admin/workshops/13/prices'] = () => ({ status: 500, data: { error: 'Check failed at save' } });
+    await h.submit();
+    assert.equal(h.lastMutation(), undefined);
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, true);
+    assert.equal(h.w.document.querySelector('[data-bulk-price-action="refresh"]').disabled, false);
+    delete h.overrides['GET /admin/workshops/13/prices'];
+    await h.click('[data-bulk-price-action="refresh"]');
+    assert.equal(h.w.document.querySelector('[data-range-field="inicio"]').value, '2026-11-01');
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, false);
+  } finally { h.close(); }
+});
+
+test('bulk workshop price conflicts preserve inputs and refresh existing prices without retrying the POST', async () => {
+  const h = harness({ role: 'organizer', overrides: { 'POST /admin/workshops/prices': (call, h) => {
+    h.prices['workshops/11'] = [{ start_date: '2026-11-01', end_date: '2026-11-30', price: 15 }];
+    return { status: 409, data: { code: 'extras_price_overlapping_range', error: 'Concurrent overlap' } };
+  } } });
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    await h.click('#extras-workshops [data-extras-action="bulk-prices"]');
+    fillBulkRange(h, 0, '2026-11-01', '2026-11-30');
+    await h.submit();
+    assert.match(h.w.document.querySelector('[data-extras-dialog-feedback]').textContent, /Concurrent overlap/);
+    assert.match(h.w.document.querySelector('[data-bulk-existing]').textContent, /15,00/);
+    assert.equal(h.w.document.querySelector('[data-range-field="inicio"]').value, '2026-11-01');
+    await h.submit();
+    assert.equal(h.calls.filter(call => call.method === 'POST').length, 1);
+  } finally { h.close(); }
+});
+
+test('bulk workshop prices validate dates, amounts and the registration period before posting', async () => {
+  const h = harness({ role: 'organizer' });
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    await h.click('#extras-workshops [data-extras-action="bulk-prices"]');
+    for (const [inicio, fin, precio] of [['2026-11-30', '2026-11-01', '25'], ['2026-09-01', '2026-11-01', '25'], ['2026-11-01', '2026-11-30', '0'], ['2026-11-01', '2026-11-30', '25.555']]) {
+      fillBulkRange(h, 0, inicio, fin, precio);
+      await h.submit();
+      assert.equal(h.lastMutation(), undefined);
+    }
+  } finally { h.close(); }
+  const missing = harness({ role: 'organizer' });
+  missing.event.registrationEnd = null;
+  try {
+    await missing.init(); await missing.navigate('extras-workshops');
+    await missing.click('#extras-workshops [data-extras-action="bulk-prices"]');
+    assert.equal(missing.w.document.querySelector('#registrationExtrasModal [type="submit"]').disabled, true);
+  } finally { missing.close(); }
+});
+
+test('bulk workshop prices prevent duplicate submits while saving and close only after success', async () => {
+  let resolvePost;
+  const h = harness({ role: 'organizer', overrides: { 'POST /admin/workshops/prices': () => new Promise(resolve => { resolvePost = resolve; }) } });
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    await h.click('#extras-workshops [data-extras-action="bulk-prices"]');
+    fillBulkRange(h, 0, '2026-11-01', '2026-11-30');
+    await h.submit();
+    assert.equal(typeof resolvePost, 'function');
+    assert.equal(h.w.document.querySelector('[data-bulk-price-fields]').disabled, true);
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal [data-bs-dismiss]').disabled, true);
+    await h.submit();
+    assert.equal(h.calls.filter(call => call.method === 'POST').length, 1);
+    resolvePost({ status: 201, data: { event_id: 42, workshops_count: 2, prices_count: 2, prices: [] } });
+    await tick();
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal').classList.contains('show'), false);
+  } finally { h.close(); }
+});
+
+test('bulk workshop prices support an empty event and are absent for school', async () => {
+  const h = harness({ role: 'organizer' });
+  h.data.workshops = [];
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    await h.click('#extras-workshops [data-extras-action="bulk-prices"]');
+    fillBulkRange(h, 0, '2026-11-01', '2026-11-30');
+    await h.submit();
+    assert.equal(h.lastMutation().path, '/admin/workshops/prices');
+    assert.equal(h.w.document.querySelector('#registrationExtrasModal').classList.contains('show'), false);
+  } finally { h.close(); }
+  const school = harness();
+  try {
+    await school.init(); await school.navigate('extras-workshops');
+    assert.equal(school.w.document.querySelector('[data-extras-action="bulk-prices"]'), null);
+  } finally { school.close(); }
+});
+
 test('organizer workshop table separates day and times without a redundant details action', async () => {
   const h = harness({ role: 'organizer' });
   try {
@@ -1313,8 +1656,46 @@ test('organizer workshop table separates day and times without a redundant detai
     assert.equal(cells[3].textContent, '10:00 – 11:00');
     assert.equal(pane.querySelector('[data-extras-action="details"]'), null);
     assert.equal(h.w.document.querySelector('#registrationExtrasModal'), null);
-    assert.equal(pane.querySelector('tbody tr').querySelectorAll('[role="progressbar"]').length, 1);
+    assert.equal(pane.querySelector('tbody tr').querySelectorAll('[role="progressbar"]').length, 0);
+    assert.equal(headers.includes('Capacidad'), false);
+    assert.equal(headers.includes('Precios'), true);
+    assert.deepEqual(Array.from(cells[4].querySelectorAll('.lm-status'), badge => badge.textContent), ['Capacidad: 1', 'Validadas: 1', 'Pendientes: 3', 'Disponibles: 0']);
     assert.equal(pane.querySelector('tbody tr .extras-actions').children.length, 4);
+  } finally { h.close(); }
+});
+
+for (const [resource, productId, priceColumn] of [['workshops', 11, 5], ['packs', 7, 4], ['services', 31, 2]]) {
+test(`organizer ${resource} price column sorts ranges and marks the current price`, async () => {
+  const h = harness({ role: 'organizer' });
+  h.prices[`${resource}/${productId}`] = [
+    { start_date: '2027-01-01', end_date: '2027-01-31', price: '30.00', is_current: false },
+    { start_date: '2026-10-01', end_date: '2026-12-31', price: '20.50', is_current: true }
+  ];
+  try {
+    await h.init(); await h.navigate(`extras-${resource}`);
+    const cell = h.w.document.querySelector(`#extras-${resource} tbody tr`).children[priceColumn];
+    const ranges = cell.querySelectorAll('.registration-category-price-range');
+    assert.equal(ranges.length, 2);
+    assert.match(ranges[0].textContent, /2026/);
+    assert.match(ranges[0].textContent, /20,50/);
+    assert.equal(ranges[0].getAttribute('aria-current'), 'true');
+    assert.equal(ranges[1].hasAttribute('aria-current'), false);
+    assert.match(ranges[1].textContent, /30,00/);
+    assert.ok(h.calls.some(call => call.path === `/admin/${resource}/${productId}/prices`));
+  } finally { h.close(); }
+});
+}
+
+test('workshop price loading errors retain the workshop list and refresh can recover', async () => {
+  const h = harness({ role: 'organizer', overrides: { 'GET /admin/workshops/11/prices': () => ({ status: 500, data: { error: 'Prices unavailable' } }) } });
+  try {
+    await h.init(); await h.navigate('extras-workshops');
+    const pane = h.w.document.querySelector('#extras-workshops');
+    assert.equal(pane.querySelectorAll('tbody tr').length, 2);
+    assert.match(pane.querySelector('tbody tr').children[5].textContent, /Prices unavailable/);
+    delete h.overrides['GET /admin/workshops/11/prices'];
+    await h.click('#extras-workshops [data-extras-action="refresh"]');
+    assert.match(pane.querySelector('tbody tr').children[5].textContent, /No hay precios configurados/);
   } finally { h.close(); }
 });
 

@@ -46,9 +46,13 @@
 .extras-desktop-table :is(th, td).extras-workshop-count { width: 1%; min-width: 0; text-align: center; white-space: nowrap; }
 .extras-pack-workshop-badges { display: flex; flex-wrap: wrap; gap: var(--lm-space-1); }
 .extras-pack-workshop-badges .lm-status { padding: var(--lm-space-1) var(--lm-space-2); font-size: .6875rem; white-space: normal; overflow-wrap: anywhere; text-align: left; }
-#extras-workshops .extras-desktop-table td:last-child { max-width: none; width: 1%; }
-#extras-workshops .extras-desktop-table .extras-actions { flex-wrap: nowrap; width: max-content; }
-#extras-workshops .extras-desktop-table .extras-actions .btn { white-space: nowrap; }
+:is(#extras-workshops, #extras-packs) .extras-desktop-table td:last-child { max-width: none; width: 1%; }
+:is(#extras-workshops, #extras-packs) .extras-desktop-table .extras-actions { flex-wrap: nowrap; width: max-content; }
+:is(#extras-workshops, #extras-packs) .extras-desktop-table .extras-actions .btn { white-space: nowrap; }
+#extras-workshops .extras-desktop-table td:has(.extras-occupancy) { max-width: none; }
+.registration-extras .extras-desktop-table td:has(.registration-category-price-ranges) { max-width: none; }
+.registration-extras .extras-mobile-list .extras-detail-grid > div:has(:is(.extras-occupancy--grouped, .registration-category-price-ranges)) { grid-column: 1 / -1; }
+#extras-workshops .extras-mobile-list .extras-occupancy--grouped .extras-occupancy-badges { flex-wrap: wrap; }
 .extras-workshop-schedule { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--lm-space-3); }
 .extras-workshop-schedule > :first-child { grid-column: 1 / -1; }
 .extras-time-field { margin: 0; padding: 0; border: 0; }
@@ -79,7 +83,52 @@
 .extras-catalog-card-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--lm-space-2); margin-top: auto; padding-top: var(--lm-space-3); }
 .extras-catalog-card-footer > :is(.extras-workshop-reservations, .extras-service-reservations) { flex-basis: 100%; min-width: 0; margin: 0; }
 .extras-description { white-space: pre-wrap; }
+
+/* Validated reservations are grouped by product; workshop attendance is the default view. */
+#extras-summary { max-width: 1440px; margin-inline: auto; }
+.extras-summary-kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--lm-space-2); margin-bottom: var(--lm-space-3); }
+.extras-summary-kinds > button { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lm-space-2); min-width: 0; min-height: 60px; padding: var(--lm-space-3); color: var(--lm-text-muted); text-align: left; font-size: var(--lm-font-card-body); }
+.extras-summary-kinds > button > span { overflow-wrap: anywhere; }
+.extras-summary-kinds > button > strong { margin-left: auto; color: var(--lm-text); }
+.extras-summary-kinds > button[aria-pressed="true"] { border-color: var(--lm-blue); color: var(--lm-blue); background: var(--lm-surface-raised); }
+.extras-summary-kinds > button:hover { background: var(--lm-surface-hover); }
+.extras-summary-tools { display: grid; gap: var(--lm-space-3); }
+.extras-summary-tools .form-label { font-size: var(--lm-font-card-body); }
+.extras-summary-check { display: flex; align-items: center; gap: var(--lm-space-2); font-size: var(--lm-font-card-body); }
+.extras-summary-check input { flex-shrink: 0; margin: 0; }
+.extras-summary-products { display: grid; gap: var(--lm-space-3); }
+.extras-summary-product { min-width: 0; }
+.extras-summary-product > summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lm-space-3); min-height: 60px; padding: var(--lm-space-4); cursor: pointer; list-style: none; }
+.extras-summary-product > summary::-webkit-details-marker { display: none; }
+.extras-summary-product > summary:hover { background: var(--lm-surface-hover); border-radius: inherit; }
+.extras-summary-product[open] > summary { border-bottom: 1px solid var(--lm-border); border-radius: var(--lm-radius-lg) var(--lm-radius-lg) 0 0; }
+.extras-summary-product-heading { flex: 1 1 220px; min-width: 0; }
+.extras-summary-product-heading > strong { display: block; color: var(--lm-text); font-size: var(--lm-font-card-title); }
+.extras-summary-meta { display: block; margin-top: var(--lm-space-1); color: var(--lm-text-muted); font-size: var(--lm-font-card-meta); }
+.extras-summary-badges { display: flex; flex: 1 1 300px; flex-wrap: wrap; gap: var(--lm-space-1); }
+.extras-summary-badges .lm-status { font-size: var(--lm-font-card-meta); white-space: normal; }
+.extras-summary-chevron { margin-left: auto; color: var(--lm-blue); }
+.extras-summary-product[open] > summary > .extras-summary-chevron { transform: rotate(180deg); }
+.extras-summary-bookings { display: grid; gap: var(--lm-space-2); margin: 0; padding: 0; list-style: none; }
+.extras-summary-booking { padding: var(--lm-space-3); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-sm); background: var(--lm-bg-elevated); }
+.extras-summary-booking dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--lm-space-3); margin: 0; }
+.extras-summary-booking dl > div { min-width: 0; }
+.extras-summary-booking dl > div:nth-child(-n+2) { grid-column: 1 / -1; }
+.extras-summary-booking dt { margin-bottom: var(--lm-space-1); color: var(--lm-text-soft); font-size: var(--lm-font-card-meta); font-weight: 500; }
+.extras-summary-booking dd { margin: 0; color: var(--lm-text); font-size: var(--lm-font-card-body); overflow-wrap: anywhere; }
+.extras-summary-booking small { display: block; margin-top: var(--lm-space-1); color: var(--lm-text-muted); font-size: var(--lm-font-card-meta); }
+#extras-summary :is(button, input, summary):focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 3px; }
+@media (min-width: 768px) {
+  .extras-summary-tools { grid-template-columns: minmax(220px, 1fr) auto; align-items: end; }
+  .extras-summary-tools > .extras-actions { grid-column: 1 / -1; }
+}
+@media (min-width: 1200px) {
+  .extras-summary-booking dl { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(55px, .35fr) minmax(0, 1fr) minmax(80px, .55fr); }
+  .extras-summary-booking dl > div:nth-child(-n+2) { grid-column: auto; }
+}
 .extras-occupancy { display: grid; gap: var(--lm-space-2); min-width: 0; font-size: var(--lm-font-card-meta); color: var(--lm-text-muted); }
+.extras-occupancy-badges { display: flex; flex-wrap: nowrap; gap: var(--lm-space-1); }
+.extras-occupancy-badges .lm-status { flex-shrink: 0; padding: var(--lm-space-1); font-size: .6875rem; letter-spacing: 0; white-space: nowrap; }
 .extras-occupancy-track { height: 8px; overflow: hidden; border: 1px solid var(--lm-border); border-radius: var(--lm-radius-pill); background: var(--lm-bg-elevated); }
 .extras-occupancy-track > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--lm-blue), var(--lm-cyan)); }
 .extras-availability { justify-self: start; gap: var(--lm-space-1); padding: var(--lm-space-1) var(--lm-space-2); font-size: .6875rem; line-height: 1.2; letter-spacing: 0; white-space: normal; }
@@ -101,6 +150,8 @@
 .extras-catalog-card-footer::after { content: ""; order: 1; flex-basis: 100%; border-top: 1px solid var(--lm-border); margin-block: var(--lm-space-1); }
 .extras-catalog-card-footer > button { order: 2; }
 .extras-catalog-card-footer > strong { order: 2; color: var(--lm-cyan); font-size: 1.25rem; }
+.extras-catalog-card-footer > .extras-price-unavailable { flex: 1 1 0; min-width: 0; color: var(--lm-text-muted); font-size: var(--lm-font-card-meta); }
+.extras-catalog-card-footer > .extras-price-unavailable + button { flex-shrink: 0; white-space: nowrap; }
 .extras-session-meta { display: grid; gap: var(--lm-space-3); margin-block: var(--lm-space-2) var(--lm-space-3); padding: var(--lm-space-3); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-bg-elevated); }
 .extras-session-meta > span { display: flex; align-items: flex-start; gap: var(--lm-space-2); min-width: 0; }
 .extras-session-meta i { color: var(--lm-cyan); flex-shrink: 0; }

@@ -196,6 +196,83 @@ window.RegistrationExtras = (() => {
     }
   }
 
+  const summaryKinds = ['workshops', 'packs', 'services'];
+  const summaryLabel = kind => text(kind === 'services' ? 'galas_extras' : kind);
+  function buildValidatedSummaryShell(ctx) {
+    ctx.summaryKind ||= 'workshops';
+    ctx.summarySearch ||= '';
+    ctx.summaryOpen ||= new Set();
+    ctx.mount.innerHTML = `<div class="extras-heading"><div><h2 class="h4 mb-1">${html(text('summary_title'))}</h2><p class="small text-body-secondary mb-0">${html(text('summary_hint'))}</p></div><div class="extras-actions">${button('refresh', text('refresh'), '', 'outline-secondary')}</div></div>
+      <div data-extras-feedback aria-live="polite"></div>
+      <div class="extras-summary-kinds" role="group" aria-label="${html(text('type'))}">${summaryKinds.map(kind => `<button type="button" class="lm-card" data-summary-kind="${kind}" aria-pressed="${kind === ctx.summaryKind}"><i class="bi bi-${{ workshops: 'calendar-event', packs: 'collection', services: 'bag' }[kind]}" aria-hidden="true"></i><span>${html(summaryLabel(kind))}</span><strong data-summary-count="${kind}">—</strong></button>`).join('')}</div>
+      <div class="extras-summary-tools lm-card lm-card-body"><div><label for="extras-summary-search" class="form-label">${html(text('summary_search'))}</label><input type="search" id="extras-summary-search" class="form-control lm-input" data-summary-search value="${html(ctx.summarySearch)}" autocomplete="off"></div><label class="extras-summary-check"><input type="checkbox" class="form-check-input" data-summary-booked${ctx.summaryOnlyBooked ? ' checked' : ''}>${html(text('summary_only_booked'))}</label><div class="extras-actions"><button type="button" class="btn btn-outline-secondary btn-sm" data-summary-expand="true">${html(text('summary_expand'))}</button><button type="button" class="btn btn-outline-secondary btn-sm" data-summary-expand="false">${html(text('summary_collapse'))}</button></div></div>
+      <p class="small text-body-secondary mt-3" data-summary-results role="status"></p><div data-extras-list aria-live="polite"></div>`;
+  }
+  async function loadValidatedSummary(ctx) {
+    if (!enabled() || !admin()) return;
+    const generation = state.generation, serial = ++ctx.request;
+    const list = ctx.mount.querySelector('[data-extras-list]');
+    ctx.summaryData = null;
+    renderValidatedSummary(ctx);
+    ctx.mount.querySelector('[data-summary-results]').textContent = '';
+    list.innerHTML = loading(); list.setAttribute('aria-busy', 'true');
+    ctx.mount.querySelector('[data-extras-feedback]').innerHTML = '';
+    try {
+      const data = await request('/admin/summary');
+      if (!sameEvent(generation) || serial !== ctx.request) return;
+      if (String(data?.event_id) !== state.eventKey || !summaryKinds.every(kind => Array.isArray(data[kind]) && data[kind].every(item => Array.isArray(item.bookings)))) throw new Error(text('invalid_response'));
+      ctx.summaryData = data;
+      renderValidatedSummary(ctx);
+    } catch (error) {
+      if (sameEvent(generation) && serial === ctx.request) {
+        list.innerHTML = notice(error.message) + button('refresh', text('retry'));
+        ctx.mount.querySelector('[data-summary-results]').textContent = '';
+      }
+    } finally {
+      if (serial === ctx.request) list.removeAttribute('aria-busy');
+    }
+  }
+  const summarySearchValue = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
+  function summaryBookingMatches(booking, query) {
+    return summarySearchValue([booking.booking_id, booking.attendee?.id, booking.attendee?.name, booking.account?.id, booking.account?.name, booking.account?.user_type, booking.pack?.id, booking.pack?.name, booking.item_type, typeName(booking.item_type)].join(' ')).includes(query);
+  }
+  function summaryBookingMarkup(booking) {
+    const person = booking.attendee?.name ?? booking.account?.name ?? text('summary_no_name');
+    const account = booking.account;
+    const accountType = account?.user_type === 'SCH' ? text('school') : account?.user_type === 'PAR' ? text('individual') : account?.user_type || '—';
+    const origin = `${html(typeName(booking.item_type))}${booking.pack ? `<br><strong>${html(booking.pack.name ?? text('summary_no_name'))}</strong>` : ''}`;
+    return `<li class="extras-summary-booking"><dl>${fieldLabel(text('attendee'), `<strong>${html(person)}</strong>${booking.attendee ? '' : `<small>${html(text('summary_no_attendee'))}</small>`}`)}${fieldLabel(text('account'), `${html(account?.name ?? text('summary_no_name'))}<small>${html(accountType)}</small>`)}${fieldLabel(text('quantity'), html(booking.quantity))}${fieldLabel(text('summary_origin'), origin)}${fieldLabel(text('summary_booking'), `<button type="button" class="btn btn-outline-primary btn-sm" data-summary-booking="${html(booking.booking_id)}">${html(text('summary_view_booking'))} <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></button>`)}</dl></li>`;
+  }
+  function renderValidatedSummary(ctx) {
+    const data = ctx.summaryData, kind = ctx.summaryKind;
+    const list = ctx.mount.querySelector('[data-extras-list]');
+    ctx.mount.querySelectorAll('[data-summary-kind]').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.summaryKind === kind));
+      button.querySelector('strong').textContent = data?.[button.dataset.summaryKind].length ?? '—';
+    });
+    if (!data) return;
+    const query = summarySearchValue(ctx.summarySearch.trim());
+    const products = data[kind].flatMap(item => {
+      if (ctx.summaryOnlyBooked && !item.bookings.length) return [];
+      const matchesProduct = !query || summarySearchValue([item.id, item.name, item.teacher, item.mode].join(' ')).includes(query);
+      const bookings = matchesProduct ? item.bookings : item.bookings.filter(booking => summaryBookingMatches(booking, query));
+      return matchesProduct || bookings.length ? [{ item, bookings }] : [];
+    });
+    ctx.mount.querySelector('[data-summary-results]').textContent = `${summaryLabel(kind)}: ${products.length} / ${data[kind].length} · ${text('summary_timezone')}: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
+    list.innerHTML = `<div class="extras-summary-products">${products.map(({ item, bookings }) => {
+      const key = `${kind}-${item.id}`;
+      const meta = kind === 'workshops' ? `${html(item.teacher || '—')} · ${html(date(item.start_at))} – ${html(date(item.end_at))}` : kind === 'packs' ? `${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))} (${html(item.mode)}) · ${html(text('workshop_count'))}: ${html(item.workshop_count)}` : '';
+      return `<details class="extras-summary-product lm-card" data-summary-product="${html(key)}"${ctx.summaryOpen.has(key) ? ' open' : ''}><summary><span class="extras-summary-product-heading"><strong>${html(item.name ?? text('summary_no_name'))}</strong>${meta ? `<span class="extras-summary-meta">${meta}</span>` : ''}</span><span class="extras-summary-badges"><span class="lm-status lm-status-${isActive(item) ? 'success' : 'neutral'}">${html(text(isActive(item) ? 'active' : 'inactive'))}</span>${kind === 'workshops' ? `<span class="lm-status lm-status-neutral">${html(text('capacity'))}: ${html(item.capacity)}</span>` : ''}<span class="lm-status lm-status-success">${html(text('summary_validated'))}: ${html(item.validated_count)}</span><span class="lm-status lm-status-info">${html(text('quantity'))}: ${html(item.total_quantity)}</span></span><i class="bi bi-chevron-down extras-summary-chevron" aria-hidden="true"></i></summary><div class="lm-card-body">${query ? `<p class="small text-body-secondary">${html(text('summary_matching'))}: ${bookings.length} / ${item.bookings.length}</p>` : ''}${bookings.length ? `<ul class="extras-summary-bookings">${bookings.map(summaryBookingMarkup).join('')}</ul>` : `<p class="text-body-secondary mb-0">${html(text('summary_no_bookings'))}</p>`}</div></details>`;
+    }).join('') || `<p class="text-body-secondary py-4">${html(text(data[kind].length ? 'summary_no_matches' : 'empty'))}</p>`}</div>`;
+    list.querySelectorAll('[data-summary-product]').forEach(details => {
+      details.addEventListener('toggle', () => {
+        if (!details.isConnected) return;
+        if (details.open) ctx.summaryOpen.add(details.dataset.summaryProduct);
+        else ctx.summaryOpen.delete(details.dataset.summaryProduct);
+      });
+    });
+  }
+
   function createContext(mount, resource, accountId = null) {
     const ctx = { mount, resource, accountId, rows: [], page: 1, pageSize: 20, filters: {}, pagination: null, request: 0 };
     state.contexts.set(mount, ctx);
@@ -208,7 +285,8 @@ window.RegistrationExtras = (() => {
     return admin() && ctx.resource !== 'bookings';
   }
   function buildShell(ctx) {
-    ctx.mount.innerHTML = `<div class="extras-heading"><h2 class="h4 mb-0">${html(titleFor(ctx))}</h2><div class="extras-actions">${canManage(ctx) || (ctx.resource === 'bookings' && ctx.accountId != null) ? button('create', text('add')) : ''}${button('refresh', text('refresh'), '', 'outline-secondary')}</div></div>
+    if (ctx.resource === 'validated-summary') return buildValidatedSummaryShell(ctx);
+    ctx.mount.innerHTML = `<div class="extras-heading"><h2 class="h4 mb-0">${html(titleFor(ctx))}</h2><div class="extras-actions">${canManage(ctx) || (ctx.resource === 'bookings' && ctx.accountId != null) ? button('create', text('add')) : ''}${canManage(ctx) && ctx.resource === 'workshops' ? button('bulk-prices', text('prices')) : ''}${button('refresh', text('refresh'), '', 'outline-secondary')}</div></div>
       <div data-extras-feedback aria-live="polite"></div>
       ${ctx.resource === 'bookings' ? bookingFilters(ctx) : ''}
       <div data-extras-list aria-live="polite"></div>`;
@@ -230,6 +308,7 @@ window.RegistrationExtras = (() => {
     return `<form data-extras-filters class="extras-filters extras-filters--compact mb-3">${fields}<div class="extras-actions align-self-end"><button type="submit" class="btn btn-primary btn-sm">${html(text('filter'))}</button>${button('clear-filters', text('clear'), '', 'outline-secondary')}</div></form>`;
   }
   async function loadContext(ctx) {
+    if (ctx.resource === 'validated-summary') return loadValidatedSummary(ctx);
     if (!enabled()) return;
     const generation = state.generation;
     const serial = ++ctx.request;
@@ -252,6 +331,14 @@ window.RegistrationExtras = (() => {
       if (ctx.resource === 'packs') ctx.allWorkshopIds = Array.isArray(workshopCatalog) ? [...new Set(workshopCatalog.map(workshop => Number(workshop.id)))] : null;
       ctx.rows = ctx.resource === 'bookings' ? data?.data : data;
       if (!Array.isArray(ctx.rows)) throw new Error(text('invalid_response'));
+      if (['workshops', 'packs', 'services'].includes(ctx.resource) && admin()) {
+        const prices = await Promise.allSettled(ctx.rows.map(row => request(`/admin/${ctx.resource}/${id(row.id)}/prices`).then(data => {
+          if (!Array.isArray(data)) throw new Error(text('invalid_response'));
+          return data;
+        })));
+        if (!sameEvent(generation) || serial !== ctx.request) return;
+        ctx.productPrices = new Map(ctx.rows.map((row, index) => [String(row.id), prices[index]]));
+      }
       if (ctx.resource === 'bookings') {
         ctx.rows = await resolveBookingNames(ctx.rows);
         if (!sameEvent(generation) || serial !== ctx.request) return;
@@ -280,7 +367,7 @@ window.RegistrationExtras = (() => {
     }
   }
 
-  function occupancyMarkup(item, compact = false) {
+  function occupancyMarkup(item, compact = false, grouped = false) {
     const capacity = Math.max(0, Number(item.capacity) || 0);
     const validated = Number(item.validated_count) || 0;
     const percent = capacity ? Math.min(100, Math.max(0, validated / capacity * 100)) : 0;
@@ -288,13 +375,14 @@ window.RegistrationExtras = (() => {
     const availabilityState = availability == null ? 'neutral' : Number(availability) > 0 ? 'success' : 'warning';
     const caption = compact
       ? `<span class="extras-availability lm-status lm-status-${availabilityState}"><i class="bi bi-ticket-perforated" aria-hidden="true"></i>${html(text('available_count'))}<strong>${html(availability ?? '—')}</strong></span>`
-      : `<span>${html(text('validated_count'))}: ${validated} · ${html(text('pending_count'))}: ${html(item.pending_count ?? '—')} · ${html(text('available_count'))}: ${html(availability ?? '—')}</span>`;
+      : `<div class="extras-occupancy-badges">${grouped ? `<span class="lm-status lm-status-neutral">${html(text('capacity'))}: ${capacity}</span>` : ''}<span class="lm-status lm-status-success">${html(text('validated_count'))}: ${validated}</span><span class="lm-status lm-status-warning">${html(text('pending_count'))}: ${html(item.pending_count ?? '—')}</span><span class="lm-status lm-status-info">${html(text('available_count'))}: ${html(availability ?? '—')}</span></div>`;
+    if (grouped) return `<div class="extras-occupancy extras-occupancy--grouped">${caption}</div>`;
     return `<div class="extras-occupancy"><div class="extras-occupancy-track" role="progressbar" aria-label="${html(text('validated_count'))}" aria-valuemin="0" aria-valuemax="${capacity}" aria-valuenow="${validated}"><span style="width:${percent}%"></span></div>${caption}</div>`;
   }
   function columns(ctx) {
-    if (ctx.resource === 'workshops') return ['name', 'teacher', 'day', 'time_range', 'capacity', 'occupancy', 'status'];
-    if (ctx.resource === 'packs') return ['name', 'mode', 'workshop_count', 'workshops', 'status'];
-    if (ctx.resource === 'services') return ['name', 'description', 'status'];
+    if (ctx.resource === 'workshops') return ['name', 'teacher', 'day', 'time_range', 'occupancy', 'prices', 'status'];
+    if (ctx.resource === 'packs') return ['name', 'mode', 'workshop_count', 'workshops', 'prices', 'status'];
+    if (ctx.resource === 'services') return ['name', 'description', 'prices', 'status'];
     if (ctx.resource === 'discount-codes') return ['code', 'amount', 'audience', 'valid_from', 'valid_until', 'max_uses', 'status'];
     return [...(admin() && ctx.accountId == null ? ['account'] : []), 'type', 'name', 'attendee', 'quantity', 'amount', 'status', 'created_at'];
   }
@@ -302,7 +390,8 @@ window.RegistrationExtras = (() => {
     if (key === 'day') return html(workshopDatePart(row.start_at, false));
     if (key === 'time_range') return `${html(workshopDatePart(row.start_at, true))} – ${html(workshopDatePart(row.end_at, true))}`;
     if (key === 'status') return ctx.resource === 'bookings' ? status(row.status) : `<span class="lm-status lm-status-${isActive(row) ? 'success' : 'neutral'}">${html(text(isActive(row) ? 'active' : 'inactive'))}</span>`;
-    if (key === 'occupancy') return occupancyMarkup(row);
+    if (key === 'occupancy') return occupancyMarkup(row, false, true);
+    if (key === 'prices') return productPricesMarkup(ctx, row);
     if (key === 'price' || key === 'amount') return html(money(ctx.resource === 'bookings' ? row.total_amount : row[key]));
     if (['start_at', 'end_at', 'valid_from', 'valid_until', 'created_at'].includes(key)) return html(date(row[key]));
     if (key === 'max_uses') return html(row.max_uses ?? text('unlimited'));
@@ -321,7 +410,24 @@ window.RegistrationExtras = (() => {
     return html(row[key] ?? '—');
   }
   function columnLabel(ctx, key) {
+    if (key === 'prices') return text('prices');
     return text(ctx.resource === 'packs' && key === 'workshops' ? 'available_workshops' : key);
+  }
+  function productPricesMarkup(ctx, row) {
+    const result = ctx.productPrices?.get(String(row.id));
+    if (result?.status === 'rejected') return `<span class="text-danger" role="status">${html(result.reason?.message || text('request_error'))}</span>`;
+    const prices = result?.value || [];
+    if (!prices.length) return `<span class="text-body-secondary">${html(text('prices_empty'))}</span>`;
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const formatDay = value => {
+      const day = calendarDay(String(value || '').slice(0, 10));
+      return day ? new Intl.DateTimeFormat(getRegistrationLanguage(), { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${day}T12:00:00`)) : '—';
+    };
+    return `<div class="registration-category-price-ranges">${[...prices].sort((a, b) => String(a.start_date).localeCompare(String(b.start_date))).map(price => {
+      const current = price.is_current == null ? price.start_date <= today && today <= price.end_date : [true, 1, '1'].includes(price.is_current);
+      return `<div class="registration-category-price-range${current ? ' registration-category-price-range--current' : ''}"${current ? ' aria-current="true"' : ''}><span class="registration-category-price-range__dates">${html(formatDay(price.start_date))} - ${html(formatDay(price.end_date))}</span><strong class="registration-category-price-range__amount">${html(money(price.price))}</strong>${current ? `<i class="bi bi-check-circle-fill" aria-hidden="true"></i><span class="visually-hidden">${html(t('registration_categories_price_current'))}</span>` : ''}</div>`;
+    }).join('')}</div>`;
   }
   function actions(ctx, row) {
     let result = ['workshops', 'packs', 'services'].includes(ctx.resource) ? '' : button('details', text('details'), row.id);
@@ -338,6 +444,7 @@ window.RegistrationExtras = (() => {
     return `<div class="extras-actions">${result}</div>`;
   }
   function renderList(ctx) {
+    if (ctx.resource === 'validated-summary') return renderValidatedSummary(ctx);
     const list = ctx.mount.querySelector('[data-extras-list]');
     if (!list) return;
     const keys = columns(ctx);
@@ -503,9 +610,13 @@ window.RegistrationExtras = (() => {
   }
   function catalogCard(resource, item, reservations = null) {
     const packWorkshops = resource === 'packs' ? packWorkshopSummary(item, reservations) : '';
+    const descriptionText = `<p class="extras-description text-body-secondary">${html(item.description || '')}</p>`;
+    const description = resource === 'packs' && state.role === 'school'
+      ? (item.description ? `<details class="extras-pack-details"><summary><i class="bi bi-card-text" aria-hidden="true"></i><span>${html(text('description'))}</span><i class="bi bi-chevron-down extras-pack-chevron" aria-hidden="true"></i></summary><div class="lm-card-body">${descriptionText}</div></details>` : '')
+      : descriptionText;
     const reservationInfo = ['workshops', 'packs'].includes(resource) ? reservationBadges(item.id, reservations, resource) : resource === 'services' ? serviceReservations(item.id, reservations) : '';
     const fullyBooked = ['workshops', 'packs'].includes(resource) && allParticipantsBooked(item.id, reservations, resource);
-    return `<article class="lm-card lm-card-body extras-catalog-card"><h4 class="h6">${html(item.name)}</h4><p class="extras-description text-body-secondary">${html(item.description || '')}</p>${resource === 'workshops' ? workshopDescription(item) : packWorkshops}<div class="extras-catalog-card-footer">${reservationInfo}<strong>${html(hasPrice(item) ? money(item.price) : text('price_unavailable'))}</strong><button type="button" class="btn btn-primary btn-sm" data-extras-action="book" data-resource="${resource}" data-id="${html(item.id)}"${fullyBooked || !hasPrice(item) ? ' disabled' : ''}>${html(text('book'))}</button></div></article>`;
+    return `<article class="lm-card lm-card-body extras-catalog-card"><h4 class="h6">${html(item.name)}</h4>${description}${resource === 'workshops' ? workshopDescription(item) : packWorkshops}<div class="extras-catalog-card-footer">${reservationInfo}<strong${resource === 'workshops' && !admin() && !hasPrice(item) ? ' class="extras-price-unavailable"' : ''}>${html(hasPrice(item) ? money(item.price) : text('price_unavailable'))}</strong><button type="button" class="btn btn-primary btn-sm" data-extras-action="book" data-resource="${resource}" data-id="${html(item.id)}"${fullyBooked || !hasPrice(item) ? ' disabled' : ''}>${html(text('book'))}</button></div></article>`;
   }
 
   async function openDialog(title, content, onSave = null, saveLabel = t('save')) {
@@ -632,6 +743,114 @@ window.RegistrationExtras = (() => {
     const parsed = new Date(`${value}T00:00:00Z`);
     return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value ? value : '';
   }
+  async function openBulkWorkshopPrices(ctx) {
+    if (!canManage(ctx) || ctx.resource !== 'workshops') return;
+    const generation = state.generation;
+    const eventId = id(getEvent()?.id);
+    const start = calendarDay(String(getEvent()?.registrationStart || '').slice(0, 10));
+    const end = calendarDay(String(getEvent()?.registrationEnd || '').slice(0, 10));
+    const periodValid = Boolean(start && end && start <= end);
+    let existing = [], ready = false, sequence = 0, refreshing = false;
+    const content = `<p class="small text-body-secondary">${html(text('bulk_prices_hint'))}</p>${periodValid ? '' : notice(text('price_period_missing'), 'warning')}
+      <fieldset class="extras-price-fields" data-bulk-price-fields disabled><legend class="visually-hidden">${html(text('prices'))}</legend><div data-bulk-price-ranges></div><button type="button" class="btn btn-outline-primary btn-sm mt-2" data-bulk-price-action="add">${html(text('add_price'))}</button></fieldset>
+      <details class="extras-pack-details mt-3"><summary><i class="bi bi-collection" aria-hidden="true"></i><span>${html(text('bulk_prices_title'))}</span><i class="bi bi-chevron-down extras-pack-chevron" aria-hidden="true"></i></summary><div class="lm-card-body"><div class="extras-prices-table" data-bulk-existing aria-live="polite"></div></div></details><button type="button" class="btn btn-outline-secondary btn-sm mt-2" data-bulk-price-action="refresh">${html(text('refresh'))}</button>`;
+    const form = await openDialog(text('bulk_prices_title'), content, async () => {
+      if (!ready || !periodValid) throw new Error(text('price_period_missing'));
+      const ranges = [...form.querySelectorAll('[data-bulk-price-range]')].map(row => {
+        const inicio = calendarDay(row.querySelector('[data-range-field="inicio"]').value);
+        const fin = calendarDay(row.querySelector('[data-range-field="fin"]').value);
+        const precio = row.querySelector('[data-range-field="precio"]').value.trim();
+        if (!inicio || !fin || inicio > fin) throw new Error(text('price_invalid_dates'));
+        if (inicio < start || fin > end) throw new Error(text('price_outside_period'));
+        if (!/^\d+(?:\.\d{1,2})?$/.test(precio) || Number(precio) <= 0 || Number(precio) > 99999999.99) throw new Error(text('price_invalid_amount'));
+        return { inicio, fin, precio };
+      });
+      if (!ranges.length) throw new Error(text('invalid_selection'));
+      if (ranges.some((range, index) => ranges.slice(0, index).some(other => range.inicio <= other.fin && range.fin >= other.inicio))) throw new Error(text('bulk_prices_overlap'));
+      fields.disabled = true;
+      try {
+        // Re-read every workshop, including inactive and recently created ones, immediately before the POST.
+        await reload();
+        if (!current()) return false;
+        const conflict = existing.find(item => ranges.some(range => item.prices.some(price => range.inicio <= price.end_date && range.fin >= price.start_date)));
+        if (conflict) throw new Error(`${text('bulk_prices_overlap')} · ${conflict.workshop.name}`);
+        try {
+          await request('/admin/workshops/prices', { method: 'POST', body: { event_id: eventId, ranges } });
+        } catch (error) {
+          if (error.status === 409 || error.status === 404) {
+            try { await reload(); } catch { /* Retain the original mutation error and all entered ranges. */ }
+          }
+          throw error;
+        }
+        await loadContext(ctx);
+        if (sameEvent(generation)) ctx.mount.querySelector('[data-extras-feedback]').innerHTML = notice(text('saved'), 'success');
+        return true;
+      } finally {
+        if (current()) {
+          fields.disabled = !ready || !periodValid;
+          refresh.disabled = false;
+        }
+      }
+    }, t('save'));
+    if (!form || !sameEvent(generation)) return;
+    const fields = form.querySelector('[data-bulk-price-fields]');
+    const rangesMount = form.querySelector('[data-bulk-price-ranges]');
+    const list = form.querySelector('[data-bulk-existing]');
+    const submit = form.querySelector('[type="submit"]');
+    const refresh = form.querySelector('[data-bulk-price-action="refresh"]');
+    const current = () => sameEvent(generation) && state.dialog === form.closest('.modal');
+    const addRange = () => {
+      const prefix = `extras-bulk-${++sequence}`;
+      const dateField = (key, label) => `<div class="extras-form-field"><label class="form-label" for="${prefix}-${key}">${html(text(label))}</label><input class="form-control lm-input" id="${prefix}-${key}" data-range-field="${key}" type="date"${start ? ` min="${start}"` : ''}${end ? ` max="${end}"` : ''} required></div>`;
+      rangesMount.insertAdjacentHTML('beforeend', `<div class="extras-price-form-grid mb-3" data-bulk-price-range>${dateField('inicio', 'start_date')}${dateField('fin', 'end_date')}<div class="extras-form-field"><label class="form-label" for="${prefix}-precio">${html(text('price'))}</label><div class="input-group"><input class="form-control lm-input" id="${prefix}-precio" data-range-field="precio" type="number" min="0.01" max="99999999.99" step="0.01" inputmode="decimal" required><span class="input-group-text">EUR</span></div></div><div class="extras-price-submit"><button type="button" class="btn btn-outline-danger btn-sm" data-bulk-price-action="remove">${html(t('delete'))}</button></div></div>`);
+      rangesMount.querySelectorAll('[data-bulk-price-action="remove"]').forEach(button => { button.disabled = rangesMount.children.length === 1; });
+    };
+    const reload = async () => {
+      refreshing = true; ready = false; fields.disabled = true; submit.disabled = true; refresh.disabled = true; form.dataset.priceReady = 'false';
+      list.innerHTML = loading();
+      try {
+        const workshops = await request('/admin/workshops');
+        if (!current()) return;
+        if (!Array.isArray(workshops)) throw new Error(text('invalid_response'));
+        const data = await Promise.all(workshops.map(async workshop => {
+          const prices = await request(`/admin/workshops/${id(workshop.id)}/prices`);
+          if (!Array.isArray(prices)) throw new Error(text('invalid_response'));
+          return { workshop, prices };
+        }));
+        if (!current()) return;
+        existing = data;
+        const priceContext = { productPrices: new Map(data.map(item => [String(item.workshop.id), { status: 'fulfilled', value: item.prices }])) };
+        list.innerHTML = `<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th scope="col">${html(text('workshop'))}</th><th scope="col">${html(text('prices'))}</th></tr></thead><tbody>${data.map(item => `<tr><td>${html(item.workshop.name)}</td><td>${productPricesMarkup(priceContext, item.workshop)}</td></tr>`).join('')}</tbody></table></div>`;
+        ready = true;
+        form.dataset.priceReady = String(periodValid);
+      } catch (error) {
+        if (current()) list.innerHTML = notice(error.message);
+        throw error;
+      } finally {
+        refreshing = false;
+        if (current()) {
+          const saving = form.dataset.saving === 'true';
+          fields.disabled = !ready || !periodValid || saving;
+          submit.disabled = !ready || !periodValid || saving;
+          refresh.disabled = saving;
+        }
+      }
+    };
+    form.addEventListener('click', async event => {
+      const target = event.target.closest('[data-bulk-price-action]');
+      if (!target || target.disabled || refreshing || form.dataset.saving === 'true') return;
+      if (target.dataset.bulkPriceAction === 'add') { addRange(); return; }
+      if (target.dataset.bulkPriceAction === 'remove') {
+        if (rangesMount.children.length > 1) target.closest('[data-bulk-price-range]').remove();
+        rangesMount.querySelectorAll('[data-bulk-price-action="remove"]').forEach(button => { button.disabled = rangesMount.children.length === 1; });
+        return;
+      }
+      try { await reload(); } catch { /* The list shows the failure and refresh remains available. */ }
+    });
+    addRange();
+    try { await reload(); } catch { /* Block writes until every existing tariff can be checked. */ }
+  }
+
   async function openPrices(ctx, row) {
     if (!canManage(ctx) || !['workshops', 'packs', 'services'].includes(ctx.resource)) return;
     const generation = state.generation;
@@ -710,6 +929,8 @@ window.RegistrationExtras = (() => {
         if (!current()) return;
         if (!Array.isArray(data)) throw new Error(text('invalid_response'));
         prices = data;
+        ctx.productPrices ||= new Map();
+        ctx.productPrices.set(String(row.id), { status: 'fulfilled', value: prices });
         const index = ctx.rows.findIndex(item => String(item.id) === String(row.id));
         if (index >= 0) ctx.rows[index] = product;
         renderList(ctx);
@@ -1082,12 +1303,33 @@ window.RegistrationExtras = (() => {
       await renderAccount();
       return;
     }
-    const target = event.target.closest('[data-extras-action]');
+    const target = event.target.closest('[data-extras-action], [data-summary-kind], [data-summary-expand], [data-summary-booking]');
     if (!target || target.disabled || !enabled()) return;
     const action = target.dataset.extrasAction;
     const ctx = closestContext(target);
     target.disabled = true;
     try {
+      if (ctx?.resource === 'validated-summary') {
+        if (!admin()) return;
+        if (target.dataset.summaryKind && summaryKinds.includes(target.dataset.summaryKind)) {
+          ctx.summaryKind = target.dataset.summaryKind;
+          renderValidatedSummary(ctx); return;
+        }
+        if (target.hasAttribute('data-summary-expand')) {
+          ctx.mount.querySelectorAll('[data-summary-product]').forEach(details => {
+            details.open = target.dataset.summaryExpand === 'true';
+            if (details.open) ctx.summaryOpen.add(details.dataset.summaryProduct);
+            else ctx.summaryOpen.delete(details.dataset.summaryProduct);
+          });
+          return;
+        }
+        if (target.dataset.summaryBooking) {
+          const bookingId = id(target.dataset.summaryBooking);
+          if (!ctx.summaryData || !summaryKinds.some(kind => ctx.summaryData[kind].some(item => item.bookings.some(booking => Number(booking.booking_id) === bookingId)))) return;
+          await openDetails({ resource: 'bookings', accountId: null, participants: [] }, { id: bookingId });
+          return;
+        }
+      }
       if (action === 'finance-retry') return await refreshFinance();
       if (action === 'account-retry') return await renderAccount();
       if (action === 'discount-retry') {
@@ -1112,6 +1354,7 @@ window.RegistrationExtras = (() => {
       }
       if (!ctx) return;
       if (action === 'refresh') return await loadContext(ctx);
+      if (action === 'bulk-prices') return await openBulkWorkshopPrices(ctx);
       if (action === 'create') return ctx.resource === 'bookings' ? await openBookingEditor(ctx) : await openEditor(ctx);
       if (['next', 'previous'].includes(action)) {
         ctx.page += action === 'next' ? 1 : -1;
@@ -1166,6 +1409,7 @@ window.RegistrationExtras = (() => {
     const mount = document.getElementById(key);
     const resource = mount?.dataset.extrasResource;
     if (!resource) return;
+    if (resource === 'validated-summary' && !admin()) return;
     if (!admin() && ['workshops', 'services'].includes(resource)) return loadCatalog(mount, resource);
     const ctx = state.contexts.get(mount) || createContext(mount, resource);
     buildShell(ctx);
@@ -1194,6 +1438,21 @@ window.RegistrationExtras = (() => {
     if (!state.initialized) {
       state.initialized = true;
       document.addEventListener('click', handleClick);
+      document.addEventListener('input', event => {
+        if (!enabled() || !admin() || !event.target.matches('[data-summary-search]')) return;
+        const ctx = closestContext(event.target);
+        if (!ctx) return;
+        ctx.summarySearch = event.target.value;
+        if (ctx.summarySearch.trim() && ctx.summaryData) ctx.summaryData[ctx.summaryKind].forEach(item => ctx.summaryOpen.add(`${ctx.summaryKind}-${item.id}`));
+        renderValidatedSummary(ctx);
+      });
+      document.addEventListener('change', event => {
+        if (!enabled() || !admin() || !event.target.matches('[data-summary-booked]')) return;
+        const ctx = closestContext(event.target);
+        if (!ctx) return;
+        ctx.summaryOnlyBooked = event.target.checked;
+        renderValidatedSummary(ctx);
+      });
       document.addEventListener('keydown', event => {
         const tab = event.target.closest('[data-extras-catalog-tab]');
         if (!tab || !enabled() || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
