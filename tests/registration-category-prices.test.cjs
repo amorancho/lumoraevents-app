@@ -18,14 +18,11 @@ function harness(event = {}) {
   w.getRegistrationLanguage = () => 'es';
   w.getLanguage = () => 'es';
   w.t = (_key, fallback) => fallback;
-  const categoryStart = source.indexOf('function initRegistrationCategoriesTab(');
   w.eval([
     section('function getRegistrationCalendarDate(', 'function getRegistrationSidebarStatusInfo('),
-    section('  const normalizeNumber =', '  const syncCategoryRequiredFields =', categoryStart),
-    section('  const formatCurrencyDisplay =', '  const getCategoryPricesElements =', categoryStart),
-    section('  const getCategoryPriceDate =', '  const getCategoryPriceApiError =', categoryStart),
-    section('  const createCategoryPriceRanges =', '  const createCategoryYearsRange =', categoryStart),
-    'window.createRanges = createCategoryPriceRanges;'
+    section('function normalizeRegistrationNumber(', 'function getRegistrationFeeTypeInfo('),
+    section('function createRegistrationCategoryPriceRanges(', 'function initRegistrationCategoriesTab('),
+    'window.createRanges = createRegistrationCategoryPriceRanges;'
   ].join('\n'));
   return { dom, create: w.createRanges };
 }

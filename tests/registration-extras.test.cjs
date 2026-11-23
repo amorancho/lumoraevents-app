@@ -741,8 +741,10 @@ test('summary converts decimal euros once; validated payments reduce balance wit
     const finance = h.w.RegistrationExtras.getFinanceSummary();
     assert.equal(finance.total_amount, 12500);
     assert.equal(finance.effective_discount_amount, 1500);
-    h.w.eval('registrationState').paymentDocuments = [{ payment_type: 'PAY', status: 'VAL', amount: 5000 }];
-    const metrics = h.w.buildRegistrationDashboardFinanceMetrics([], new Map());
+    const state = h.w.eval('registrationState');
+    state.registrations = [{ id: 1, school_id: 2, status: 'VAL', total_amount: 10000 }];
+    state.paymentDocuments = [{ payment_type: 'PAY', status: 'VAL', amount: 5000 }];
+    const metrics = h.w.buildRegistrationDashboardFinanceMetrics(state.registrations, new Map());
     assert.equal(metrics.totalAmount, 12500);
     assert.equal(metrics.pendingAmount, 7500);
     h.w.initPaymentsTab('school'); await tick();
@@ -1892,11 +1894,13 @@ test('language changes update navigation and loaded catalogs after translations 
   } finally { h.close(); }
 });
 
-test('Payments and dashboard split every active status, exclude DEL, and preserve the extras base', async () => {
+test('Payments and dashboard split every active status without adding PEN twice to the extras summary', async () => {
   for (const role of ['school', 'organizer']) {
     for (const extras of [false, true]) {
       const h = harness({ role, flag: extras });
       try {
+        h.accounts = [{ id: 4, name: 'Academy', user_type: 'SCH' }];
+        h.summary = { registrations_amount: 40, validated_extras_amount: 40, gross_amount: 80, applied_discount_amount: 15, effective_discount_amount: 15, total_amount: 65 };
         await h.init();
         h.event.registrationFeeType = 'NON';
         const state = h.w.eval('registrationState');
@@ -1907,11 +1911,9 @@ test('Payments and dashboard split every active status, exclude DEL, and preserv
         state.registrations = rows;
         state.organizerRegistrations = rows;
         h.w.initPaymentsTab(role); await tick();
-        const apiBase = role === 'organizer' ? 25000 : 12500;
-        const apiRegistrations = role === 'organizer' ? 20000 : 10000;
-        const expectedTotal = extras ? apiBase + 9000 : 10000;
+        const expectedTotal = extras ? 12500 : 10000;
         assert.equal(h.w.document.getElementById('registrationPaymentsTotalValue').textContent, h.w.formatRegistrationCurrency(expectedTotal));
-        assert.equal(h.w.document.getElementById('registrationPaymentsAmountValue').textContent, h.w.formatRegistrationCurrency(extras ? apiRegistrations + 9000 : 10000));
+        assert.equal(h.w.document.getElementById('registrationPaymentsAmountValue').textContent, h.w.formatRegistrationCurrency(10000));
         const breakdown = h.w.document.getElementById('registrationPaymentsAmountBreakdown');
         assert.match(breakdown.querySelectorAll('dt')[0].textContent, /\(1\)/);
         assert.match(breakdown.querySelectorAll('dt')[1].textContent, /\(3\)/);
@@ -1920,8 +1922,51 @@ test('Payments and dashboard split every active status, exclude DEL, and preserv
         assert.equal(finance.totalAmount, expectedTotal);
         const target = role === 'organizer' ? 'organizerDashboardTotalBreakdown' : 'schoolDashboardTotalBreakdown';
         h.w.renderRegistrationFinanceBreakdown(target, finance);
-        assert.equal(h.w.document.getElementById(target).querySelectorAll('dd')[0].textContent, h.w.formatRegistrationCurrency(extras ? apiBase : 1000));
+        assert.equal(h.w.document.getElementById(target).querySelectorAll('dd')[0].textContent, h.w.formatRegistrationCurrency(1000));
         assert.equal(h.w.document.getElementById(target).querySelectorAll('dd')[1].textContent, h.w.formatRegistrationCurrency(9000));
+        if (extras) {
+          const amounts = h.w.document.getElementById(target).querySelectorAll('dd');
+          assert.equal(amounts[2].textContent, h.w.formatRegistrationCurrency(4000));
+          assert.equal(amounts[3].textContent, h.w.formatRegistrationCurrency(-1500));
+        }
+      } finally { h.close(); }
+    }
+  }
+});
+
+test('a sole 45-euro PEN registration shows 0 validated and 45 unvalidated with and without extras', async () => {
+  for (const role of ['school', 'organizer']) {
+    for (const extras of [false, true]) {
+      const h = harness({ role, flag: extras });
+      try {
+        h.accounts = [{ id: 4, name: 'Academy', user_type: 'SCH' }];
+        h.summary = { registrations_amount: 45, validated_extras_amount: 0, gross_amount: 45, applied_discount_amount: 0, effective_discount_amount: 0, total_amount: 45 };
+        h.event.registrationFeeType = 'NON';
+        h.overrides['GET /api/registrations/payments'] = () => ({ data: [] });
+        await h.init();
+        const state = h.w.eval('registrationState');
+        const rows = [{ id: 1, school_id: 4, category_id: 1, status: 'PEN', registration_price: 4500, total_amount: 4500, members: [{ participant_id: 11 }] }];
+        state.registrations = rows;
+        state.organizerRegistrations = rows;
+        state.registrationCategories = [{ id: 1, registration_price: 2000, supplements: [{ style_id: 12, price: 2500 }] }];
+        h.w.initPaymentsTab(role); await tick();
+        assert.equal(h.w.document.getElementById('registrationPaymentsAmountValue').textContent, h.w.formatRegistrationCurrency(4500));
+        assert.equal(h.w.document.getElementById('registrationPaymentsTotalValue').textContent, h.w.formatRegistrationCurrency(4500));
+        const breakdown = h.w.document.getElementById('registrationPaymentsAmountBreakdown');
+        assert.match(breakdown.querySelectorAll('dt')[0].textContent, /\(0\)/);
+        assert.match(breakdown.querySelectorAll('dt')[1].textContent, /\(1\)/);
+        assert.equal(breakdown.querySelectorAll('dd')[0].textContent, h.w.formatRegistrationCurrency(0));
+        assert.equal(breakdown.querySelectorAll('dd')[1].textContent, h.w.formatRegistrationCurrency(4500));
+        const dashboard = h.w.buildRegistrationDashboardFinanceMetrics(rows, new h.w.Map());
+        assert.equal(dashboard.totalAmount, 4500);
+        assert.equal(dashboard.validatedAmount, 0);
+        assert.equal(dashboard.unvalidatedAmount, 4500);
+        rows[0].status = 'VAL';
+        h.w.dispatchEvent(new h.w.Event('registration:config-updated')); await tick();
+        assert.equal(h.w.document.getElementById('registrationPaymentsTotalValue').textContent, h.w.formatRegistrationCurrency(4500));
+        assert.equal(breakdown.querySelectorAll('dd')[0].textContent, h.w.formatRegistrationCurrency(4500));
+        assert.equal(breakdown.querySelectorAll('dd')[1].textContent, h.w.formatRegistrationCurrency(0));
+        assert.equal(rows[0].registration_price, 4500);
       } finally { h.close(); }
     }
   }

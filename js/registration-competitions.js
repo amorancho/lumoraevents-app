@@ -179,12 +179,34 @@
     }).format(amount);
   };
 
-  const getCategoryRegistrationPrice = (category) => normalizeNumber(category?.registration_price) ?? 0;
+  const getCategoryRegistrationPrice = (category) => {
+    const currentPrice = Array.isArray(category?.prices)
+      ? category.prices.find(price => price?.is_current === true || price?.is_current === 1)
+      : null;
+    // The API resolves the current tariff; the base price can still be zero.
+    for (const value of [category?.reg_price_by_date, currentPrice?.price, category?.registration_price]) {
+      if (value == null || String(value).trim() === '') continue;
+      const price = normalizeNumber(value);
+      if (price !== null && price >= 0) return price;
+    }
+    return null;
+  };
 
   const getSelectedCategory = () => {
     const categoryId = elements.category ? elements.category.value : '';
     if (!categoryId) return null;
     return categoryById.get(`${categoryId}`) || null;
+  };
+
+  const getSelectedCategorySupplement = (category) => {
+    const styleId = elements.style?.value;
+    if (!styleId || !Array.isArray(category?.supplements)) return 0;
+    const supplement = category.supplements.find(item =>
+      Number(item.category_id) === Number(category.id)
+      && Number(item.style_id) === Number(styleId)
+      && Number(item.event_id) === Number(getEvent()?.id));
+    const price = Number(supplement?.price);
+    return Number.isSafeInteger(price) && price >= 0 ? price : 0;
   };
 
   const getRegistrationCategoryId = (registration) => registration?.reg_category_id
@@ -354,12 +376,12 @@
       </div>
     `;
 
-    const categoryPrice = getCategoryRegistrationPrice(category);
     const pricePerPaxLabel = t('registration_categories_field_price', 'Precio por pax');
-    const freeRegistrationLabel = t('registration_competitions_free_registration', 'Inscripción gratuita');
-    const economicsValue = categoryPrice === 0
-      ? `<span>${freeRegistrationLabel}</span>`
-      : `<span><strong>${pricePerPaxLabel}:</strong> ${formatCurrencyDisplay(categoryPrice)}</span>`;
+    const supplement = getSelectedCategorySupplement(category);
+    const supplementInfo = supplement > 0
+      ? `<span><strong>${t('registration_supplements_amount', 'Supplement')}:</strong> +${formatCurrencyDisplay(supplement)}</span>`
+      : '';
+    const economicsValue = `<span><strong>${pricePerPaxLabel}:</strong></span>${supplementInfo}`;
     const feeExemptionInfo = Number(category.apply_fee ?? 1) === 1
       ? ''
       : `<span aria-hidden="true">·</span><span>${t('registration_categories_no_fee', 'No aplica Fee')}</span>`;
@@ -380,6 +402,14 @@
       ? 'registration-category-info-grid'
       : 'registration-category-info-grid registration-category-info-grid--no-age';
     elements.categoryInfo.innerHTML = `<div class="${gridClassName}">${participantsInfo}${ageInfo}${musicInfo}${economicsInfo}</div>`;
+    elements.categoryInfo.querySelector('.registration-category-info-card--economics').appendChild(
+      createRegistrationCategoryPriceRanges(category, {
+        fallbackPrice: getCategoryRegistrationPrice(category),
+        freeLabel: t('registration_competitions_free_registration', 'Inscripción gratuita'),
+        showCurrentLabel: true,
+        supplement
+      })
+    );
   };
 
   const formatDuration = (value) => {
@@ -2146,6 +2176,10 @@
     elements.category.addEventListener('change', () => {
       updateCategoryInfo();
     });
+  }
+
+  if (elements.style) {
+    elements.style.addEventListener('change', updateCategoryInfo);
   }
 
   if (elements.addMemberBtn) {

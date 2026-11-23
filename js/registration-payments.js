@@ -338,20 +338,18 @@ function initPaymentsTab(role) {
       schoolId: isOrganizer ? getSelectedSchoolFilterId() : getUserFromToken()?.id
     });
     const validatedFee = validatedFeeMetrics.totalFee;
-    const unvalidatedIncrement = finance.unvalidatedAmount + totalFee - validatedFee;
+    // PEN and VAL are already in the account summary; draft/rejected rows and fees are not.
+    const confirmedAmount = buildRegistrationFinanceMetrics(registrations.filter(registration =>
+      ['PEN', 'VAL'].includes(getRegistrationStatusValue(registration))), { useStoredTotalAmount: true }).totalAmount;
     const totalAmount = extrasEnabled
-      ? (extrasSummary ? extrasSummary.total_amount + unvalidatedIncrement : null)
+      ? (extrasSummary ? extrasSummary.total_amount + finance.totalAmount - confirmedAmount + totalFee : null)
       : totalFee + finance.totalAmount;
-    const registrationsAmount = extrasEnabled
-      ? (extrasSummary ? extrasSummary.registrations_amount + unvalidatedIncrement : null)
-      : finance.totalAmount;
-    const unvalidatedAmount = extrasEnabled ? unvalidatedIncrement : finance.unvalidatedAmount;
+    const registrationsAmount = finance.totalAmount;
     const pendingAmount = totalAmount == null ? null : totalAmount - totalPaidAmount;
 
     return {
       finance,
       registrationsAmount,
-      unvalidatedAmount,
       extrasSummary,
       extrasEnabled,
       feeMetrics,
@@ -391,11 +389,7 @@ function initPaymentsTab(role) {
     if (summaryElements.amountValue) {
       summaryElements.amountValue.textContent = metrics.registrationsAmount == null ? '—' : formatRegistrationCurrency(metrics.registrationsAmount);
     }
-    renderRegistrationFinanceBreakdown('registrationPaymentsAmountBreakdown', {
-      ...metrics.finance,
-      validatedAmount: metrics.registrationsAmount == null ? null : metrics.registrationsAmount - metrics.unvalidatedAmount,
-      unvalidatedAmount: metrics.unvalidatedAmount
-    });
+    renderRegistrationFinanceBreakdown('registrationPaymentsAmountBreakdown', metrics.finance);
     if (summaryElements.amountMeta) {
       summaryElements.amountMeta.textContent = `${formatInteger(metrics.finance.totalRegistrationsCount)} ${t('registration_dashboard_kpi_registrations', 'Registrations')}`;
     }

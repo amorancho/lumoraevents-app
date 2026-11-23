@@ -2,6 +2,31 @@
   text-align: left;
 }
 
+.registration-supplements-modal { --bs-modal-width: 600px; }
+.registration-supplement-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--lm-space-3); }
+.registration-supplement-form > * { min-width: 0; }
+.registration-supplement-form-actions { display: flex; align-items: end; gap: var(--lm-space-2); flex-wrap: wrap; }
+.registration-supplement-form-actions > button { flex: 1; }
+.registration-supplements-table { width: 100%; table-layout: fixed; }
+.registration-supplements-table :is(th, td) { overflow-wrap: anywhere; }
+.registration-supplements-table th:nth-child(3) { width: 5.5rem; }
+.registration-supplements-table th:last-child { width: 6.5rem; }
+.registration-supplement-row-actions { display: flex; justify-content: center; gap: var(--lm-space-1); }
+.registration-supplement-row-actions .lm-btn { flex-shrink: 0; width: 36px; min-height: 40px; padding: var(--lm-space-1); }
+.registration-supplements-modal :is(.alert, .modal-title) { overflow-wrap: anywhere; }
+@media (min-width: 576px) {
+  .registration-supplement-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 575.98px) {
+  .registration-supplements-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .registration-supplements-table tbody { display: block; }
+  .registration-supplements-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; padding-block: var(--lm-space-2); }
+  .registration-supplements-table tr + tr { border-top: 1px solid var(--lm-border); }
+  .registration-page .registration-supplements-modal .registration-supplements-table td { grid-column: 1; padding: var(--lm-space-1) var(--lm-space-2); border: 0; text-align: left !important; }
+  .registration-supplements-table td[data-label]::before { content: attr(data-label); display: block; color: var(--lm-text-soft); font-size: var(--lm-font-table-header); }
+  .registration-page .registration-supplements-modal .registration-supplements-table td:last-child { display: flex; align-items: center; grid-column: 2; grid-row: 1 / 4; }
+}
+
 /* Workshops, packs and generic services reuse Registration and shared lm-* surfaces. */
 .registration-extras { min-width: 0; overflow-wrap: anywhere; }
 .registration-extras .modal-content > form { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; overflow: hidden; }
@@ -3424,7 +3449,7 @@
   }
 }
 
-/* Category price periods share the same presentation in the table and mobile cards. */
+/* Category price periods share the same presentation in lists and registration details. */
 .registration-category-price-ranges {
   display: grid;
   gap: .35rem;
@@ -3454,6 +3479,13 @@
 .registration-category-price-range--current .registration-category-price-range__amount {
   color: inherit;
 }
+#categoryRuleInfo .registration-category-info-card--economics { min-width: 0; }
+#categoryRuleInfo .registration-category-price-ranges { margin-top: var(--lm-space-2); }
+#categoryRuleInfo .registration-category-price-range { justify-content: flex-start; flex-wrap: wrap; white-space: normal; }
+#categoryRuleInfo .registration-category-price-range__dates { overflow-wrap: anywhere; }
+#categoryRuleInfo .registration-category-price-range__amount { color: var(--lm-text); white-space: normal; }
+#categoryRuleInfo .registration-category-price-range--current :is(span, strong) { color: var(--lm-green); }
+#categoryRuleInfo .registration-category-price-range__current { font-size: var(--lm-font-table-header); }
 @media (min-width: 768px) {
   .registration-category-price-range {
     flex-wrap: nowrap;

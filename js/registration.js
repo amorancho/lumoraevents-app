@@ -689,6 +689,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initSchoolsTab();
     initOrganizerRegistrationsTab();
     initRegistrationCategoriesTab();
+    initRegistrationSupplements();
     initRegistrationDisciplinesTab();
     initEventSyncTab();
   }
@@ -5604,10 +5605,16 @@ function renderRegistrationFinanceBreakdown(elementId, metrics) {
     ['registration_finance_validated', 'Validated', metrics.validatedAmount, metrics.validatedRegistrationsCount],
     ['registration_finance_unvalidated', 'Unvalidated', metrics.unvalidatedAmount, metrics.unvalidatedRegistrationsCount]
   ];
+  if (metrics.validatedExtrasAmount != null && metrics.validatedExtrasAmount !== 0) {
+    rows.push(['extras_validated_extras_amount', 'Validated extras', metrics.validatedExtrasAmount]);
+  }
+  if (metrics.effectiveDiscountAmount != null && metrics.effectiveDiscountAmount !== 0) {
+    rows.push(['extras_effective_discount_amount', 'Effective discount', -metrics.effectiveDiscountAmount]);
+  }
   element.replaceChildren(...rows.map(([key, fallback, amount, count]) => {
     const row = document.createElement('div');
     const label = document.createElement('dt');
-    label.textContent = `${t(key, fallback)} (${count})`;
+    label.textContent = `${t(key, fallback)}${count == null ? '' : ` (${count})`}`;
     const value = document.createElement('dd');
     value.textContent = amount == null ? '—' : formatRegistrationCurrency(amount);
     row.append(label, value);
@@ -5639,15 +5646,20 @@ function buildRegistrationDashboardFinanceMetrics(registrations, categoryById) {
     0
   );
   const extrasSummary = window.RegistrationExtras?.getFinanceSummary();
-  // Keep the API's validated base, extras and effective discount; extend it with the unvalidated increment.
-  const totalAmount = window.RegistrationExtras?.enabled()
-    ? (extrasSummary ? extrasSummary.total_amount + unvalidatedAmount : null)
+  const extrasEnabled = window.RegistrationExtras?.enabled() === true;
+  // The account summary includes PEN and VAL, without fees. Add only the remaining states and fees.
+  const confirmedAmount = buildRegistrationFinanceMetrics(activeRegistrations.filter(registration =>
+    ['PEN', 'VAL'].includes(getRegistrationStatusValue(registration))), { useStoredTotalAmount: true }).totalAmount;
+  const totalAmount = extrasEnabled
+    ? (extrasSummary ? extrasSummary.total_amount + registrationFinance.totalAmount - confirmedAmount + totalFee : null)
     : totalFee + registrationFinance.totalAmount;
 
   return {
     totalAmount,
-    validatedAmount: totalAmount == null ? null : totalAmount - unvalidatedAmount,
+    validatedAmount: registrationFinance.validatedAmount + validatedFee,
     unvalidatedAmount,
+    validatedExtrasAmount: extrasEnabled ? extrasSummary?.validated_extras_amount : undefined,
+    effectiveDiscountAmount: extrasEnabled ? extrasSummary?.effective_discount_amount : undefined,
     validatedRegistrationsCount: registrationFinance.validatedRegistrationsCount,
     unvalidatedRegistrationsCount: registrationFinance.unvalidatedRegistrationsCount,
     paidAmount,
@@ -6699,6 +6711,56 @@ function initEventSyncTab() {
   loadAll();
 }
 
+function createRegistrationCategoryPriceRanges(category, {
+  fallbackPrice = category.registration_price,
+  freeLabel = 'FREE',
+  showCurrentLabel = false,
+  supplement = 0
+} = {}) {
+  const list = document.createElement('div');
+  list.className = 'registration-category-price-ranges';
+  const ranges = Array.isArray(category.prices) && category.prices.length
+    ? [...category.prices].sort((a, b) => `${a.start_date || ''}`.localeCompare(`${b.start_date || ''}`))
+    : [{
+      start_date: category.event_reg_start || getEvent()?.registrationStart,
+      end_date: category.event_reg_end || getEvent()?.registrationEnd,
+      price: fallbackPrice,
+      is_current: fallbackPrice != null && String(fallbackPrice).trim() !== '' && Number.isFinite(Number(fallbackPrice))
+    }];
+  ranges.forEach((range) => {
+    const row = document.createElement('div');
+    row.className = 'registration-category-price-range';
+    // The server marks the tariff that applies today in the event's context.
+    const isCurrent = range.is_current === true || range.is_current === 1 || range.is_current === '1';
+    if (isCurrent) {
+      row.classList.add('registration-category-price-range--current');
+      row.setAttribute('aria-current', 'true');
+    }
+    const dates = document.createElement('span');
+    dates.className = 'registration-category-price-range__dates';
+    const start = formatRegistrationSidebarDate(String(range.start_date ?? '').slice(0, 10));
+    const end = formatRegistrationSidebarDate(String(range.end_date ?? '').slice(0, 10));
+    dates.textContent = `${start} - ${end}`;
+    const amount = document.createElement('strong');
+    amount.className = 'registration-category-price-range__amount';
+    const rawValue = String(range.price ?? '').trim();
+    const value = rawValue ? Number(rawValue) + supplement : NaN;
+    amount.textContent = !Number.isFinite(value) ? '-' : value === 0 ? freeLabel : formatRegistrationCurrency(value);
+    row.append(dates, amount);
+    if (isCurrent) {
+      const current = document.createElement('span');
+      current.className = showCurrentLabel ? 'registration-category-price-range__current' : 'visually-hidden';
+      current.textContent = t('registration_categories_price_current', 'Current price');
+      const icon = document.createElement('i');
+      icon.className = 'bi bi-check-circle-fill';
+      icon.setAttribute('aria-hidden', 'true');
+      row.append(icon, current);
+    }
+    list.appendChild(row);
+  });
+  return list;
+}
+
 function initRegistrationCategoriesTab() {
   const tableBody = document.getElementById('registrationCategoriesTable');
   const mobileCards = document.getElementById('registrationCategoriesMobileCards');
@@ -7170,48 +7232,7 @@ function initRegistrationCategoriesTab() {
     categoryModal.show();
   };
 
-  const createCategoryPriceRanges = (category) => {
-    const list = document.createElement('div');
-    list.className = 'registration-category-price-ranges';
-    const ranges = Array.isArray(category.prices) && category.prices.length
-      ? [...category.prices].sort((a, b) => `${a.start_date || ''}`.localeCompare(`${b.start_date || ''}`))
-      : [{
-        start_date: category.event_reg_start || getEvent()?.registrationStart,
-        end_date: category.event_reg_end || getEvent()?.registrationEnd,
-        price: category.registration_price,
-        is_current: true
-      }];
-    ranges.forEach((range) => {
-      const row = document.createElement('div');
-      row.className = 'registration-category-price-range';
-      const isCurrent = range.is_current === true || range.is_current === 1 || range.is_current === '1';
-      if (isCurrent) {
-        row.classList.add('registration-category-price-range--current');
-        row.setAttribute('aria-current', 'true');
-      }
-      const dates = document.createElement('span');
-      dates.className = 'registration-category-price-range__dates';
-      const start = formatRegistrationSidebarDate(getCategoryPriceDate(range.start_date));
-      const end = formatRegistrationSidebarDate(getCategoryPriceDate(range.end_date));
-      dates.textContent = `${start} - ${end}`;
-      const amount = document.createElement('strong');
-      amount.className = 'registration-category-price-range__amount';
-      const value = normalizeNumber(range.price);
-      amount.textContent = value === null ? '-' : value === 0 ? 'FREE' : formatCurrencyDisplay(value);
-      row.append(dates, amount);
-      if (isCurrent) {
-        const current = document.createElement('span');
-        current.className = 'visually-hidden';
-        current.textContent = t('registration_categories_price_current', 'Current price');
-        const icon = document.createElement('i');
-        icon.className = 'bi bi-check-circle-fill';
-        icon.setAttribute('aria-hidden', 'true');
-        row.append(icon, current);
-      }
-      list.appendChild(row);
-    });
-    return list;
-  };
+  const createCategoryPriceRanges = (category) => createRegistrationCategoryPriceRanges(category);
 
   const createCategoryYearsRange = (category) => {
     const range = document.createElement('div');

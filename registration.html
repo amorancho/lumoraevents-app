@@ -11,7 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
-  <link rel="stylesheet" href="css/registration.css?v=20261121-1">
+  <link rel="stylesheet" href="css/registration.css?v=20261123-3">
 </head>
 <body class="d-flex flex-column min-vh-100 registration-page" data-bs-theme="dark">
   
@@ -714,10 +714,16 @@
               <div class="card shadow-sm">
                 <div class="card-body p-4">
                   <div class="registration-categories-controls d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-3">
-                    <button type="button" class="btn btn-primary" id="registrationCategoryAddBtn">
-                      <i class="bi bi-plus-circle me-2"></i>
-                      <span data-i18n="registration_categories_add">Nueva categoria</span>
-                    </button>
+                    <div class="d-flex flex-wrap gap-2">
+                      <button type="button" class="btn btn-primary" id="registrationCategoryAddBtn">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        <span data-i18n="registration_categories_add">Nueva categoria</span>
+                      </button>
+                      <button type="button" class="btn btn-outline-primary d-none" id="registrationSupplementsBtn" aria-haspopup="dialog" aria-controls="registrationSupplementsModal">
+                        <i class="bi bi-plus-slash-minus me-2" aria-hidden="true"></i>
+                        <span data-i18n="registration_supplements_title">Suplementos por categoría y estilo</span>
+                      </button>
+                    </div>
                     <div class="registration-categories-summary d-flex align-items-center gap-3 ms-sm-auto flex-wrap">
                       <div class="d-flex align-items-center gap-2 flex-wrap d-none" id="registrationCategoriesFeeSummary">
                         <span class="text-muted" data-i18n="registration_categories_fee_cost">Cuota inscripcion</span>
@@ -1517,6 +1523,57 @@
         <div class="modal-body participant-registrations-list" id="participantRegistrationsList"></div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade lm-modal registration-supplements-modal" id="registrationSupplementsModal" tabindex="-1" aria-labelledby="registrationSupplementsModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="registrationSupplementsModalTitle" data-i18n="registration_supplements_title">Suplementos por categoría y estilo</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" data-i18n-aria-label="close" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <div id="registrationSupplementsFeedback" class="alert alert-danger d-none" role="alert"></div>
+          <div id="registrationSupplementsStatus" class="text-muted small mb-3" role="status" aria-live="polite"></div>
+          <button type="button" id="registrationSupplementsRetry" class="lm-btn mb-3 d-none" data-i18n="registration_supplements_retry">Reintentar</button>
+          <form id="registrationSupplementForm" class="registration-supplement-form mb-4" novalidate>
+            <div>
+              <label class="form-label" for="registrationSupplementCategory" data-i18n="registration_supplements_category">Categoría</label>
+              <select id="registrationSupplementCategory" class="form-select lm-input" required></select>
+            </div>
+            <div>
+              <label class="form-label" for="registrationSupplementStyle" data-i18n="registration_supplements_style">Estilo</label>
+              <select id="registrationSupplementStyle" class="form-select lm-input" required></select>
+            </div>
+            <div>
+              <label class="form-label" for="registrationSupplementPrice" data-i18n="registration_supplements_price">Suplemento (€)</label>
+              <input type="number" id="registrationSupplementPrice" class="form-control lm-input" min="0" step="0.01" inputmode="decimal" required>
+            </div>
+            <div class="registration-supplement-form-actions">
+              <button type="submit" id="registrationSupplementSave" class="lm-btn lm-btn-primary" data-i18n="registration_supplements_add">Añadir</button>
+              <button type="button" id="registrationSupplementCancel" class="lm-btn d-none" data-i18n="cancel">Cancelar</button>
+            </div>
+          </form>
+          <div class="table-responsive">
+            <table class="table lm-table registration-supplements-table">
+              <thead>
+                <tr>
+                  <th scope="col" data-i18n="registration_supplements_category">Categoría</th>
+                  <th scope="col" data-i18n="registration_supplements_style">Estilo</th>
+                  <th scope="col" class="text-end" data-i18n="registration_supplements_amount">Suplemento</th>
+                  <th scope="col" class="text-center" data-i18n="registration_categories_actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="registrationSupplementsTable"></tbody>
+            </table>
+          </div>
+          <p id="registrationSupplementsEmpty" class="text-muted text-center my-3 d-none" data-i18n="registration_supplements_empty">No hay suplementos por categoría y estilo.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="lm-btn" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
         </div>
       </div>
     </div>
@@ -2490,10 +2547,11 @@
   <script src="js/common.js?v=20261018-1"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js?v=20261121-1"></script>
+  <script src="js/registration.js?v=20261123-4"></script>
+  <script src="js/registration-supplements.js?v=20261123-2"></script>
   <script src="js/registration-extras.js?v=20261121-2"></script>
-  <script src="js/registration-competitions.js?v=20261118-2"></script>
-  <script src="js/registration-payments.js?v=20261108-8"></script>
+  <script src="js/registration-competitions.js?v=20261123-3"></script>
+  <script src="js/registration-payments.js?v=20261123-1"></script>
 
 </body></html>
 

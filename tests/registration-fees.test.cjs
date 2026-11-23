@@ -122,14 +122,34 @@ test('Dashboard totals and outstanding balance use the same fee rules without ch
   }
 });
 
-test('extras API totals retain extras and discounts while adding unvalidated registrations and incremental fees', () => {
-  for (const [type, increment] of [['NON', 18000], ['PAR', 20000], ['REG', 20000], ['SCH', 20000]]) {
+test('extras API totals already include PEN and VAL; only draft/rejected registrations and fees are added', () => {
+  for (const [type, increment] of [['NON', 9000], ['PAR', 15000], ['REG', 14000], ['SCH', 13000]]) {
     const { context } = harness(type);
     context.window.RegistrationExtras = { enabled: () => true, getFinanceSummary: () => ({ total_amount: 12345 }) };
     assert.equal(context.buildRegistrationDashboardFinanceMetrics(registrations, categories).totalAmount, 12345 + increment);
     context.window.RegistrationExtras.getFinanceSummary = () => null;
     assert.equal(context.buildRegistrationDashboardFinanceMetrics(registrations, categories).totalAmount, null);
   }
+});
+
+test('one pending 45-euro registration stays unvalidated and is not counted twice with extras enabled', () => {
+  const { context } = harness('NON');
+  context.window.RegistrationExtras = {
+    enabled: () => true,
+    getFinanceSummary: () => ({ registrations_amount: 4500, validated_extras_amount: 0, effective_discount_amount: 0, total_amount: 4500 })
+  };
+  const rows = [registration(1, 4, 1, [11], 4500, 'PEN')];
+  const metrics = context.buildRegistrationDashboardFinanceMetrics(rows, categories);
+  assert.equal(metrics.totalAmount, 4500);
+  assert.equal(metrics.validatedAmount, 0);
+  assert.equal(metrics.unvalidatedAmount, 4500);
+  assert.equal(metrics.validatedRegistrationsCount, 0);
+  assert.equal(metrics.unvalidatedRegistrationsCount, 1);
+  rows[0].status = 'VAL';
+  const validated = context.buildRegistrationDashboardFinanceMetrics(rows, categories);
+  assert.equal(validated.totalAmount, 4500);
+  assert.equal(validated.validatedAmount, 4500);
+  assert.equal(validated.unvalidatedAmount, 0);
 });
 
 test('financial totals exclude DEL, normalize statuses and split VAL from CRE, PEN and REJ', () => {
