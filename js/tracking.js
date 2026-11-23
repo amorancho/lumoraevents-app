@@ -484,6 +484,170 @@ async function exportClassificationResults(eventId, competitionIds = [], format 
   downloadBlobFile(blob, filename);
 }
 
+function initCategoryGeneralRanking() {
+  const element = suffix => document.getElementById(`categoryGeneralRanking${suffix}`);
+  const button = element('Btn');
+  const modalElement = element('Modal');
+  if (!button || !modalElement || button.dataset.initialized) return;
+  button.dataset.initialized = 'true';
+  const form = element('Form');
+  const select = element('Select');
+  const viewButton = element('ViewBtn');
+  const menuStatus = element('MenuStatus');
+  const menuError = element('MenuError');
+  const categoriesRetry = element('CategoriesRetry');
+  const body = element('Body');
+  const loading = element('Loading');
+  const error = element('Error');
+  const notice = element('Notice');
+  const empty = element('Empty');
+  const tableWrap = element('TableWrap');
+  const rows = element('Rows');
+  const retry = element('Retry');
+  const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+  let categories = [];
+  let categoriesLoading = false;
+  let menuVersion = 0;
+  let rankingVersion = 0;
+  let rankingBusy = false;
+  let controller = null;
+  let selection = null;
+  const validId = value => /^[1-9]\d*$/.test(String(value)) && Number.isSafeInteger(Number(value));
+  const text = (key, fallback) => t(`tracking_general_ranking_${key}`, fallback);
+  const setError = (target, message = '') => {
+    target.textContent = message;
+    target.classList.toggle('d-none', !message);
+  };
+  const updateControls = () => {
+    select.disabled = categoriesLoading || !categories.length;
+    categoriesRetry.disabled = categoriesLoading;
+    viewButton.disabled = categoriesLoading || rankingBusy || !validId(select.value)
+      || !categories.some(category => String(category.id) === select.value);
+  };
+
+  async function request(path, eventId, signal) {
+    if (!validId(eventId) || Number(getEvent()?.id) !== eventId) throw new Error(text('event_changed', 'The event is unavailable. Reopen the category selector.'));
+    const response = await lumoraApiFetch(path, { cache: 'no-store', signal }, { auth: 'required', eventContext: 'current' });
+    const data = await response.json().catch(() => null);
+    if (Number(getEvent()?.id) !== eventId) throw new Error(text('event_changed', 'The event is unavailable. Reopen the category selector.'));
+    if (!response.ok) throw new Error(data?.error || text('load_error', 'Unable to load the category ranking.'));
+    return data;
+  }
+
+  async function loadCategories() {
+    const version = ++menuVersion;
+    const selected = select.value;
+    const eventId = Number(getEvent()?.id);
+    categoriesLoading = true;
+    categories = [];
+    select.replaceChildren(new Option(t('select_category', 'Select a category'), ''));
+    menuStatus.textContent = t('loading', 'Loading...');
+    setError(menuError);
+    categoriesRetry.classList.add('d-none');
+    updateControls();
+    try {
+      const data = await request(`/api/categories?event_id=${eventId}`, eventId);
+      if (version !== menuVersion) return;
+      if (!Array.isArray(data)) throw new Error(text('load_error', 'Unable to load the category ranking.'));
+      categories = data.filter(category => validId(category.id));
+      categories.forEach(category => select.add(new Option(category.name, String(category.id))));
+      select.value = selected;
+      menuStatus.textContent = categories.length ? '' : text('no_categories', 'No categories are available for this event.');
+    } catch (failure) {
+      if (version !== menuVersion) return;
+      menuStatus.textContent = '';
+      setError(menuError, failure.message || text('load_error', 'Unable to load the category ranking.'));
+      categoriesRetry.classList.remove('d-none');
+    } finally {
+      if (version === menuVersion) {
+        categoriesLoading = false;
+        updateControls();
+      }
+    }
+  }
+
+  async function showRanking(context) {
+    if (rankingBusy) return;
+    selection = context;
+    const version = ++rankingVersion;
+    controller = new AbortController();
+    rankingBusy = true;
+    updateControls();
+    element('CategoryName').textContent = context.name;
+    rows.replaceChildren();
+    setError(error);
+    notice.classList.add('d-none');
+    empty.classList.add('d-none');
+    tableWrap.classList.add('d-none');
+    retry.classList.add('d-none');
+    loading.classList.remove('d-none');
+    body.setAttribute('aria-busy', 'true');
+    bootstrap.Dropdown.getOrCreateInstance(button).hide();
+    modal.show();
+    try {
+      const params = new URLSearchParams({ event_id: String(context.eventId), category_id: String(context.categoryId) });
+      const data = await request(`/api/competitions/general-ranking?${params}`, context.eventId, controller.signal);
+      if (version !== rankingVersion) return;
+      if (Number(data?.event_id) !== context.eventId || Number(data?.category_id) !== context.categoryId
+        || !Array.isArray(data.ranking) || !Array.isArray(data.pending_styles) || typeof data.is_provisional !== 'boolean') {
+        throw new Error(text('load_error', 'Unable to load the category ranking.'));
+      }
+      notice.className = data.is_provisional ? 'alert alert-warning mb-3' : 'lm-status lm-status-success mb-3';
+      notice.textContent = data.is_provisional
+        ? text('provisional', 'Provisional ranking. Pending completion: {styles}.').replace('{styles}', data.pending_styles.map(style => style.style_name || `#${style.style_id}`).join(', '))
+        : text('final', 'Final ranking');
+      // Keep API positions and ordering, including configured ties and repeated participants across styles.
+      data.ranking.forEach(item => {
+        const row = rows.insertRow();
+        [item.position, item.dancer_name, item.style_name, formatResultScore(item.total_score)].forEach((value, index) => {
+          const cell = row.insertCell();
+          cell.textContent = value ?? '—';
+          if (index === 3) cell.className = 'text-end fw-semibold';
+        });
+      });
+      empty.classList.toggle('d-none', data.ranking.length > 0);
+      tableWrap.classList.toggle('d-none', data.ranking.length === 0);
+    } catch (failure) {
+      if (version !== rankingVersion) return;
+      setError(error, failure.message || text('load_error', 'Unable to load the category ranking.'));
+      retry.classList.remove('d-none');
+    } finally {
+      if (version === rankingVersion) {
+        rankingBusy = false;
+        loading.classList.add('d-none');
+        body.setAttribute('aria-busy', 'false');
+        updateControls();
+      }
+    }
+  }
+
+  button.addEventListener('show.bs.dropdown', loadCategories);
+  button.addEventListener('hidden.bs.dropdown', () => { menuVersion++; });
+  select.addEventListener('change', updateControls);
+  categoriesRetry.addEventListener('click', () => { if (!categoriesLoading) loadCategories(); });
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    if (categoriesLoading || rankingBusy || !form.reportValidity()) return;
+    const category = categories.find(category => String(category.id) === select.value);
+    const eventId = Number(getEvent()?.id);
+    if (!category || !validId(category.id) || !validId(eventId)) {
+      setError(menuError, t('select_category', 'Select a category'));
+      return;
+    }
+    showRanking({ eventId, categoryId: Number(category.id), name: category.name });
+  });
+  retry.addEventListener('click', () => { if (selection) showRanking(selection); });
+  modalElement.addEventListener('hide.bs.modal', () => {
+    rankingVersion++;
+    controller?.abort();
+    rankingBusy = false;
+    body.setAttribute('aria-busy', 'false');
+    updateControls();
+  });
+  modalElement.addEventListener('hidden.bs.modal', () => button.focus());
+  updateControls();
+}
+
 function initClassificationExportOptions() {
   const exportBtn = document.getElementById('exportBtn');
   const modalEl = document.getElementById('classificationExportOptionsModal');
@@ -2102,6 +2266,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTrackingOrganizationSidebarToggle();
   trackingUiState.sidebarFilters = loadTrackingSidebarFilters();
   initClassificationExportOptions();
+  initCategoryGeneralRanking();
   initTrackingDancersOrderModal();
   initPenaltyAssignmentModal();
   bindSidebarFilters();

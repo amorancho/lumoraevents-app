@@ -966,6 +966,20 @@
 .tracking-panel-title { display: flex; align-items: center; gap: .5rem; min-width: 0; margin: 0; color: var(--lm-text); font-size: var(--lm-font-card-title); font-weight: 750; line-height: 1.25; }
 .tracking-panel-title i { display: grid; width: 28px; height: 28px; flex: 0 0 28px; place-items: center; border: 1px solid #277886; border-radius: var(--lm-radius-sm); color: var(--lm-cyan); background: #0a3038; }
 .tracking-left-header-actions { display: flex; align-items: center; gap: .4rem; margin-left: auto; }
+.tracking-left-header-actions { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+.tracking-category-ranking-menu { width: min(18rem, calc(100vw - 2rem)); border: 1px solid var(--lm-border-strong); border-radius: var(--lm-radius-md); color: var(--lm-text); background: var(--lm-bg-elevated); box-shadow: var(--lm-shadow-md); }
+.tracking-category-ranking-menu :is(.text-muted, .form-label) { color: var(--lm-text-muted) !important; }
+.tracking-category-ranking-menu :is(p, .alert), #categoryGeneralRankingModal :is(.alert, #categoryGeneralRankingCategoryName) { overflow-wrap: anywhere; }
+.tracking-category-ranking-table { width: 100%; table-layout: fixed; }
+.tracking-category-ranking-table :is(th, td) { overflow-wrap: anywhere; }
+.tracking-category-ranking-table th:first-child { width: 3rem; }
+.tracking-category-ranking-table th:nth-child(3) { width: 25%; }
+.tracking-category-ranking-table th:last-child { width: 5.5rem; }
+@media (max-width: 575.98px) {
+  #categoryGeneralRankingModal .tracking-category-ranking-table :is(th, td) { padding: var(--lm-space-2) var(--lm-space-1); }
+  .tracking-category-ranking-table th:first-child { width: 2.25rem; }
+  .tracking-category-ranking-table th:last-child { width: 4.5rem; }
+}
 .tracking-org-sidebar-toggle { width: 38px; min-width: 38px; padding: .3rem; }
 .tracking-org-sidebar-toggle i { font-size: 1.15rem; }
 .tracking-org-sidebar-open .tracking-org-sidebar-toggle { border-color: var(--lm-cyan) !important; color: var(--lm-cyan) !important; background: #0a3038 !important; }

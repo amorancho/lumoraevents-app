@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
-  <link rel="stylesheet" href="css/tracking.css?v=20261004-11">
+  <link rel="stylesheet" href="css/tracking.css?v=20261123-1">
 </head>
 <body class="d-flex flex-column min-vh-100 tracking-page">
 
@@ -33,7 +33,22 @@
                 <button class="btn btn-outline-secondary btn-sm d-none d-lg-inline-flex tracking-org-sidebar-toggle" id="trackingOrgSidebarToggle" type="button" aria-controls="trackingOrganizationSidebar" aria-expanded="false" aria-label="Mostrar menú" title="Mostrar menú" data-i18n-aria-label="tracking_show_menu" data-i18n-title="tracking_show_menu">
                   <i class="bi bi-list" aria-hidden="true"></i>
                 </button>
-                <button class="btn btn-warning btn-sm" id="exportBtn" type="button"><i class="bi bi-download" aria-hidden="true"></i><span data-i18n="export_results_button">Export Results</span></button>
+                <button class="btn btn-warning btn-sm" id="exportBtn" type="button"><i class="bi bi-download" aria-hidden="true"></i><span data-i18n="results_button">Resultados</span></button>
+                <div class="dropdown">
+                  <button class="btn btn-outline-primary btn-sm dropdown-toggle" id="categoryGeneralRankingBtn" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-controls="categoryGeneralRankingMenu">
+                    <i class="bi bi-list-ol" aria-hidden="true"></i><span data-i18n="tracking_general_ranking_button">Clas. Cat</span>
+                  </button>
+                  <div class="dropdown-menu dropdown-menu-end tracking-category-ranking-menu p-3" id="categoryGeneralRankingMenu" aria-labelledby="categoryGeneralRankingBtn">
+                    <form id="categoryGeneralRankingForm" novalidate>
+                      <label class="form-label" for="categoryGeneralRankingSelect" data-i18n="category">Categoría</label>
+                      <select class="form-select lm-input mb-3" id="categoryGeneralRankingSelect" required disabled></select>
+                      <p id="categoryGeneralRankingMenuStatus" class="small text-muted" role="status"></p>
+                      <div id="categoryGeneralRankingMenuError" class="alert alert-danger small d-none" role="alert"></div>
+                      <button type="button" class="btn btn-outline-secondary btn-sm mb-2 d-none" id="categoryGeneralRankingCategoriesRetry" data-i18n="tracking_general_ranking_retry">Reintentar</button>
+                      <button type="submit" class="btn btn-primary w-100" id="categoryGeneralRankingViewBtn" data-i18n="tracking_general_ranking_view" disabled>Ver clasificación</button>
+                    </form>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="card-body p-0">
@@ -106,6 +121,45 @@
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade lm-modal tracking-modal" id="categoryGeneralRankingModal" tabindex="-1" aria-labelledby="categoryGeneralRankingTitle" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div>
+              <h5 class="modal-title" id="categoryGeneralRankingTitle" data-i18n="tracking_general_ranking_title">Clasificación general por categoría</h5>
+              <p class="small text-muted mb-0" id="categoryGeneralRankingCategoryName"></p>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar" data-i18n-aria-label="close"></button>
+          </div>
+          <div class="modal-body" id="categoryGeneralRankingBody">
+            <div id="categoryGeneralRankingLoading" class="py-4 text-center d-none" role="status">
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span><span data-i18n="loading">Cargando...</span>
+            </div>
+            <div id="categoryGeneralRankingError" class="alert alert-danger d-none" role="alert"></div>
+            <div id="categoryGeneralRankingNotice" class="mb-3 d-none" role="status"></div>
+            <p id="categoryGeneralRankingEmpty" class="text-muted text-center py-3 d-none" data-i18n="tracking_general_ranking_empty">No hay participantes con puntuación mayor que cero.</p>
+            <div class="table-responsive d-none" id="categoryGeneralRankingTableWrap">
+              <table class="table lm-table tracking-category-ranking-table align-middle">
+                <thead>
+                  <tr>
+                    <th scope="col" data-i18n="tracking_general_ranking_position">Pos.</th>
+                    <th scope="col" data-i18n="dancer">Participante</th>
+                    <th scope="col" data-i18n="style">Estilo</th>
+                    <th scope="col" class="text-end" data-i18n="penalty_modal_score">Puntuación</th>
+                  </tr>
+                </thead>
+                <tbody id="categoryGeneralRankingRows"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-primary btn-sm me-auto d-none" id="categoryGeneralRankingRetry" data-i18n="tracking_general_ranking_retry">Reintentar</button>
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" data-i18n="close">Cerrar</button>
           </div>
         </div>
       </div>
@@ -223,6 +277,6 @@
   <script src="js/footer.js"></script>
   <script src="js/common.js?v=20261005-2"></script>
   <script src="js/sidebar.js?v=20261005-3"></script>
-  <script src="js/tracking.js?v=20261004-5"></script>
+  <script src="js/tracking.js?v=20261123-1"></script>
 </body>
 </html>
