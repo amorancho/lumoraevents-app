@@ -11,7 +11,7 @@
   <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
   <script src="https://cdn.counter.dev/script.js" data-id="b4163310-ede9-4a5d-8386-8fe6df71a9fb" data-utcoffset="2"></script>
   <link rel="stylesheet" href="css/lumora-ui.css?v=20261004-3">
-  <link rel="stylesheet" href="css/registration.css?v=20261123-3">
+  <link rel="stylesheet" href="css/registration.css?v=20261124-6">
 </head>
 <body class="d-flex flex-column min-vh-100 registration-page" data-bs-theme="dark">
   
@@ -26,7 +26,48 @@
         </aside>
 
         <section class="col-12 col-lg-9 col-xl-10 registration-content">
+          <div id="registrationQuotaAvailabilityFeedback" class="lm-notice alert-warning d-none mb-3" role="status">
+            <span id="registrationQuotaAvailabilityError"></span>
+            <button type="button" id="registrationQuotaAvailabilityRetry" class="lm-btn ms-2" data-i18n="registration_quotas_retry">Reintentar</button>
+          </div>
           <div class="tab-content" id="registrationPanelsContent">
+            <div class="tab-pane fade d-none registration-quotas" id="registration-quotas" role="tabpanel" aria-labelledby="registrationQuotasTitle">
+              <div class="lm-card lm-card-body">
+                <h2 class="h5 mb-3" id="registrationQuotasTitle" data-i18n="registration_quotas_title">Cupos</h2>
+                <form id="registrationQuotaForm" class="registration-quota-form mb-4" novalidate>
+                  <div>
+                    <label for="registrationQuotaCategory" class="form-label" data-i18n="registration_quotas_category">Categoría</label>
+                    <select id="registrationQuotaCategory" class="form-select lm-input" required disabled></select>
+                  </div>
+                  <div>
+                    <label for="registrationQuotaStyle" class="form-label" data-i18n="registration_quotas_style">Estilo</label>
+                    <select id="registrationQuotaStyle" class="form-select lm-input" required disabled></select>
+                  </div>
+                  <div>
+                    <label for="registrationQuotaValue" class="form-label" data-i18n="registration_quotas_quota">Cupo</label>
+                    <input id="registrationQuotaValue" class="form-control lm-input" type="number" min="0" max="2147483647" step="1" inputmode="numeric" required disabled>
+                  </div>
+                  <div class="registration-quota-actions">
+                    <button type="submit" id="registrationQuotaSave" class="lm-btn lm-btn-primary" data-i18n="registration_quotas_add" disabled>Añadir cupo</button>
+                    <button type="button" id="registrationQuotaCancel" class="lm-btn d-none" data-i18n="cancel">Cancelar</button>
+                  </div>
+                </form>
+                <p id="registrationQuotasStatus" role="status" class="text-body-secondary small"></p>
+                <div id="registrationQuotasFeedback" role="alert" class="lm-notice alert-danger d-none mb-3"></div>
+                <button type="button" id="registrationQuotasRetry" class="lm-btn d-none mb-3" data-i18n="registration_quotas_retry">Reintentar</button>
+                <p id="registrationQuotasEmpty" class="text-body-secondary d-none" data-i18n="registration_quotas_empty">No hay cupos configurados.</p>
+                <table class="table lm-table registration-quotas-table">
+                  <thead><tr>
+                    <th scope="col" data-i18n="registration_quotas_category">Categoría</th>
+                    <th scope="col" data-i18n="registration_quotas_style">Estilo</th>
+                    <th scope="col" data-i18n="registration_quotas_quota">Cupo</th>
+                    <th scope="col" data-i18n="registration_quotas_occupied_places">Plazas ocupadas</th>
+                    <th scope="col" data-i18n="actions">Acciones</th>
+                  </tr></thead>
+                  <tbody id="registrationQuotasTable"></tbody>
+                </table>
+              </div>
+            </div>
             <div class="tab-pane fade d-none registration-extras" id="extras-workshops" role="tabpanel" data-extras-resource="workshops"></div>
             <div class="tab-pane fade d-none registration-extras" id="extras-packs" role="tabpanel" data-extras-resource="packs"></div>
             <div class="tab-pane fade d-none registration-extras" id="extras-services" role="tabpanel" data-extras-resource="services"></div>
@@ -1805,6 +1846,7 @@
                 <select id="registrationStyle" class="form-select" required>
                   <option value=""></option>
                 </select>
+                <div id="registrationQuotaAvailability" class="registration-quota-modal-info d-none" role="status"></div>
               </div>
               <div class="col-12">
                 <div class="form-text mt-1" id="categoryRuleInfo"></div>
@@ -2544,13 +2586,14 @@
   <script src="js/utils.js"></script>
   <script src="js/header.js"></script>
   <script src="js/footer.js"></script>
-  <script src="js/common.js?v=20261018-1"></script>
+  <script src="js/common.js?v=20261124-1"></script>
   <script src="utils/countries.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
-  <script src="js/registration.js?v=20261123-4"></script>
+  <script src="js/registration.js?v=20261124-2"></script>
+  <script src="js/registration-quotas.js?v=20261124-7"></script>
   <script src="js/registration-supplements.js?v=20261123-2"></script>
   <script src="js/registration-extras.js?v=20261121-2"></script>
-  <script src="js/registration-competitions.js?v=20261123-3"></script>
+  <script src="js/registration-competitions.js?v=20261124-1"></script>
   <script src="js/registration-payments.js?v=20261123-1"></script>
 
 </body></html>

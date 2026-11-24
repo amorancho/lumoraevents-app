@@ -1,5 +1,9 @@
 Las pruebas de `registration-extras.test.cjs` verifican el comportamiento del DOM y las peticiones con una API simulada. No renderizan la página ni realizan comprobaciones visuales, previews o capturas.
 
+`registration-quotas.test.cjs` comprueba el parámetro `reg_quota` en Admin y `eventObj.registrationQuota`, los permisos y la navegación condicional, el CRUD autenticado de cupos, el estilo obligatorio, el valor cero, duplicados, errores, reintentos y cambios de evento. Se ejecuta con `node --test tests/registration-quotas.test.cjs`, usando la misma dependencia externa `jsdom` y una API simulada, sin validación visual.
+
+`registration-quota-availability.test.cjs` verifica la consulta autenticada `/api/registrations/quotas/availability?event_id=…` para escuelas, organización y administración; los indicadores junto al estado en tablas y tarjetas; el modal de alta y edición; las combinaciones sin límite; errores y reintentos; traducciones y cambios de evento. Calcula disponibles como `max(0, quota - occupied_places)` y comprueba que el cupo completo permite guardar tanto altas como modificaciones. Usa la misma dependencia externa `jsdom`, sin renderizado ni capturas.
+
 `registration-sidebar.test.cjs` verifica los tres modos del sidebar de escritorio, la persistencia de la elección, el funcionamiento sin almacenamiento, los tooltips y acciones de su cabecera, y la conservación del menú móvil. Usa `jsdom` 26 y se ejecuta con `node --test tests/registration-sidebar.test.cjs`, sin renderizar ni realizar comprobaciones visuales.
 
 `registration-category-prices.test.cjs` comprueba los rangos de precios recibidos de API, su orden, los importes en céntimos, el indicador `is_current` y las fechas del evento como respaldo cuando no hay rangos. Usa `jsdom` 26 y se ejecuta con `node --test tests/registration-category-prices.test.cjs`, sin renderizado ni pruebas visuales.

@@ -262,7 +262,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         registrationImportSource: data.reg_import_source,
         registrationPricePerPax: data.reg_price_per_pax === 1,
         registrationPriceDiscount: data.reg_price_discount,
-        registrationCreateParticipant: data.reg_create_part === 1
+        registrationCreateParticipant: data.reg_create_part === 1,
+        registrationQuota: Number(data.reg_quota) === 1
       };
 
     }

@@ -2,6 +2,35 @@
   text-align: left;
 }
 
+.registration-quotas { min-width: 0; max-width: 1100px; overflow-wrap: anywhere; }
+.registration-quota-form { display: grid; grid-template-columns: minmax(0, 1fr); align-items: end; gap: var(--lm-space-3); }
+.registration-quota-form > * { min-width: 0; }
+.registration-quota-actions { display: flex; flex-wrap: wrap; gap: var(--lm-space-2); }
+.registration-quotas-table { width: 100%; table-layout: fixed; }
+.registration-quotas-table :is(th, td) { vertical-align: middle; overflow-wrap: anywhere; }
+.registration-quota-modal-info { margin-top: var(--lm-space-2); font-size: var(--lm-font-card-meta); overflow-wrap: anywhere; }
+.registration-status-quota { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--lm-space-2); }
+.registration-quota-availability { white-space: normal; overflow-wrap: anywhere; font-size: calc(var(--lm-font-table-header) - .0625rem); }
+.registration-mobile-card__statuses { display: flex; flex-direction: column; align-items: flex-end; gap: var(--lm-space-2); max-width: 50%; min-width: 0; }
+.registration-mobile-card__statuses .registration-mobile-card__status { max-width: 100%; }
+@media (min-width: 576px) {
+  .registration-quota-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 768px) {
+  .registration-quota-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(5rem, .5fr) max-content; }
+  .registration-quota-form > .registration-quota-actions { flex-wrap: nowrap; }
+}
+@media (max-width: 575.98px) {
+  .registration-quotas-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .registration-quotas-table tbody { display: block; }
+  .registration-quotas-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; padding-block: var(--lm-space-2); }
+  .registration-quotas-table tr + tr { border-top: 1px solid var(--lm-border); }
+  .registration-page .registration-quotas-table td { grid-column: 1; padding: var(--lm-space-1) var(--lm-space-2); border: 0; }
+  .registration-quotas-table td[data-label]::before { content: attr(data-label); display: block; color: var(--lm-text-soft); font-size: var(--lm-font-table-header); }
+  .registration-page .registration-quotas-table td:last-child { display: flex; align-items: center; grid-column: 2; grid-row: 1 / 5; }
+  .registration-quotas-table .registration-quota-actions { flex-direction: column; }
+}
+
 .registration-supplements-modal { --bs-modal-width: 600px; }
 .registration-supplement-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--lm-space-3); }
 .registration-supplement-form > * { min-width: 0; }

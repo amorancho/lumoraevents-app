@@ -99,6 +99,15 @@ const REGISTRATION_NAV_ITEMS = [
     fallbackLabel: 'Disciplines/Styles'
   },
   {
+    key: 'registration-quotas',
+    paneId: 'registration-quotas',
+    roles: ['organizer'],
+    icon: 'bi-person-bounding-box',
+    labelKey: 'registration_quotas_title',
+    fallbackLabel: 'Quotas',
+    quotas: true
+  },
+  {
     key: 'extras-workshops', paneId: 'extras-workshops', roles: ['school', 'organizer'],
     icon: 'bi-calendar-event', labelKey: 'extras_workshops', fallbackLabel: 'Workshops', extras: true
   },
@@ -676,6 +685,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initRegistrationBasesDocumentLinks();
   const user = getUserFromToken();
   const role = getRegistrationRole(user);
+  window.RegistrationQuotaAvailability?.init();
   window.RegistrationExtras?.init(role);
   setupRegistrationNavigation(role);
   if (role === 'school') {
@@ -691,6 +701,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initRegistrationCategoriesTab();
     initRegistrationSupplements();
     initRegistrationDisciplinesTab();
+    initRegistrationQuotas();
     initEventSyncTab();
   }
 });
@@ -819,7 +830,8 @@ function setupRegistrationNavigation(role) {
 
 function getVisibleRegistrationNavItems(role = registrationNavigationState.role) {
   return REGISTRATION_NAV_ITEMS.filter(item => item.roles.includes(role)
-    && (!item.extras || getEvent()?.hasWorkshopsServices === true))
+    && (!item.extras || getEvent()?.hasWorkshopsServices === true)
+    && (!item.quotas || getEvent()?.registrationQuota === true))
     .map(item => role === 'school' && item.key === 'extras-workshops'
       ? { ...item, labelKey: 'extras_workshops_packs', fallbackLabel: 'Workshops / Packs' }
       : item);
@@ -1153,14 +1165,15 @@ function showRegistrationPanel(panelKey) {
     return false;
   }
 
-  REGISTRATION_NAV_ITEMS.forEach(({ key, paneId, roles, extras }) => {
+  REGISTRATION_NAV_ITEMS.forEach(({ key, paneId, roles, extras, quotas }) => {
     const pane = document.getElementById(paneId);
     if (!pane) {
       return;
     }
 
     const allowedForRole = roles.includes(registrationNavigationState.role)
-      && (!extras || getEvent()?.hasWorkshopsServices === true);
+      && (!extras || getEvent()?.hasWorkshopsServices === true)
+      && (!quotas || getEvent()?.registrationQuota === true);
     const isActive = allowedForRole && key === activeItem.key;
     pane.classList.toggle('d-none', !allowedForRole);
     pane.classList.toggle('show', isActive);
@@ -1190,13 +1203,14 @@ function showRegistrationPanel(panelKey) {
 }
 
 function applyRegistrationRoleVisibility(role) {
-  REGISTRATION_NAV_ITEMS.forEach(({ paneId, roles, extras }) => {
+  REGISTRATION_NAV_ITEMS.forEach(({ paneId, roles, extras, quotas }) => {
     const pane = document.getElementById(paneId);
     if (!pane) {
       return;
     }
 
-    const shouldShow = roles.includes(role) && (!extras || getEvent()?.hasWorkshopsServices === true);
+    const shouldShow = roles.includes(role) && (!extras || getEvent()?.hasWorkshopsServices === true)
+      && (!quotas || getEvent()?.registrationQuota === true);
     pane.classList.toggle('d-none', !shouldShow);
     pane.classList.remove('show', 'active');
   });
@@ -8197,7 +8211,15 @@ function createRegistrationMobileCard(options = {}) {
   status.textContent = statusInfo.label || '-';
   status.title = statusInfo.label || '-';
   header.appendChild(identity);
-  header.appendChild(status);
+  const quotaIndicator = window.RegistrationQuotaAvailability?.createIndicator(registration);
+  if (quotaIndicator) {
+    const statuses = document.createElement('div');
+    statuses.className = 'registration-mobile-card__statuses';
+    statuses.append(status, quotaIndicator);
+    header.appendChild(statuses);
+  } else {
+    header.appendChild(status);
+  }
   card.appendChild(header);
 
   const classification = document.createElement('div');
@@ -9624,6 +9646,7 @@ function initOrganizerRegistrationsTab() {
         statusBadge.textContent = statusInfo.label;
         statusCell.appendChild(statusBadge);
         configureRegistrationTableBadge(statusBadge, statusInfo.label, registration.status);
+        window.RegistrationQuotaAvailability?.appendIndicator(statusCell, registration);
         row.appendChild(statusCell);
 
         const musicCell = document.createElement('td');
@@ -9867,6 +9890,7 @@ function initOrganizerRegistrationsTab() {
   };
   window.addEventListener('registration:config-updated', handleConfigUpdate);
   window.addEventListener('registration:organizer-registrations-updated', renderRegistrations);
+  window.addEventListener('registration:quota-availability-updated', renderRegistrations);
 
   if (membersElements.ageInfoBtn) {
     const membersAgeLanguageObserver = new MutationObserver(() => {

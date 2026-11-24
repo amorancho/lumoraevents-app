@@ -1672,6 +1672,7 @@
       statusBadge.textContent = statusInfo.label;
       statusCell.appendChild(statusBadge);
       configureRegistrationTableBadge(statusBadge, statusInfo.label, registration.status);
+      window.RegistrationQuotaAvailability?.appendIndicator(statusCell, registration);
       row.appendChild(statusCell);
 
       const musicCell = document.createElement('td');
@@ -2000,6 +2001,7 @@
     const registration = registrationState.registrations.find(item => `${item.id}` === `${registrationId}`);
     if (!registration) return;
     registration.status = status;
+    window.RegistrationQuotaAvailability?.refresh();
     renderRegistrations();
   };
 
@@ -2457,6 +2459,7 @@
       .catch(() => {});
   };
   window.addEventListener('registration:config-updated', handleConfigUpdate);
+  window.addEventListener('registration:quota-availability-updated', renderRegistrations);
 
   if (isSchoolUser && elements.membersAgeInfoBtn) {
     const membersAgeLanguageObserver = new MutationObserver(() => {
