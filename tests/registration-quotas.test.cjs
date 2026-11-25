@@ -195,7 +195,7 @@ test('missing styles or categories disable creation and explain what to configur
   } finally { h.close(); }
 });
 
-test('Admin places the switch after reg_create_part and round-trips numeric values', () => {
+test('Admin places the switch after reg_individual and round-trips numeric values', () => {
   const dom = new JSDOM(read('admin.html'), { url: 'http://localhost/admin.html', runScripts: 'outside-only' });
   const w = dom.window;
   try {
@@ -207,7 +207,7 @@ test('Admin places the switch after reg_create_part and round-trips numeric valu
     w.rebuildEventDetailTabLayouts(config, registrations);
     const field = w.document.getElementById('reg_quota');
     const row = field.closest('.row');
-    assert.deepEqual([...row.querySelectorAll('input')].map(input => input.id), ['reg_create_part', 'reg_quota']);
+    assert.deepEqual([...row.querySelectorAll('input')].map(input => input.id), ['reg_individual', 'reg_quota']);
     // Isolate the form's data binding from logo, client and panel rendering.
     for (const name of ['populateClientSelect', 'updateLogoPreview', 'updateUrlPreview', 'setEventPanelState', 'setEventWelcomeInfo']) w[name] = () => {};
     w.buildOrganizerInfo = () => '';

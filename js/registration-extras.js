@@ -36,7 +36,8 @@ window.RegistrationExtras = (() => {
     || [item.attendee_first_name, item.attendee_last_name].filter(Boolean).join(' ') || '—';
   const bookingConcept = (item) => item.pack?.name || item.pack_name || item.service?.name || item.service_name || item.workshop?.name || item.workshop_name || item.workshops?.map(w => w.name).join(', ') || item.item_name || item.name || '—';
   const accountName = (item) => item.account?.name || item.registration_school?.name || item.school?.name || item.account_name || item.school_name || `#${item.registration_school_id ?? '—'}`;
-  const typeName = (type) => text({ WORKSHOP: 'workshop', PACK: 'pack', SERVICE: 'service' }[type] || 'type');
+  const typeName = (type) => type === 'GALA' ? 'Gala' : text({ WORKSHOP: 'workshop', PACK: 'pack', SERVICE: 'service' }[type] || 'type');
+  const workshopTypeBadge = item => `<span class="lm-status lm-status-${item.ws_type === 'GA' ? 'purple' : 'info'}">${html({ WS: 'Workshop', GA: 'Gala' }[item.ws_type] ?? '—')}</span>`;
   const button = (action, label, value = '', variant = 'outline-primary') => `<button type="button" class="btn btn-${variant} btn-sm" data-extras-action="${action}" data-id="${html(value)}">${html(label)}</button>`;
   const notice = (message, kind = 'danger') => `<div class="alert alert-${kind} mb-3" role="${kind === 'danger' ? 'alert' : 'status'}">${html(message)}</div>`;
   const loading = () => `<div class="py-4 text-center" role="status"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>${html(text('loading'))}</div>`;
@@ -196,15 +197,15 @@ window.RegistrationExtras = (() => {
     }
   }
 
-  const summaryKinds = ['workshops', 'packs', 'services'];
-  const summaryLabel = kind => text(kind === 'services' ? 'galas_extras' : kind);
+  const summaryKinds = ['workshops', 'galas', 'packs', 'services'];
+  const summaryLabel = kind => text(['workshops', 'galas'].includes(kind) ? `summary_${kind}` : kind === 'services' ? 'galas_extras' : kind);
   function buildValidatedSummaryShell(ctx) {
     ctx.summaryKind ||= 'workshops';
     ctx.summarySearch ||= '';
     ctx.summaryOpen ||= new Set();
     ctx.mount.innerHTML = `<div class="extras-heading"><div><h2 class="h4 mb-1">${html(text('summary_title'))}</h2><p class="small text-body-secondary mb-0">${html(text('summary_hint'))}</p></div><div class="extras-actions">${button('refresh', text('refresh'), '', 'outline-secondary')}</div></div>
       <div data-extras-feedback aria-live="polite"></div>
-      <div class="extras-summary-kinds" role="group" aria-label="${html(text('type'))}">${summaryKinds.map(kind => `<button type="button" class="lm-card" data-summary-kind="${kind}" aria-pressed="${kind === ctx.summaryKind}"><i class="bi bi-${{ workshops: 'calendar-event', packs: 'collection', services: 'bag' }[kind]}" aria-hidden="true"></i><span>${html(summaryLabel(kind))}</span><strong data-summary-count="${kind}">—</strong></button>`).join('')}</div>
+      <div class="extras-summary-kinds" role="group" aria-label="${html(text('type'))}">${summaryKinds.map(kind => `<button type="button" class="lm-card" data-summary-kind="${kind}" aria-pressed="${kind === ctx.summaryKind}"><i class="bi bi-${{ workshops: 'calendar-event', galas: 'stars', packs: 'collection', services: 'bag' }[kind]}" aria-hidden="true"></i><span>${html(summaryLabel(kind))}</span><strong data-summary-count="${kind}">—</strong></button>`).join('')}</div>
       <div class="extras-summary-tools lm-card lm-card-body"><div><label for="extras-summary-search" class="form-label">${html(text('summary_search'))}</label><input type="search" id="extras-summary-search" class="form-control lm-input" data-summary-search value="${html(ctx.summarySearch)}" autocomplete="off"></div><label class="extras-summary-check"><input type="checkbox" class="form-check-input" data-summary-booked${ctx.summaryOnlyBooked ? ' checked' : ''}>${html(text('summary_only_booked'))}</label><div class="extras-actions"><button type="button" class="btn btn-outline-secondary btn-sm" data-summary-expand="true">${html(text('summary_expand'))}</button><button type="button" class="btn btn-outline-secondary btn-sm" data-summary-expand="false">${html(text('summary_collapse'))}</button></div></div>
       <p class="small text-body-secondary mt-3" data-summary-results role="status"></p><div data-extras-list aria-live="polite"></div>`;
   }
@@ -220,8 +221,8 @@ window.RegistrationExtras = (() => {
     try {
       const data = await request('/admin/summary');
       if (!sameEvent(generation) || serial !== ctx.request) return;
-      if (String(data?.event_id) !== state.eventKey || !summaryKinds.every(kind => Array.isArray(data[kind]) && data[kind].every(item => Array.isArray(item.bookings)))) throw new Error(text('invalid_response'));
-      ctx.summaryData = data;
+      if (String(data?.event_id) !== state.eventKey || !['workshops', 'packs', 'services'].every(kind => Array.isArray(data[kind]) && data[kind].every(item => Array.isArray(item.bookings)))) throw new Error(text('invalid_response'));
+      ctx.summaryData = { ...data, workshops: data.workshops.filter(item => item.ws_type === 'WS'), galas: data.workshops.filter(item => item.ws_type === 'GA') };
       renderValidatedSummary(ctx);
     } catch (error) {
       if (sameEvent(generation) && serial === ctx.request) {
@@ -258,11 +259,11 @@ window.RegistrationExtras = (() => {
       const bookings = matchesProduct ? item.bookings : item.bookings.filter(booking => summaryBookingMatches(booking, query));
       return matchesProduct || bookings.length ? [{ item, bookings }] : [];
     });
-    ctx.mount.querySelector('[data-summary-results]').textContent = `${summaryLabel(kind)}: ${products.length} / ${data[kind].length} · ${text('summary_timezone')}: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
+    ctx.mount.querySelector('[data-summary-results]').textContent = `${summaryLabel(kind)}: ${products.length} / ${data[kind].length}`;
     list.innerHTML = `<div class="extras-summary-products">${products.map(({ item, bookings }) => {
       const key = `${kind}-${item.id}`;
-      const meta = kind === 'workshops' ? `${html(item.teacher || '—')} · ${html(date(item.start_at))} – ${html(date(item.end_at))}` : kind === 'packs' ? `${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))} (${html(item.mode)}) · ${html(text('workshop_count'))}: ${html(item.workshop_count)}` : '';
-      return `<details class="extras-summary-product lm-card" data-summary-product="${html(key)}"${ctx.summaryOpen.has(key) ? ' open' : ''}><summary><span class="extras-summary-product-heading"><strong>${html(item.name ?? text('summary_no_name'))}</strong>${meta ? `<span class="extras-summary-meta">${meta}</span>` : ''}</span><span class="extras-summary-badges"><span class="lm-status lm-status-${isActive(item) ? 'success' : 'neutral'}">${html(text(isActive(item) ? 'active' : 'inactive'))}</span>${kind === 'workshops' ? `<span class="lm-status lm-status-neutral">${html(text('capacity'))}: ${html(item.capacity)}</span>` : ''}<span class="lm-status lm-status-success">${html(text('summary_validated'))}: ${html(item.validated_count)}</span><span class="lm-status lm-status-info">${html(text('quantity'))}: ${html(item.total_quantity)}</span></span><i class="bi bi-chevron-down extras-summary-chevron" aria-hidden="true"></i></summary><div class="lm-card-body">${query ? `<p class="small text-body-secondary">${html(text('summary_matching'))}: ${bookings.length} / ${item.bookings.length}</p>` : ''}${bookings.length ? `<ul class="extras-summary-bookings">${bookings.map(summaryBookingMarkup).join('')}</ul>` : `<p class="text-body-secondary mb-0">${html(text('summary_no_bookings'))}</p>`}</div></details>`;
+      const meta = ['workshops', 'galas'].includes(kind) ? `${html(item.teacher || '—')} · ${html(workshopTimestamp(item.start_at))} – ${html(workshopTimestamp(item.end_at))}` : kind === 'packs' ? `${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))} (${html(item.mode)}) · ${html(text('workshop_count'))}: ${html(item.workshop_count)}` : '';
+      return `<details class="extras-summary-product lm-card" data-summary-product="${html(key)}"${ctx.summaryOpen.has(key) ? ' open' : ''}><summary><span class="extras-summary-product-heading"><strong>${html(item.name ?? text('summary_no_name'))}</strong>${meta ? `<span class="extras-summary-meta">${meta}</span>` : ''}</span><span class="extras-summary-badges"><span class="lm-status lm-status-${isActive(item) ? 'success' : 'neutral'}">${html(text(isActive(item) ? 'active' : 'inactive'))}</span>${['workshops', 'galas'].includes(kind) ? `<span class="lm-status lm-status-neutral">${html(text('capacity'))}: ${html(item.capacity)}</span>` : ''}<span class="lm-status lm-status-success">${html(text('summary_validated'))}: ${html(item.validated_count)}</span><span class="lm-status lm-status-info">${html(text('quantity'))}: ${html(item.total_quantity)}</span></span><i class="bi bi-chevron-down extras-summary-chevron" aria-hidden="true"></i></summary><div class="lm-card-body">${query ? `<p class="small text-body-secondary">${html(text('summary_matching'))}: ${bookings.length} / ${item.bookings.length}</p>` : ''}${bookings.length ? `<ul class="extras-summary-bookings">${bookings.map(summaryBookingMarkup).join('')}</ul>` : `<p class="text-body-secondary mb-0">${html(text('summary_no_bookings'))}</p>`}</div></details>`;
     }).join('') || `<p class="text-body-secondary py-4">${html(text(data[kind].length ? 'summary_no_matches' : 'empty'))}</p>`}</div>`;
     list.querySelectorAll('[data-summary-product]').forEach(details => {
       details.addEventListener('toggle', () => {
@@ -298,7 +299,7 @@ window.RegistrationExtras = (() => {
     // Unique prefixes allow the account dialog and the event list to coexist.
     const prefix = ctx.accountId == null ? ctx.mount.id : `account-${ctx.accountId}`;
     const statusFilter = selectFilter('status', text('status'), ['PENDING', 'VALIDATED', 'REJECTED'].map(value => [value, text(value.toLowerCase())]), ctx.filters.status);
-    const typeFilter = selectFilter('item_type', text('type'), ['WORKSHOP', 'PACK', 'SERVICE'].map(value => [value, typeName(value)]), ctx.filters.item_type);
+    const typeFilter = selectFilter('item_type', text('type'), ['WORKSHOP', 'GALA', 'PACK', 'SERVICE'].map(value => [value, typeName(value)]), ctx.filters.item_type);
     let fields = '';
     if (admin() && ctx.accountId == null) {
       fields += selectFilter('registration_school_id', text('account'), registrationState.schools.map(account => [account.id, account.name || account.school_name]), ctx.filters.registration_school_id);
@@ -371,24 +372,26 @@ window.RegistrationExtras = (() => {
     const caption = compact
       ? `<span class="extras-availability lm-status lm-status-${availabilityState}"><i class="bi bi-ticket-perforated" aria-hidden="true"></i>${html(text('available_count'))}<strong>${html(availability ?? '—')}</strong></span>`
       : `<div class="extras-occupancy-badges">${grouped ? `<span class="lm-status lm-status-neutral">${html(text('capacity'))}: ${capacity}</span>` : ''}<span class="lm-status lm-status-success">${html(text('validated_count'))}: ${validated}</span><span class="lm-status lm-status-warning">${html(text('pending_count'))}: ${html(item.pending_count ?? '—')}</span><span class="lm-status lm-status-info">${html(text('available_count'))}: ${html(availability ?? '—')}</span></div>`;
-    if (grouped) return `<div class="extras-occupancy extras-occupancy--grouped">${caption}</div>`;
+    if (grouped) return `<div class="extras-occupancy extras-occupancy--grouped"><div class="extras-occupancy-badges"><span class="lm-status lm-status-neutral">${html(text('capacity'))}: ${capacity}</span><span class="lm-status lm-status-info">${html(text('available_count'))}: ${html(availability ?? '—')}</span></div><div class="extras-occupancy-badges"><span class="lm-status lm-status-success">${html(text('validated_count'))}: ${validated}</span><span class="lm-status lm-status-warning">${html(text('pending_count'))}: ${html(item.pending_count ?? '—')}</span></div></div>`;
     return `<div class="extras-occupancy"><div class="extras-occupancy-track" role="progressbar" aria-label="${html(text('validated_count'))}" aria-valuemin="0" aria-valuemax="${capacity}" aria-valuenow="${validated}"><span style="width:${percent}%"></span></div>${caption}</div>`;
   }
   function columns(ctx) {
-    if (ctx.resource === 'workshops') return ['name', 'teacher', 'day', 'time_range', 'occupancy', 'prices', 'status'];
+    if (ctx.resource === 'workshops') return ['name', 'ws_type', 'teacher', 'day', 'time_range', 'occupancy', 'prices', 'status'];
     if (ctx.resource === 'packs') return ['name', 'mode', 'workshop_count', 'workshops', 'prices', 'status'];
     if (ctx.resource === 'services') return ['name', 'description', 'prices', 'status'];
     if (ctx.resource === 'discount-codes') return ['code', 'amount', 'audience', 'valid_from', 'valid_until', 'max_uses', 'status'];
     return [...(admin() && ctx.accountId == null ? ['account'] : []), 'type', 'name', 'attendee', 'quantity', 'amount', 'status', 'created_at'];
   }
   function cell(ctx, row, key) {
+    if (key === 'ws_type') return workshopTypeBadge(row);
     if (key === 'day') return html(workshopDatePart(row.start_at, false));
     if (key === 'time_range') return `${html(workshopDatePart(row.start_at, true))} – ${html(workshopDatePart(row.end_at, true))}`;
     if (key === 'status') return ctx.resource === 'bookings' ? status(row.status) : `<span class="lm-status lm-status-${isActive(row) ? 'success' : 'neutral'}">${html(text(isActive(row) ? 'active' : 'inactive'))}</span>`;
     if (key === 'occupancy') return occupancyMarkup(row, false, true);
     if (key === 'prices') return productPricesMarkup(row);
     if (key === 'price' || key === 'amount') return html(money(ctx.resource === 'bookings' ? row.total_amount : row[key]));
-    if (['start_at', 'end_at', 'valid_from', 'valid_until', 'created_at'].includes(key)) return html(date(row[key]));
+    if (['start_at', 'end_at'].includes(key)) return html(workshopTimestamp(row[key]));
+    if (['valid_from', 'valid_until', 'created_at'].includes(key)) return html(date(row[key]));
     if (key === 'max_uses') return html(row.max_uses ?? text('unlimited'));
     if (key === 'audience') return html(text({ SCH: 'school', PAR: 'individual', BOTH: 'both' }[row.audience] || 'both'));
     if (key === 'mode') return html(text(row.mode === 'FLEX' ? 'flex' : 'fixed'));
@@ -405,6 +408,7 @@ window.RegistrationExtras = (() => {
     return html(row[key] ?? '—');
   }
   function columnLabel(ctx, key) {
+    if (key === 'ws_type') return text('type');
     if (key === 'prices') return text('prices');
     return text(ctx.resource === 'packs' && key === 'workshops' ? 'available_workshops' : key);
   }
@@ -424,8 +428,9 @@ window.RegistrationExtras = (() => {
     if (ctx.resource === 'bookings') {
       if (row.status === 'PENDING') {
         if (admin() && ctx.accountId == null) result += button('validate', text('validate'), row.id, 'outline-success') + button('reject', text('reject'), row.id, 'outline-danger');
-        else result += button('edit', t('edit'), row.id) + button('delete', t('delete'), row.id, 'outline-danger');
+        else result += button('edit', t('edit'), row.id);
       }
+      if (['PENDING', 'VALIDATED'].includes(row.status)) result += button('delete', t('delete'), row.id, 'outline-danger');
     } else if (canManage(ctx)) {
       if (['workshops', 'packs', 'services'].includes(ctx.resource)) result += button('prices', text('manage_prices'), row.id);
       result += button('edit', t('edit'), row.id) + button('delete', t('delete'), row.id, 'outline-danger');
@@ -449,7 +454,7 @@ window.RegistrationExtras = (() => {
 
   function catalogPath(resource) { return `${admin() ? '/admin' : '/catalog'}/${resource}`; }
   async function resolveBookingNames(rows) {
-    const types = { WORKSHOP: 'workshop', PACK: 'pack', SERVICE: 'service' };
+    const types = { WORKSHOP: 'workshop', GALA: 'workshop', PACK: 'pack', SERVICE: 'service' };
     const missing = rows.filter(row => {
       const kind = types[row.item_type];
       return kind && !row[kind]?.name && !row[`${kind}_name`] && !row.item_name && !row.name
@@ -509,7 +514,7 @@ window.RegistrationExtras = (() => {
       booking.workshop?.id, booking.workshop_id
     ].filter(Boolean).map(Number))];
     for (let booking of bookings) {
-      if (!['PENDING', 'VALIDATED'].includes(booking.status) || !['WORKSHOP', 'PACK'].includes(booking.item_type)) continue;
+      if (!['PENDING', 'VALIDATED'].includes(booking.status) || !['WORKSHOP', 'GALA', 'PACK'].includes(booking.item_type)) continue;
       // Only booking snapshots identify the actual sessions chosen in a FLEX pack.
       // Never infer a reservation from the pack's current catalog composition.
       if (!snapshotIds(booking).length || (booking.item_type === 'PACK' && !(booking.pack_id || booking.pack?.id))) {
@@ -552,8 +557,9 @@ window.RegistrationExtras = (() => {
     mount.dataset.request = serial;
     const generation = state.generation;
     const splitCatalog = resource === 'workshops';
-    const selectedTab = mount.dataset.catalogTab === 'packs' ? 'packs' : 'workshops';
-    const tabs = splitCatalog ? `<div class="extras-catalog-tabs" role="tablist" aria-label="${html(text('workshops_packs'))}">${['workshops', 'packs'].map(kind => `<button type="button" role="tab" id="${mount.id}-${kind}-tab" aria-controls="${mount.id}-${kind}-catalog" aria-selected="${kind === selectedTab}" tabindex="${kind === selectedTab ? '0' : '-1'}" data-extras-catalog-tab="${kind}">${html(text(resourceLabels[kind]))}</button>`).join('')}</div>` : `<h2 class="h4">${html(text(resourceLabels[resource]))}</h2>`;
+    const catalogKinds = ['packs', 'workshops', 'galas'];
+    const selectedTab = catalogKinds.includes(mount.dataset.catalogTab) ? mount.dataset.catalogTab : 'packs';
+    const tabs = splitCatalog ? `<div class="extras-catalog-tabs" role="tablist" aria-label="${html(text('workshops_packs'))}">${catalogKinds.map(kind => `<button type="button" role="tab" id="${mount.id}-${kind}-tab" aria-controls="${mount.id}-${kind}-catalog" aria-selected="${kind === selectedTab}" tabindex="${kind === selectedTab ? '0' : '-1'}" data-extras-catalog-tab="${kind}">${html(summaryLabel(kind))}</button>`).join('')}</div>` : `<h2 class="h4">${html(text(resourceLabels[resource]))}</h2>`;
     mount.innerHTML = `<div class="extras-heading">${tabs}${button('catalog-refresh', text('refresh'), resource, 'outline-secondary')}</div><div data-extras-catalog-list>${loading()}</div>`;
     const list = mount.querySelector('[data-extras-catalog-list]');
     try {
@@ -564,7 +570,12 @@ window.RegistrationExtras = (() => {
         (splitCatalog ? loadWorkshopReservations() : loadServiceReservations()).catch(() => { reservationsError = true; return null; })
       ]);
       if (!sameEvent(generation) || mount.dataset.request !== serial) return;
-      list.innerHTML = (reservationsError ? notice(text('bookings_unavailable'), 'warning') : '') + resources.map((kind, index) => `<section class="mb-4"${splitCatalog ? ` id="${mount.id}-${kind}-catalog" role="tabpanel" aria-labelledby="${mount.id}-${kind}-tab" tabindex="0"${kind !== mount.querySelector('[aria-selected="true"]').dataset.extrasCatalogTab ? ' hidden' : ''}` : ''}><div class="extras-catalog-grid${splitCatalog ? ` extras-catalog-grid--${kind}` : ''}">${results[index].map(item => catalogCard(kind, kind === 'packs' ? { ...item, workshops: packWorkshops(item, results[0]) } : item, reservations)).join('') || `<p>${html(text('empty'))}</p>`}</div></section>`).join('');
+      const groups = splitCatalog ? [
+        { kind: 'packs', resource: 'packs', items: results[1].map(item => ({ ...item, workshops: packWorkshops(item, results[0]) })) },
+        { kind: 'workshops', resource: 'workshops', items: results[0].filter(item => item.ws_type === 'WS') },
+        { kind: 'galas', resource: 'workshops', items: results[0].filter(item => item.ws_type === 'GA') }
+      ] : [{ kind: 'services', resource: 'services', items: results[0] }];
+      list.innerHTML = (reservationsError ? notice(text('bookings_unavailable'), 'warning') : '') + groups.map(({ kind, resource, items }) => `<section class="mb-4"${splitCatalog ? ` id="${mount.id}-${kind}-catalog" role="tabpanel" aria-labelledby="${mount.id}-${kind}-tab" tabindex="0"${kind !== mount.querySelector('[aria-selected="true"]').dataset.extrasCatalogTab ? ' hidden' : ''}` : ''}><div class="extras-catalog-grid${splitCatalog ? ` extras-catalog-grid--${resource}` : ''}">${items.map(item => catalogCard(resource, item, reservations)).join('') || `<p>${html(text('empty'))}</p>`}</div></section>`).join('');
     } catch (error) {
       if (sameEvent(generation) && mount.dataset.request === serial) list.innerHTML = notice(error.message) + button('catalog-refresh', text('retry'), resource);
     }
@@ -580,20 +591,17 @@ window.RegistrationExtras = (() => {
       if (panel) panel.hidden = !selected;
     });
   }
-  function workshopMeta(item) {
-    const start = item.start_at ? new Date(item.start_at) : null;
-    const end = item.end_at ? new Date(item.end_at) : null;
-    const locale = getRegistrationLanguage();
-    const day = start && !Number.isNaN(start.getTime()) ? start.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'short' }) : '—';
-    const time = value => value && !Number.isNaN(value.getTime()) ? value.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '—';
-    return `<span class="extras-session-meta"><span class="extras-session-teacher"><i class="bi bi-person" aria-hidden="true"></i><span><small>${html(text('teacher'))}</small><strong>${html(item.teacher || '—')}</strong></span></span><span class="extras-session-schedule"><i class="bi bi-calendar-event" aria-hidden="true"></i><span>${html(day)}<strong>${html(time(start))} – ${html(time(end))}</strong></span></span></span>`;
+  function workshopMeta(item, compact = false) {
+    const day = workshopDatePart(item.start_at, false);
+    const time = value => workshopDatePart(value, true);
+    return `<span class="extras-session-meta${compact ? ' extras-session-meta--compact' : ''}">${item.ws_type === 'GA' ? '' : `<span class="extras-session-teacher"><i class="bi bi-person" aria-hidden="true"></i><span><small${compact ? ' class="visually-hidden"' : ''}>${html(text('teacher'))}</small><strong>${html(item.teacher || '—')}</strong></span></span>`}<span class="extras-session-schedule"><i class="bi bi-calendar-event" aria-hidden="true"></i><span><span>${html(day)}</span><strong>${html(time(item.start_at))} – ${html(time(item.end_at))}</strong></span></span></span>`;
   }
   function packWorkshops(item, catalog) {
     const workshops = item.workshops?.length ? item.workshops : catalog.filter(w => ids(item).includes(Number(w.id)));
     return workshops.map(w => ({ ...catalog.find(entry => Number(entry.id) === Number(w.id)), ...w }));
   }
   function packWorkshopSummary(item, reservations = null) {
-    return `<div class="extras-pack-composition"><p class="extras-pack-mode"><span class="lm-status lm-status-purple">${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))}</span><strong>${html(item.workshop_count)} ${html(text('workshops'))}</strong></p><details class="extras-pack-details"><summary><i class="bi bi-collection" aria-hidden="true"></i><span>${html(text(item.mode === 'FLEX' ? 'available_workshops' : 'included_workshops'))}</span><i class="bi bi-chevron-down extras-pack-chevron" aria-hidden="true"></i></summary><p class="extras-pack-hint">${html(item.mode === 'FLEX' ? text('select_exactly').replace('{count}', item.workshop_count) : text('included_workshops'))}</p><ul class="extras-workshop-summary">${(item.workshops || []).map(w => `<li><strong class="extras-session-name">${html(w.name)}</strong>${reservationBadges(w.id, reservations)}${workshopMeta(w)}</li>`).join('')}</ul></details></div>`;
+    return `<div class="extras-pack-composition"><p class="extras-pack-mode"><span class="lm-status lm-status-purple">${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))}</span><strong>${html(item.workshop_count)} ${html(text('workshops'))}</strong></p><details class="extras-pack-details"><summary><i class="bi bi-collection" aria-hidden="true"></i><span>${html(text(item.mode === 'FLEX' ? 'available_workshops' : 'included_workshops'))}</span><i class="bi bi-chevron-down extras-pack-chevron" aria-hidden="true"></i></summary><p class="extras-pack-hint">${html(item.mode === 'FLEX' ? text('select_exactly').replace('{count}', item.workshop_count) : text('included_workshops'))}</p><ul class="extras-workshop-summary">${(item.workshops || []).map(w => `<li><div class="extras-session-heading"><strong class="extras-session-name">${html(w.name)}</strong>${workshopTypeBadge(w)}</div>${workshopMeta(w, true)}${reservationBadges(w.id, reservations)}</li>`).join('')}</ul></details></div>`;
   }
   function workshopDescription(item) {
     return workshopMeta(item) + occupancyMarkup(item, !admin());
@@ -680,16 +688,19 @@ window.RegistrationExtras = (() => {
     if (Number.isNaN(parsed.getTime())) return '';
     return new Date(parsed.getTime() - parsed.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   }
+  // Workshop schedules are wall-clock values from the API, independent of the viewer's timezone.
+  function workshopDateTime(value) {
+    return value ? String(value).replace(' ', 'T').slice(0, 16) : '';
+  }
   function workshopDatePart(value, timeOnly) {
-    if (!value) return '—';
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return '—';
-    return timeOnly
-      ? parsed.toLocaleTimeString(getRegistrationLanguage(), { hour: '2-digit', minute: '2-digit' })
-      : parsed.toLocaleDateString(getRegistrationLanguage(), { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    const schedule = workshopDateTime(value);
+    return (timeOnly ? schedule.slice(11, 16) : schedule.slice(0, 10)) || '—';
+  }
+  function workshopTimestamp(value) {
+    return workshopDateTime(value).replace('T', ' ') || '—';
   }
   function workshopTimePicker(name, value) {
-    const local = localDateTime(value);
+    const local = workshopDateTime(value);
     const hour = local.slice(11, 13);
     const minute = local.slice(14, 16) || '00';
     const hours = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, '0'));
@@ -708,7 +719,11 @@ window.RegistrationExtras = (() => {
     return `<div class="extras-form-field"><label class="form-label" for="extras-field-${name}">${html(text(name))}</label><select class="form-select lm-input" id="extras-field-${name}" name="${name}"${required ? ' required' : ''}${disabled ? ' disabled' : ''}>${options.map(([key, label]) => `<option value="${html(key)}"${String(key) === String(value) ? ' selected' : ''}>${html(label)}</option>`).join('')}</select></div>`;
   }
   function workshopSelector(workshops, selected = [], disabled = false) {
-    return `<fieldset class="extras-workshop-selector"${disabled ? ' disabled' : ''}><legend class="fs-6">${html(text('workshops'))}</legend><p class="small text-body-secondary" data-extras-selection-hint></p><p class="small" data-extras-selection-count aria-live="polite"></p><div class="extras-workshop-options">${workshops.map(w => `<label class="extras-workshop-option"><input class="form-check-input" type="checkbox" name="workshop_ids" value="${html(w.id)}"${selected.includes(Number(w.id)) ? ' checked' : ''}><span class="extras-workshop-option-content"><strong class="extras-session-name">${html(w.name)}</strong>${workshopMeta(w)}</span></label>`).join('') || `<p>${html(text('empty'))}</p>`}</div></fieldset>`;
+    const groups = [
+      { kind: 'workshops', items: workshops.filter(item => item.ws_type !== 'GA') },
+      { kind: 'galas', items: workshops.filter(item => item.ws_type === 'GA') }
+    ];
+    return `<fieldset class="extras-workshop-selector"${disabled ? ' disabled' : ''}><legend class="fs-6">${html(text('workshops_galas'))}</legend><p class="small text-body-secondary" data-extras-selection-hint></p><p class="small" data-extras-selection-count aria-live="polite"></p>${groups.map(({ kind, items }) => `<section class="extras-workshop-selector-group"><h3 class="h6">${html(summaryLabel(kind))}</h3><div class="extras-workshop-options">${items.map(w => `<label class="extras-workshop-option"><input class="form-check-input" type="checkbox" name="workshop_ids" value="${html(w.id)}"${selected.includes(Number(w.id)) ? ' checked' : ''}><span class="extras-workshop-option-content"><strong class="extras-session-name">${html(w.name)}</strong>${workshopMeta(w)}</span></label>`).join('') || `<p>${html(text('empty'))}</p>`}</div></section>`).join('')}</fieldset>`;
   }
   function selectedWorkshops(form) { return [...form.querySelectorAll('[name="workshop_ids"]:checked')].map(item => id(item.value)); }
   function bindWorkshopCounter(form, getRequirement) {
@@ -973,6 +988,20 @@ window.RegistrationExtras = (() => {
     try { await reload(true); } catch { /* The list contains the error and a refresh action remains available. */ }
   }
 
+  function bindWorkshopType(form) {
+    const teacher = form.elements.namedItem('teacher');
+    let workshopTeacher = teacher.value === '-' ? '' : teacher.value;
+    const update = () => {
+      const isGala = form.elements.namedItem('ws_type').value === 'GA';
+      if (isGala && !teacher.disabled) workshopTeacher = teacher.value === '-' ? '' : teacher.value;
+      teacher.disabled = isGala;
+      teacher.required = !isGala;
+      teacher.value = isGala ? '-' : workshopTeacher;
+    };
+    form.querySelectorAll('input[name="ws_type"]').forEach(radio => radio.addEventListener('change', update));
+    update();
+  }
+
   async function openEditor(ctx, row = null) {
     let original = row ? await request(`${resourcePath(ctx.resource, ctx.accountId)}/${id(row.id)}`) : {};
     const resource = ctx.resource;
@@ -991,8 +1020,9 @@ window.RegistrationExtras = (() => {
     const descriptionField = `<div class="extras-form-field"><label class="form-label" for="extras-field-description">${html(text('description'))}</label><textarea class="form-control lm-input" id="extras-field-description" name="description" rows="3">${html(original.description || '')}</textarea></div>`;
     let fields = common ? nameField + descriptionField : '';
     if (resource === 'workshops') {
+      fields = `<fieldset class="extras-workshop-type"><legend class="form-label">${html(text('type'))}</legend><div class="extras-workshop-type-options">${[['WS', 'Workshop', 'bi-person-workspace'], ['GA', 'Gala', 'bi-stars']].map(([value, label, icon]) => `<label class="extras-workshop-type-option"><input type="radio" name="ws_type" value="${value}"${(original.ws_type || 'WS') === value ? ' checked' : ''} required><span><i class="bi ${icon}" aria-hidden="true"></i>${label}</span></label>`).join('')}</div></fieldset>` + fields;
       fields += input('teacher', original.teacher, { required: true }) + input('capacity', original.capacity, { type: 'number', min: 1, step: 1, required: true })
-        + `<div class="extras-workshop-schedule">${input('day', localDateTime(original.start_at).slice(0, 10), { type: 'date', required: true })}${workshopTimePicker('start', original.start_at)}${workshopTimePicker('end', original.end_at)}</div>`;
+        + `<div class="extras-workshop-schedule">${input('day', workshopDateTime(original.start_at).slice(0, 10), { type: 'date', required: true })}${workshopTimePicker('start', original.start_at)}${workshopTimePicker('end', original.end_at)}</div>`;
     }
     if (compactProduct) fields = `<div class="extras-product-editor-heading">${nameField}${activeField}</div>${descriptionField}`;
     if (resource === 'packs') {
@@ -1009,12 +1039,14 @@ window.RegistrationExtras = (() => {
     const form = await openDialog(`${row ? t('edit') : text('add')} · ${titleFor(ctx)}`, `${locked ? notice(text('discount_locked'), 'info') : ''}<div class="extras-form-grid${compactProduct ? ' extras-product-editor-fields' : ''}">${fields}</div>${composition}`, async (form) => {
       const values = Object.fromEntries(new FormData(form));
       if (resource === 'workshops') {
+        if (!['WS', 'GA'].includes(values.ws_type)) throw new Error(text('required_fields'));
+        if (values.ws_type === 'GA') values.teacher = '-';
         if (!/^\d{4}-\d{2}-\d{2}$/.test(values.day) || !['start', 'end'].every(part => /^(?:[01]\d|2[0-3])$/.test(values[`${part}_hour`]) && /^[0-5]\d$/.test(values[`${part}_minute`]))) throw new Error(text('required_fields'));
         values.start_at = `${values.day}T${values.start_hour}:${values.start_minute}`;
         values.end_at = `${values.day}T${values.end_hour}:${values.end_minute}`;
       }
       const payload = {};
-      const keys = resource === 'discount-codes' ? (locked ? [] : ['code', 'amount', 'audience', 'valid_from', 'valid_until', 'max_uses']) : ['name', 'description', ...(resource === 'workshops' ? ['teacher', 'start_at', 'end_at', 'capacity'] : []), ...(resource === 'packs' ? ['mode', 'workshop_count'] : [])];
+      const keys = resource === 'discount-codes' ? (locked ? [] : ['code', 'amount', 'audience', 'valid_from', 'valid_until', 'max_uses']) : ['name', 'description', ...(resource === 'workshops' ? ['ws_type', 'teacher', 'start_at', 'end_at', 'capacity'] : []), ...(resource === 'packs' ? ['mode', 'workshop_count'] : [])];
       keys.forEach(key => {
         let value = String(values[key] ?? '').trim();
         if (['name', 'teacher', 'code'].includes(key) && !value) throw new Error(text('required_fields'));
@@ -1030,22 +1062,17 @@ window.RegistrationExtras = (() => {
       let data = payload;
       if (row) {
         data = Object.fromEntries(Object.entries(payload).filter(([key, value]) => {
-          if (['start_at', 'end_at', 'valid_from', 'valid_until'].includes(key)) return localDateTime(value) !== localDateTime(original[key]);
+          if (['start_at', 'end_at'].includes(key)) return workshopDateTime(value) !== workshopDateTime(original[key]);
+          if (['valid_from', 'valid_until'].includes(key)) return localDateTime(value) !== localDateTime(original[key]);
           if (key === 'is_active') return value !== isActive(original);
           if (['price', 'amount', 'capacity', 'workshop_count', 'max_uses'].includes(key)) return value == null ? original[key] != null : original[key] == null || Number(value) !== Number(original[key]);
           return String(value ?? '') !== String(original[key] ?? '');
         }));
+        if (resource === 'packs' && !sameIds(selected, ids(original))) {
+          data.workshop_ids = selected;
+        }
         if (Object.keys(data).length) {
           await request(`${resourcePath(resource, ctx.accountId)}/${id(row.id)}`, { method: 'PATCH', body: data });
-          original = { ...original, ...data };
-        }
-        if (resource === 'packs' && !sameIds(selected, ids(original))) {
-          try {
-            await request(`/admin/packs/${id(row.id)}/workshops`, { method: 'PUT', body: { workshop_ids: selected } });
-          } catch (error) {
-            await loadContext(ctx);
-            throw new Error(`${text('composition_save_error')} ${error.message}`);
-          }
         }
       } else {
         if (resource === 'packs') data.workshop_ids = selected;
@@ -1053,6 +1080,7 @@ window.RegistrationExtras = (() => {
       }
       await afterMutation(ctx, text('saved'));
     });
+    if (form && resource === 'workshops') bindWorkshopType(form);
     if (form && resource === 'packs') bindWorkshopCounter(form, () => ({ count: Number(form.elements.namedItem('workshop_count').value), minimum: form.elements.namedItem('mode').value === 'FLEX' }));
   }
 
@@ -1078,11 +1106,11 @@ window.RegistrationExtras = (() => {
     if (!sameEvent(generation)) return;
     // A failed lookup must not clear an existing optional service participant.
     if (participantError && original.attendee_id != null) throw new Error(participantError);
-    const initialType = original.item_type || ({ workshops: 'WORKSHOP', packs: 'PACK', services: 'SERVICE' }[productResource]) || 'WORKSHOP';
-    const products = { WORKSHOP: workshops, PACK: packs, SERVICE: services };
+    const initialType = original.item_type || (productResource === 'workshops' && product?.ws_type === 'GA' ? 'GALA' : null) || ({ workshops: 'WORKSHOP', packs: 'PACK', services: 'SERVICE' }[productResource]) || 'WORKSHOP';
+    const products = { WORKSHOP: workshops.filter(item => item.ws_type !== 'GA'), GALA: workshops.filter(item => item.ws_type === 'GA'), PACK: packs, SERVICE: services };
     // Allow an unchanged pending booking to retain an inactive historical product.
     if (original.id) {
-      const historical = original.pack || original.service || original.workshop || (original.item_type === 'WORKSHOP' ? original.workshops?.[0] : null);
+      const historical = original.pack || original.service || original.workshop || (['WORKSHOP', 'GALA'].includes(original.item_type) ? original.workshops?.[0] : null);
       const historicalId = original.pack_id || original.service_id || ids(original)[0];
       if (historicalId && !products[initialType].some(item => Number(item.id) === Number(historicalId))) {
         products[initialType].push(historical || { id: historicalId, name: bookingConcept(original), mode: original.pack_mode, workshop_count: original.workshop_count, workshop_ids: ids(original), workshops: original.workshops || [] });
@@ -1092,7 +1120,7 @@ window.RegistrationExtras = (() => {
     let currentType = initialType;
     let currentProduct = null;
     const keepsProduct = () => Boolean(original.id) && currentType === initialType && String(currentProduct?.id) === String(initialProductId);
-    const fields = `${original.id || product ? '' : select('item_type', ['WORKSHOP', 'PACK', 'SERVICE'].map(value => [value, typeName(value)]), initialType)}<div data-extras-booking-fields></div>`;
+    const fields = `${original.id || product ? '' : select('item_type', ['WORKSHOP', 'GALA', 'PACK', 'SERVICE'].map(value => [value, typeName(value)]), initialType)}<div data-extras-booking-fields></div>`;
     const form = await openDialog(original.id ? t('edit') : text('book'), fields, async form => {
       if (!keepsProduct() && !hasPrice(currentProduct)) throw new Error(text('price_unavailable'));
       const payload = bookingPayload(form, currentType, currentProduct, participants);
@@ -1109,13 +1137,14 @@ window.RegistrationExtras = (() => {
         } else await request(resourcePath('bookings', ctx.accountId), { method: 'POST', body });
       } catch (error) {
         if (error.code === 'extras_price_not_available') {
-          const resource = { WORKSHOP: 'workshops', PACK: 'packs', SERVICE: 'services' }[currentType];
+          const resource = { WORKSHOP: 'workshops', GALA: 'workshops', PACK: 'packs', SERVICE: 'services' }[currentType];
           const selectedId = currentProduct?.id;
           // Block the stale offer even if refreshing the catalog fails.
           currentProduct.price = null;
           renderProduct(selectedId);
           try {
-            products[currentType] = await request(catalogPath(resource));
+            const refreshed = await request(catalogPath(resource));
+            products[currentType] = currentType === 'GALA' ? refreshed.filter(item => item.ws_type === 'GA') : currentType === 'WORKSHOP' ? refreshed.filter(item => item.ws_type !== 'GA') : refreshed;
             renderProduct(selectedId);
             if (ctx.catalogResource) await loadCatalog(ctx.mount, ctx.catalogResource);
           } catch { /* Keep the unavailable state and the original API error. */ }
@@ -1139,7 +1168,7 @@ window.RegistrationExtras = (() => {
       const amount = keepsProduct() ? original.unit_price ?? (original.total_amount != null ? Number(original.total_amount) / (Number(original.quantity) || 1) : null) : item.price;
       let content = `<p class="mt-3"><strong>${html(item.name)}</strong>${amount != null ? ` · ${html(money(amount))}` : ''}</p>${available ? '' : notice(text('price_unavailable'), 'warning')}`;
       if (currentType === 'SERVICE') content += input('quantity', preserve ? original.quantity || 1 : 1, { type: 'number', min: 1, step: 1, required: true });
-      if (currentType === 'WORKSHOP') content += workshopDescription(item) + `<p class="small text-body-secondary">${html(text('capacity_pending_hint'))}</p>`;
+      if (['WORKSHOP', 'GALA'].includes(currentType)) content += workshopDescription(item) + `<p class="small text-body-secondary">${html(text('capacity_pending_hint'))}</p>`;
       if (currentType === 'PACK') {
         content += `<p>${html(text(item.mode === 'FLEX' ? 'flex' : 'fixed'))}</p>`;
         if (item.mode === 'FLEX') content += workshopSelector(packWorkshops(item, workshops), preserve ? ids(original) : []);
@@ -1178,7 +1207,7 @@ window.RegistrationExtras = (() => {
     }
     else if (type !== 'SERVICE') throw new Error(text('select_participant'));
     else payload.attendee_id = null;
-    if (type === 'WORKSHOP') payload.workshop_ids = [id(product.id)];
+    if (['WORKSHOP', 'GALA'].includes(type)) payload.workshop_ids = [id(product.id)];
     else if (type === 'PACK') {
       payload.pack_id = id(product.id);
       if (product.mode === 'FLEX') {
@@ -1206,7 +1235,7 @@ window.RegistrationExtras = (() => {
       const usage = await request(`/admin/discount-codes/${id(row.id)}/usage`);
       content += `<h3 class="h6">${html(text('usage'))}</h3><dl class="extras-detail-grid">${['used_count', 'max_uses', 'remaining_uses'].map(key => fieldLabel(text(key), html(usage[key] ?? text('unlimited')))).join('')}</dl>`;
     }
-    if (ctx.resource === 'bookings' && item.workshops?.length) content += `<h3 class="h6">${html(text('workshops'))}</h3><ul>${item.workshops.map(w => `<li>${html(w.name)} · ${html(date(w.start_at))}</li>`).join('')}</ul>`;
+    if (ctx.resource === 'bookings' && item.workshops?.length) content += `<h3 class="h6">${html(text('workshops'))}</h3><ul>${item.workshops.map(w => `<li>${html(w.name)} · ${html(workshopTimestamp(w.start_at))}</li>`).join('')}</ul>`;
     await openDialog(text('details'), content);
   }
   async function afterMutation(ctx, message) {
@@ -1227,7 +1256,7 @@ window.RegistrationExtras = (() => {
   }
 
   async function confirmAction(ctx, action, row) {
-    if (ctx.resource === 'bookings' && row.status !== 'PENDING') throw new Error(text('pending_only'));
+    if (ctx.resource === 'bookings' && !(action === 'delete' ? ['PENDING', 'VALIDATED'].includes(row.status) : row.status === 'PENDING')) throw new Error(text('pending_only'));
     const question = text(action === 'delete' ? 'delete_confirm' : action === 'validate' ? 'validate_confirm' : 'reject_confirm');
     await openDialog(text(action === 'delete' ? 'delete' : action), `<p>${html(question)}</p><p class="fw-semibold">${html(row.name || row.code || bookingConcept(row))}</p>`, async () => {
       const path = `${resourcePath(ctx.resource, ctx.accountId)}/${id(row.id)}`;

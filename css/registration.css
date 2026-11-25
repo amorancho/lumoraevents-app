@@ -66,6 +66,18 @@
 .extras-actions .btn { min-height: 38px; }
 .extras-filters, .extras-form-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--lm-space-3); }
 .extras-filters > *, .extras-form-field { min-width: 0; }
+.extras-workshop-type { grid-column: 1 / -1; min-width: 0; margin: 0; padding: 0; border: 0; }
+.extras-form-grid:has(> .extras-workshop-type) > .extras-form-field:has(> :is(#extras-field-name, #extras-field-description)) { grid-column: 1 / -1; }
+.extras-workshop-type .form-label { color: var(--lm-text-muted); font-size: var(--lm-font-card-body); }
+.extras-workshop-type-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--lm-space-3); }
+.extras-workshop-type-option { position: relative; min-width: 0; cursor: pointer; }
+.extras-workshop-type-option input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.extras-workshop-type-option span { display: flex; align-items: center; justify-content: center; gap: var(--lm-space-2); padding: var(--lm-space-4) var(--lm-space-2); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-surface); color: var(--lm-text-muted); font-weight: 700; }
+.extras-workshop-type-option i { font-size: 1.25rem; }
+.extras-workshop-type-option:hover span { background: var(--lm-surface-hover); }
+.extras-workshop-type-option input:checked + span { border-color: var(--lm-cyan); background: var(--lm-bg-elevated); color: var(--lm-cyan); }
+.extras-workshop-type-option input[value="GA"]:checked + span { border-color: var(--lm-purple); color: var(--lm-purple); }
+.extras-workshop-type-option input:focus-visible + span { outline: 2px solid var(--lm-cyan); outline-offset: 3px; }
 .extras-product-editor-fields > :nth-child(-n+2) { grid-column: 1 / -1; }
 .extras-product-editor-heading { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--lm-space-3); min-width: 0; }
 .extras-price-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
@@ -140,7 +152,7 @@
 
 /* Validated reservations are grouped by product; workshop attendance is the default view. */
 #extras-summary { max-width: 1440px; margin-inline: auto; }
-.extras-summary-kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--lm-space-2); margin-bottom: var(--lm-space-3); }
+.extras-summary-kinds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--lm-space-2); margin-bottom: var(--lm-space-3); }
 .extras-summary-kinds > button { display: flex; flex-wrap: wrap; align-items: center; gap: var(--lm-space-2); min-width: 0; min-height: 60px; padding: var(--lm-space-3); color: var(--lm-text-muted); text-align: left; font-size: var(--lm-font-card-body); }
 .extras-summary-kinds > button > span { overflow-wrap: anywhere; }
 .extras-summary-kinds > button > strong { margin-left: auto; color: var(--lm-text); }
@@ -173,6 +185,7 @@
 .extras-summary-booking small { display: block; margin-top: var(--lm-space-1); color: var(--lm-text-muted); font-size: var(--lm-font-card-meta); }
 #extras-summary :is(button, input, summary):focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 3px; }
 @media (min-width: 768px) {
+  .extras-summary-kinds { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .extras-summary-tools { grid-template-columns: minmax(220px, 1fr) auto; align-items: end; }
   .extras-summary-tools > .extras-actions { grid-column: 1 / -1; }
 }
@@ -188,6 +201,7 @@
 .extras-availability { justify-self: start; gap: var(--lm-space-1); padding: var(--lm-space-1) var(--lm-space-2); font-size: .6875rem; line-height: 1.2; letter-spacing: 0; white-space: normal; }
 .extras-availability strong { font-size: inherit; }
 .extras-workshop-selector { margin-top: var(--lm-space-4); padding: var(--lm-space-3); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); }
+.extras-workshop-selector-group + .extras-workshop-selector-group { margin-top: var(--lm-space-4); padding-top: var(--lm-space-3); border-top: 1px solid var(--lm-border); }
 .extras-workshop-options { display: grid; gap: var(--lm-space-2); max-height: 320px; overflow-y: auto; }
 .extras-workshop-option { display: flex; align-items: flex-start; gap: var(--lm-space-3); padding: var(--lm-space-3); border: 1px solid var(--lm-border); background: var(--lm-surface); border-radius: var(--lm-radius-sm); cursor: pointer; }
 .extras-workshop-option:hover { background: var(--lm-surface-hover); }
@@ -195,7 +209,7 @@
 .extras-workshop-option input { flex-shrink: 0; }
 .extras-workshop-option small { display: block; color: var(--lm-text-soft); }
 .extras-workshop-option-content { flex: 1; min-width: 0; }
-.extras-catalog-tabs { display: flex; gap: var(--lm-space-1); padding: var(--lm-space-1); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-bg-elevated); }
+.extras-catalog-tabs { display: flex; flex-wrap: wrap; gap: var(--lm-space-1); padding: var(--lm-space-1); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-bg-elevated); }
 .extras-catalog-tabs [role="tab"] { min-height: 44px; padding: var(--lm-space-2) var(--lm-space-4); border: 1px solid transparent; border-radius: var(--lm-radius-sm); color: var(--lm-text-muted); background: transparent; font-size: var(--lm-font-tab); font-weight: 700; }
 .extras-catalog-tabs [role="tab"]:hover { color: var(--lm-text); background: var(--lm-surface-hover); }
 .extras-catalog-tabs [aria-selected="true"] { color: var(--lm-cyan); border-color: var(--lm-border-strong); background: var(--lm-surface-raised); }
@@ -230,8 +244,15 @@
 .extras-workshop-summary { display: grid; gap: var(--lm-space-2); margin: 0 0 var(--lm-space-3); padding: 0; list-style: none; }
 .extras-workshop-summary li { padding: var(--lm-space-3); border: 1px solid var(--lm-border); border-radius: var(--lm-radius-md); background: var(--lm-bg-elevated); }
 .extras-session-name { display: block; color: var(--lm-text); font-size: var(--lm-font-card-body); }
+.extras-session-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--lm-space-2); }
+.extras-session-heading .extras-session-name { min-width: 0; overflow-wrap: anywhere; }
+.extras-session-heading .lm-status { flex-shrink: 0; padding: var(--lm-space-1) var(--lm-space-2); font-size: var(--lm-font-card-meta); }
 :is(.extras-workshop-summary, .extras-workshop-option) .extras-session-meta { margin: var(--lm-space-2) 0 0; padding: 0; border: 0; background: transparent; gap: var(--lm-space-2); }
 :is(.extras-workshop-summary, .extras-workshop-option) .extras-session-teacher strong { font-size: var(--lm-font-card-body); }
+.extras-workshop-summary .extras-session-meta--compact { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--lm-space-1) var(--lm-space-3); }
+.extras-workshop-summary .extras-session-meta--compact .extras-session-teacher { flex: 1 1 160px; }
+.extras-workshop-summary .extras-session-meta--compact .extras-session-teacher strong { font-weight: 500; overflow-wrap: anywhere; }
+.extras-workshop-summary .extras-session-meta--compact .extras-session-schedule > span { display: flex; flex-wrap: wrap; gap: var(--lm-space-1) var(--lm-space-2); }
 .extras-discount-form { display: flex; align-items: end; gap: var(--lm-space-3); flex-wrap: wrap; }
 .extras-discount-form > div { flex: 1 1 180px; min-width: 0; }
 .registration-extras :is(button, input, select, textarea, summary):focus-visible { outline: 2px solid var(--lm-cyan); outline-offset: 2px; }

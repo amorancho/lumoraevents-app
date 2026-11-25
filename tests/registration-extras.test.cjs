@@ -1074,7 +1074,7 @@ test('organizer packs label available workshops and collapse only the complete e
   } finally { h.close(); }
 });
 
-test('organizer pack creation validates FIXED/FLEX and edits composition with PUT', async () => {
+test('organizer pack creation validates FIXED/FLEX and edits composition with PATCH', async () => {
   const h = harness({ role: 'organizer' });
   try {
     await h.init(); await h.navigate('extras-packs');
@@ -1088,9 +1088,28 @@ test('organizer pack creation validates FIXED/FLEX and edits composition with PU
     await h.click('#extras-packs [data-extras-action="edit"][data-id="8"]');
     h.w.document.querySelector('#registrationExtrasModal [name="workshop_ids"][value="13"]').checked = false;
     await h.submit();
-    assert.equal(h.lastMutation().method, 'PUT');
-    assert.equal(h.lastMutation().path, '/admin/packs/8/workshops');
+    assert.equal(h.lastMutation().method, 'PATCH');
+    assert.equal(h.lastMutation().path, '/admin/packs/8');
     assert.deepEqual(h.lastMutation().body, { workshop_ids: [11] });
+  } finally { h.close(); }
+});
+
+test('FIXED pack count and selection change together from 15 to 16 in one PATCH', async () => {
+  const h = harness({ role: 'organizer' });
+  const workshops = Array.from({ length: 16 }, (_, index) => ({ ...h.data.workshops[0], id: index + 100 }));
+  h.data.workshops = workshops;
+  Object.assign(h.data.packs[0], { workshop_count: 15, workshop_ids: workshops.slice(0, 15).map(row => row.id) });
+  try {
+    await h.init(); await h.navigate('extras-packs');
+    await h.click('#extras-packs [data-extras-action="edit"][data-id="7"]');
+    h.w.document.querySelector('#registrationExtrasModal [name="workshop_ids"][value="115"]').checked = true;
+    const before = h.calls.length;
+    await h.submit({ workshop_count: '16' });
+    const writes = h.calls.slice(before).filter(call => ['POST', 'PATCH', 'PUT', 'DELETE'].includes(call.method));
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].method, 'PATCH');
+    assert.equal(writes[0].path, '/admin/packs/7');
+    assert.deepEqual(writes[0].body, { workshop_count: 16, workshop_ids: workshops.map(row => row.id) });
   } finally { h.close(); }
 });
 
@@ -1363,9 +1382,9 @@ function attendanceHarness(options = {}) {
   h.validatedSummary = {
     event_id: 42,
     workshops: [
-      { id: 11, name: 'Técnica <unsafe>', is_active: 1, teacher: 'Teacher', start_at: '2026-12-01T10:00:00.000Z', end_at: '2026-12-01T11:00:00.000Z', capacity: 30, validated_count: 2, total_quantity: 2, bookings: [packBooking, direct] },
-      { id: 13, name: 'Inactive', is_active: 0, teacher: 'Teacher 2', start_at: null, end_at: null, capacity: 10, validated_count: 0, total_quantity: 0, bookings: [] },
-      { id: 14, name: null, is_active: 1, teacher: null, start_at: null, end_at: null, capacity: 10, validated_count: 1, total_quantity: 1, bookings: [{ ...direct, booking_id: 55, attendee: { id: 99, name: null }, account: { id: 6, name: null, user_type: 'SCH' } }] }
+      { id: 11, ws_type: 'WS', name: 'Técnica <unsafe>', is_active: 1, teacher: 'Teacher', start_at: '2026-12-01T10:00:00.000Z', end_at: '2026-12-01T11:00:00.000Z', capacity: 30, validated_count: 2, total_quantity: 2, bookings: [packBooking, direct] },
+      { id: 13, ws_type: 'WS', name: 'Inactive', is_active: 0, teacher: 'Teacher 2', start_at: null, end_at: null, capacity: 10, validated_count: 0, total_quantity: 0, bookings: [] },
+      { id: 14, ws_type: 'WS', name: null, is_active: 1, teacher: null, start_at: null, end_at: null, capacity: 10, validated_count: 1, total_quantity: 1, bookings: [{ ...direct, booking_id: 55, attendee: { id: 99, name: null }, account: { id: 6, name: null, user_type: 'SCH' } }] }
     ],
     packs: [{ id: 7, name: 'Pack completo', is_active: 1, mode: 'FIXED', workshop_count: 2, validated_count: 1, total_quantity: 1, bookings: [packBooking] }, { id: 8, name: 'Pack flexible', is_active: 0, mode: 'FLEX', workshop_count: 1, validated_count: 0, total_quantity: 0, bookings: [] }],
     services: [{ id: 31, name: 'Comida', is_active: 1, validated_count: 2, total_quantity: 5, bookings: [service, { ...service, booking_id: 56, quantity: 2 }] }]

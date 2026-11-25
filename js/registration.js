@@ -109,7 +109,7 @@ const REGISTRATION_NAV_ITEMS = [
   },
   {
     key: 'extras-workshops', paneId: 'extras-workshops', roles: ['school', 'organizer'],
-    icon: 'bi-calendar-event', labelKey: 'extras_workshops', fallbackLabel: 'Workshops', extras: true
+    icon: 'bi-calendar-event', labelKey: 'extras_workshops', fallbackLabel: 'Workshops / Galas', extras: true
   },
   {
     key: 'extras-packs', paneId: 'extras-packs', roles: ['organizer'],
@@ -117,7 +117,7 @@ const REGISTRATION_NAV_ITEMS = [
   },
   {
     key: 'extras-services', paneId: 'extras-services', roles: ['school', 'organizer'],
-    icon: 'bi-bag', labelKey: 'extras_galas_extras', fallbackLabel: 'Galas y Extras', extras: true
+    icon: 'bi-bag', labelKey: 'extras_galas_extras', fallbackLabel: 'Extras', extras: true
   },
   {
     key: 'extras-discounts', paneId: 'extras-discounts', roles: ['organizer'],
@@ -129,7 +129,7 @@ const REGISTRATION_NAV_ITEMS = [
   },
   {
     key: 'extras-summary', paneId: 'extras-summary', roles: ['organizer'],
-    icon: 'bi-person-lines-fill', labelKey: 'extras_summary_title', fallbackLabel: 'Resumen de extras', extras: true
+    icon: 'bi-person-lines-fill', labelKey: 'extras_summary_nav', fallbackLabel: 'Resumen', extras: true
   },
   {
     key: 'extras-my-bookings', paneId: 'extras-my-bookings', roles: ['school'],
@@ -830,10 +830,11 @@ function setupRegistrationNavigation(role) {
 
 function getVisibleRegistrationNavItems(role = registrationNavigationState.role) {
   return REGISTRATION_NAV_ITEMS.filter(item => item.roles.includes(role)
+    && (item.key !== 'participants' || getEvent()?.registrationIndividual !== true)
     && (!item.extras || getEvent()?.hasWorkshopsServices === true)
     && (!item.quotas || getEvent()?.registrationQuota === true))
     .map(item => role === 'school' && item.key === 'extras-workshops'
-      ? { ...item, labelKey: 'extras_workshops_packs', fallbackLabel: 'Workshops / Packs' }
+      ? { ...item, labelKey: 'extras_workshops_packs', fallbackLabel: 'Workshops / Galas / Packs' }
       : item);
 }
 
@@ -2716,7 +2717,8 @@ function initSchoolTab() {
   if (!form) {
     return;
   }
-  const hideUserType = getEvent()?.registrationCreateParticipant === true;
+  const hideUserType = getEvent()?.registrationIndividual === true;
+  document.getElementById('schoolDocumentField').hidden = hideUserType;
   const userTypeFieldset = document.getElementById('schoolUserTypeFieldset');
   userTypeFieldset?.classList.toggle('d-none', hideUserType);
   userTypeFieldset?.classList.toggle('d-inline-block', !hideUserType);

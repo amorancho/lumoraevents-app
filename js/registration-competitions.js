@@ -198,6 +198,15 @@
     return categoryById.get(`${categoryId}`) || null;
   };
 
+  const updateIndividualChoreographyName = () => {
+    if (form?.dataset.mode !== 'create' || getEvent()?.registrationIndividual !== true) return;
+    const category = getSelectedCategory();
+    if (Number(category?.min_par) === 1 && Number(category?.max_par) === 1
+      && elements.choreographyName && registrationState.school?.name) {
+      elements.choreographyName.value = registrationState.school.name;
+    }
+  };
+
   const getSelectedCategorySupplement = (category) => {
     const styleId = elements.style?.value;
     if (!styleId || !Array.isArray(category?.supplements)) return 0;
@@ -1312,6 +1321,9 @@
     try {
       await loadRegistrationConfig();
       await ensureParticipantsLoaded();
+      if (mode === 'create' && getEvent()?.registrationIndividual === true) {
+        await fetchSchoolRecord(user.id);
+      }
       refreshParticipantSelect();
     } catch (err) {
       showMessageModal(err.message || t('registration_competitions_load_error', 'Error loading registrations.'), t('error_title', 'Error'));
@@ -2176,6 +2188,7 @@
 
   if (elements.category) {
     elements.category.addEventListener('change', () => {
+      updateIndividualChoreographyName();
       updateCategoryInfo();
     });
   }

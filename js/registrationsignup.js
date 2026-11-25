@@ -9,11 +9,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   const submitBtn = document.getElementById('signupSubmit');
   const representativeInput = document.getElementById('signupRepresentative');
   const userTypeInputs = document.querySelectorAll('input[name="signupUserType"]');
-  const createParticipant = getEvent()?.registrationCreateParticipant === true;
+  const createParticipant = getEvent()?.registrationIndividual === true;
   const birthDateInput = document.getElementById('signupBirthDate');
   document.getElementById('signupBirthDateField').hidden = !createParticipant;
   birthDateInput.disabled = !createParticipant;
   birthDateInput.required = createParticipant;
+  representativeInput.closest('.col-12').hidden = createParticipant;
+  representativeInput.disabled = createParticipant;
+  representativeInput.required = !createParticipant;
   if (createParticipant) {
     document.getElementById('signupNameField').classList.replace('col-md-8', 'col-md-6');
     document.getElementById('signupLanguageField').classList.replace('col-md-4', 'col-md-2');
@@ -109,7 +112,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       country: document.getElementById('signupCountry').value,
       phone: document.getElementById('signupPhone').value.trim(),
       representative: document.getElementById('signupRepresentative').value.trim(),
-      document: document.getElementById('signupDocument').value.trim(),
       event_id: getEvent()?.id
     };
 
