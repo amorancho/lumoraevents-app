@@ -1,4 +1,4 @@
-// Availability is informational. Creation and editing remain available at zero places.
+// Closed or full quotas prevent creation; existing registrations remain editable.
 window.RegistrationQuotaAvailability = (() => {
   let eventId = null;
   let generation = 0;
@@ -18,7 +18,12 @@ window.RegistrationQuotaAvailability = (() => {
     if (!enabled() || !ready || !categoryId || !styleId) return null;
     const row = rows.get(scope(categoryId, styleId));
     if (!row) return null;
-    return { total: row.quota, occupied: row.occupied_places, available: Math.max(0, row.quota - row.occupied_places) };
+    return { total: row.quota, occupied: row.occupied_places, available: Math.max(0, row.quota - row.occupied_places), status: row.status };
+  }
+
+  function isClosed(categoryId, styleId) {
+    const info = getAvailability(categoryId, styleId);
+    return Boolean(info && (info.status === 'CLOSE' || info.available === 0));
   }
 
   function describe(info) {
@@ -66,8 +71,12 @@ window.RegistrationQuotaAvailability = (() => {
     if (!mount) return;
     const categoryId = document.getElementById('registrationCategory')?.value;
     const styleId = document.getElementById('registrationStyle')?.value;
+    const closed = isClosed(categoryId, styleId);
+    const save = document.getElementById('registrationSaveBtn');
+    if (save) save.disabled = save.dataset.saving === 'true'
+      || (document.getElementById('registrationForm')?.dataset.mode === 'create' && closed);
     mount.textContent = '';
-    mount.className = 'registration-quota-modal-info d-none';
+    mount.className = 'col-12 registration-quota-modal-info d-none';
     if (!enabled() || !categoryId || !styleId) return;
     const info = getAvailability(categoryId, styleId);
     if (loading || error) {
@@ -77,9 +86,22 @@ window.RegistrationQuotaAvailability = (() => {
       return;
     }
     if (!info) return;
-    mount.textContent = describe(info);
+    mount.textContent = closed ? text('availability_closed', 'This category/style is closed. Contact the organizer.')
+      : template(text('availability_remaining', 'Available places: {available}'), info);
+    const emailContact = registrationState.emailContact;
+    if (closed && emailContact) mount.textContent += ` (${emailContact})`;
     mount.classList.remove('d-none');
-    mount.classList.add(info.available > 0 ? 'text-info' : 'text-warning');
+    mount.classList.add(closed ? 'text-warning' : 'text-info');
+    if (closed) {
+      mount.classList.remove('text-warning');
+      mount.classList.add('lm-notice', 'alert-warning', 'registration-quota-modal-info--closed');
+      const icon = document.createElement('i');
+      icon.className = 'bi bi-exclamation-triangle-fill';
+      icon.setAttribute('aria-hidden', 'true');
+      const message = document.createElement('strong');
+      message.textContent = mount.textContent;
+      mount.replaceChildren(icon, message);
+    }
   }
 
   function updateFeedback() {
@@ -112,7 +134,7 @@ window.RegistrationQuotaAvailability = (() => {
               || !Number.isInteger(Number(row.style_id)) || Number(row.style_id) <= 0
               || row.quota == null || row.occupied_places == null || !Number.isSafeInteger(quota) || quota < 0
               || !Number.isSafeInteger(occupied) || occupied < 0) throw new Error('Invalid quota availability row');
-          next.set(scope(row.category_id, row.style_id), { quota, occupied_places: occupied });
+          next.set(scope(row.category_id, row.style_id), { quota, occupied_places: occupied, status: row.status });
         }
         if (version !== generation || !enabled()) return;
         rows = next;
@@ -141,8 +163,12 @@ window.RegistrationQuotaAvailability = (() => {
     if (getEvent()?.registrationQuota !== true || !['school', 'organizer'].includes(getRegistrationRole())
         || !Number.isSafeInteger(nextId) || nextId <= 0) return;
     if (!listening) {
-      ['registrationCategory', 'registrationStyle'].forEach(id => document.getElementById(id)?.addEventListener('change', updateModal));
+      ['registrationCategory', 'registrationStyle'].forEach(id => {
+        const field = document.getElementById(id);
+        ['input', 'change'].forEach(name => field?.addEventListener(name, updateModal));
+      });
       document.getElementById('registrationModal')?.addEventListener('show.bs.modal', updateModal);
+      window.addEventListener('registration:payment-instructions-updated', updateModal);
       document.getElementById('registrationQuotaAvailabilityRetry')?.addEventListener('click', refresh);
       ['registration:school-registrations-updated', 'registration:organizer-registrations-updated'].forEach(name => window.addEventListener(name, refresh));
       new MutationObserver(() => {
@@ -161,7 +187,7 @@ window.RegistrationQuotaAvailability = (() => {
     return refresh();
   }
 
-  return { init, refresh, getAvailability, createIndicator, appendIndicator };
+  return { init, refresh, getAvailability, isClosed, updateModal, createIndicator, appendIndicator };
 })();
 
 // Quota configuration does not change registration prices or confirmation rules.
@@ -178,6 +204,7 @@ function initRegistrationQuotas() {
   const categoryField = element('Category');
   const styleField = element('Style');
   const quotaField = element('Value');
+  const statusField = element('Status');
   const save = element('Save');
   const cancel = element('Cancel');
   const table = element('sTable');
@@ -201,7 +228,7 @@ function initRegistrationQuotas() {
 
   function updateControls() {
     const disabled = loading || busy || !ready || !allowed();
-    [categoryField, styleField, quotaField, save].forEach(control => { control.disabled = disabled || !categories.length || !styles.length; });
+    [categoryField, styleField, quotaField, statusField, save].forEach(control => { control.disabled = disabled || !categories.length || !styles.length; });
     [cancel, retry].forEach(control => { control.disabled = loading || busy || !allowed(); });
     table.querySelectorAll('button').forEach(button => { button.disabled = disabled; });
     form.setAttribute('aria-busy', String(loading || busy));
@@ -227,16 +254,16 @@ function initRegistrationQuotas() {
     categoryField.replaceChildren(new Option(text('select_category', 'Select a category'), ''));
     categories.forEach(item => categoryField.add(new Option(item.name, String(item.id))));
     styleField.replaceChildren(new Option(text('select_style', 'Select a style'), ''));
-    styles.forEach(item => styleField.add(new Option(item.name, String(item.id))));
+    styles.forEach(item => styleField.add(new Option(item.name, String(item.id), styles.length === 1)));
     categoryField.value = category;
-    styleField.value = style;
+    styleField.value = style || (styles.length === 1 ? String(styles[0].id) : '');
   }
 
   function resetForm() {
     editingId = null;
     form.reset();
     form.classList.remove('was-validated');
-    [categoryField, styleField, quotaField].forEach(field => field.setCustomValidity(''));
+    [categoryField, styleField, quotaField, statusField].forEach(field => field.setCustomValidity(''));
     save.dataset.i18n = 'registration_quotas_add';
     save.textContent = text('add', 'Add quota');
     cancel.classList.add('d-none');
@@ -255,21 +282,31 @@ function initRegistrationQuotas() {
         cell.dataset.label = text(key, fallback);
         cell.textContent = value;
       });
+      const stateCell = row.insertCell();
+      stateCell.dataset.label = text('status', 'Status');
+      const stateBadge = document.createElement('span');
+      stateBadge.className = `lm-status ${item.status === 'OPEN' ? 'lm-status-success' : 'lm-status-warning'}`;
+      stateBadge.textContent = item.status === 'OPEN' ? text('status_open', 'Open')
+        : item.status === 'CLOSE' ? text('status_close', 'Closed') : '-';
+      stateCell.appendChild(stateBadge);
       const actions = row.insertCell();
       const buttons = document.createElement('div');
       buttons.className = 'registration-quota-actions';
-      ['edit', 'delete'].forEach(action => {
+      ['edit', ...(item.status === 'OPEN' ? ['close'] : item.status === 'CLOSE' ? ['open'] : []), 'delete'].forEach(action => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = `lm-btn${action === 'delete' ? ' lm-btn-danger' : ''}`;
         button.dataset.quotaAction = action;
         button.dataset.id = String(item.id);
-        button.title = `${t(action, action === 'edit' ? 'Edit' : 'Delete')}: ${category} / ${style}`;
+        const label = action === 'open' ? text('open', 'Open') : action === 'close' ? text('close', 'Close')
+          : t(action, action === 'edit' ? 'Edit' : 'Delete');
+        button.title = `${label}: ${category} / ${style}`;
         button.setAttribute('aria-label', button.title);
         const icon = document.createElement('i');
-        icon.className = `bi bi-${action === 'edit' ? 'pencil' : 'trash'}`;
+        icon.className = `bi bi-${{ edit: 'pencil', delete: 'trash', open: 'unlock', close: 'lock' }[action]}`;
         icon.setAttribute('aria-hidden', 'true');
         button.appendChild(icon);
+        if (action === 'open' || action === 'close') button.appendChild(document.createTextNode(label));
         buttons.appendChild(button);
       });
       actions.appendChild(buttons);
@@ -313,15 +350,16 @@ function initRegistrationQuotas() {
     }
   }
 
-  async function write(method, id, body) {
+  async function write(method, id, body, statusOnly = false) {
     busy = true;
     showError();
     status.textContent = text('saving', 'Saving…');
     updateControls();
     try {
-      await request(`/quotas${id == null ? '' : `/${encodeURIComponent(id)}`}`, { method, body });
+      await request(`/quotas${id == null ? '' : `/${encodeURIComponent(id)}`}${statusOnly ? '/status' : ''}`, { method, body });
       window.RegistrationQuotaAvailability.refresh();
-      resetForm();
+      if (!statusOnly) resetForm();
+      else if (editingId === Number(id)) statusField.value = body.status;
       if (await load()) status.textContent = text('saved', 'Changes saved.');
     } catch (error) {
       status.textContent = '';
@@ -342,6 +380,7 @@ function initRegistrationQuotas() {
     styleField.setCustomValidity(styleField.value !== '' && styles.some(item => Number(item.id) === styleId) ? '' : text('invalid_style', 'Select an event style.'));
     quotaField.setCustomValidity(quotaField.value.trim() !== '' && Number.isInteger(quota) && quota >= 0 && quota <= 2147483647
       ? '' : text('invalid_quota', 'Enter an integer between 0 and 2147483647.'));
+    statusField.setCustomValidity(['OPEN', 'CLOSE'].includes(statusField.value) ? '' : text('invalid_status', 'Select a valid status.'));
     form.classList.add('was-validated');
     if (!form.reportValidity()) return;
     const duplicate = quotas.some(item => Number(item.category_id) === categoryId
@@ -350,7 +389,7 @@ function initRegistrationQuotas() {
       showError(text('duplicate', 'This category and style combination already has a quota. Edit the existing entry.'));
       return;
     }
-    await write(editingId == null ? 'POST' : 'PUT', editingId, { event_id: eventId, category_id: categoryId, style_id: styleId, quota });
+    await write(editingId == null ? 'POST' : 'PUT', editingId, { event_id: eventId, category_id: categoryId, style_id: styleId, quota, status: statusField.value });
   });
 
   table.addEventListener('click', async event => {
@@ -358,6 +397,10 @@ function initRegistrationQuotas() {
     if (!button || busy || loading || !ready || !allowed()) return;
     const item = quotas.find(item => String(item.id) === button.dataset.id);
     if (!item) return;
+    if (['open', 'close'].includes(button.dataset.quotaAction)) {
+      await write('PATCH', item.id, { status: button.dataset.quotaAction === 'open' ? 'OPEN' : 'CLOSE' }, true);
+      return;
+    }
     if (button.dataset.quotaAction === 'delete') {
       if (window.confirm(text('delete_confirm', 'Delete this quota?'))) await write('DELETE', item.id);
       return;
@@ -367,6 +410,7 @@ function initRegistrationQuotas() {
     categoryField.value = String(item.category_id);
     styleField.value = item.style_id == null ? '' : String(item.style_id);
     quotaField.value = String(item.quota);
+    statusField.value = item.status ?? 'OPEN';
     save.dataset.i18n = 'save';
     save.textContent = t('save', 'Save');
     cancel.classList.remove('d-none');
@@ -381,7 +425,7 @@ function initRegistrationQuotas() {
     status.textContent = '';
     categoryField.focus();
   });
-  [categoryField, styleField, quotaField].forEach(field => field.addEventListener('input', () => {
+  [categoryField, styleField, quotaField, statusField].forEach(field => field.addEventListener('input', () => {
     field.setCustomValidity('');
     showError();
   }));

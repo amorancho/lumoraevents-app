@@ -1,4 +1,12 @@
 {
+  "registration_quotas_availability_closed": "This category/style is closed. Contact the organizer.",
+  "registration_quotas_availability_remaining": "Available places: {available}",
+  "registration_quotas_status": "Status",
+  "registration_quotas_status_open": "Open",
+  "registration_quotas_status_close": "Closed",
+  "registration_quotas_open": "Open",
+  "registration_quotas_close": "Close",
+  "registration_quotas_invalid_status": "Select a valid status.",
   "registration_quotas_availability_review": "Review the quota for this category/style",
   "registration_quotas_availability_full": "No places left",
   "registration_quotas_availability_contact": "Contact the organizers",

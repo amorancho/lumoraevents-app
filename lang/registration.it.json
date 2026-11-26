@@ -1,4 +1,12 @@
 {
+  "registration_quotas_availability_closed": "Questa categoria/stile è chiusa. Contatta l’organizzatore.",
+  "registration_quotas_availability_remaining": "Posti disponibili: {available}",
+  "registration_quotas_status": "Stato",
+  "registration_quotas_status_open": "Aperto",
+  "registration_quotas_status_close": "Chiuso",
+  "registration_quotas_open": "Apri",
+  "registration_quotas_close": "Chiudi",
+  "registration_quotas_invalid_status": "Seleziona uno stato valido.",
   "registration_quotas_availability_review": "Verifica i posti per questa categoria/stile",
   "registration_quotas_availability_full": "Posti esauriti",
   "registration_quotas_availability_contact": "Contatta gli organizzatori",

@@ -6,6 +6,7 @@ const registrationState = {
   paymentDocuments: [],
   paymentInstructionsAvailable: false,
   registrationAcceptText: '',
+  emailContact: '',
   basesDocument: '',
   authorizationTemplate: '',
   authorizationChildTemplate: '',
@@ -636,13 +637,13 @@ function syncRegistrationConfigState() {
   };
 }
 
-function notifyRegistrationConfigUpdate() {
+function notifyRegistrationConfigUpdate(detail = {}) {
   syncRegistrationConfigState();
-  window.dispatchEvent(new CustomEvent('registration:config-updated'));
+  window.dispatchEvent(new CustomEvent('registration:config-updated', { detail }));
 }
 
-function notifyRegistrationSchoolsUpdate() {
-  window.dispatchEvent(new CustomEvent('registration:schools-updated'));
+function notifyRegistrationSchoolsUpdate(detail = {}) {
+  window.dispatchEvent(new CustomEvent('registration:schools-updated', { detail }));
 }
 
 function notifyRegistrationParticipantsUpdate() {
@@ -664,12 +665,12 @@ async function fetchRegistrationParticipants(schoolId = null) {
   return Array.isArray(data) ? data : [];
 }
 
-function notifySchoolRegistrationsUpdate() {
-  window.dispatchEvent(new CustomEvent('registration:school-registrations-updated'));
+function notifySchoolRegistrationsUpdate(detail = {}) {
+  window.dispatchEvent(new CustomEvent('registration:school-registrations-updated', { detail }));
 }
 
-function notifyOrganizerRegistrationsUpdate() {
-  window.dispatchEvent(new CustomEvent('registration:organizer-registrations-updated'));
+function notifyOrganizerRegistrationsUpdate(detail = {}) {
+  window.dispatchEvent(new CustomEvent('registration:organizer-registrations-updated', { detail }));
 }
 
 function getRegistrationRole(user = getUserFromToken()) {
@@ -720,6 +721,7 @@ async function loadRegistrationEventInfo() {
     }
 
     const eventInfo = await response.json();
+    registrationState.emailContact = String(eventInfo?.email_contact ?? '').trim();
     const paymentInstructions = String(eventInfo?.payment_instructions ?? '').trim();
     const registrationAcceptText = String(eventInfo?.registration_accept_text ?? '').trim();
     registrationState.paymentInstructionsAvailable = Boolean(paymentInstructions);
@@ -732,6 +734,7 @@ async function loadRegistrationEventInfo() {
     console.error('Error loading event information:', error);
     registrationState.paymentInstructionsAvailable = false;
     registrationState.registrationAcceptText = '';
+    registrationState.emailContact = '';
     registrationState.basesDocument = '';
     registrationState.authorizationTemplate = '';
     registrationState.authorizationChildTemplate = '';
@@ -812,6 +815,8 @@ function getSafeRegistrationDocumentUrl(rawUrl) {
 
 function setupRegistrationNavigation(role) {
   registrationNavigationState.role = role;
+  // Register the single payment loader before the first panel-changed event.
+  initPaymentsTab(role);
   initRegistrationDashboard(role);
   applyRegistrationRoleVisibility(role);
   renderRegistrationSidebar(role);
@@ -1600,11 +1605,9 @@ function initOrganizerDashboard() {
     topRegistrationSchools: document.getElementById('organizerDashboardTopRegistrationSchoolsChart')
   };
   const chartInstances = {};
-  const paymentDocumentsEndpoint = '/api/registrations/payments';
   let renderQueued = false;
   let needsChartRefresh = true;
   let currentMetrics = null;
-  let activePaymentDocumentsRequestId = 0;
 
   const reorderDashboardPanels = () => {
     if (!panelsContainer) {
@@ -1828,14 +1831,6 @@ function initOrganizerDashboard() {
     };
   };
 
-  const safeJson = async (res) => {
-    try {
-      return await res.json();
-    } catch (error) {
-      return null;
-    }
-  };
-
   const getParticipantRegistrationCount = (participant) => {
     if (Array.isArray(participant?.choreos)) {
       return { hasInfo: true, count: participant.choreos.length };
@@ -1893,54 +1888,6 @@ function initOrganizerDashboard() {
       (sum, registration) => sum + getRegistrationParticipantsTotal(registration),
       0
     );
-  };
-
-  const buildPaymentDocumentsListUrl = () => {
-    const params = new URLSearchParams();
-    const eventIdValue = getEvent()?.id;
-    if (eventIdValue) {
-      params.set('event_id', eventIdValue);
-    }
-    return `${API_BASE_URL}${paymentDocumentsEndpoint}?${params.toString()}`;
-  };
-
-  const setPaymentDocumentsState = (rows) => {
-    const normalizedRows = Array.isArray(rows) ? rows : [];
-    registrationState.paymentDocuments = normalizedRows;
-    window.dispatchEvent(new CustomEvent('registration:payment-documents-updated', {
-      detail: { rows: normalizedRows }
-    }));
-  };
-
-  const fetchPaymentDocuments = async () => {
-    const eventIdValue = getEvent()?.id;
-    if (!eventIdValue) {
-      setPaymentDocumentsState([]);
-      return;
-    }
-
-    const requestId = ++activePaymentDocumentsRequestId;
-
-    try {
-      const res = await fetch(buildPaymentDocumentsListUrl());
-      const data = await safeJson(res);
-
-      if (!res.ok) {
-        throw new Error(data?.error || data?.message || 'Error loading payment documents.');
-      }
-
-      if (requestId !== activePaymentDocumentsRequestId) {
-        return;
-      }
-
-      setPaymentDocumentsState(Array.isArray(data) ? data : []);
-    } catch (error) {
-      if (requestId !== activePaymentDocumentsRequestId) {
-        return;
-      }
-
-      setPaymentDocumentsState([]);
-    }
   };
 
   const renderChart = (key, element, options) => {
@@ -2351,10 +2298,7 @@ function initOrganizerDashboard() {
 
   window.addEventListener('registration:schools-updated', scheduleRender);
   window.addEventListener('registration:participants-updated', scheduleRender);
-  window.addEventListener('registration:organizer-registrations-updated', () => {
-    fetchPaymentDocuments();
-    scheduleRender();
-  });
+  window.addEventListener('registration:organizer-registrations-updated', scheduleRender);
   window.addEventListener('registration:payment-documents-updated', scheduleRender);
   window.addEventListener('registration:extras-finance-updated', scheduleRender);
   window.addEventListener('registration:config-updated', scheduleRender);
@@ -2364,11 +2308,9 @@ function initOrganizerDashboard() {
     if (event?.detail?.key !== 'dashboard') {
       return;
     }
-    fetchPaymentDocuments();
     window.setTimeout(scheduleRender, 0);
   });
 
-  fetchPaymentDocuments();
   scheduleRender();
 }
 
@@ -6091,7 +6033,7 @@ function initSchoolsTab() {
       await fetchEventSchools();
       updateCountryOptions(registrationState.schools);
       applyFilters();
-      notifyRegistrationSchoolsUpdate();
+      notifyRegistrationSchoolsUpdate({ financeChanged: false });
     } catch (err) {
       showSchoolsError(err.message || t('schools_load_error', 'Error loading schools.'));
     }
@@ -7550,7 +7492,7 @@ function initRegistrationCategoriesTab() {
   const loadCategories = async ({ force = false } = {}) => {
     try {
       await fetchRegistrationCategories({ force });
-      notifyRegistrationConfigUpdate();
+      notifyRegistrationConfigUpdate({ financeChanged: force });
       renderCategories();
     } catch (err) {
       showCategoriesError(err.message || t('registration_categories_load_error', 'Error loading categories.'));
@@ -7998,7 +7940,7 @@ function initRegistrationDisciplinesTab() {
     try {
       await fetchRegistrationStyles();
       renderDisciplines();
-      notifyRegistrationConfigUpdate();
+      notifyRegistrationConfigUpdate({ financeChanged: false });
     } catch (err) {
       showDisciplinesError(err.message || t('registration_disciplines_load_error', 'Error loading disciplines.'));
     }
@@ -8213,15 +8155,7 @@ function createRegistrationMobileCard(options = {}) {
   status.textContent = statusInfo.label || '-';
   status.title = statusInfo.label || '-';
   header.appendChild(identity);
-  const quotaIndicator = window.RegistrationQuotaAvailability?.createIndicator(registration);
-  if (quotaIndicator) {
-    const statuses = document.createElement('div');
-    statuses.className = 'registration-mobile-card__statuses';
-    statuses.append(status, quotaIndicator);
-    header.appendChild(statuses);
-  } else {
-    header.appendChild(status);
-  }
+  header.appendChild(status);
   card.appendChild(header);
 
   const classification = document.createElement('div');
@@ -9648,7 +9582,6 @@ function initOrganizerRegistrationsTab() {
         statusBadge.textContent = statusInfo.label;
         statusCell.appendChild(statusBadge);
         configureRegistrationTableBadge(statusBadge, statusInfo.label, registration.status);
-        window.RegistrationQuotaAvailability?.appendIndicator(statusCell, registration);
         row.appendChild(statusCell);
 
         const musicCell = document.createElement('td');
@@ -9825,10 +9758,15 @@ function initOrganizerRegistrationsTab() {
     }
   };
 
+  let registrationsLoaded = false;
   const loadRegistrations = async () => {
     try {
+      const previous = JSON.stringify(registrationState.organizerRegistrations);
       await fetchOrganizerRegistrationsForEvent();
-      notifyOrganizerRegistrationsUpdate();
+      notifyOrganizerRegistrationsUpdate({
+        financeChanged: registrationsLoaded && previous !== JSON.stringify(registrationState.organizerRegistrations)
+      });
+      registrationsLoaded = true;
       renderRegistrations();
     } catch (err) {
       showRegistrationsError(err.message || t('org_registrations_load_error', 'Error loading registrations.'));
@@ -9892,7 +9830,6 @@ function initOrganizerRegistrationsTab() {
   };
   window.addEventListener('registration:config-updated', handleConfigUpdate);
   window.addEventListener('registration:organizer-registrations-updated', renderRegistrations);
-  window.addEventListener('registration:quota-availability-updated', renderRegistrations);
 
   if (membersElements.ageInfoBtn) {
     const membersAgeLanguageObserver = new MutationObserver(() => {

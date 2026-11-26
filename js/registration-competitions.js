@@ -1684,7 +1684,6 @@
       statusBadge.textContent = statusInfo.label;
       statusCell.appendChild(statusBadge);
       configureRegistrationTableBadge(statusBadge, statusInfo.label, registration.status);
-      window.RegistrationQuotaAvailability?.appendIndicator(statusCell, registration);
       row.appendChild(statusCell);
 
       const musicCell = document.createElement('td');
@@ -1850,8 +1849,10 @@
     if (emptyEl) emptyEl.classList.add('d-none');
   };
 
+  let registrationsLoaded = false;
   const loadRegistrations = async () => {
     try {
+      const previous = JSON.stringify(registrationState.registrations);
       const params = new URLSearchParams();
       params.set('school_id', user.id);
       const eventIdValue = getEventIdValue();
@@ -1873,8 +1874,11 @@
         schoolId: user.id
       });
       if (typeof notifySchoolRegistrationsUpdate === 'function') {
-        notifySchoolRegistrationsUpdate();
+        notifySchoolRegistrationsUpdate({
+          financeChanged: registrationsLoaded && previous !== JSON.stringify(registrationState.registrations)
+        });
       }
+      registrationsLoaded = true;
       renderRegistrations();
     } catch (err) {
       showRegistrationsError(err.message || t('registration_competitions_load_error', 'Error loading registrations.'));
@@ -2054,6 +2058,9 @@
   };
 
   const saveRegistration = async () => {
+    if (elements.saveBtn?.dataset.saving === 'true') return;
+    if (form?.dataset.mode === 'create'
+      && window.RegistrationQuotaAvailability?.isClosed(elements.category?.value, elements.style?.value)) return;
     if (!validateRegistration()) {
       return;
     }
@@ -2083,6 +2090,7 @@
     const method = isEdit ? 'PUT' : 'POST';
 
     if (elements.saveBtn) {
+      elements.saveBtn.dataset.saving = 'true';
       elements.saveBtn.disabled = true;
       elements.saveBtn.textContent = t('saving', 'Guardando...');
     }
@@ -2111,8 +2119,10 @@
       showMessageModal(err.message || t('registration_competitions_save_error', 'Error saving registration.'), t('error_title', 'Error'));
     } finally {
       if (elements.saveBtn) {
+        delete elements.saveBtn.dataset.saving;
         elements.saveBtn.disabled = false;
         elements.saveBtn.textContent = saveBtnLabel;
+        window.RegistrationQuotaAvailability?.updateModal();
       }
     }
   };
@@ -2472,7 +2482,6 @@
       .catch(() => {});
   };
   window.addEventListener('registration:config-updated', handleConfigUpdate);
-  window.addEventListener('registration:quota-availability-updated', renderRegistrations);
 
   if (isSchoolUser && elements.membersAgeInfoBtn) {
     const membersAgeLanguageObserver = new MutationObserver(() => {

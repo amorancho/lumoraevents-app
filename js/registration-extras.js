@@ -4,8 +4,8 @@ window.RegistrationExtras = (() => {
   'use strict';
   const state = {
     role: '', eventKey: '', featureOn: false, initialized: false, generation: 0,
-    summaries: new Map(), summaryIds: [], financeReady: false, financeError: '',
-    financeRequest: null, financeRevision: 0, account: null, accountTab: 'bookings',
+    summaries: new Map(), summaryIds: null, financeError: '', financeSerial: 0,
+    account: null, accountTab: 'bookings', accountSummary: null, accountSerial: 0,
     contexts: new Map(), dialog: null, dialogVersion: 0
   };
   const resourceLabels = { workshops: 'workshops', packs: 'packs', services: 'services', 'discount-codes': 'discounts', bookings: 'bookings' };
@@ -54,6 +54,7 @@ window.RegistrationExtras = (() => {
     });
     const suffix = params.size ? `?${params}` : '';
     const options = { method };
+    if (method === 'GET' && /\/(?:summary|finance-summary)$/.test(path)) options.cache = 'no-store';
     if (body !== undefined) {
       options.headers = { 'Content-Type': 'application/json' };
       options.body = JSON.stringify(body);
@@ -94,7 +95,7 @@ window.RegistrationExtras = (() => {
     if (!admin()) rows = [state.summaries.get('self')];
     else if (accountId != null) rows = [state.summaries.get(String(accountId))];
     else {
-      if (!state.financeReady) return null;
+      if (!state.summaryIds) return null;
       rows = state.summaryIds.map(key => state.summaries.get(key));
     }
     if (rows.some(row => !row)) return null;
@@ -104,54 +105,36 @@ window.RegistrationExtras = (() => {
   function notifyFinance() {
     window.dispatchEvent(new CustomEvent('registration:extras-finance-updated'));
   }
+  const financeVisible = () => ['payments', 'dashboard'].includes(registrationNavigationState.activeKey);
+  const accountVisible = () => state.account && document.getElementById('schoolDetailsModal')?.classList.contains('show');
+  const accountSummaryVisible = () => accountVisible() && state.accountTab === 'summary';
+
   async function refreshFinance() {
-    if (!enabled()) return;
-    state.financeRevision += 1;
-    if (state.financeRequest) return state.financeRequest;
-    const generation = state.generation;
-    const run = async () => {
-      let revision;
-      do {
-        revision = state.financeRevision;
-        state.financeError = '';
-        try {
-          if (!admin()) {
-            const summary = checkedSummary(await request(summaryPath()));
-            state.summaries.set('self', summary);
-          } else {
-            const accounts = await fetchEventSchools();
-            if (!sameEvent(generation)) return;
-            const accountIds = [...new Set(accounts.map(account => String(id(account.id))))];
-            const results = new Map();
-            // The contract has per-account summaries only. Bound concurrent requests.
-            let cursor = 0;
-            const workers = await Promise.allSettled(Array.from({ length: Math.min(4, accountIds.length) }, async () => {
-              while (cursor < accountIds.length && sameEvent(generation)) {
-                const accountId = accountIds[cursor++];
-                results.set(accountId, checkedSummary(await request(summaryPath(accountId))));
-              }
-            }));
-            const failure = workers.find(result => result.status === 'rejected');
-            if (failure) throw failure.reason;
-            if (!sameEvent(generation)) return;
-            state.summaries = results;
-            state.summaryIds = accountIds;
-          }
-          state.financeReady = true;
-        } catch (error) {
-          if (!sameEvent(generation)) return;
-          state.financeReady = false;
-          state.summaries.clear();
-          state.financeError = error.message;
+    if (!enabled() || !financeVisible()) return;
+    const generation = state.generation, serial = ++state.financeSerial;
+    state.summaries.clear(); state.summaryIds = null; state.financeError = '';
+    notifyFinance(); renderFinance();
+    try {
+      // Each consumer tab entry gets a fresh response. Payment filters use only this response.
+      const data = await request(admin() ? '/admin/finance-summary' : summaryPath());
+      if (!sameEvent(generation) || serial !== state.financeSerial) return;
+      if (admin()) {
+        if (String(data?.event_id) !== state.eventKey || !Array.isArray(data.accounts)) throw new Error(text('invalid_response'));
+        const summaries = new Map();
+        for (const account of data.accounts) {
+          const key = String(id(account.registration_school_id));
+          if (summaries.has(key)) throw new Error(text('invalid_response'));
+          summaries.set(key, checkedSummary(account));
         }
-        if (!sameEvent(generation)) return;
-        notifyFinance();
-        renderFinance();
-      } while (revision !== state.financeRevision);
-    };
-    const pending = run();
-    state.financeRequest = pending;
-    try { await pending; } finally { if (state.financeRequest === pending) state.financeRequest = null; }
+        state.summaries = summaries;
+        state.summaryIds = [...summaries.keys()];
+      } else state.summaries.set('self', checkedSummary(data));
+    } catch (error) {
+      if (!sameEvent(generation) || serial !== state.financeSerial) return;
+      state.financeError = error.message;
+    } finally {
+      if (sameEvent(generation) && serial === state.financeSerial) { notifyFinance(); renderFinance(); }
+    }
   }
 
   function summaryMarkup(summary, cents = false) {
@@ -161,7 +144,7 @@ window.RegistrationExtras = (() => {
   }
   function renderFinance() {
     const mount = document.getElementById('registrationExtrasFinance');
-    if (!mount || !enabled()) return;
+    if (!mount || !enabled() || registrationNavigationState.activeKey !== 'payments') return;
     mount.classList.remove('d-none');
     let card = mount.querySelector('[data-extras-finance-summary]');
     if (!card) {
@@ -172,9 +155,10 @@ window.RegistrationExtras = (() => {
     const filter = document.getElementById('registrationPaymentsSharedSchoolFilter')?.value || '';
     const selectedId = filter.startsWith('id:') ? filter.slice(3) : filter ? '__unresolved__' : null;
     const summary = getFinanceSummary(selectedId);
-    card.innerHTML = state.financeError
-      ? notice(state.financeError) + button('finance-retry', text('retry'))
-      : summary ? summaryMarkup(summary, true) : state.financeReady ? notice(text('unavailable'), 'warning') : loading();
+    const error = state.financeError;
+    card.innerHTML = error
+      ? notice(error) + button('finance-retry', text('retry'))
+      : summary ? summaryMarkup(summary, true) : state.summaryIds != null || selectedId === '__unresolved__' ? notice(text('unavailable'), 'warning') : loading();
     // The API's registrations_amount already includes the registration charge.
     document.querySelector('#payments .registration-payments-combined-metric')?.classList.toggle('d-none', Boolean(summary));
   }
@@ -1252,7 +1236,7 @@ window.RegistrationExtras = (() => {
       if (other !== ctx && other.mount.classList.contains('active')) loadContext(other);
     });
     await refreshFinance();
-    if (state.account && String(ctx?.accountId) === String(state.account.id) && state.accountTab === 'summary') renderAccount();
+    if (accountSummaryVisible() && String(ctx?.accountId) === String(state.account.id)) renderAccount();
   }
 
   async function confirmAction(ctx, action, row) {
@@ -1267,11 +1251,11 @@ window.RegistrationExtras = (() => {
     }, t('confirm', text('confirm')));
   }
 
-  async function renderAccount() {
+  async function renderAccount({ reloadSummary = true } = {}) {
     const mount = document.getElementById('registrationAccountExtras');
     if (!mount || !enabled() || !admin() || !state.account) return;
     const accountId = id(state.account.id);
-    const generation = state.generation;
+    const generation = state.generation, serial = ++state.accountSerial;
     state.contexts.delete(mount.querySelector('[data-extras-account-content]'));
     mount.classList.remove('d-none');
     mount.innerHTML = `<h2 class="h5">${html(text('account_extras'))}</h2><div class="extras-actions mb-3" role="group" aria-label="${html(text('account_extras'))}">${['bookings', 'summary'].map(tab => `<button type="button" class="btn btn-${tab === state.accountTab ? 'primary' : 'outline-secondary'} btn-sm" data-extras-account-tab="${tab}" aria-pressed="${tab === state.accountTab}">${html(text(tab))}</button>`).join('')}</div><div data-extras-account-content></div>`;
@@ -1281,12 +1265,14 @@ window.RegistrationExtras = (() => {
       buildShell(ctx);
       await loadContext(ctx);
     } else {
+      if (reloadSummary) state.accountSummary = null;
       area.innerHTML = `<div data-extras-account-summary>${loading()}</div><div class="mt-3" data-extras-discount></div>`;
       loadDiscount(area.querySelector('[data-extras-discount]'), accountId);
       try {
-        const summary = checkedSummary(await request(summaryPath(accountId)));
-        if (!sameEvent(generation) || state.account?.id !== accountId || state.accountTab !== 'summary' || !area.isConnected) return;
-        state.summaries.set(String(accountId), summary);
+        const summary = reloadSummary || !state.accountSummary
+          ? checkedSummary(await request(summaryPath(accountId))) : state.accountSummary;
+        if (!sameEvent(generation) || serial !== state.accountSerial || state.account?.id !== accountId || state.accountTab !== 'summary' || !area.isConnected) return;
+        state.accountSummary = summary;
         area.querySelector('[data-extras-account-summary]').innerHTML = summaryMarkup(summary);
       } catch (error) {
         if (sameEvent(generation) && area.isConnected) area.querySelector('[data-extras-account-summary]').innerHTML = notice(error.message) + button('account-retry', text('retry'));
@@ -1435,8 +1421,8 @@ window.RegistrationExtras = (() => {
     if (state.eventKey !== eventKey || state.role !== role || state.featureOn !== featureOn) {
       state.generation += 1; state.eventKey = eventKey; state.role = role;
       state.featureOn = featureOn;
-      state.summaries.clear(); state.summaryIds = []; state.financeReady = false;
-      state.financeRequest = null; state.financeRevision = 0; state.contexts.clear(); state.account = null;
+      state.summaries.clear(); state.summaryIds = null; state.financeError = ''; state.financeSerial += 1;
+      state.contexts.clear(); state.account = null; state.accountSummary = null; state.accountSerial += 1;
       state.dialogVersion += 1;
       if (state.dialog) {
         const form = state.dialog.querySelector('form');
@@ -1478,16 +1464,29 @@ window.RegistrationExtras = (() => {
       });
       document.addEventListener('submit', handleSubmit);
       window.addEventListener('registration:panel-changed', event => {
+        state.financeSerial += 1;
         loadPanel(event.detail.key);
         if (['payments', 'dashboard'].includes(event.detail.key)) refreshFinance();
       });
       window.addEventListener('registration:account-opened', event => {
         if (!enabled() || !admin()) return;
         state.account = { ...event.detail.account, id: id(event.detail.account.id) };
-        state.accountTab = 'bookings';
+        state.accountTab = 'bookings'; state.accountSummary = null;
         renderAccount();
       });
-      ['registration:school-registrations-updated', 'registration:organizer-registrations-updated', 'registration:schools-updated', 'registration:config-updated'].forEach(name => window.addEventListener(name, refreshFinance));
+      let financeUpdateQueued = false;
+      ['registration:school-registrations-updated', 'registration:organizer-registrations-updated', 'registration:schools-updated', 'registration:config-updated'].forEach(name => window.addEventListener(name, event => {
+        if (!enabled() || event.detail?.financeChanged === false) return;
+        if (!financeVisible() && !accountSummaryVisible()) return;
+        if (financeUpdateQueued) return;
+        financeUpdateQueued = true;
+        const financeSerial = state.financeSerial, accountSerial = state.accountSerial;
+        queueMicrotask(() => {
+          financeUpdateQueued = false;
+          if (financeSerial === state.financeSerial) refreshFinance();
+          if (accountSerial === state.accountSerial && accountSummaryVisible()) renderAccount();
+        });
+      }));
       document.getElementById('registrationPaymentsSharedSchoolFilter')?.addEventListener('change', renderFinance);
       document.getElementById('registrationPaymentsSharedFilterClear')?.addEventListener('click', () => queueMicrotask(renderFinance));
       const observer = new MutationObserver(async () => {
@@ -1495,20 +1494,17 @@ window.RegistrationExtras = (() => {
         if (!enabled()) return;
         renderRegistrationSidebar(state.role);
         state.contexts.forEach(ctx => { buildShell(ctx); renderList(ctx); });
-        if (state.account) renderAccount();
+        if (accountVisible() && (state.accountTab !== 'summary' || state.accountSummary)) renderAccount({ reloadSummary: false });
         renderFinance();
         const discount = document.querySelector('#registrationExtrasFinance [data-extras-discount]');
-        if (discount) loadDiscount(discount);
+        if (discount && registrationNavigationState.activeKey === 'payments') loadDiscount(discount);
         const active = document.querySelector('[data-extras-resource].active');
         if (active && !admin() && ['workshops', 'services'].includes(active.dataset.extrasResource)) loadCatalog(active, active.dataset.extrasResource);
       });
       observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
       window.addEventListener('beforeunload', () => observer.disconnect(), { once: true });
     }
-    if (enabled()) {
-      renderFinance();
-      refreshFinance();
-    }
+    // Navigation owns the initial summary request; initialization never sends one.
   }
   return { init, enabled, request, getFinanceSummary, refreshFinance };
 })();

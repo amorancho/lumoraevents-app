@@ -46,7 +46,7 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
     const parsed = new URL(url);
     const method = options.method || 'GET';
     const route = parsed.pathname.replace('/api/extras', '');
-    const call = { url: parsed, path: route, method, body: options.body === undefined ? undefined : JSON.parse(options.body), headers: Object.fromEntries(new Headers(options.headers).entries()) };
+    const call = { url: parsed, path: route, method, body: options.body === undefined ? undefined : JSON.parse(options.body), headers: Object.fromEntries(new Headers(options.headers).entries()), cache: options.cache };
     h.calls.push(call);
     const override = h.overrides[`${method} ${route}`];
     let result;
@@ -64,6 +64,7 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
       else throw new Error(`Unexpected participant method: ${method}`);
     }
     else if (parsed.pathname === '/api/registrations/payments') result = { data: [{ id: 100, school_id: 4, amount: 5000, payment_type: 'PAY', status: 'VAL' }] };
+    else if (route === '/admin/finance-summary') result = { data: { event_id: h.event.id, accounts: h.accounts.map(account => ({ registration_school_id: account.id, name: account.name, user_type: account.user_type, ...h.summary })) } };
     else if (route === '/admin/summary') result = { data: h.validatedSummary };
     else if (route.endsWith('/summary')) result = { data: h.summary };
     else if (route.endsWith('/discount')) {
@@ -141,7 +142,8 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
   run('js/registration-extras.js');
   run('js/registration-payments.js');
   w.fetchEventSchools = async () => { w.eval('registrationState').schools = h.accounts; return h.accounts; };
-  h.init = async () => {
+  h.init = async (panel = 'dashboard') => {
+    w.location.hash = panel;
     w.RegistrationExtras.init(w.getRegistrationRole());
     w.setupRegistrationNavigation(w.getRegistrationRole());
     await tick();
@@ -169,6 +171,212 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
   h.close = () => dom.window.close();
   return h;
 }
+
+const financeCalls = h => h.calls.filter(call => call.path === '/admin/finance-summary' || call.path === '/account/summary');
+
+for (const role of ['school', 'organizer', 'admin']) {
+  test(`summary loading: ${role} calls the API exactly once on every Dashboard and Payments entry`, async () => {
+    const h = harness({ role });
+    try {
+      h.w.RegistrationExtras.init(h.w.getRegistrationRole()); await tick();
+      assert.equal(h.calls.length, 0);
+      await h.init(role === 'school' ? 'competitions' : 'schools');
+      assert.equal(financeCalls(h).length, 0);
+      await h.navigate('dashboard'); assert.equal(financeCalls(h).length, 1);
+      h.w.notifyRegistrationSchoolsUpdate({ financeChanged: false });
+      h.w.notifyRegistrationConfigUpdate({ financeChanged: false });
+      h.w.notifySchoolRegistrationsUpdate({ financeChanged: false });
+      h.w.notifyOrganizerRegistrationsUpdate({ financeChanged: false });
+      await tick(); assert.equal(financeCalls(h).length, 1);
+      h.summary = { ...summary, total_amount: 200 };
+      await h.navigate('payments'); assert.equal(financeCalls(h).length, 2);
+      assert.equal(h.w.RegistrationExtras.getFinanceSummary().total_amount, role === 'school' ? 20000 : 40000);
+      await h.navigate('dashboard'); assert.equal(financeCalls(h).length, 3);
+      await h.navigate('payments'); assert.equal(financeCalls(h).length, 4);
+      await h.navigate('participants'); assert.equal(financeCalls(h).length, 4);
+      for (const call of financeCalls(h)) {
+        assert.equal(call.path, role === 'school' ? '/account/summary' : '/admin/finance-summary');
+        assert.equal(call.cache, 'no-store');
+        assert.equal(call.headers.authorization, 'Bearer test-token');
+        assert.equal(call.headers['x-event-id'], role === 'admin' ? '42' : undefined);
+      }
+      assert.equal(h.calls.some(call => /^\/admin\/accounts\/\d+\/summary$/.test(call.path)), false);
+      assert.equal(h.calls.some(call => call.path === '/admin/summary'), false);
+    } finally { h.close(); }
+  });
+}
+
+test('summary loading: real initializers do not multiply the summary request', async () => {
+  for (const role of ['school', 'organizer']) {
+    const h = harness({ role });
+    try {
+      await h.init();
+      h.w.fetch = async () => new Response(JSON.stringify([]));
+      h.w.bootstrap.Tooltip = class { dispose() {} setContent() {} update() {} static getOrCreateInstance() { return new this(); } };
+      if (role === 'organizer') {
+        h.w.initSchoolsTab(); h.w.initOrganizerRegistrationsTab();
+        h.w.initRegistrationCategoriesTab(); h.w.initRegistrationDisciplinesTab();
+      } else {
+        vm.runInContext(read('js/registration-competitions.js'), h.dom.getInternalVMContext());
+        h.w.initCompetitionsTab();
+      }
+      await tick(); assert.equal(financeCalls(h).length, 1);
+    } finally { h.close(); }
+  }
+});
+
+test('summary loading: one global request for any account count and Payments filters the response locally', async () => {
+  const h = harness({ role: 'organizer' });
+  h.accounts = Array.from({ length: 100 }, (_, i) => ({ id: i + 4, name: `Account ${i + 4}`, user_type: i % 2 ? 'SCH' : 'PAR' }));
+  h.w.eval('registrationState').schools = h.accounts;
+  try {
+    await h.init('schools');
+    const filter = h.w.document.getElementById('registrationPaymentsSharedSchoolFilter');
+    filter.add(new h.w.Option('Account 4', 'id:4')); filter.add(new h.w.Option('Account 5', 'id:5'));
+    filter.value = 'id:4';
+    await h.navigate('payments');
+    assert.equal(financeCalls(h).length, 1);
+    assert.equal(h.w.RegistrationExtras.getFinanceSummary(4).total_amount, 12500);
+    assert.equal(h.w.RegistrationExtras.getFinanceSummary().total_amount, 1250000);
+    for (const value of ['id:5', '', 'id:4']) {
+      filter.value = value; filter.dispatchEvent(new h.w.Event('change')); await tick();
+    }
+    assert.equal(financeCalls(h).length, 1);
+    assert.match(h.w.document.querySelector('[data-extras-finance-summary]').textContent, /125,00/);
+    h.w.localStorage.setItem('lang', 'en'); h.w.document.documentElement.lang = 'en'; await tick();
+    assert.equal(financeCalls(h).length, 1);
+  } finally { h.close(); }
+});
+
+test('summary loading: account summary requests fresh data each time its subtab opens', async () => {
+  const h = harness({ role: 'organizer' });
+  try {
+    await h.init('schools');
+    h.w.bootstrap.Modal.getOrCreateInstance(h.w.document.getElementById('schoolDetailsModal')).show();
+    h.w.dispatchEvent(new h.w.CustomEvent('registration:account-opened', { detail: { account: h.accounts[0] } }));
+    await tick();
+    const ownCalls = () => h.calls.filter(call => call.path === '/admin/accounts/4/summary');
+    assert.equal(ownCalls().length, 0);
+    await h.click('[data-extras-account-tab="summary"]'); assert.equal(ownCalls().length, 1);
+    h.summary = { ...summary, total_amount: 200 };
+    await h.click('[data-extras-account-tab="bookings"]'); await h.click('[data-extras-account-tab="summary"]');
+    assert.equal(ownCalls().length, 2);
+    assert.match(h.w.document.querySelector('[data-extras-account-summary]').textContent, /200,00/);
+    h.w.document.documentElement.lang = 'en'; await tick(); assert.equal(ownCalls().length, 2);
+    assert.equal(financeCalls(h).length, 0);
+  } finally { h.close(); }
+});
+
+test('summary loading: attendance overview requests once per entry and filters without additional GETs', async () => {
+  const h = harness({ role: 'organizer' });
+  try {
+    await h.init('schools');
+    const count = () => h.calls.filter(call => call.path === '/admin/summary').length;
+    assert.equal(count(), 0);
+    await h.navigate('extras-summary'); assert.equal(count(), 1);
+    await h.click('[data-summary-kind="packs"]'); await h.click('[data-summary-expand="true"]');
+    assert.equal(count(), 1);
+    await h.navigate('schools'); await h.navigate('extras-summary'); assert.equal(count(), 2);
+    await h.click('#extras-summary [data-extras-action="refresh"]'); assert.equal(count(), 3);
+    assert.equal(financeCalls(h).length, 0);
+    assert.ok(h.calls.filter(call => call.path === '/admin/summary').every(call => call.cache === 'no-store'));
+  } finally { h.close(); }
+});
+
+test('summary loading: rapid navigation makes one fresh GET per entry and ignores older responses', async () => {
+  const releases = [];
+  const h = harness({ role: 'organizer', overrides: {
+    'GET /admin/finance-summary': () => new Promise(resolve => releases.push(resolve))
+  } });
+  const response = total => ({ data: { event_id: 42, accounts: [{ registration_school_id: 4, ...summary, total_amount: total }] } });
+  try {
+    await h.init(); await h.navigate('payments');
+    assert.equal(financeCalls(h).length, 2);
+    releases[1](response(200)); await tick(); releases[0](response(100)); await tick();
+    assert.equal(h.w.RegistrationExtras.getFinanceSummary().total_amount, 20000);
+    await h.navigate('dashboard'); await h.navigate('schools');
+    releases[2](response(300)); await tick();
+    assert.equal(h.w.RegistrationExtras.getFinanceSummary(), null);
+    assert.equal(financeCalls(h).length, 3);
+  } finally { releases.forEach(resolve => resolve(response(1))); h.close(); }
+});
+
+test('summary loading: invalid global responses fail completely and never trigger per-school fallback', async () => {
+  const invalid = [
+    { event_id: 99, accounts: [] }, { event_id: 42, accounts: null },
+    { event_id: 42, accounts: [{ registration_school_id: 4 }] },
+    { event_id: 42, accounts: [{ registration_school_id: 4, ...summary }, { registration_school_id: 4, ...summary }] }
+  ];
+  for (const data of invalid) {
+    const h = harness({ role: 'organizer', overrides: { 'GET /admin/finance-summary': () => ({ data }) } });
+    try {
+      await h.init('payments');
+      assert.equal(h.w.RegistrationExtras.getFinanceSummary(), null);
+      assert.ok(h.w.document.querySelector('[data-extras-action="finance-retry"]'));
+      assert.equal(financeCalls(h).length, 1);
+      assert.equal(h.calls.some(call => call.path.startsWith('/admin/accounts/')), false);
+    } finally { h.close(); }
+  }
+});
+
+test('summary loading: 429 causes no automatic retries and entry or explicit retry makes exactly one request', async () => {
+  const h = harness({ role: 'organizer', overrides: {
+    'GET /admin/finance-summary': () => ({ status: 429, data: { error: 'Rate limited' } })
+  } });
+  try {
+    await h.init('payments'); assert.equal(financeCalls(h).length, 1);
+    assert.equal(h.w.RegistrationExtras.getFinanceSummary(), null);
+    await tick(); assert.equal(financeCalls(h).length, 1);
+    await h.click('[data-extras-action="finance-retry"]'); assert.equal(financeCalls(h).length, 2);
+    delete h.overrides['GET /admin/finance-summary'];
+    await h.navigate('dashboard'); assert.equal(financeCalls(h).length, 3);
+    assert.equal(h.w.RegistrationExtras.getFinanceSummary().total_amount, 25000);
+  } finally { h.close(); }
+});
+
+test('summary loading: mutations on other tabs cause no summary calls and next entry gets fresh data', async () => {
+  const h = harness({ role: 'organizer' });
+  try {
+    await h.init('extras-bookings');
+    await h.click('[data-extras-action="validate"][data-id="51"]'); await h.submit();
+    assert.equal(financeCalls(h).length, 0);
+    await h.navigate('dashboard'); assert.equal(financeCalls(h).length, 1);
+    await h.navigate('schools'); h.w.notifyOrganizerRegistrationsUpdate(); await tick();
+    assert.equal(financeCalls(h).length, 1);
+    await h.navigate('payments'); assert.equal(financeCalls(h).length, 2);
+    // Several notifications for one completed operation are coalesced within this view.
+    h.w.notifyOrganizerRegistrationsUpdate(); h.w.notifyRegistrationConfigUpdate(); await tick();
+    assert.equal(financeCalls(h).length, 3);
+    // A notification from the tab being left cannot queue another GET after navigation.
+    await h.navigate('schools');
+    h.w.notifyOrganizerRegistrationsUpdate(); h.w.showRegistrationPanel('dashboard'); await tick();
+    assert.equal(financeCalls(h).length, 4);
+    // The new entry already refreshes an operation notified just before navigating.
+    h.w.notifyRegistrationConfigUpdate(); h.w.showRegistrationPanel('payments'); await tick();
+    assert.equal(financeCalls(h).length, 5);
+  } finally { h.close(); }
+});
+
+test('summary loading: switching events discards old global data and disabled extras make no calls', async () => {
+  let release;
+  const h = harness({ role: 'admin', overrides: {
+    'GET /admin/finance-summary': () => new Promise(resolve => { release = resolve; })
+  } });
+  try {
+    await h.init();
+    h.event = { ...h.event, id: 43 }; delete h.overrides['GET /admin/finance-summary'];
+    await h.init('payments');
+    release({ data: { event_id: 42, accounts: [{ registration_school_id: 4, ...summary, total_amount: 1 }] } }); await tick();
+    assert.equal(h.w.RegistrationExtras.getFinanceSummary().total_amount, 25000);
+    assert.equal(financeCalls(h).length, 2);
+    assert.equal(financeCalls(h)[1].headers['x-event-id'], '43');
+  } finally { if (release) release({ data: {} }); h.close(); }
+  const disabled = harness({ role: 'organizer', flag: false });
+  try {
+    await disabled.init(); await disabled.navigate('payments'); await disabled.navigate('extras-summary');
+    assert.equal(disabled.calls.filter(call => call.url.pathname.startsWith('/api/extras')).length, 0);
+  } finally { disabled.close(); }
+});
 
 for (const resource of ['workshops', 'packs', 'services']) {
   test(`${resource}: organizer and admin load one list and preload prices without extra GETs`, async () => {
@@ -1299,7 +1507,7 @@ test('the original Participants tab still loads, creates, edits and deletes thro
 test('discount application sends code only, supports null and refreshes the summary', async () => {
   const h = harness();
   try {
-    await h.init();
+    await h.init('payments');
     assert.ok(h.w.document.querySelector('#registrationExtrasFinance [name="code"]'));
     await h.submit({ code: 'WELCOME' }, '#registrationExtrasFinance form');
     assert.deepEqual(h.lastMutation().body, { code: 'WELCOME' });
@@ -1865,7 +2073,7 @@ test('pending deletion and account booking edits use their respective paths', as
 test('failed summaries show unavailable totals instead of silently dropping extras', async () => {
   const h = harness({ overrides: { 'GET /account/summary': () => ({ status: 403, data: { error: 'No summary access' } }) } });
   try {
-    await h.init(); h.w.initPaymentsTab('school'); await tick();
+    await h.init('payments'); h.w.initPaymentsTab('school'); await tick();
     assert.equal(h.w.RegistrationExtras.getFinanceSummary(), null);
     assert.equal(h.w.document.getElementById('registrationPaymentsTotalValue').textContent, '—');
     assert.equal(h.w.document.getElementById('registrationPaymentsPendingValue').textContent, '—');

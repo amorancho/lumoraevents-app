@@ -178,6 +178,7 @@ function initPaymentsTab(role) {
   let paymentRows = [];
   let invoiceRows = [];
   let activeDocumentsRequestId = 0;
+  let documentsEventId = '';
   let activeCreateDocumentType = 'PAY';
   let activeDeleteDocumentType = 'PAY';
   let activeAmountDocumentId = '';
@@ -1345,32 +1346,37 @@ function initPaymentsTab(role) {
   };
 
   const fetchDocumentTables = async (options = {}) => {
+    if (!['dashboard', 'payments'].includes(registrationNavigationState.activeKey)) return;
     const showError = options.showError === true;
     const eventIdValue = getEvent()?.id;
+    const requestId = ++activeDocumentsRequestId;
+    if (documentsEventId !== String(eventIdValue ?? '')) {
+      documentsEventId = String(eventIdValue ?? '');
+      applyDocumentRows([]);
+      renderDocumentTables();
+    }
     if (!eventIdValue) {
       applyDocumentRows([]);
       renderDocumentTables();
       return;
     }
 
-    const requestId = ++activeDocumentsRequestId;
-
     try {
-      const res = await fetch(buildDocumentListUrl());
+      const res = await fetch(buildDocumentListUrl(), { cache: 'no-store' });
       const data = await safeJson(res);
 
       if (!res.ok) {
         throw new Error(data?.error || getDocumentMessages('PAY').loadError);
       }
 
-      if (requestId !== activeDocumentsRequestId) {
+      if (requestId !== activeDocumentsRequestId || String(getEvent()?.id) !== String(eventIdValue)) {
         return;
       }
 
       applyDocumentRows(Array.isArray(data) ? data : []);
       renderDocumentTables();
     } catch (error) {
-      if (requestId !== activeDocumentsRequestId) {
+      if (requestId !== activeDocumentsRequestId || String(getEvent()?.id) !== String(eventIdValue)) {
         return;
       }
 
@@ -2093,17 +2099,14 @@ function initPaymentsTab(role) {
     renderSummary();
   });
   window.addEventListener('registration:extras-finance-updated', renderSummary);
-  window.addEventListener('registration:school-registrations-updated', () => {
-    fetchDocumentTables({ showError: false });
-  });
-  window.addEventListener('registration:organizer-registrations-updated', () => {
-    fetchDocumentTables({ showError: false });
-  });
+  window.addEventListener('registration:schools-updated', renderDocumentTables);
+  window.addEventListener('registration:school-registrations-updated', renderDocumentTables);
+  window.addEventListener('registration:organizer-registrations-updated', renderDocumentTables);
   window.addEventListener('registration:panel-changed', (event) => {
-    if (event?.detail?.key === 'payments') {
-      fetchDocumentTables({ showError: true });
-    } else if (event?.detail?.key === 'dashboard' && !isOrganizer) {
-      fetchDocumentTables({ showError: false });
+    // Every entry is a fresh GET. Leaving either view also invalidates pending responses.
+    activeDocumentsRequestId += 1;
+    if (['payments', 'dashboard'].includes(event?.detail?.key)) {
+      fetchDocumentTables({ showError: event.detail.key === 'payments' });
     }
   });
 
@@ -2131,21 +2134,4 @@ function initPaymentsTab(role) {
   });
 
   renderDocumentTables();
-  fetchDocumentTables({ showError: false });
 }
-
-document.addEventListener('DOMContentLoaded', async () => {
-  try {
-    await WaitEventLoaded();
-    await ensureTranslationsReady();
-  } catch (error) {
-    // Keep the payments tab functional even if bootstrap loading fails.
-  }
-
-  const user = getUserFromToken();
-  const role = typeof getRegistrationRole === 'function'
-    ? getRegistrationRole(user)
-    : `${user?.role || ''}`.toLowerCase();
-
-  initPaymentsTab(role);
-});

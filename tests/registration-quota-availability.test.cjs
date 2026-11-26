@@ -12,7 +12,7 @@ function harness({ role = 'school', flag = true } = {}) {
   const dom = new JSDOM(read('registration.html'), { url: 'http://localhost/registration.html?eventId=demo', runScripts: 'outside-only' });
   const w = dom.window;
   const h = { dom, w, calls: [], messages: [], event: { id: 58, registrationQuota: flag, registrationFeeType: 'NON' }, response: null };
-  h.quotas = [{ id: 1, event_id: 58, category_id: 8, style_id: 12, quota: 100, occupied_places: 37 }];
+  h.quotas = [{ id: 1, event_id: 58, category_id: 8, style_id: 12, quota: 100, occupied_places: 37, status: 'OPEN' }];
   h.registrations = [
     { id: 41, event_id: 58, school_id: 2, name: 'Junior group', reg_category_id: 8, reg_style_id: 12, category_name: 'Junior', style_name: 'Hip hop', status: 'CRE', registration_price: 1000, total_amount: 1000, members: [] },
     { id: 42, event_id: 58, school_id: 2, name: 'Unlimited group', category_id: 9, style_id: 12, category_name: 'Adult', style_name: 'Hip hop', status: 'CRE', registration_price: 1000, total_amount: 1000, members: [] }
@@ -22,6 +22,7 @@ function harness({ role = 'school', flag = true } = {}) {
     const parsed = new URL(url);
     const call = { path: parsed.pathname, query: parsed.search, method: options.method || 'GET', headers: Object.fromEntries(new Headers(options.headers)), body: options.body ? JSON.parse(options.body) : undefined };
     h.calls.push(call);
+    if (call.path.endsWith('/info')) return new Response(JSON.stringify(h.eventInfo ?? {}));
     if (call.path.endsWith('/quotas/availability')) {
       const result = await h.response?.();
       return new Response(JSON.stringify(result?.data ?? h.quotas), { status: result?.status ?? 200 });
@@ -86,7 +87,7 @@ function harness({ role = 'school', flag = true } = {}) {
 }
 
 for (const role of ['school', 'organizer', 'admin']) {
-  test(`${role}: authenticated availability appears next to status in desktop and mobile lists`, async () => {
+  test(`${role}: loads authenticated availability for the modal without showing it in desktop or mobile lists`, async () => {
     const h = harness({ role });
     try {
       await h.init();
@@ -99,31 +100,15 @@ for (const role of ['school', 'organizer', 'admin']) {
       }
       const tableId = role === 'school' ? 'registrationsTable' : 'orgRegistrationsTable';
       const mobileId = role === 'school' ? 'registrationsMobileCards' : 'orgRegistrationsMobileCards';
-      const badge = h.el(tableId).querySelector('[data-id="41"] .registration-quota-availability');
-      assert.ok(badge, h.messages.join('\n'));
-      assert.equal(badge.textContent, 'Plazas: 63/100 disponibles');
-      assert.match(badge.getAttribute('aria-label'), /Ocupadas: 37/);
-      assert.equal(badge.previousElementSibling.classList.contains('badge'), true);
-      assert.equal(h.el(mobileId).querySelector('[data-id="41"] .registration-quota-availability').textContent, badge.textContent);
-      assert.equal(h.el(tableId).querySelector('[data-id="42"] .registration-quota-availability'), null);
-      assert.equal(h.el(mobileId).querySelector('[data-id="42"] .registration-quota-availability'), null);
-      const state = h.w.eval('registrationState');
-      const registration = (role === 'school' ? state.registrations : state.organizerRegistrations).find(item => item.id === 41);
-      for (const status of ['PEN', 'VAL', 'REJ', 'DEL', 'CRE']) {
-        registration.status = status;
-        h.w.dispatchEvent(new h.w.CustomEvent('registration:quota-availability-updated'));
+      for (const occupied of [37, 100, 102]) {
+        h.quotas[0].occupied_places = occupied;
+        await h.api.refresh();
+        assert.equal(h.api.getAvailability(8, 12).available, Math.max(0, 100 - occupied));
         for (const id of [tableId, mobileId]) {
-          assert.equal(Boolean(h.el(id).querySelector('[data-id="41"] .registration-quota-availability')), status === 'CRE', `${id}: ${status}`);
+          assert.ok(h.el(id).querySelector('[data-id="41"]'));
+          assert.equal(h.el(id).querySelector('.registration-quota-availability'), null);
+          assert.doesNotMatch(h.el(id).textContent, /Plazas:|No quedan plazas/);
         }
-      }
-      h.quotas[0].occupied_places = 100;
-      await h.api.refresh();
-      const fullTooltip = role === 'school' ? 'Ponte en contacto con la organización' : 'Revisar el cupo para esta categoría/estilo';
-      for (const id of [tableId, mobileId]) {
-        const fullBadge = h.el(id).querySelector('[data-id="41"] .registration-quota-availability');
-        assert.equal(fullBadge.textContent, 'No quedan plazas');
-        assert.equal(fullBadge.dataset.bsTitle, fullTooltip);
-        assert.equal(fullBadge.getAttribute('aria-label'), `No quedan plazas. ${fullTooltip}`);
       }
       assert.deepEqual(h.messages, []);
     } finally { h.close(); }
@@ -138,46 +123,121 @@ test('modal shows selected scope on create/edit, and clears availability for unl
     const mount = h.el('registrationQuotaAvailability');
     assert.equal(mount.classList.contains('d-none'), true);
     await h.select(8, 12);
-    assert.equal(mount.textContent, 'Plazas totales: 100 · Ocupadas: 37 · Disponibles: 63');
+    assert.equal(mount.textContent, 'Plazas disponibles: 63');
     await h.select(8, 13);
     assert.equal(mount.classList.contains('d-none'), true);
     await h.select(9, 12);
     assert.equal(mount.textContent, '');
     await h.click('[data-id="41"].btn-edit-registration');
     assert.equal(h.el('registrationForm').dataset.mode, 'edit');
-    assert.match(mount.textContent, /Disponibles: 63/);
+    assert.match(mount.textContent, /Plazas disponibles: 63/);
     assert.deepEqual(h.messages, []);
   } finally { h.close(); }
 });
 
-test('zero and overbooked scopes show zero available and still allow creating and editing', async () => {
+for (const eventName of ['input', 'change']) {
+  test(`modal updates on category ${eventName} with the only style preselected`, async () => {
+    const h = harness();
+    try {
+      h.w.fetchRegistrationStyles = async () => [{ id: 12, name: 'Hip hop' }];
+      await h.init();
+      await h.click('#createRegistrationBtn');
+      const category = h.el('registrationCategory');
+      const mount = h.el('registrationQuotaAvailability');
+      assert.equal(h.el('registrationStyle').value, '12');
+      assert.equal(mount.classList.contains('d-none'), true);
+      for (const [value, visible] of [['8', true], ['9', false], ['8', true], ['', false]]) {
+        category.value = value;
+        category.dispatchEvent(new h.w.Event(eventName));
+        assert.equal(mount.classList.contains('d-none'), !visible);
+        if (visible) assert.match(mount.textContent, /Plazas disponibles: 63/);
+        else assert.equal(mount.textContent, '');
+      }
+      assert.deepEqual(h.messages, []);
+    } finally { h.close(); }
+  });
+
+  test(`modal updates on style ${eventName} with a category already selected`, async () => {
+    const h = harness();
+    try {
+      await h.init();
+      await h.click('#createRegistrationBtn');
+      h.el('registrationCategory').value = '8';
+      const style = h.el('registrationStyle');
+      const mount = h.el('registrationQuotaAvailability');
+      for (const [value, visible] of [['12', true], ['13', false], ['12', true], ['', false]]) {
+        style.value = value;
+        style.dispatchEvent(new h.w.Event(eventName));
+        assert.equal(mount.classList.contains('d-none'), !visible);
+        if (visible) assert.match(mount.textContent, /Plazas disponibles: 63/);
+        else assert.equal(mount.textContent, '');
+      }
+      assert.deepEqual(h.messages, []);
+    } finally { h.close(); }
+  });
+}
+
+test('full or closed quotas block creation, recover on selection changes and remain editable', async () => {
   const h = harness();
   try {
-    h.quotas[0].occupied_places = 102;
     await h.init();
-    for (const id of ['registrationsTable', 'registrationsMobileCards']) {
-      const badge = h.el(id).querySelector('.registration-quota-availability');
-      assert.equal(badge.textContent, 'No quedan plazas');
-      assert.equal(badge.dataset.bsToggle, 'tooltip');
-      assert.equal(badge.dataset.bsTitle, 'Ponte en contacto con la organización');
-      assert.equal(badge.tabIndex, 0);
-    }
     await h.click('#createRegistrationBtn');
-    await h.select(8, 12);
-    assert.match(h.el('registrationQuotaAvailability').textContent, /Disponibles: 0/);
-    assert.equal(h.el('registrationSaveBtn').disabled, false);
     h.el('choreographyName').value = 'New group';
+    const mount = h.el('registrationQuotaAvailability');
+    assert.equal(mount.parentElement, h.el('registrationCategory').parentElement.parentElement);
+    for (const [status, quota, occupied] of [['CLOSE', 100, 37], ['OPEN', 0, 0], ['OPEN', 100, 100], ['OPEN', 100, 102]]) {
+      Object.assign(h.quotas[0], { status, quota, occupied_places: occupied });
+      await h.api.refresh();
+      await h.select(8, 12);
+      assert.equal(mount.textContent, 'Esta categoría está cerrada. Ponte en contacto con el organizador.');
+      assert.equal(mount.classList.contains('registration-quota-modal-info--closed'), true);
+      assert.ok(mount.querySelector('strong'));
+      assert.equal(h.el('registrationSaveBtn').disabled, true);
+      h.el('registrationForm').dispatchEvent(new h.w.Event('submit', { bubbles: true, cancelable: true }));
+      await tick();
+      assert.equal(h.calls.some(call => call.method === 'POST' && call.path.endsWith('/choreographies')), false);
+      await h.select(9, 12);
+      assert.equal(mount.classList.contains('d-none'), true);
+      assert.equal(h.el('registrationSaveBtn').disabled, false);
+      await h.select(8, 13);
+      assert.equal(h.el('registrationSaveBtn').disabled, false);
+    }
+    Object.assign(h.quotas[0], { status: 'OPEN', quota: 100, occupied_places: 37 });
+    await h.select(8, 12);
+    await h.api.refresh();
+    assert.equal(mount.textContent, 'Plazas disponibles: 63');
+    assert.equal(mount.classList.contains('registration-quota-modal-info--closed'), false);
+    assert.equal(h.el('registrationSaveBtn').disabled, false);
     await h.click('#registrationSaveBtn');
     assert.ok(h.calls.some(call => call.method === 'POST' && call.path.endsWith('/choreographies')));
+    h.quotas[0].status = 'CLOSE';
+    await h.api.refresh();
     await h.click('[data-id="41"].btn-edit-registration');
-    await h.select(8, 12);
+    assert.equal(h.el('registrationSaveBtn').disabled, false);
     await h.click('#registrationSaveBtn');
     assert.ok(h.calls.some(call => call.method === 'PUT' && call.path.endsWith('/choreographies/41')));
-    h.quotas[0].quota = 0;
-    h.quotas[0].occupied_places = 0;
-    await h.api.refresh();
-    assert.equal(h.el('registrationsTable').querySelector('.registration-quota-availability').textContent, 'No quedan plazas');
     assert.deepEqual(h.messages, []);
+  } finally { h.close(); }
+});
+
+test('closed warning uses email_contact from event info, omitting empty contacts', async () => {
+  const h = harness();
+  try {
+    h.quotas[0].status = 'CLOSE';
+    await h.init();
+    await h.click('#createRegistrationBtn');
+    await h.select(8, 12);
+    const mount = h.el('registrationQuotaAvailability');
+    const message = 'Esta categoría está cerrada. Ponte en contacto con el organizador.';
+    for (const [email, suffix] of [[' contacto@example.com ', ' (contacto@example.com)'], ['', ''], [null, ''], ['<img src=x>', ' (<img src=x>)']]) {
+      h.eventInfo = { email_contact: email };
+      await h.w.loadRegistrationEventInfo();
+      assert.equal(mount.textContent, message + suffix);
+      assert.equal(mount.querySelector('img'), null);
+    }
+    h.quotas[0].status = 'OPEN';
+    await h.api.refresh();
+    assert.equal(mount.textContent, 'Plazas disponibles: 63');
   } finally { h.close(); }
 });
 
@@ -211,7 +271,7 @@ test('a failed or malformed response clears stale counts, explains the failure a
     h.response = null;
     await h.click('#registrationQuotaAvailabilityRetry');
     assert.equal(h.el('registrationQuotaAvailabilityFeedback').classList.contains('d-none'), true);
-    assert.match(h.el('registrationQuotaAvailability').textContent, /Disponibles: 63/);
+    assert.match(h.el('registrationQuotaAvailability').textContent, /Plazas disponibles: 63/);
     h.quotas = [];
     await h.api.refresh();
     assert.equal(h.el('registrationQuotaAvailability').classList.contains('d-none'), true);
@@ -223,10 +283,12 @@ test('ignores responses after changing event and refreshes labels when changing 
   const h = harness();
   try {
     await h.init();
+    await h.click('#createRegistrationBtn');
+    await h.select(8, 12);
     h.w.localStorage.setItem('lang', 'en');
     h.w.document.documentElement.lang = 'en';
     await tick();
-    assert.equal(h.el('registrationsTable').querySelector('.registration-quota-availability').textContent, 'Places: 63/100 available');
+    assert.match(h.el('registrationQuotaAvailability').textContent, /Available places: 63/);
     let release;
     h.response = () => new Promise(resolve => { release = resolve; });
     const request = h.api.refresh();

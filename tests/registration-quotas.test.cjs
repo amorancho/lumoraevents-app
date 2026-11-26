@@ -14,7 +14,7 @@ function harness({ role = 'organizer', flag = true, initial = false } = {}) {
   const h = { dom, w, calls: [], overrides: {}, confirm: true, event: { id: 58, registrationQuota: flag } };
   h.categories = [{ id: 8, name: 'Junior' }, { id: 9, name: '<img src=x>' }];
   h.styles = [{ id: 12, name: 'Contemporary' }, { id: 13, name: 'Hip hop' }];
-  h.quotas = [{ id: 1, event_id: 58, category_id: 8, style_id: 12, quota: 100, occupied_places: 7 }];
+  h.quotas = [{ id: 1, event_id: 58, category_id: 8, style_id: 12, quota: 100, occupied_places: 7, status: 'OPEN' }];
   w.Headers = Headers;
   w.fetch = async (url, options = {}) => {
     const parsed = new URL(url);
@@ -26,6 +26,11 @@ function harness({ role = 'organizer', flag = true, initial = false } = {}) {
       if (call.method === 'GET') result = { data: call.path.endsWith('/categories') ? h.categories : call.path.endsWith('/styles') ? h.styles : h.quotas };
       if (call.method === 'POST') { h.quotas.push({ id: 99, ...call.body, occupied_places: 0 }); result = { status: 201, data: 99 }; }
       if (call.method === 'PUT') { Object.assign(h.quotas.find(item => item.id === id), call.body); result = { data: { message: 'Updated' } }; }
+      if (call.method === 'PATCH') {
+        const item = h.quotas.find(item => item.id === Number(call.path.split('/').at(-2)));
+        item.status = call.body.status;
+        result = { data: { id: item.id, status: item.status } };
+      }
       if (call.method === 'DELETE') { h.quotas = h.quotas.filter(item => item.id !== id); result = { data: { message: 'Deleted' } }; }
     }
     return new Response(JSON.stringify(result.data), { status: result.status || 200 });
@@ -73,14 +78,18 @@ for (const role of ['organizer', 'admin']) {
       assert.equal(h.el('sTable').rows[0].cells[3].textContent, '7');
       assert.equal(h.el('sTable').rows[0].cells[3].dataset.label, 'Plazas ocupadas');
       await h.submit(8, 13, 0);
-      assert.deepEqual(h.writes()[0].body, { event_id: 58, category_id: 8, style_id: 13, quota: 0 });
+      assert.deepEqual(h.writes()[0].body, { event_id: 58, category_id: 8, style_id: 13, quota: 0, status: 'OPEN' });
       assert.equal(h.el('sTable').rows[1].cells[3].textContent, '0');
       await h.click('[data-quota-action="edit"][data-id="99"]');
       assert.equal(h.el('Value').value, '0');
+      assert.equal(h.el('Status').value, 'OPEN');
+      h.el('Status').value = 'CLOSE';
       await h.submit(9, 12, 25);
       assert.equal(h.writes()[1].method, 'PUT');
       assert.equal(h.writes()[1].path, '/api/registrations/quotas/99');
-      assert.deepEqual(h.writes()[1].body, { event_id: 58, category_id: 9, style_id: 12, quota: 25 });
+      assert.deepEqual(h.writes()[1].body, { event_id: 58, category_id: 9, style_id: 12, quota: 25, status: 'CLOSE' });
+      assert.equal(h.el('sTable').rows[1].cells[4].textContent, 'Cerrado');
+      assert.equal(h.el('Status').value, 'OPEN');
       assert.equal(h.el('sTable').querySelector('img'), null);
       h.confirm = false;
       await h.click('[data-quota-action="delete"][data-id="99"]');
@@ -97,6 +106,82 @@ for (const role of ['organizer', 'admin']) {
     } finally { h.close(); }
   });
 }
+
+for (const role of ['organizer', 'admin']) {
+  test(`${role}: opens and closes quotas through the authenticated status endpoint`, async () => {
+    const h = harness({ role });
+    try {
+      await h.open();
+      const original = { ...h.quotas[0] };
+      assert.equal(h.el('sTable').rows[0].cells[4].textContent, 'Abierto');
+      await h.click('[data-quota-action="edit"][data-id="1"]');
+      h.el('Value').value = '123';
+      await h.click('[data-quota-action="close"][data-id="1"]');
+      const call = h.writes()[0];
+      assert.equal(call.method, 'PATCH');
+      assert.equal(call.path, '/api/registrations/quotas/1/status');
+      assert.deepEqual(call.body, { status: 'CLOSE' });
+      assert.equal(call.headers.authorization, 'Bearer test-token');
+      assert.equal(call.headers['content-type'], 'application/json');
+      assert.equal(call.headers['x-event-id'], role === 'admin' ? '58' : undefined);
+      assert.deepEqual(h.quotas[0], { ...original, status: 'CLOSE' });
+      assert.equal(h.el('sTable').rows[0].cells[4].textContent, 'Cerrado');
+      assert.equal(h.el('Status').value, 'CLOSE');
+      assert.equal(h.el('Value').value, '123', 'status actions preserve unsaved form values');
+      await h.click('[data-quota-action="open"][data-id="1"]');
+      assert.deepEqual(h.writes()[1].body, { status: 'OPEN' });
+      assert.equal(h.el('sTable').rows[0].cells[4].textContent, 'Abierto');
+      await h.click('#registrationQuotaCancel');
+      h.el('Status').value = 'CLOSE';
+      await h.submit(9, 13, 10);
+      assert.equal(h.writes()[2].body.status, 'CLOSE');
+      await h.click('[data-quota-action="edit"][data-id="99"]');
+      assert.equal(h.el('Status').value, 'CLOSE');
+    } finally { h.close(); }
+  });
+}
+
+test('status validation and server errors preserve the current status and allow retry', async () => {
+  const h = harness();
+  try {
+    await h.open();
+    h.el('Status').value = '';
+    await h.submit(9, 13, 10);
+    assert.equal(h.writes().length, 0);
+    assert.equal(h.el('Status').validity.customError, true);
+    await h.click('[data-quota-action="edit"][data-id="1"]');
+    for (const code of [400, 401, 403, 404, 409]) {
+      h.overrides['PATCH /api/registrations/quotas/1/status'] = () => ({ status: code, data: { error: `Status error ${code}` } });
+      await h.click('[data-quota-action="close"][data-id="1"]');
+      assert.equal(h.el('sFeedback').textContent, `Status error ${code}`);
+      assert.equal(h.el('sTable').rows[0].cells[4].textContent, 'Abierto');
+      assert.equal(h.el('Status').value, 'OPEN');
+      assert.equal(h.el('Save').disabled, false);
+    }
+    delete h.overrides['PATCH /api/registrations/quotas/1/status'];
+    await h.click('[data-quota-action="close"][data-id="1"]');
+    assert.equal(h.el('sTable').rows[0].cells[4].textContent, 'Cerrado');
+  } finally { h.close(); }
+});
+
+test('status actions block duplicate requests and stop writing after an event change', async () => {
+  const h = harness();
+  try {
+    await h.open();
+    let release;
+    h.overrides['PATCH /api/registrations/quotas/1/status'] = () => new Promise(resolve => { release = resolve; });
+    await h.click('[data-quota-action="close"][data-id="1"]');
+    await h.click('[data-quota-action="close"][data-id="1"]');
+    assert.equal(h.writes().length, 1);
+    assert.equal(h.el('Status').disabled, true);
+    h.event = { id: 59, registrationQuota: true };
+    release({ data: { id: 1, status: 'CLOSE' } });
+    await tick();
+    assert.equal(h.el('Status').disabled, true);
+    await h.click('[data-quota-action="close"][data-id="1"]');
+    assert.equal(h.writes().length, 1);
+  } finally { h.close(); }
+});
 
 test('disabled flag, school and guest hide the menu/panel and never request quotas, even via hash', async () => {
   for (const options of [{ flag: false }, { role: 'school' }, { role: 'guest' }]) {

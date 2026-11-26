@@ -1,4 +1,12 @@
 {
+  "registration_quotas_availability_closed": "Esta categoria/estilo está fechado. Contacta o organizador.",
+  "registration_quotas_availability_remaining": "Vagas disponíveis: {available}",
+  "registration_quotas_status": "Estado",
+  "registration_quotas_status_open": "Aberto",
+  "registration_quotas_status_close": "Fechado",
+  "registration_quotas_open": "Abrir",
+  "registration_quotas_close": "Fechar",
+  "registration_quotas_invalid_status": "Selecione um estado válido.",
   "registration_quotas_availability_review": "Rever as vagas para esta categoria/estilo",
   "registration_quotas_availability_full": "Não há vagas disponíveis",
   "registration_quotas_availability_contact": "Entre em contacto com a organização",
