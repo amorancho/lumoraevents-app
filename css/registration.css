@@ -2791,7 +2791,7 @@
   }
   #payments .registration-payments-organizer-filters {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.5rem;
     margin: 0;
   }
@@ -2814,7 +2814,16 @@
     padding-left: 0.65rem;
     font-size: 0.75rem;
   }
-  #payments .registration-payments-export .btn,
+  #payments .registration-payments-export {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  #payments #registrationPaymentsOrganizerAddBtn {
+    flex: 1;
+    min-width: 0;
+    white-space: normal !important;
+  }
+  #payments #registrationPaymentsCopyTsvBtn,
   #payments #registrationPaymentsCopyTsvBtnSchool,
   #payments #registrationInvoicesCopyTsvBtn,
   #payments #registrationInvoicesCopyTsvBtnSchool {
