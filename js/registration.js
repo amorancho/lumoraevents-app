@@ -815,6 +815,7 @@ function getSafeRegistrationDocumentUrl(rawUrl) {
 
 function setupRegistrationNavigation(role) {
   registrationNavigationState.role = role;
+  applyIndividualRegistrationVisibility();
   // Register the single payment loader before the first panel-changed event.
   initPaymentsTab(role);
   initRegistrationDashboard(role);
@@ -840,7 +841,23 @@ function getVisibleRegistrationNavItems(role = registrationNavigationState.role)
     && (!item.quotas || getEvent()?.registrationQuota === true))
     .map(item => role === 'school' && item.key === 'extras-workshops'
       ? { ...item, labelKey: 'extras_workshops_packs', fallbackLabel: 'Workshops / Galas / Packs' }
-      : item);
+      : item.key === 'payments' && getEvent()?.registrationIndividual === true
+        ? { ...item, labelKey: 'registration_tab_payments', fallbackLabel: 'Payments' }
+        : item);
+}
+
+function applyIndividualRegistrationVisibility() {
+  if (getEvent()?.registrationIndividual !== true) return;
+
+  document.querySelector('#org-registrations .registration-col-identity')?.classList.add('d-none');
+  document.querySelectorAll('#org-registrations .registration-col-group, #competitions .registration-col-group')
+    .forEach(header => {
+      header.dataset.i18n = 'registration_table_participant';
+      header.textContent = t('registration_table_participant', 'Participant');
+    });
+  document.getElementById('registrationPaymentsSubtabInvoices')?.closest('li')?.classList.add('d-none');
+  document.getElementById('registrationPaymentsPanelInvoices')?.classList.add('d-none');
+  document.getElementById('schoolDetailDocument')?.parentElement?.classList.add('d-none');
 }
 
 function hasRegistrationPaymentInstructions() {
@@ -8297,7 +8314,9 @@ function createRegistrationMobileCard(options = {}) {
   ));
   card.appendChild(checks);
 
-  const actions = Array.isArray(options.actions) ? options.actions : [];
+  const actions = (Array.isArray(options.actions) ? options.actions : [])
+    .filter(action => getEvent()?.registrationIndividual !== true
+      || !['btn-org-registration-members', 'btn-members-registration'].includes(action.className));
   if (actions.length) {
     const actionsEl = document.createElement('div');
     actionsEl.className = 'registration-mobile-card__actions';
@@ -9490,7 +9509,8 @@ function initOrganizerRegistrationsTab() {
         const groupRow = document.createElement('tr');
         groupRow.className = 'org-registrations-category-row';
         const cell = document.createElement('th');
-        cell.colSpan = tableBody.closest('table').tHead.rows[0].cells.length;
+        cell.colSpan = tableBody.closest('table').tHead.rows[0].cells.length
+          - (getEvent()?.registrationIndividual === true ? 1 : 0);
         cell.setAttribute('data-tsv-ignore', 'true');
         cell.appendChild(heading);
         groupRow.appendChild(cell);
@@ -9507,6 +9527,7 @@ function initOrganizerRegistrationsTab() {
 
         const schoolCell = document.createElement('td');
         schoolCell.textContent = registration.school_name || registration.school?.name || '-';
+        schoolCell.classList.toggle('d-none', getEvent()?.registrationIndividual === true);
         row.appendChild(schoolCell);
 
         const nameCell = document.createElement('td');
@@ -9678,7 +9699,7 @@ function initOrganizerRegistrationsTab() {
         actionGroup.appendChild(notesBtn);
         actionGroup.appendChild(validateBtn);
         actionGroup.appendChild(rejectBtn);
-        actionGroup.appendChild(membersBtn);
+        if (getEvent()?.registrationIndividual !== true) actionGroup.appendChild(membersBtn);
         actionGroup.appendChild(detailsBtn);
         actionsCell.appendChild(actionGroup);
         row.appendChild(actionsCell);
@@ -9688,7 +9709,8 @@ function initOrganizerRegistrationsTab() {
         mobileCards.appendChild(createRegistrationMobileCard({
           registration,
           name: registration.name || registration.choreography || '-',
-          schoolName: registration.school_name || registration.school?.name || '-',
+          schoolName: getEvent()?.registrationIndividual === true
+            ? '' : registration.school_name || registration.school?.name || '-',
           statusInfo,
           categoryName,
           styleName,
@@ -9742,7 +9764,8 @@ function initOrganizerRegistrationsTab() {
     mobileCards.innerHTML = '';
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 12;
+    cell.colSpan = getEvent()?.registrationIndividual === true
+      ? tableBody.closest('table').tHead.rows[0].cells.length - 1 : 12;
     cell.className = 'text-danger';
     cell.textContent = message;
     row.appendChild(cell);

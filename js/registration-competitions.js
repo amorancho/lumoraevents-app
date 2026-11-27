@@ -1762,7 +1762,7 @@
       actionGroup.appendChild(notesBtn);
       actionGroup.appendChild(editBtn);
       actionGroup.appendChild(audioBtn);
-      actionGroup.appendChild(membersBtn);
+      if (getEvent()?.registrationIndividual !== true) actionGroup.appendChild(membersBtn);
       actionGroup.appendChild(confirmBtn);
       actionGroup.appendChild(deleteBtn);
       actionsCell.appendChild(actionGroup);
