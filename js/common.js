@@ -231,6 +231,8 @@ eventReadyPromise = new Promise(async (resolve, reject) => {
         hasRegistration: data.has_registrations === 1,
         registrationStart: data.registration_start,
         registrationEnd: data.registration_end,
+        regWsStart: data.reg_ws_start,
+        regWsEnd: data.reg_ws_end,
         criteriaConfig: data.criteria_config,
         totalSystem: data.total_system,
         canDecidePositions: data.can_decide_positions === 1,

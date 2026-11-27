@@ -506,6 +506,8 @@ function openEditEventModal(eventObj) {
   document.getElementById('registration_end').value = eventObj.registration_end
     ? eventObj.registration_end.slice(0, 10)
     : '';
+  document.getElementById('reg_ws_start').value = eventObj.reg_ws_start ? String(eventObj.reg_ws_start).slice(0, 10) : '';
+  document.getElementById('reg_ws_end').value = eventObj.reg_ws_end ? String(eventObj.reg_ws_end).slice(0, 10) : '';
   document.getElementById('music_extra_time').value = eventObj.music_extra_time ?? 0;
   document.getElementById('registration_fee_cost').value = formatCentsToCurrencyValue(eventObj.registration_fee_cost);
   document.getElementById('notice_text').value = eventObj.notice_text;
@@ -566,6 +568,8 @@ async function saveEvent() {
     has_masters: document.getElementById('has_masters').checked ? 1 : 0,
     registration_start: document.getElementById('registration_start').value || null,
     registration_end: document.getElementById('registration_end').value || null,
+    reg_ws_start: document.getElementById('reg_ws_start').value || null,
+    reg_ws_end: document.getElementById('reg_ws_end').value || null,
     music_extra_time: parseInt(document.getElementById('music_extra_time').value, 10) || 0,
     registration_fee_cost: parseCurrencyValueToCents(document.getElementById('registration_fee_cost').value),
     notice_text: document.getElementById('notice_text').value.trim(),

@@ -51,6 +51,8 @@
   "registration_config_title": "Configuration des inscriptions",
   "registration_start_label": "Debut des inscriptions",
   "registration_end_label": "Fin des inscriptions",
+  "reg_ws_start_label": "Début des réservations aux workshops",
+  "reg_ws_end_label": "Fin des réservations aux workshops",
   "music_extra_time_label": "T. extra musique (sec.)",
   "registration_fee_type_label": "Type de frais d'inscription",
   "registration_fee_type_non": "Aucuns frais",

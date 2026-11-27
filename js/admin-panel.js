@@ -804,7 +804,7 @@ function buildEventFormTabs(){
       appendNodeToTabContent(welcomeContent,node);
       return;
     }
-    if(nodeContainsIds(node,['visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','show_flags','send_stats_code','hide_judges','has_penalties','has_clubs','hide_school_info','criteria_per_judge','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','has_accreditations','registration_start','registration_end','music_extra_time','registration_fee_type','registration_fee_cost','registration_min_age','registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc','has_workshops_services','min_styles','category_class_type','score_type','criteria_config','total_system','can_decide_positions','restrict_voting','results_filter','tied_positions'])){
+    if(nodeContainsIds(node,['visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','show_flags','send_stats_code','hide_judges','has_penalties','has_clubs','hide_school_info','criteria_per_judge','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','has_accreditations','registration_start','registration_end','reg_ws_start','reg_ws_end','music_extra_time','registration_fee_type','registration_fee_cost','registration_min_age','registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc','has_workshops_services','min_styles','category_class_type','score_type','criteria_config','total_system','can_decide_positions','restrict_voting','results_filter','tied_positions'])){
       appendNodeToTabContent(configContent,node);
       return;
     }
@@ -847,7 +847,7 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
   const fieldIds=[
     'visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics',
     'show_flags','send_stats_code','hide_judges','judge_feedback','judges_vis_results','judges_can_change_votes','has_masters',
-    'has_penalties','has_clubs','hide_school_info','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','has_accreditations','registration_start','registration_end','music_extra_time','registration_fee_type','registration_fee_cost','registration_min_age',
+    'has_penalties','has_clubs','hide_school_info','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','has_accreditations','registration_start','registration_end','reg_ws_start','reg_ws_end','music_extra_time','registration_fee_type','registration_fee_cost','registration_min_age',
     'registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc','has_workshops_services','reg_price_per_pax','reg_individual','reg_quota','reg_import_source','reg_price_discount',
     'category_class_type','score_type','criteria_config','total_system','criteria_per_judge',
     'min_styles','can_decide_positions','restrict_voting','results_filter',
@@ -879,7 +879,7 @@ function rebuildEventDetailTabLayouts(configContent,registrationsContent){
     fields.tied_positions,fields.send_stats_code,fields.judge_feedback
   ],'col-12 col-md-6 col-lg-4');
   appendConfigRow(registrationsContent,[
-    fields.registration_start,fields.registration_end,fields.music_extra_time,fields.registration_fee_type,fields.registration_fee_cost,fields.registration_min_age
+    fields.registration_start,fields.registration_end,fields.reg_ws_start,fields.reg_ws_end,fields.music_extra_time,fields.registration_fee_type,fields.registration_fee_cost,fields.registration_min_age
   ],'col-12 col-md-6 col-lg');
   appendConfigRow(registrationsContent,[
     fields.registration_finance,fields.registration_not_new_school,fields.registration_not_new_group,fields.show_gender
@@ -1339,6 +1339,8 @@ function populateEventForm(eventObj){
   ['visible','trial','visible_judges','visible_participants','visible_schedule','visible_results','visible_statistics','has_clubs','hide_school_info','has_penalties','has_registrations','has_audience_voting','has_multiple_scenarios','show_results_details','show_only_podium','has_accreditations','judges_vis_results','judges_can_change_votes','has_masters','show_flags','hide_judges','notice_active','registration_finance','registration_not_new_school','registration_not_new_group','show_gender','registration_authorizations','registration_show_id_doc','has_workshops_services'].forEach((id)=>{document.getElementById(id).checked=Number(eventObj[id])===1;});
   document.getElementById('registration_start').value=eventObj.registration_start?String(eventObj.registration_start).slice(0,10):'';
   document.getElementById('registration_end').value=eventObj.registration_end?String(eventObj.registration_end).slice(0,10):'';
+  document.getElementById('reg_ws_start').value=eventObj.reg_ws_start?String(eventObj.reg_ws_start).slice(0,10):'';
+  document.getElementById('reg_ws_end').value=eventObj.reg_ws_end?String(eventObj.reg_ws_end).slice(0,10):'';
   document.getElementById('music_extra_time').value=eventObj.music_extra_time??0;
   const feeType=eventObj.registration_fee_type;
   document.getElementById('registration_fee_type').value=['NON','SCH','REG','PAR'].includes(feeType)
@@ -1515,6 +1517,8 @@ function collectEventFormData(){
     has_masters:document.getElementById('has_masters').checked?1:0,
     registration_start:document.getElementById('registration_start').value||null,
     registration_end:document.getElementById('registration_end').value||null,
+    reg_ws_start:document.getElementById('reg_ws_start').value||null,
+    reg_ws_end:document.getElementById('reg_ws_end').value||null,
     music_extra_time:parseInt(document.getElementById('music_extra_time').value,10)||0,
     registration_fee_type:document.getElementById('registration_fee_type').value,
     registration_fee_cost:parseCurrencyValueToCents(document.getElementById('registration_fee_cost').value),

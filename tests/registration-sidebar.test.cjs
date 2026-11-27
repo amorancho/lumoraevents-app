@@ -108,3 +108,41 @@ test('mobile retains the original expanded header without desktop mode controls 
   assert.equal(mobile.innerHTML, before);
   h.dom.window.close();
 });
+
+test('workshop status uses its own inclusive dates, falls back per missing date and appears only when enabled', () => {
+  const h = harness();
+  const w = h.w;
+  try {
+    w.eval(source.slice(source.indexOf('function getRegistrationSidebarStatusInfo('), source.indexOf('function getRegistrationSidebarCopy()')));
+    w.getRegistrationDayDate = value => {
+      if (!value) return null;
+      const [year, month, day] = value.slice(0, 10).split('-').map(Number);
+      return new w.Date(year, month - 1, day);
+    };
+    const now = new w.Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const event = { hasWorkshopsServices: true, registrationStart: '2000-01-01', registrationEnd: '2099-12-31' };
+    w.getEvent = () => event;
+    for (const [start, end, state] of [
+      ['2000-01-01', '2001-01-01', 'closed'],
+      ['2098-01-01', '2099-01-01', 'closed'],
+      [today, today, 'open'],
+      ['', '', 'open'],
+      [null, '2001-01-01', 'closed'],
+      ['2098-01-01', undefined, 'closed']
+    ]) {
+      event.regWsStart = start; event.regWsEnd = end;
+      w.renderRegistrationSidebar('school');
+      for (const parent of [h.mount, w.document.getElementById('registrationSidebarToggle')]) {
+        const badges = parent.querySelectorAll('.registration-sidebar-status');
+        assert.equal(badges.length, 2);
+        assert.equal(badges[0].dataset.state, 'open');
+        assert.equal(badges[1].dataset.state, state);
+        assert.equal(badges[1].textContent.trim(), state === 'open' ? 'Insc. workshops abierta' : 'Insc. workshops cerrada');
+      }
+    }
+    event.hasWorkshopsServices = false;
+    w.renderRegistrationSidebar('school');
+    assert.equal(h.mount.querySelectorAll('.registration-sidebar-status').length, 1);
+  } finally { h.dom.window.close(); }
+});

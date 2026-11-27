@@ -917,19 +917,24 @@ function formatRegistrationSidebarRange(startValue, endValue) {
   return `${startLabel} - ${endLabel}`;
 }
 
-function getRegistrationSidebarStatusInfo() {
+function getRegistrationSidebarStatusInfo(workshops = false) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const startDate = getRegistrationDayDate(getEvent()?.registrationStart);
-  const endDate = getRegistrationDayDate(getEvent()?.registrationEnd);
+  const event = getEvent();
+  const startDate = getRegistrationDayDate(workshops ? (event?.regWsStart || event?.registrationStart) : event?.registrationStart);
+  const endDate = getRegistrationDayDate(workshops ? (event?.regWsEnd || event?.registrationEnd) : event?.registrationEnd);
   const isOpen = Boolean(startDate && endDate && today >= startDate && today <= endDate);
 
   return {
     isOpen,
-    label: isOpen
-      ? t('registration_sidebar_status_open', 'Inscripciones abiertas')
-      : t('registration_sidebar_status_closed', 'Inscripciones cerradas'),
+    label: workshops
+      ? (isOpen
+        ? t('registration_sidebar_workshops_open', 'Insc. workshops abierta')
+        : t('registration_sidebar_workshops_closed', 'Insc. workshops cerrada'))
+      : (isOpen
+        ? t('registration_sidebar_status_open', 'Inscripciones abiertas')
+        : t('registration_sidebar_status_closed', 'Inscripciones cerradas')),
     icon: isOpen ? 'bi-unlock-fill' : 'bi-lock-fill',
     state: isOpen ? 'open' : 'closed'
   };
@@ -939,6 +944,7 @@ function getRegistrationSidebarCopy() {
   return {
     eventDates: t('registration_sidebar_event_dates', 'Fechas del evento'),
     registrationDates: t('registration_sidebar_registration_dates', 'Periodo de inscripcion'),
+    workshopDates: t('registration_sidebar_workshop_dates', 'Periodo de inscripción workshops'),
     menuButton: t('registration_sidebar_menu_button', 'Open menu'),
     closeButton: t('registration_sidebar_close_button', 'Close')
   };
@@ -948,6 +954,7 @@ function buildRegistrationSidebarHeroMarkup() {
   const copy = getRegistrationSidebarCopy();
   const eventObj = getEvent();
   const statusInfo = getRegistrationSidebarStatusInfo();
+  const workshopsStatus = eventObj?.hasWorkshopsServices ? getRegistrationSidebarStatusInfo(true) : null;
   const eventRange = formatRegistrationSidebarRange(eventObj?.start, eventObj?.end);
   const registrationRange = formatRegistrationSidebarRange(eventObj?.registrationStart, eventObj?.registrationEnd);
   const competitionRulesMarkup = `
@@ -969,11 +976,17 @@ function buildRegistrationSidebarHeroMarkup() {
 
   return `
     <div class="registration-sidebar-meta">
-      <div>
+      <div class="d-flex flex-column align-items-start gap-2">
         <span class="registration-sidebar-status" data-state="${statusInfo.state}">
           <i class="bi ${statusInfo.icon}"></i>
           <span>${statusInfo.label}</span>
         </span>
+        ${workshopsStatus ? `
+          <span class="registration-sidebar-status" data-registration-status="workshops" data-state="${workshopsStatus.state}">
+            <i class="bi ${workshopsStatus.icon}"></i>
+            <span>${workshopsStatus.label}</span>
+          </span>
+        ` : ''}
       </div>
       <div class="registration-sidebar-meta-row">
         <div class="registration-sidebar-meta-label">
@@ -989,6 +1002,15 @@ function buildRegistrationSidebarHeroMarkup() {
         </div>
         <div class="registration-sidebar-meta-value">${registrationRange}</div>
       </div>
+      ${workshopsStatus ? `
+        <div class="registration-sidebar-meta-row" data-registration-dates="workshops">
+          <div class="registration-sidebar-meta-label">
+            <i class="bi bi-calendar-check"></i>
+            <span>${copy.workshopDates}</span>
+          </div>
+          <div class="registration-sidebar-meta-value">${formatRegistrationSidebarRange(eventObj.regWsStart || eventObj.registrationStart, eventObj.regWsEnd || eventObj.registrationEnd)}</div>
+        </div>
+      ` : ''}
       ${competitionRulesMarkup}
       ${paymentInstructionsMarkup}
     </div>

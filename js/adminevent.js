@@ -1447,7 +1447,7 @@ async function loadEventData(eventId) {
 
     const f = id => document.getElementById(id);
 
-    const dateFields = ['start', 'end', 'registration_start', 'registration_end'];
+    const dateFields = ['start', 'end', 'registration_start', 'registration_end', 'reg_ws_start', 'reg_ws_end'];
 
     for (let key in data) {
       const input = f(key);
@@ -1519,6 +1519,8 @@ async function saveEventData(eventId) {
     restrict_voting: Number(f('restrict_voting').value || 0),
     registration_start: f('registration_start').value || null,
     registration_end: f('registration_end').value || null,
+    reg_ws_start: f('reg_ws_start').value || null,
+    reg_ws_end: f('reg_ws_end').value || null,
     music_extra_time: Number(f('music_extra_time').value || 0),
     registration_fee_type: f('registration_fee_type').value,
     registration_fee_cost: parseCurrencyValueToCents(f('registration_fee_cost').value)

@@ -50,6 +50,8 @@
   "registration_config_title": "Registration Settings",
   "registration_start_label": "Registration start",
   "registration_end_label": "Registration end",
+  "reg_ws_start_label": "Workshop booking start",
+  "reg_ws_end_label": "Workshop booking end",
   "music_extra_time_label": "Extra music time (sec.)",
   "registration_fee_type_label": "Registration fee type",
   "registration_fee_type_non": "No fee",

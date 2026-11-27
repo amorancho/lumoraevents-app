@@ -174,6 +174,101 @@ function harness({ role = 'school', flag = true, overrides = {} } = {}) {
 
 const financeCalls = h => h.calls.filter(call => call.path === '/admin/finance-summary' || call.path === '/account/summary');
 
+test('school workshop catalog opens Workshops when no packs are defined and preserves manual tab changes', async () => {
+  const h = harness();
+  h.data.packs = [];
+  h.data.workshops.forEach(item => { item.ws_type = 'WS'; });
+  try {
+    await h.init('extras-workshops');
+    const mount = h.w.document.getElementById('extras-workshops');
+    const selected = () => mount.querySelector('[role="tab"][aria-selected="true"]');
+    assert.equal(selected().dataset.extrasCatalogTab, 'workshops');
+    assert.equal(selected().tabIndex, 0);
+    assert.equal(mount.querySelector('#extras-workshops-workshops-catalog').hidden, false);
+    assert.equal(mount.querySelector('#extras-workshops-packs-catalog').hidden, true);
+    await h.navigate('dashboard'); await h.navigate('extras-workshops');
+    assert.equal(selected().dataset.extrasCatalogTab, 'workshops');
+    await h.click('[data-extras-catalog-tab="galas"]');
+    await h.click('#extras-workshops [data-extras-action="catalog-refresh"]');
+    assert.equal(selected().dataset.extrasCatalogTab, 'galas');
+    assert.equal(mount.querySelector('#extras-workshops-galas-catalog').hidden, false);
+  } finally { h.close(); }
+});
+
+test('school workshop catalog still opens Packs when packs are defined', async () => {
+  const h = harness();
+  try {
+    await h.init('extras-workshops');
+    const mount = h.w.document.getElementById('extras-workshops');
+    assert.equal(mount.querySelector('[role="tab"][aria-selected="true"]').dataset.extrasCatalogTab, 'packs');
+    assert.equal(mount.querySelector('#extras-workshops-packs-catalog').hidden, false);
+  } finally { h.close(); }
+});
+
+for (const role of ['school', 'organizer', 'admin']) {
+  for (const initialPanel of ['dashboard', 'payments']) {
+    test(`Payments fee visibility: ${role} entering through ${initialPanel} keeps the fee independent of extras`, async () => {
+      const h = harness({ role });
+      try {
+        const state = h.w.eval('registrationState');
+        const rows = [
+          { id: 1, school_id: 2, category_id: 1, status: 'VAL', total_amount: 1000, members: [{ participant_id: 11 }] },
+          { id: 2, school_id: 2, category_id: 1, status: 'PEN', total_amount: 2000, members: [{ participant_id: 12 }] }
+        ];
+        state.registrations = rows;
+        state.organizerRegistrations = rows;
+        state.registrationCategories = [{ id: 1, apply_fee: 1 }];
+        h.event.registrationFeeType = 'PAR';
+        await h.init(initialPanel);
+        if (initialPanel === 'dashboard') await h.navigate('payments');
+        const fee = h.w.document.getElementById('registrationPaymentsFeeSummary');
+        const breakdown = h.w.document.getElementById('registrationPaymentsFeeBreakdown');
+        const checkFee = () => {
+          assert.equal(fee.classList.contains('d-none'), h.event.registrationFeeType === 'NON');
+          if (h.event.registrationFeeType !== 'NON') {
+            assert.equal(breakdown.querySelectorAll('dd')[0].textContent, h.w.formatRegistrationCurrency(1000));
+            const pendingFee = h.event.registrationFeeType === 'SCH' ? 0 : 1000;
+            assert.equal(breakdown.querySelectorAll('dd')[1].textContent, h.w.formatRegistrationCurrency(pendingFee));
+          }
+        };
+        checkFee();
+        for (const type of ['NON', 'REG', 'SCH', 'PAR']) {
+          h.event.registrationFeeType = type;
+          h.w.notifyRegistrationConfigUpdate(); await tick();
+          checkFee();
+          await h.navigate('dashboard'); await h.navigate('payments');
+          checkFee();
+        }
+      } finally { h.close(); }
+    });
+  }
+}
+
+for (const firstResponse of ['extras', 'payments']) {
+  test(`Payments fee visibility: ${firstResponse} responding first cannot hide the fee`, async () => {
+    const h = harness();
+    const pending = {};
+    const response = { extras: { data: summary }, payments: { data: [] } };
+    h.overrides['GET /account/summary'] = () => new Promise(resolve => { pending.extras = resolve; });
+    h.overrides['GET /api/registrations/payments'] = () => new Promise(resolve => { pending.payments = resolve; });
+    try {
+      h.event.registrationFeeType = 'PAR';
+      await h.init('payments');
+      const fee = h.w.document.getElementById('registrationPaymentsFeeSummary');
+      assert.equal(fee.classList.contains('d-none'), false);
+      pending[firstResponse](response[firstResponse]); await tick();
+      assert.equal(fee.classList.contains('d-none'), false);
+      const secondResponse = firstResponse === 'extras' ? 'payments' : 'extras';
+      pending[secondResponse](response[secondResponse]); await tick();
+      assert.equal(fee.classList.contains('d-none'), false);
+      assert.equal(financeCalls(h).length, 1);
+    } finally {
+      Object.entries(pending).forEach(([key, resolve]) => resolve(response[key]));
+      await tick(); h.close();
+    }
+  });
+}
+
 for (const role of ['school', 'organizer', 'admin']) {
   test(`summary loading: ${role} calls the API exactly once on every Dashboard and Payments entry`, async () => {
     const h = harness({ role });

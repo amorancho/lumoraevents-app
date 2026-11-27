@@ -159,8 +159,8 @@ window.RegistrationExtras = (() => {
     card.innerHTML = error
       ? notice(error) + button('finance-retry', text('retry'))
       : summary ? summaryMarkup(summary, true) : state.summaryIds != null || selectedId === '__unresolved__' ? notice(text('unavailable'), 'warning') : loading();
-    // The API's registrations_amount already includes the registration charge.
-    document.querySelector('#payments .registration-payments-combined-metric')?.classList.toggle('d-none', Boolean(summary));
+    // Payments owns the fee and registration breakdowns. Extras must not change
+    // their visibility according to summary availability or response order.
   }
 
   async function loadDiscount(mount, accountId = null) {
@@ -554,6 +554,9 @@ window.RegistrationExtras = (() => {
         (splitCatalog ? loadWorkshopReservations() : loadServiceReservations()).catch(() => { reservationsError = true; return null; })
       ]);
       if (!sameEvent(generation) || mount.dataset.request !== serial) return;
+      if (splitCatalog && !results[1].length && !catalogKinds.includes(mount.dataset.catalogTab)) {
+        selectCatalogTab(mount.querySelector('[data-extras-catalog-tab="workshops"]'));
+      }
       const groups = splitCatalog ? [
         { kind: 'packs', resource: 'packs', items: results[1].map(item => ({ ...item, workshops: packWorkshops(item, results[0]) })) },
         { kind: 'workshops', resource: 'workshops', items: results[0].filter(item => item.ws_type === 'WS') },
